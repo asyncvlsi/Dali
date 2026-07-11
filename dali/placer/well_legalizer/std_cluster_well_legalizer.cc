@@ -29,6 +29,7 @@
 #include "dali/common/placement_metrics.h"
 #include "dali/placer/well_legalizer/stripe_helper.h"
 #include "dali/placer/well_legalizer/well_geometry.h"
+#include "dali/placer/well_legalizer/well_geometry_exporter.h"
 
 namespace dali {
 
@@ -1331,131 +1332,12 @@ void StdClusterWellLegalizer::EmitDEFWellFile(std::string const& name_of_file,
 }
 
 void StdClusterWellLegalizer::EmitPPNPRect(std::string const& name_of_file) {
-  // emit rect file
-  std::string NP_name = "nplus";
-  std::string PP_name = "pplus";
-
-  LOG(info) << "Writing PP and NP rect file: " << name_of_file << "\n";
-
-  std::ofstream ost(name_of_file.c_str());
-  DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
-
-  double factor_x = ckt_ptr_->DistanceScaleFactorX();
-  double factor_y = ckt_ptr_->DistanceScaleFactorY();
-
-  ost << "bbox " << ckt_ptr_->LocDali2PhydbX(RegionLeft()) << " "
-      << ckt_ptr_->LocDali2PhydbY(RegionBottom()) << " "
-      << ckt_ptr_->LocDali2PhydbX(RegionRight()) << " "
-      << ckt_ptr_->LocDali2PhydbY(RegionTop()) << "\n";
-
-  for (auto& col : col_list_) {
-    for (auto& stripe : col.stripe_list_) {
-      // draw NP and PP shapes from N/P-edge to N/P-edge
-      std::vector<int> pn_edge_list;
-      pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
-      if (stripe.is_bottom_up_) {
-        pn_edge_list.push_back(RegionBottom());
-      } else {
-        pn_edge_list.push_back(RegionTop());
-      }
-      for (auto& cluster : stripe.gridded_rows_) {
-        pn_edge_list.push_back(cluster.LLY() + cluster.PNEdge());
-      }
-      if (stripe.is_bottom_up_) {
-        pn_edge_list.push_back(RegionTop());
-      } else {
-        pn_edge_list.push_back(RegionBottom());
-        std::reverse(pn_edge_list.begin(), pn_edge_list.end());
-      }
-
-      bool is_p_well_rect = stripe.is_first_row_orient_N_;
-      int active_lx = LeftTapUx(stripe);
-      int active_ux = RightTapLx(stripe);
-      int ly;
-      int uy;
-      int rect_count = (int)pn_edge_list.size() - 1;
-      for (int i = 0; i < rect_count; ++i) {
-        ly = pn_edge_list[i];
-        uy = pn_edge_list[i + 1];
-        if (is_p_well_rect) {
-          ost << "rect # " << NP_name << " ";
-        } else {
-          ost << "rect # " << PP_name << " ";
-        }
-        ost << active_lx * factor_x + ckt_ptr_->design().DieAreaOffsetX()
-            << "\t" << ly * factor_y + ckt_ptr_->design().DieAreaOffsetY()
-            << "\t"
-            << active_ux * factor_x + ckt_ptr_->design().DieAreaOffsetX()
-            << "\t" << uy * factor_y + ckt_ptr_->design().DieAreaOffsetY()
-            << "\n";
-
-        is_p_well_rect = !is_p_well_rect;
-      }
-
-      // draw NP and PP shapes from well-tap cell to well-tap cell
-      std::vector<int> well_tap_top_bottom_list;
-      well_tap_top_bottom_list.reserve(stripe.gridded_rows_.size() + 2);
-      if (stripe.is_bottom_up_) {
-        well_tap_top_bottom_list.push_back(RegionBottom());
-      } else {
-        well_tap_top_bottom_list.push_back(RegionTop());
-      }
-      for (auto& cluster : stripe.gridded_rows_) {
-        Component* well_tap = cluster.WellTapCell();
-        DaliExpects(well_tap != nullptr,
-                    "Cannot emit P+/N+ tap regions without a well tap cell");
-        if (stripe.is_bottom_up_) {
-          well_tap_top_bottom_list.push_back(well_tap->LLY());
-          well_tap_top_bottom_list.push_back(well_tap->URY());
-        } else {
-          well_tap_top_bottom_list.push_back(well_tap->URY());
-          well_tap_top_bottom_list.push_back(well_tap->LLY());
-        }
-      }
-      if (stripe.is_bottom_up_) {
-        well_tap_top_bottom_list.push_back(RegionTop());
-      } else {
-        well_tap_top_bottom_list.push_back(RegionBottom());
-        std::reverse(well_tap_top_bottom_list.begin(),
-                     well_tap_top_bottom_list.end());
-      }
-      DaliExpects(well_tap_top_bottom_list.size() % 2 == 0,
-                  "Impossible to get an even number of well tap cell edges");
-
-      is_p_well_rect = stripe.is_first_row_orient_N_;
-      int lx0 = LeftTapLx(stripe);
-      int ux0 = LeftTapUx(stripe);
-      int lx1 = RightTapLx(stripe);
-      int ux1 = RightTapUx(stripe);
-      rect_count = (int)well_tap_top_bottom_list.size() - 1;
-      for (int i = 0; i < rect_count; i += 2) {
-        ly = well_tap_top_bottom_list[i];
-        uy = well_tap_top_bottom_list[i + 1];
-        if (uy > ly) {
-          if (!is_p_well_rect) {
-            ost << "rect # " << NP_name << " ";
-          } else {
-            ost << "rect # " << PP_name << " ";
-          }
-          ost << lx0 * factor_x + ckt_ptr_->design().DieAreaOffsetX() << "\t"
-              << ly * factor_y + ckt_ptr_->design().DieAreaOffsetY() << "\t"
-              << ux0 * factor_x + ckt_ptr_->design().DieAreaOffsetX() << "\t"
-              << uy * factor_y + ckt_ptr_->design().DieAreaOffsetY() << "\n";
-          if (!is_p_well_rect) {
-            ost << "rect # " << NP_name << " ";
-          } else {
-            ost << "rect # " << PP_name << " ";
-          }
-          ost << lx1 * factor_x + ckt_ptr_->design().DieAreaOffsetX() << "\t"
-              << ly * factor_y + ckt_ptr_->design().DieAreaOffsetY() << "\t"
-              << ux1 * factor_x + ckt_ptr_->design().DieAreaOffsetX() << "\t"
-              << uy * factor_y + ckt_ptr_->design().DieAreaOffsetY() << "\n";
-        }
-        is_p_well_rect = !is_p_well_rect;
-      }
-    }
-  }
-  ost.close();
+  std::vector<WellGeometryRect> geometry =
+      WellGeometryBuilder(col_list_, RegionBottom(), RegionTop()).Build(true);
+  WellGeometryExporter(
+      ckt_ptr_, RectI(RegionLeft(), RegionBottom(), RegionRight(), RegionTop()),
+      geometry)
+      .EmitImplantRectFile(name_of_file);
 }
 
 void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB* phydb_ptr) {
@@ -1464,240 +1346,22 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB* phydb_ptr) {
                  "since well tap is disabled\n";
     return;
   }
-  DaliExpects(phydb_ptr != nullptr, "Cannot export plus layer to a nullptr");
-  LOG(info) << "Export Pplus/Nplus fillings to PhyDB\n";
-  std::string NP_name = "nplus";
-  std::string PP_name = "pplus";
-
-  double factor_x =
-      ckt_ptr_->design().DistanceMicrons() * ckt_ptr_->GridValueX();
-  double factor_y =
-      ckt_ptr_->design().DistanceMicrons() * ckt_ptr_->GridValueY();
-
-  int bbox_llx = ckt_ptr_->LocDali2PhydbX(RegionLeft());
-  int bbox_lly = ckt_ptr_->LocDali2PhydbY(RegionBottom());
-  int bbox_urx = ckt_ptr_->LocDali2PhydbX(RegionRight());
-  int bbox_ury = ckt_ptr_->LocDali2PhydbY(RegionTop());
-
-  auto* phydb_layout_container = phydb_ptr->CreatePpNpMacroAndComponent(
-      bbox_llx, bbox_lly, bbox_urx, bbox_ury);
-
-  for (auto& col : col_list_) {
-    for (auto& stripe : col.stripe_list_) {
-      // draw NP and PP shapes from N/P-edge to N/P-edge
-      std::vector<int> pn_edge_list;
-      pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
-      if (stripe.is_bottom_up_) {
-        pn_edge_list.push_back(RegionBottom());
-      } else {
-        pn_edge_list.push_back(RegionTop());
-      }
-      for (auto& cluster : stripe.gridded_rows_) {
-        pn_edge_list.push_back(cluster.LLY() + cluster.PNEdge());
-      }
-      if (stripe.is_bottom_up_) {
-        pn_edge_list.push_back(RegionTop());
-      } else {
-        pn_edge_list.push_back(RegionBottom());
-        std::reverse(pn_edge_list.begin(), pn_edge_list.end());
-      }
-
-      bool is_p_well_rect = stripe.is_first_row_orient_N_;
-      int active_lx = LeftTapUx(stripe);
-      int active_ux = RightTapLx(stripe);
-      int ly;
-      int uy;
-      int rect_count = (int)pn_edge_list.size() - 1;
-      for (int i = 0; i < rect_count; ++i) {
-        ly = pn_edge_list[i];
-        uy = pn_edge_list[i + 1];
-        if (uy <= ly || active_ux <= active_lx) {
-          is_p_well_rect = !is_p_well_rect;
-          continue;
-        }
-        std::string signal_name("#");
-        std::string layer_name;
-        if (is_p_well_rect) {
-          layer_name = NP_name;
-        } else {
-          layer_name = PP_name;
-        }
-        int rect_llx =
-            (int)(active_lx * factor_x) + ckt_ptr_->design().DieAreaOffsetX();
-        int rect_lly =
-            (int)(ly * factor_y) + ckt_ptr_->design().DieAreaOffsetY();
-        int rect_urx =
-            (int)(active_ux * factor_x) + ckt_ptr_->design().DieAreaOffsetX();
-        int rect_ury =
-            (int)(uy * factor_y) + ckt_ptr_->design().DieAreaOffsetY();
-        phydb_layout_container->AddRectSignalLayer(
-            signal_name, layer_name, rect_llx, rect_lly, rect_urx, rect_ury);
-        is_p_well_rect = !is_p_well_rect;
-      }
-
-      // draw NP and PP shapes from well-tap cell to well-tap cell
-      std::vector<int> well_tap_top_bottom_list;
-      well_tap_top_bottom_list.reserve(stripe.gridded_rows_.size() + 2);
-      if (stripe.is_bottom_up_) {
-        well_tap_top_bottom_list.push_back(RegionBottom());
-      } else {
-        well_tap_top_bottom_list.push_back(RegionTop());
-      }
-      for (auto& cluster : stripe.gridded_rows_) {
-        Component* well_tap = cluster.WellTapCell();
-        DaliExpects(well_tap != nullptr,
-                    "Cannot export P+/N+ tap regions without a well tap cell");
-        if (stripe.is_bottom_up_) {
-          well_tap_top_bottom_list.push_back(well_tap->LLY());
-          well_tap_top_bottom_list.push_back(well_tap->URY());
-        } else {
-          well_tap_top_bottom_list.push_back(well_tap->URY());
-          well_tap_top_bottom_list.push_back(well_tap->LLY());
-        }
-      }
-      if (stripe.is_bottom_up_) {
-        well_tap_top_bottom_list.push_back(RegionTop());
-      } else {
-        well_tap_top_bottom_list.push_back(RegionBottom());
-        std::reverse(well_tap_top_bottom_list.begin(),
-                     well_tap_top_bottom_list.end());
-      }
-      DaliExpects(well_tap_top_bottom_list.size() % 2 == 0,
-                  "Impossible to get an even number of well tap cell edges");
-
-      is_p_well_rect = stripe.is_first_row_orient_N_;
-      int lx0 = LeftTapLx(stripe);
-      int ux0 = LeftTapUx(stripe);
-      int lx1 = RightTapLx(stripe);
-      int ux1 = RightTapUx(stripe);
-      rect_count = (int)well_tap_top_bottom_list.size() - 1;
-      for (int i = 0; i < rect_count; i += 2) {
-        ly = well_tap_top_bottom_list[i];
-        uy = well_tap_top_bottom_list[i + 1];
-        if (uy > ly) {
-          std::string signal_name("#");
-          std::string layer_name;
-          if (!is_p_well_rect) {
-            layer_name = NP_name;
-          } else {
-            layer_name = PP_name;
-          }
-          int rect_llx =
-              (int)(lx0 * factor_x) + ckt_ptr_->design().DieAreaOffsetX();
-          int rect_lly =
-              (int)(ly * factor_y) + ckt_ptr_->design().DieAreaOffsetY();
-          int rect_urx =
-              (int)(ux0 * factor_x) + ckt_ptr_->design().DieAreaOffsetX();
-          int rect_ury =
-              (int)(uy * factor_y) + ckt_ptr_->design().DieAreaOffsetY();
-          phydb_layout_container->AddRectSignalLayer(
-              signal_name, layer_name, rect_llx, rect_lly, rect_urx, rect_ury);
-
-          if (!is_p_well_rect) {
-            layer_name = NP_name;
-          } else {
-            layer_name = PP_name;
-          }
-          rect_llx =
-              (int)(lx1 * factor_x) + ckt_ptr_->design().DieAreaOffsetX();
-          rect_lly = (int)(ly * factor_y) + ckt_ptr_->design().DieAreaOffsetY();
-          rect_urx =
-              (int)(ux1 * factor_x) + ckt_ptr_->design().DieAreaOffsetX();
-          rect_ury = (int)(uy * factor_y) + ckt_ptr_->design().DieAreaOffsetY();
-          phydb_layout_container->AddRectSignalLayer(
-              signal_name, layer_name, rect_llx, rect_lly, rect_urx, rect_ury);
-        }
-        is_p_well_rect = !is_p_well_rect;
-      }
-    }
-  }
+  std::vector<WellGeometryRect> geometry =
+      WellGeometryBuilder(col_list_, RegionBottom(), RegionTop()).Build(true);
+  WellGeometryExporter(
+      ckt_ptr_, RectI(RegionLeft(), RegionBottom(), RegionRight(), RegionTop()),
+      geometry)
+      .ExportImplantsToPhyDB(phydb_ptr);
 }
 
 void StdClusterWellLegalizer::EmitWellRect(std::string const& name_of_file,
                                            int well_emit_mode) {
-  // emit rect file
-  switch (well_emit_mode) {
-    case 0: {
-      LOG(info) << "Writing N/P-well rect file: " << name_of_file << "\n";
-      break;
-    }
-    case 1: {
-      LOG(info) << "Writing N-well rect file: " << name_of_file << "\n";
-      break;
-    }
-    case 2: {
-      LOG(info) << "Writing P-well rect file: " << name_of_file << "\n";
-      break;
-    }
-    default: {
-      DaliExpects(false, "Invalid value for well_emit_mode");
-    }
-  }
-
-  std::ofstream ost(name_of_file.c_str());
-  DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
-
-  double factor_x =
-      ckt_ptr_->design().DistanceMicrons() * ckt_ptr_->GridValueX();
-  double factor_y =
-      ckt_ptr_->design().DistanceMicrons() * ckt_ptr_->GridValueY();
-
-  ost << "bbox "
-      << (int)(RegionLeft() * factor_x) + ckt_ptr_->design().DieAreaOffsetX()
-      << " "
-      << (int)(RegionBottom() * factor_y) + ckt_ptr_->design().DieAreaOffsetY()
-      << " "
-      << (int)(RegionRight() * factor_x) + ckt_ptr_->design().DieAreaOffsetX()
-      << " "
-      << (int)(RegionTop() * factor_y) + ckt_ptr_->design().DieAreaOffsetY()
-      << "\n";
-  for (auto& col : col_list_) {
-    for (auto& stripe : col.stripe_list_) {
-      std::vector<int> pn_edge_list;
-      if (stripe.is_bottom_up_) {
-        pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
-        pn_edge_list.push_back(RegionBottom());
-      } else {
-        pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
-        pn_edge_list.push_back(RegionTop());
-      }
-      for (auto& cluster : stripe.gridded_rows_) {
-        pn_edge_list.push_back(cluster.LLY() + cluster.PNEdge());
-      }
-      if (stripe.is_bottom_up_) {
-        pn_edge_list.push_back(RegionTop());
-      } else {
-        pn_edge_list.push_back(RegionBottom());
-        std::reverse(pn_edge_list.begin(), pn_edge_list.end());
-      }
-
-      bool is_p_well_rect = stripe.is_first_row_orient_N_;
-      int lx = stripe.LLX();
-      int ux = stripe.URX();
-      int ly;
-      int uy;
-      int rect_count = (int)pn_edge_list.size() - 1;
-      for (int i = 0; i < rect_count; ++i) {
-        ly = pn_edge_list[i];
-        uy = pn_edge_list[i + 1];
-        if (is_p_well_rect) {
-          is_p_well_rect = !is_p_well_rect;
-          if (well_emit_mode == 1) continue;
-          ost << "rect GND pwell ";
-        } else {
-          is_p_well_rect = !is_p_well_rect;
-          if (well_emit_mode == 2) continue;
-          ost << "rect Vdd nwell ";
-        }
-        ost << (int)(lx * factor_x) + ckt_ptr_->design().DieAreaOffsetX() << " "
-            << (int)(ly * factor_y) + ckt_ptr_->design().DieAreaOffsetY() << " "
-            << (int)(ux * factor_x) + ckt_ptr_->design().DieAreaOffsetX() << " "
-            << (int)(uy * factor_y) + ckt_ptr_->design().DieAreaOffsetY()
-            << "\n";
-      }
-    }
-  }
-  ost.close();
+  std::vector<WellGeometryRect> geometry =
+      WellGeometryBuilder(col_list_, RegionBottom(), RegionTop()).Build(false);
+  WellGeometryExporter(
+      ckt_ptr_, RectI(RegionLeft(), RegionBottom(), RegionRight(), RegionTop()),
+      geometry)
+      .EmitWellRectFile(name_of_file, well_emit_mode);
 }
 
 void StdClusterWellLegalizer::ExportWellToPhyDB(phydb::PhyDB* phydb_ptr,
@@ -1706,70 +1370,12 @@ void StdClusterWellLegalizer::ExportWellToPhyDB(phydb::PhyDB* phydb_ptr,
     LOG(info) << "Skip export wells to PhyDB since well tap is disabled\n";
     return;
   }
-  switch (well_emit_mode) {
-    case 0:
-      LOG(info) << "Export N/P wells to PhyDB\n";
-      break;
-    case 1:
-      LOG(info) << "Export N wells to PhyDB\n";
-      break;
-    case 2:
-      LOG(info) << "Export P wells tp PhyDB\n";
-      break;
-    default:
-      DaliExpects(false,
-                  "Invalid value for well_emit_mode in "
-                  "StdClusterWellLegalizer::EmitDEFWellFile()");
-  }
-  double factor_x =
-      ckt_ptr_->design().DistanceMicrons() * ckt_ptr_->GridValueX();
-  double factor_y =
-      ckt_ptr_->design().DistanceMicrons() * ckt_ptr_->GridValueY();
-
-  int bbox_llx =
-      (int)(RegionLeft() * factor_x) + ckt_ptr_->design().DieAreaOffsetX();
-  int bbox_lly =
-      (int)(RegionBottom() * factor_y) + ckt_ptr_->design().DieAreaOffsetY();
-  int bbox_urx =
-      (int)(RegionRight() * factor_x) + ckt_ptr_->design().DieAreaOffsetX();
-  int bbox_ury =
-      (int)(RegionTop() * factor_y) + ckt_ptr_->design().DieAreaOffsetY();
-
-  auto* phydb_layout_container = phydb_ptr->CreateWellLayerMacroAndComponent(
-      bbox_llx, bbox_lly, bbox_urx, bbox_ury);
-
-  for (auto& col : col_list_) {
-    for (auto& stripe : col.stripe_list_) {
-      std::vector<RectI> n_rects;
-      std::vector<RectI> p_rects;
-      CollectWellFillingRects(stripe, RegionBottom(), RegionTop(), n_rects,
-                              p_rects);
-      if (well_emit_mode != 1) {
-        std::string signal_name = "GND";
-        std::string layer_name = "pwell";
-        for (auto& rect : p_rects) {
-          int rect_llx = ckt_ptr_->LocDali2PhydbX(rect.LLX());
-          int rect_lly = ckt_ptr_->LocDali2PhydbY(rect.LLY());
-          int rect_urx = ckt_ptr_->LocDali2PhydbX(rect.URX());
-          int rect_ury = ckt_ptr_->LocDali2PhydbY(rect.URY());
-          phydb_layout_container->AddRectSignalLayer(
-              signal_name, layer_name, rect_llx, rect_lly, rect_urx, rect_ury);
-        }
-      }
-      if (well_emit_mode != 2) {
-        std::string signal_name = "Vdd";
-        std::string layer_name = "nwell";
-        for (auto& rect : n_rects) {
-          int rect_llx = ckt_ptr_->LocDali2PhydbX(rect.LLX());
-          int rect_lly = ckt_ptr_->LocDali2PhydbY(rect.LLY());
-          int rect_urx = ckt_ptr_->LocDali2PhydbX(rect.URX());
-          int rect_ury = ckt_ptr_->LocDali2PhydbY(rect.URY());
-          phydb_layout_container->AddRectSignalLayer(
-              signal_name, layer_name, rect_llx, rect_lly, rect_urx, rect_ury);
-        }
-      }
-    }
-  }
+  std::vector<WellGeometryRect> geometry =
+      WellGeometryBuilder(col_list_, RegionBottom(), RegionTop()).Build(false);
+  WellGeometryExporter(
+      ckt_ptr_, RectI(RegionLeft(), RegionBottom(), RegionRight(), RegionTop()),
+      geometry)
+      .ExportWellsToPhyDB(phydb_ptr, well_emit_mode);
 }
 
 std::vector<PlacementWellRect>
