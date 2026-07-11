@@ -782,32 +782,32 @@ size_t GriddedRow::OutOfBoundCell() {
   return cnt;
 }
 
-void ClusterSegment::Merge(ClusterSegment& sc, int lower_bound,
-                           int upper_bound) {
-  int sz = (int)sc.gridded_rows.size();
+void VerticalRowSegment::Merge(const VerticalRowSegment& next_segment,
+                               int lower_bound, int upper_bound) {
+  int sz = (int)next_segment.rows_.size();
   for (int i = 0; i < sz; ++i) {
-    gridded_rows.push_back(sc.gridded_rows[i]);
+    rows_.push_back(next_segment.rows_[i]);
   }
-  height_ += sc.Height();
+  height_ += next_segment.Height();
 
-  sz = (int)gridded_rows.size();
+  sz = (int)rows_.size();
   int anchor_size = 0;
-  for (auto& cluster_ptr : gridded_rows) {
-    anchor_size += (int)cluster_ptr->Components().size();
+  for (auto* row : rows_) {
+    anchor_size += (int)row->Components().size();
   }
   std::vector<double> anchor;
   anchor.reserve(anchor_size);
   int accumulative_d = 0;
   for (int i = 0; i < sz; ++i) {
-    for (auto& [component_ptr, init_loc] : gridded_rows[i]->InitLocations()) {
+    for (auto& [component_ptr, init_loc] : rows_[i]->InitLocations()) {
       double init_np_boundary = init_loc.y;
       anchor.push_back(init_np_boundary - accumulative_d);
     }
-    accumulative_d += gridded_rows[i]->NHeight();
+    accumulative_d += rows_[i]->NHeight();
     if (i + 1 < sz) {
-      accumulative_d += gridded_rows[i + 1]->PHeight();
+      accumulative_d += rows_[i + 1]->PHeight();
     } else {
-      accumulative_d += gridded_rows[0]->PHeight();
+      accumulative_d += rows_[0]->PHeight();
     }
   }
   DaliExpects(height_ == accumulative_d,
@@ -819,7 +819,7 @@ void ClusterSegment::Merge(ClusterSegment& sc, int lower_bound,
   }
   int first_np_boundary = (int)std::round(sum / anchor_size);
 
-  ly_ = first_np_boundary - gridded_rows[0]->PHeight();
+  ly_ = first_np_boundary - rows_[0]->PHeight();
   if (ly_ < lower_bound) {
     ly_ = lower_bound;
   }
@@ -828,13 +828,13 @@ void ClusterSegment::Merge(ClusterSegment& sc, int lower_bound,
   }
 }
 
-void ClusterSegment::UpdateClusterLocation() {
+void VerticalRowSegment::UpdateRowLocations() {
   int cur_y = ly_;
-  int sz = (int)gridded_rows.size();
+  int sz = (int)rows_.size();
   for (int i = 0; i < sz; ++i) {
-    gridded_rows[i]->SetLLY(cur_y);
-    gridded_rows[i]->UpdateComponentLocY();
-    cur_y += gridded_rows[i]->Height();
+    rows_[i]->SetLLY(cur_y);
+    rows_[i]->UpdateComponentLocY();
+    cur_y += rows_[i]->Height();
   }
 }
 

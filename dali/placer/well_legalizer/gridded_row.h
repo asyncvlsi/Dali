@@ -207,25 +207,33 @@ class GriddedRow {
 };
 
 /** Vertical segment of one or more gridded rows. */
-class ClusterSegment {
- private:
-  int ly_;
-  int height_;
-
+class VerticalRowSegment {
  public:
-  ClusterSegment(GriddedRow* cluster_ptr, int loc)
-      : ly_(loc), height_(cluster_ptr->Height()) {
-    gridded_rows.push_back(cluster_ptr);
+  VerticalRowSegment(GriddedRow* row, int location)
+      : ly_(location), height_(row->Height()) {
+    rows_.push_back(row);
   }
-  std::vector<GriddedRow*> gridded_rows;
 
   int LY() const { return ly_; }
   int UY() const { return ly_ + height_; }
   int Height() const { return height_; }
 
-  bool IsNotOnBottom(ClusterSegment& sc) const { return sc.LY() < UY(); }
-  void Merge(ClusterSegment& sc, int lower_bound, int upper_bound);
-  void UpdateClusterLocation();
+  /** Return true when the next segment begins before this segment ends. */
+  bool OverlapsNextRowSegment(const VerticalRowSegment& next_segment) const {
+    return next_segment.LY() < UY();
+  }
+
+  /** Merge a following segment and recompute the minimum-displacement Y. */
+  void Merge(const VerticalRowSegment& next_segment, int lower_bound,
+             int upper_bound);
+
+  /** Write contiguous segment locations back to its gridded rows. */
+  void UpdateRowLocations();
+
+ private:
+  int ly_;
+  int height_;
+  std::vector<GriddedRow*> rows_;
 };
 
 }  // namespace dali

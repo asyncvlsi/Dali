@@ -56,7 +56,7 @@ void Stripe::MinDisplacementAdjustment() {
                      cluster1.MinDisplacementLLY();
             });
 
-  std::vector<ClusterSegment> segments;
+  std::vector<VerticalRowSegment> segments;
 
   int sz = (int)gridded_rows_.size();
   int lower_bound = ly_;
@@ -80,9 +80,9 @@ void Stripe::MinDisplacementAdjustment() {
     // check if this segment overlap with the previous one, if yes, merge these
     // two segments repeats until this is no overlap or only one segment left
 
-    ClusterSegment* cur_seg = &(segments[seg_sz - 1]);
-    ClusterSegment* prev_seg = &(segments[seg_sz - 2]);
-    while (prev_seg->IsNotOnBottom(*cur_seg)) {
+    VerticalRowSegment* cur_seg = &(segments[seg_sz - 1]);
+    VerticalRowSegment* prev_seg = &(segments[seg_sz - 2]);
+    while (prev_seg->OverlapsNextRowSegment(*cur_seg)) {
       prev_seg->Merge(*cur_seg, lower_bound, upper_bound);
       segments.pop_back();
 
@@ -94,7 +94,7 @@ void Stripe::MinDisplacementAdjustment() {
   }
 
   for (auto& seg : segments) {
-    seg.UpdateClusterLocation();
+    seg.UpdateRowLocations();
   }
 }
 
