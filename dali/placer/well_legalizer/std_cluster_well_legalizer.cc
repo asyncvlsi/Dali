@@ -28,6 +28,7 @@
 #include "dali/common/helper.h"
 #include "dali/common/placement_metrics.h"
 #include "dali/placer/well_legalizer/stripe_helper.h"
+#include "dali/placer/well_legalizer/well_geometry.h"
 
 namespace dali {
 
@@ -1773,128 +1774,36 @@ void StdClusterWellLegalizer::ExportWellToPhyDB(phydb::PhyDB* phydb_ptr,
 
 std::vector<PlacementWellRect>
 StdClusterWellLegalizer::CollectWellVisualizationRects() {
-  std::vector<PlacementWellRect> well_rects;
-  if (ckt_ptr_ == nullptr) {
-    return well_rects;
-  }
+  WellGeometryBuilder builder(col_list_, RegionBottom(), RegionTop());
+  std::vector<WellGeometryRect> geometry =
+      builder.Build(!disable_welltap_ && well_tap_macro_ != nullptr);
 
-  auto append_rect = [this, &well_rects](int lx, int ly, int ux, int uy,
-                                         PlacementWellLayer layer) {
-    if (ux <= lx || uy <= ly) {
-      return;
+  std::vector<PlacementWellRect> result;
+  result.reserve(geometry.size());
+  for (const WellGeometryRect& geometry_rect : geometry) {
+    PlacementWellLayer layer = PlacementWellLayer::kPwell;
+    switch (geometry_rect.layer) {
+      case WellGeometryLayer::kPwell:
+        layer = PlacementWellLayer::kPwell;
+        break;
+      case WellGeometryLayer::kNwell:
+        layer = PlacementWellLayer::kNwell;
+        break;
+      case WellGeometryLayer::kPplus:
+        layer = PlacementWellLayer::kPplus;
+        break;
+      case WellGeometryLayer::kNplus:
+        layer = PlacementWellLayer::kNplus;
+        break;
     }
-    well_rects.push_back({static_cast<float>(lx * ckt_ptr_->GridValueX()),
-                          static_cast<float>(ly * ckt_ptr_->GridValueY()),
-                          static_cast<float>(ux * ckt_ptr_->GridValueX()),
-                          static_cast<float>(uy * ckt_ptr_->GridValueY()),
-                          layer});
-  };
-
-  auto append_rects = [this, &well_rects](const std::vector<RectI>& rects,
-                                          PlacementWellLayer layer) {
-    for (const RectI& rect : rects) {
-      if (rect.URX() <= rect.LLX() || rect.URY() <= rect.LLY()) {
-        continue;
-      }
-      well_rects.push_back(
-          {static_cast<float>(rect.LLX() * ckt_ptr_->GridValueX()),
-           static_cast<float>(rect.LLY() * ckt_ptr_->GridValueY()),
-           static_cast<float>(rect.URX() * ckt_ptr_->GridValueX()),
-           static_cast<float>(rect.URY() * ckt_ptr_->GridValueY()), layer});
-    }
-  };
-
-  for (auto& col : col_list_) {
-    for (auto& stripe : col.stripe_list_) {
-      std::vector<RectI> n_rects;
-      std::vector<RectI> p_rects;
-      CollectWellFillingRects(stripe, RegionBottom(), RegionTop(), n_rects,
-                              p_rects);
-      append_rects(p_rects, PlacementWellLayer::kPwell);
-      append_rects(n_rects, PlacementWellLayer::kNwell);
-    }
+    const RectI& rect = geometry_rect.bounds;
+    result.push_back({static_cast<float>(rect.LLX() * ckt_ptr_->GridValueX()),
+                      static_cast<float>(rect.LLY() * ckt_ptr_->GridValueY()),
+                      static_cast<float>(rect.URX() * ckt_ptr_->GridValueX()),
+                      static_cast<float>(rect.URY() * ckt_ptr_->GridValueY()),
+                      layer});
   }
-
-  if (disable_welltap_ || well_tap_macro_ == nullptr) {
-    return well_rects;
-  }
-
-  for (auto& col : col_list_) {
-    for (auto& stripe : col.stripe_list_) {
-      std::vector<int> pn_edge_list;
-      pn_edge_list.reserve(stripe.gridded_rows_.size() + 2);
-      if (stripe.is_bottom_up_) {
-        pn_edge_list.push_back(RegionBottom());
-      } else {
-        pn_edge_list.push_back(RegionTop());
-      }
-      for (auto& row : stripe.gridded_rows_) {
-        pn_edge_list.push_back(row.LLY() + row.PNEdge());
-      }
-      if (stripe.is_bottom_up_) {
-        pn_edge_list.push_back(RegionTop());
-      } else {
-        pn_edge_list.push_back(RegionBottom());
-        std::reverse(pn_edge_list.begin(), pn_edge_list.end());
-      }
-
-      bool is_p_well_rect = stripe.is_first_row_orient_N_;
-      int active_lx = LeftTapUx(stripe);
-      int active_ux = RightTapLx(stripe);
-      int rect_count = static_cast<int>(pn_edge_list.size()) - 1;
-      for (int i = 0; i < rect_count; ++i) {
-        int ly = pn_edge_list[i];
-        int uy = pn_edge_list[i + 1];
-        PlacementWellLayer layer = is_p_well_rect ? PlacementWellLayer::kNplus
-                                                  : PlacementWellLayer::kPplus;
-        append_rect(active_lx, ly, active_ux, uy, layer);
-        is_p_well_rect = !is_p_well_rect;
-      }
-
-      std::vector<int> well_tap_top_bottom_list;
-      well_tap_top_bottom_list.reserve(stripe.gridded_rows_.size() + 2);
-      if (stripe.is_bottom_up_) {
-        well_tap_top_bottom_list.push_back(RegionBottom());
-      } else {
-        well_tap_top_bottom_list.push_back(RegionTop());
-      }
-      for (auto& row : stripe.gridded_rows_) {
-        Component* well_tap = row.WellTapCell();
-        if (well_tap == nullptr) continue;
-        if (stripe.is_bottom_up_) {
-          well_tap_top_bottom_list.push_back(well_tap->LLY());
-          well_tap_top_bottom_list.push_back(well_tap->URY());
-        } else {
-          well_tap_top_bottom_list.push_back(well_tap->URY());
-          well_tap_top_bottom_list.push_back(well_tap->LLY());
-        }
-      }
-      if (stripe.is_bottom_up_) {
-        well_tap_top_bottom_list.push_back(RegionTop());
-      } else {
-        well_tap_top_bottom_list.push_back(RegionBottom());
-        std::reverse(well_tap_top_bottom_list.begin(),
-                     well_tap_top_bottom_list.end());
-      }
-
-      is_p_well_rect = stripe.is_first_row_orient_N_;
-      int lx0 = LeftTapLx(stripe);
-      int ux0 = LeftTapUx(stripe);
-      int lx1 = RightTapLx(stripe);
-      int ux1 = RightTapUx(stripe);
-      rect_count = static_cast<int>(well_tap_top_bottom_list.size()) - 1;
-      for (int i = 0; i < rect_count; i += 2) {
-        int ly = well_tap_top_bottom_list[i];
-        int uy = well_tap_top_bottom_list[i + 1];
-        PlacementWellLayer layer = is_p_well_rect ? PlacementWellLayer::kPplus
-                                                  : PlacementWellLayer::kNplus;
-        append_rect(lx0, ly, ux0, uy, layer);
-        append_rect(lx1, ly, ux1, uy, layer);
-        is_p_well_rect = !is_p_well_rect;
-      }
-    }
-  }
-  return well_rects;
+  return result;
 }
 
 /****

@@ -56,10 +56,10 @@ void GenClusterTable(std::string const& name_of_file,
   ost.close();
 }
 
-void CollectWellFillingRects(Stripe& stripe, int bottom_boundary,
+void CollectWellFillingRects(const Stripe& stripe, int bottom_boundary,
                              int top_boundary, std::vector<RectI>& n_rects,
                              std::vector<RectI>& p_rects) {
-  std::vector<GriddedRow*> rows;
+  std::vector<const GriddedRow*> rows;
   rows.reserve(stripe.gridded_rows_.size());
   for (auto& row : stripe.gridded_rows_) {
     rows.push_back(&row);

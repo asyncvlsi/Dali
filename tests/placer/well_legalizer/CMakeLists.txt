@@ -20,3 +20,9 @@ target_link_libraries(well_row_completer_test PRIVATE dalilib ${DALI_GTEST_MAIN}
 add_test(NAME well_row_completer_test COMMAND well_row_completer_test)
 set_tests_properties(well_row_completer_test
                      PROPERTIES LABELS "unit;placer;well_legalizer")
+
+add_executable(well_geometry_test well_geometry_test.cc)
+target_link_libraries(well_geometry_test PRIVATE dalilib ${DALI_GTEST_MAIN})
+add_test(NAME well_geometry_test COMMAND well_geometry_test)
+set_tests_properties(well_geometry_test
+                     PROPERTIES LABELS "unit;placer;well_legalizer")
