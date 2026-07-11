@@ -22,6 +22,7 @@
 #define DALI_PLACER_GLOBAL_PLACER_GLOBAL_PLACER_H_
 
 #include <functional>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -142,8 +143,8 @@ class GlobalPlacer : public Placer {
   GlobalLalMacroBoundaryMode lal_macro_boundary_mode_ =
       GlobalLalMacroBoundaryMode::kOff;
   SnapshotCallback snapshot_callback_;
-  HpwlOptimizer* optimizer_ = nullptr;
-  RoughLegalizer* legalizer_ = nullptr;
+  std::unique_ptr<HpwlOptimizer> optimizer_;
+  std::unique_ptr<RoughLegalizer> legalizer_;
 };
 
 }  // namespace dali

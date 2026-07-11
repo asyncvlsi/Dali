@@ -107,14 +107,13 @@ void GlobalPlacer::LoadConf(std::string const& config_file) {
  * has been initialized, delete them and create a new instance.
  */
 void GlobalPlacer::InitializeOptimizerAndLegalizer() {
-  delete optimizer_;
-  optimizer_ = new BoundToBoundHpwlOptimizer(ckt_ptr_, num_threads_);
+  optimizer_ =
+      std::make_unique<BoundToBoundHpwlOptimizer>(ckt_ptr_, num_threads_);
   optimizer_->SetAnchorSchedule(anchor_schedule_);
   optimizer_->SetShouldSaveIntermediateResult(should_save_intermediate_result_);
   optimizer_->Initialize();
 
-  delete legalizer_;
-  legalizer_ = new LookAheadLegalizer(ckt_ptr_);
+  legalizer_ = std::make_unique<LookAheadLegalizer>(ckt_ptr_);
   legalizer_->SetGridSchedule(grid_schedule_);
   legalizer_->SetExpansionMode(lal_expansion_mode_);
   legalizer_->SetHotspotMode(lal_hotspot_mode_);
@@ -128,15 +127,13 @@ void GlobalPlacer::InitializeOptimizerAndLegalizer() {
  * @brief Close and delete both optimizer and legalizer.
  */
 void GlobalPlacer::CloseOptimizerAndLegalizer() {
-  if (optimizer_ != nullptr) {
+  if (optimizer_) {
     optimizer_->Close();
-    delete optimizer_;
-    optimizer_ = nullptr;
+    optimizer_.reset();
   }
-  if (legalizer_ != nullptr) {
+  if (legalizer_) {
     legalizer_->Close();
-    delete legalizer_;
-    legalizer_ = nullptr;
+    legalizer_.reset();
   }
 }
 
