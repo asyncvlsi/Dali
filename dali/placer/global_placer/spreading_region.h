@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_PLACER_GLOBAL_PLACER_BOXBIN_H_
-#define DALI_PLACER_GLOBAL_PLACER_BOXBIN_H_
+#ifndef DALI_PLACER_GLOBAL_PLACER_SPREADING_REGION_H_
+#define DALI_PLACER_GLOBAL_PLACER_SPREADING_REGION_H_
 
 #include <fstream>
 #include <iostream>
@@ -40,11 +40,11 @@ enum class GlobalLalMacroBoundaryMode {
 };
 
 /** Candidate rectangular window in grid-bin coordinates. */
-struct WindowQuadruple {
+struct GridBinWindow {
   int llx, lly, urx, ury;
 
   /** Return true when this window fully covers rhs. */
-  bool Cover(WindowQuadruple const& rhs) const {
+  bool Cover(GridBinWindow const& rhs) const {
     return llx <= rhs.llx && lly <= rhs.lly && urx >= rhs.urx && ury >= rhs.ury;
   }
 
@@ -55,17 +55,17 @@ struct WindowQuadruple {
   }
 };
 
-/** Recursive bisection box used by look-ahead legalization. */
-class BoxBin {
+/** Multi-bin region recursively partitioned during look-ahead spreading. */
+class SpreadingRegion {
  public:
-  BoxBin();
+  SpreadingRegion();
   bool cut_direction_x;
   // Cut line is along the x direction.
   bool all_terminal;
   unsigned long long total_white_space;
   double filling_rate;
   bool IsAllFixedComponent() const { return all_terminal; };
-  /* Cut-line to split box white space. */
+  /* Cut-line to split region white space. */
   GridBinIndex ll_index;
   GridBinIndex ur_index;
   GridBinIndex cut_ll_index;
@@ -75,21 +75,21 @@ class BoxBin {
   ComponentCutPoint ur_point;
   ComponentCutPoint cut_ll_point;
   ComponentCutPoint cut_ur_point;
-  /* Total component area, and the values in two child boxes. */
+  /* Total component area, and the values in two child regions. */
   unsigned long long total_component_area;
   unsigned long long total_component_area_low;
   unsigned long long total_component_area_high;
 
-  /* Component pointers in the box and in the two child boxes. */
+  /* Component pointers in the region and in the two child regions. */
   std::vector<Component*> component_ptrs;
   std::vector<Component*> component_ptrs_low;
   std::vector<Component*> component_ptrs_high;
 
-  /* Placement blockages copied from the matching grid bin. Boxes without fixed
+  /* Placement blockages copied from covered grid bins. Regions without fixed
    * obstacles do not need blockage-driven recursive splitting. */
   std::vector<const PlacementBlockage*> placement_blockages_;
 
-  /** Copy placement blockages that overlap any grid bin covered by this box. */
+  /** Copy placement blockages that overlap any covered grid bin. */
   void UpdatePlacementBlockages(
       std::vector<std::vector<GridBin>>& grid_bin_matrix);
 
@@ -104,7 +104,7 @@ class BoxBin {
   /** Return true when horizontal cutline candidates dominate. */
   bool IsMoreHorizontalCutlines() const;
 
-  /* If the box is smaller than a grid bin, these placement-region boundaries
+  /* If the region is smaller than a grid bin, these placement boundaries
    * define where components will be placed. */
   int left;
   int right;
@@ -150,4 +150,4 @@ class BoxBin {
 
 }  // namespace dali
 
-#endif  // DALI_PLACER_GLOBAL_PLACER_BOXBIN_H_
+#endif  // DALI_PLACER_GLOBAL_PLACER_SPREADING_REGION_H_

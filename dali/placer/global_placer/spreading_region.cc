@@ -19,7 +19,7 @@
  *
  ******************************************************************************/
 
-#include "box_bin.h"
+#include "spreading_region.h"
 
 #include <cmath>
 #include <cstdlib>
@@ -38,7 +38,7 @@ static double ComputeFillingRate(unsigned long long component_area,
   return double(component_area) / double(white_space);
 }
 
-BoxBin::BoxBin() {
+SpreadingRegion::SpreadingRegion() {
   all_terminal = false;
   cut_direction_x = false;
   total_component_area = 0;
@@ -52,7 +52,7 @@ BoxBin::BoxBin() {
   top = 0;
 }
 
-void BoxBin::update_all_terminal(
+void SpreadingRegion::update_all_terminal(
     std::vector<std::vector<GridBin>>& grid_bin_matrix) {
   GridBin* bin;
   for (int x = ll_index.x; x <= ur_index.x; x++) {
@@ -67,7 +67,7 @@ void BoxBin::update_all_terminal(
   all_terminal = true;
 }
 
-void BoxBin::UpdateComponentArea() {
+void SpreadingRegion::UpdateComponentArea() {
   /*
   int temp_total_component_area = 0;
   Component *node;
@@ -92,7 +92,7 @@ void BoxBin::UpdateComponentArea() {
   }
 }
 
-void BoxBin::UpdateComponentAreaWhiteSpace(
+void SpreadingRegion::UpdateComponentAreaWhiteSpace(
     std::vector<std::vector<GridBin>>& grid_bin_matrix) {
   total_component_area = 0;
   total_white_space = 0;
@@ -105,7 +105,7 @@ void BoxBin::UpdateComponentAreaWhiteSpace(
   filling_rate = ComputeFillingRate(total_component_area, total_white_space);
 }
 
-void BoxBin::UpdateComponentAreaWhiteSpaceFillingRate(
+void SpreadingRegion::UpdateComponentAreaWhiteSpaceFillingRate(
     std::vector<std::vector<unsigned long long>>& grid_bin_white_space_LUT,
     std::vector<std::vector<GridBin>>& grid_bin_matrix) {
   if (ll_index.x == 0) {
@@ -136,7 +136,7 @@ void BoxBin::UpdateComponentAreaWhiteSpaceFillingRate(
   filling_rate = ComputeFillingRate(total_component_area, total_white_space);
 }
 
-void BoxBin::ExpandBox(int grid_cnt_x, int grid_cnt_y) {
+void SpreadingRegion::ExpandBox(int grid_cnt_x, int grid_cnt_y) {
   if (ll_index.x == 0 && ll_index.y == 0 && ur_index.x == grid_cnt_x - 1 &&
       ur_index.y == grid_cnt_y - 1) {
     LOG(fatal) << "Reach maximum, cannot further expand\n";
@@ -147,7 +147,7 @@ void BoxBin::ExpandBox(int grid_cnt_x, int grid_cnt_y) {
   if (ur_index.y < grid_cnt_y - 1) ++ur_index.y;
 }
 
-bool BoxBin::write_box_boundary(std::string const& NameOfFile) {
+bool SpreadingRegion::write_box_boundary(std::string const& NameOfFile) {
   std::ofstream ost;
   ost.open(NameOfFile.c_str(), std::ios::app);
   if (ost.is_open() == 0) {
@@ -172,7 +172,7 @@ bool BoxBin::write_box_boundary(std::string const& NameOfFile) {
   return true;
 }
 
-bool BoxBin::WriteComponentRegion(std::string const& NameOfFile) {
+bool SpreadingRegion::WriteComponentRegion(std::string const& NameOfFile) {
   std::ofstream ost;
   ost.open(NameOfFile.c_str(), std::ios::app);
   if (ost.is_open() == 0) {
@@ -197,7 +197,7 @@ bool BoxBin::WriteComponentRegion(std::string const& NameOfFile) {
   return true;
 }
 
-void BoxBin::UpdateComponentList(
+void SpreadingRegion::UpdateComponentList(
     std::vector<std::vector<GridBin>>& grid_bin_matrix) {
   component_ptrs.clear();
   for (int x = ll_index.x; x <= ur_index.x; x++) {
@@ -212,7 +212,7 @@ void BoxBin::UpdateComponentList(
   }
 }
 
-void BoxBin::UpdateBoundaries(
+void SpreadingRegion::UpdateBoundaries(
     std::vector<std::vector<GridBin>>& grid_bin_matrix) {
   left = grid_bin_matrix[ll_index.x][ll_index.y].left;
   bottom = grid_bin_matrix[ll_index.x][ll_index.y].bottom;
@@ -220,7 +220,7 @@ void BoxBin::UpdateBoundaries(
   top = grid_bin_matrix[ur_index.x][ur_index.y].top;
 }
 
-void BoxBin::UpdatePlacementBlockages(
+void SpreadingRegion::UpdatePlacementBlockages(
     std::vector<std::vector<GridBin>>& grid_bin_matrix) {
   placement_blockages_.clear();
   std::unordered_set<const PlacementBlockage*> seen;
@@ -236,7 +236,7 @@ void BoxBin::UpdatePlacementBlockages(
   }
 }
 
-void BoxBin::UpdateWhiteSpaceAndFixedComponents(
+void SpreadingRegion::UpdateWhiteSpaceAndFixedComponents(
     const std::vector<const PlacementBlockage*>& placement_blockages) {
   placement_blockages_.clear();
   total_white_space =
@@ -262,7 +262,7 @@ void BoxBin::UpdateWhiteSpaceAndFixedComponents(
   total_white_space -= used_area;
 }
 
-void BoxBin::UpdateObsBoundary() {
+void SpreadingRegion::UpdateObsBoundary() {
   vertical_cutlines.clear();
   horizontal_cutlines.clear();
   if (placement_blockages_.empty()) {
@@ -331,11 +331,11 @@ void BoxBin::UpdateObsBoundary() {
   */
 }
 
-bool BoxBin::IsMoreHorizontalCutlines() const {
+bool SpreadingRegion::IsMoreHorizontalCutlines() const {
   return horizontal_cutlines.size() > vertical_cutlines.size();
 }
 
-bool BoxBin::WriteComponentsInBox(std::string const& NameOfFile) {
+bool SpreadingRegion::WriteComponentsInBox(std::string const& NameOfFile) {
   std::ofstream ost;
   ost.open(NameOfFile.c_str(), std::ios::app);
   if (ost.is_open() == 0) {
@@ -351,7 +351,7 @@ bool BoxBin::WriteComponentsInBox(std::string const& NameOfFile) {
   return true;
 }
 
-unsigned long long BoxBin::white_space_LUT(
+unsigned long long SpreadingRegion::white_space_LUT(
     std::vector<std::vector<unsigned long long>>& grid_bin_white_space_LUT,
     GridBinIndex& ll, GridBinIndex& ur) {
   unsigned long long white_space;
@@ -376,7 +376,7 @@ unsigned long long BoxBin::white_space_LUT(
   return white_space;
 }
 
-bool BoxBin::update_cut_index_white_space(
+bool SpreadingRegion::update_cut_index_white_space(
     std::vector<std::vector<unsigned long long>>& grid_bin_white_space_LUT,
     std::vector<std::vector<GridBin>>& grid_bin_matrix,
     GlobalLalMacroBoundaryMode macro_boundary_mode) {
@@ -467,7 +467,7 @@ bool BoxBin::update_cut_index_white_space(
   }
 }
 
-bool BoxBin::UpdateCutPointComponentLists(
+bool SpreadingRegion::UpdateCutPointComponentLists(
     unsigned long long& box1_total_white_space,
     unsigned long long& box2_total_white_space) {
   // this member function will be called only when two white spaces are not
@@ -569,8 +569,8 @@ bool BoxBin::UpdateCutPointComponentLists(
   return true;
 }
 
-bool BoxBin::UpdateCutPointComponentListsLeaf(int& cut_line_w,
-                                              int average_component_height) {
+bool SpreadingRegion::UpdateCutPointComponentListsLeaf(
+    int& cut_line_w, int average_component_height) {
   DaliExpects(total_component_area > 0,
               "Cannot split an empty leaf box by component area");
   unsigned long long component_area_low = 0;
@@ -750,7 +750,7 @@ bool BoxBin::UpdateCutPointComponentListsLeaf(int& cut_line_w,
   return true;
 }
 
-void BoxBin::Report() {
+void SpreadingRegion::Report() {
   std::string cur_direction = cut_direction_x ? "x" : "y";
   LOG(info) << "cut direction: " << cur_direction << "\n"
             << "white spaces all used by macros: " << all_terminal << "\n"

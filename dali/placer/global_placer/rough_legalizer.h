@@ -25,8 +25,8 @@
 #include <set>
 
 #include "dali/circuit/circuit.h"
-#include "dali/placer/global_placer/box_bin.h"
 #include "dali/placer/global_placer/grid_bin.h"
+#include "dali/placer/global_placer/spreading_region.h"
 
 namespace dali {
 
@@ -151,12 +151,12 @@ class LookAheadLegalizer : public RoughLegalizer {
   void UpdateLargestCluster();
   uint32_t LookUpWhiteSpace(GridBinIndex const& ll_index,
                             GridBinIndex const& ur_index);
-  uint32_t LookUpWhiteSpace(WindowQuadruple& window);
-  bool ExpandBoxByBestNeighbor(BoxBin* box);
+  uint32_t LookUpWhiteSpace(GridBinWindow& window);
+  bool ExpandBoxByBestNeighbor(SpreadingRegion* box);
   void FindMinimumBoxForLargestCluster();
-  void SplitGridBox(BoxBin& box);
-  void PlaceComponentInBox(BoxBin& box);
-  void SplitBox(BoxBin& box);
+  void SplitGridBox(SpreadingRegion& box);
+  void PlaceComponentInBox(SpreadingRegion& box);
+  void SplitBox(SpreadingRegion& box);
   bool RecursiveBisectionComponentSpreading();
   double RemoveComponentOverlap() override;
 
@@ -192,7 +192,7 @@ class LookAheadLegalizer : public RoughLegalizer {
   std::vector<std::vector<unsigned long long>> grid_bin_white_space_LUT;
 
   std::multiset<GridBinCluster, std::greater<>> cluster_set;
-  std::queue<BoxBin> queue_box_bin;
+  std::queue<SpreadingRegion> spreading_region_queue_;
 
   double update_grid_bin_state_time_ = 0;
   double cluster_overfilled_grid_bin_time_ = 0;

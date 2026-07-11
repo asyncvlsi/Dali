@@ -708,12 +708,12 @@ uint32_t LookAheadLegalizer::LookUpWhiteSpace(GridBinIndex const& ll_index,
         + grid_bin_white_space_LUT[ll_index.x-1][ll_index.y-1];
   }
 }*/
-  WindowQuadruple window = {ll_index.x, ll_index.y, ur_index.x, ur_index.y};
+  GridBinWindow window = {ll_index.x, ll_index.y, ur_index.x, ur_index.y};
   total_white_space = LookUpWhiteSpace(window);
   return total_white_space;
 }
 
-uint32_t LookAheadLegalizer::LookUpWhiteSpace(WindowQuadruple& window) {
+uint32_t LookAheadLegalizer::LookUpWhiteSpace(GridBinWindow& window) {
   uint32_t total_white_space;
   if (window.llx == 0) {
     if (window.lly == 0) {
@@ -737,13 +737,13 @@ uint32_t LookAheadLegalizer::LookUpWhiteSpace(WindowQuadruple& window) {
   return total_white_space;
 }
 
-bool LookAheadLegalizer::ExpandBoxByBestNeighbor(BoxBin* box) {
+bool LookAheadLegalizer::ExpandBoxByBestNeighbor(SpreadingRegion* box) {
   DaliExpects(box != nullptr, "Cannot expand a null LAL box");
-  std::vector<BoxBin> candidates;
+  std::vector<SpreadingRegion> candidates;
   candidates.reserve(4);
 
   auto add_candidate = [&](int dlx, int dly, int durx, int dury) {
-    BoxBin candidate = *box;
+    SpreadingRegion candidate = *box;
     candidate.ll_index.x += dlx;
     candidate.ll_index.y += dly;
     candidate.ur_index.x += durx;
@@ -761,7 +761,7 @@ bool LookAheadLegalizer::ExpandBoxByBestNeighbor(BoxBin* box) {
     return false;
   }
 
-  auto score = [&](const BoxBin& candidate) {
+  auto score = [&](const SpreadingRegion& candidate) {
     double overflow =
         std::max(0.0, candidate.filling_rate - placement_density_);
     double area = double(candidate.ur_index.x - candidate.ll_index.x + 1) *
@@ -772,10 +772,11 @@ bool LookAheadLegalizer::ExpandBoxByBestNeighbor(BoxBin* box) {
     return overflow * 1e9 + area + aspect_penalty;
   };
 
-  auto best_it = std::min_element(candidates.begin(), candidates.end(),
-                                  [&](const BoxBin& lhs, const BoxBin& rhs) {
-                                    return score(lhs) < score(rhs);
-                                  });
+  auto best_it = std::min_element(
+      candidates.begin(), candidates.end(),
+      [&](const SpreadingRegion& lhs, const SpreadingRegion& rhs) {
+        return score(lhs) < score(rhs);
+      });
   box->ll_index = best_it->ll_index;
   box->ur_index = best_it->ur_index;
   box->total_component_area = best_it->total_component_area;
@@ -797,12 +798,12 @@ void LookAheadLegalizer::FindMinimumBoxForLargestCluster() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 
-  // clear the queue_box_bin
-  while (!queue_box_bin.empty()) queue_box_bin.pop();
+  // clear the spreading_region_queue_
+  while (!spreading_region_queue_.empty()) spreading_region_queue_.pop();
   if (cluster_set.empty()) return;
 
   // Part 1
-  BoxBin R;
+  SpreadingRegion R;
   R.cut_direction_x = false;
 
   R.ll_index.x = grid_cnt_x - 1;
@@ -879,7 +880,7 @@ void LookAheadLegalizer::FindMinimumBoxForLargestCluster() {
     R.UpdatePlacementBlockages(grid_bin_mesh);
     R.UpdateObsBoundary();
   }
-  queue_box_bin.push(R);
+  spreading_region_queue_.push(R);
   ++last_hotspot_count_;
   last_max_hotspot_overflow_ =
       std::max(last_max_hotspot_overflow_, last_hotspot_debug_.overflow);
@@ -897,9 +898,9 @@ void LookAheadLegalizer::FindMinimumBoxForLargestCluster() {
              << "to " << last_hotspot_debug_.region_ur << ", filling rate "
              << last_hotspot_debug_.region_filling_rate << "\n";
   // LOG(info)   << "Bounding box total white space: " <<
-  // queue_box_bin.front().total_white_space << "\n"; LOG(info) <<
+  // spreading_region_queue_.front().total_white_space << "\n"; LOG(info) <<
   // "Bounding box total component area: " <<
-  // queue_box_bin.front().total_component_area
+  // spreading_region_queue_.front().total_component_area
   // << "\n";
 
   for (int kx = R.ll_index.x; kx <= R.ur_index.x; ++kx) {
@@ -915,11 +916,11 @@ void LookAheadLegalizer::FindMinimumBoxForLargestCluster() {
 /****
  *
  *
- * @param box: the BoxBin which needs to be further splitted into two sub-boxes
+ * @param box: region to partition into two child regions
  */
-void LookAheadLegalizer::SplitGridBox(BoxBin& box) {
+void LookAheadLegalizer::SplitGridBox(SpreadingRegion& box) {
   // 1. create two sub-boxes
-  BoxBin box1, box2;
+  SpreadingRegion box1, box2;
   // the first sub-box should have the same lower left corner as the original
   // box
   box1.left = box.left;
@@ -951,7 +952,7 @@ void LookAheadLegalizer::SplitGridBox(BoxBin& box) {
       box2.component_ptrs = box.component_ptrs;
       box2.total_component_area = box.total_component_area;
       box2.UpdateObsBoundary();
-      queue_box_bin.push(box2);
+      spreading_region_queue_.push(box2);
     } else if (double(box2.total_white_space) / (double)box.total_white_space <=
                0.01) {
       box1.ll_point = box.ll_point;
@@ -959,7 +960,7 @@ void LookAheadLegalizer::SplitGridBox(BoxBin& box) {
       box1.component_ptrs = box.component_ptrs;
       box1.total_component_area = box.total_component_area;
       box1.UpdateObsBoundary();
-      queue_box_bin.push(box1);
+      spreading_region_queue_.push(box1);
     } else {
       box.UpdateCutPointComponentLists(box1.total_white_space,
                                        box2.total_white_space);
@@ -973,8 +974,8 @@ void LookAheadLegalizer::SplitGridBox(BoxBin& box) {
       box2.total_component_area = box.total_component_area_high;
       box1.UpdateObsBoundary();
       box2.UpdateObsBoundary();
-      queue_box_bin.push(box1);
-      queue_box_bin.push(box2);
+      spreading_region_queue_.push(box1);
+      spreading_region_queue_.push(box2);
     }
   } else {
     // box.Report();
@@ -993,7 +994,7 @@ void LookAheadLegalizer::SplitGridBox(BoxBin& box) {
       box2.component_ptrs = box.component_ptrs;
       box2.total_component_area = box.total_component_area;
       box2.UpdateObsBoundary();
-      queue_box_bin.push(box2);
+      spreading_region_queue_.push(box2);
     } else if (double(box2.total_white_space) / (double)box.total_white_space <=
                0.01) {
       box1.ll_point = box.ll_point;
@@ -1001,7 +1002,7 @@ void LookAheadLegalizer::SplitGridBox(BoxBin& box) {
       box1.component_ptrs = box.component_ptrs;
       box1.total_component_area = box.total_component_area;
       box1.UpdateObsBoundary();
-      queue_box_bin.push(box1);
+      spreading_region_queue_.push(box1);
     } else {
       box.UpdateCutPointComponentLists(box1.total_white_space,
                                        box2.total_white_space);
@@ -1015,13 +1016,13 @@ void LookAheadLegalizer::SplitGridBox(BoxBin& box) {
       box2.total_component_area = box.total_component_area_high;
       box1.UpdateObsBoundary();
       box2.UpdateObsBoundary();
-      queue_box_bin.push(box1);
-      queue_box_bin.push(box2);
+      spreading_region_queue_.push(box1);
+      spreading_region_queue_.push(box2);
     }
   }
 }
 
-void LookAheadLegalizer::PlaceComponentInBox(BoxBin& box) {
+void LookAheadLegalizer::PlaceComponentInBox(SpreadingRegion& box) {
   int sz = static_cast<int>(box.component_ptrs.size());
   std::vector<std::pair<Component*, double>> index_loc_list_x(sz);
   std::vector<std::pair<Component*, double>> index_loc_list_y(sz);
@@ -1045,10 +1046,11 @@ void LookAheadLegalizer::PlaceComponentInBox(BoxBin& box) {
                         /*scale_x=*/false, affine_scaling_weight_);
 }
 
-void LookAheadLegalizer::SplitBox(BoxBin& box) {
+void LookAheadLegalizer::SplitBox(SpreadingRegion& box) {
   bool flag_bisection_complete;
-  int dominating_box_flag;  // indicate whether there is a dominating BoxBin
-  BoxBin box1, box2;
+  int dominating_box_flag;  // indicate whether there is a dominating
+                            // SpreadingRegion
+  SpreadingRegion box1, box2;
   box1.ll_index = box.ll_index;
   box2.ur_index = box.ur_index;
   // this part of code can be simplified, but after which the code might be
@@ -1141,8 +1143,8 @@ if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
 "\n"; LOG(info)   << box2.left << " " << box2.bottom << "\n";
 }*/
 
-    queue_box_bin.push(box1);
-    queue_box_bin.push(box2);
+    spreading_region_queue_.push(box1);
+    spreading_region_queue_.push(box2);
     // box1.write_box_boundary("first_bounding_box.txt", grid_bin_width,
     // grid_bin_height, LEFT, BOTTOM);
     // box2.write_box_boundary("first_bounding_box.txt", grid_bin_width,
@@ -1159,7 +1161,7 @@ if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
 "\n"; LOG(info)   << box2.left << " " << box2.bottom << "\n";
 }*/
 
-    queue_box_bin.push(box2);
+    spreading_region_queue_.push(box2);
     // box2.write_box_boundary("first_bounding_box.txt", grid_bin_width,
     // grid_bin_height, LEFT, BOTTOM);
     // box2.WriteComponentRegion("first_cell_bounding_box.txt");
@@ -1173,7 +1175,7 @@ if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
 "\n"; LOG(info)   << box1.left << " " << box1.bottom << "\n";
 }*/
 
-    queue_box_bin.push(box1);
+    spreading_region_queue_.push(box1);
     // box1.write_box_boundary("first_bounding_box.txt", grid_bin_width,
     // grid_bin_height, LEFT, BOTTOM);
     // box1.WriteComponentRegion("first_cell_bounding_box.txt");
@@ -1189,12 +1191,12 @@ bool LookAheadLegalizer::RecursiveBisectionComponentSpreading() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 
-  while (!queue_box_bin.empty()) {
-    // std::cout << queue_box_bin.size() << "\n";
-    if (queue_box_bin.empty()) break;
-    BoxBin& box = queue_box_bin.front();
+  while (!spreading_region_queue_.empty()) {
+    // std::cout << spreading_region_queue_.size() << "\n";
+    if (spreading_region_queue_.empty()) break;
+    SpreadingRegion& box = spreading_region_queue_.front();
     if (box.total_component_area == 0 || box.component_ptrs.empty()) {
-      queue_box_bin.pop();
+      spreading_region_queue_.pop();
       continue;
     }
     // start moving cells to the box, if
@@ -1205,7 +1207,7 @@ bool LookAheadLegalizer::RecursiveBisectionComponentSpreading() {
       if (box.HasPlacementBlockages()) {  // if there is a fixed macro inside a
                                           // box, keep splitting the box
         SplitGridBox(box);
-        queue_box_bin.pop();
+        spreading_region_queue_.pop();
         continue;
       }
       /* if no terminals inside a box, do component placement inside the box */
@@ -1215,7 +1217,7 @@ bool LookAheadLegalizer::RecursiveBisectionComponentSpreading() {
     } else {
       SplitBox(box);
     }
-    queue_box_bin.pop();
+    spreading_region_queue_.pop();
   }
 
   elapsed_time.RecordEndTime();
