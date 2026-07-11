@@ -910,28 +910,21 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
 }
 
 void Dali::AddWellTaps(phydb::Macro* cell, double cell_interval_microns,
-                       bool is_checker_board) {
-  well_tap_placer_ = std::make_unique<WellTapPlacer>(phy_db_ptr_);
-
-  well_tap_placer_->FetchRowsFromPhyDB();
-  well_tap_placer_->InitializeWhiteSpaceInRows();
-
-  well_tap_placer_->SetWellTapMacro(cell);
-  well_tap_placer_->SetWellTapInterval(cell_interval_microns);
-  well_tap_placer_->SetWellTapMinDistanceToBoundary(0.1);
-  well_tap_placer_->UseCheckerBoardMode(is_checker_board);
-
-  well_tap_placer_->AddWellTap();
-  well_tap_placer_->PlotAvailSpace();
-
-  well_tap_placer_->ExportWellTapCellsToPhyDB();
-  well_tap_placer_.reset();
+                       bool checkerboard_enabled) {
+  StandardRowWellTapInserter tap_inserter(phy_db_ptr_);
+  tap_inserter.LoadRows();
+  tap_inserter.MarkFixedComponentSites();
+  tap_inserter.SetTapMacro(cell);
+  tap_inserter.SetMaxTapInterval(cell_interval_microns);
+  tap_inserter.SetCheckerboardEnabled(checkerboard_enabled);
+  tap_inserter.InsertTaps();
+  tap_inserter.ExportToPhyDB();
 }
 
 bool Dali::AddWellTaps(int argc, char** argv) {
   phydb::Macro* cell = nullptr;
   double cell_interval_microns = -1;
-  bool is_checker_board = false;
+  bool checkerboard_enabled = false;
   for (int i = 1; i < argc;) {
     std::string arg(argv[i++]);
     if (arg == "-cell" && i < argc) {
@@ -954,7 +947,7 @@ bool Dali::AddWellTaps(int argc, char** argv) {
         return false;
       }
     } else if (arg == "-checker_board") {
-      is_checker_board = true;
+      checkerboard_enabled = true;
     } else {
       std::cout << "Unknown flag\n";
       std::cout << arg << "\n";
@@ -971,7 +964,7 @@ bool Dali::AddWellTaps(int argc, char** argv) {
     return false;
   }
 
-  AddWellTaps(cell, cell_interval_microns, is_checker_board);
+  AddWellTaps(cell, cell_interval_microns, checkerboard_enabled);
   return true;
 }
 

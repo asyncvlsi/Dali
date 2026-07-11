@@ -32,13 +32,13 @@
 #include "dali/placer/legalizer/tetris_legalizer.h"
 
 /****Well Legalizer****/
-#include "dali/placer/well_legalizer/gridded_row_legalizer.h"
 #include "dali/placer/well_legalizer/gridded_cell_well_legalizer.h"
+#include "dali/placer/well_legalizer/gridded_row_legalizer.h"
 #include "dali/placer/well_legalizer/well_legalizer.h"
 
 /****Well Placement Flow****/
 #include "dali/placer/well_place_flow/well_place_flow.h"
-#include "dali/placer/well_tap_placer/well_tap_placer.h"
+#include "dali/placer/well_tap_inserter/standard_row_well_tap_inserter.h"
 
 /****Filler Cell Placer****/
 #include "dali/placer/filler_cell_placer/filler_cell_placer.h"

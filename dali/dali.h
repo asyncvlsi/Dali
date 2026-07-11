@@ -211,7 +211,6 @@ class Dali {
   ExtendedTetrisLegalizer legalizer_;
   DetailedPlacer detailed_placer_;
   GriddedCellWellLegalizer well_legalizer_;
-  std::unique_ptr<WellTapPlacer> well_tap_placer_;
   FillerCellPlacer filler_cell_placer_;
   std::unique_ptr<IoPlacer> io_placer_;
   std::unique_ptr<StarPiModelEstimator> rc_estimator;
