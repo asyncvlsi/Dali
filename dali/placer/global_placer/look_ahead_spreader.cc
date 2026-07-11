@@ -25,11 +25,20 @@
 #include <cmath>
 #include <iterator>
 #include <limits>
+#include <utility>
 
 #include "dali/common/elapsed_time.h"
 #include "dali/common/logging.h"
 
 namespace dali {
+
+LookAheadSpreader::LookAheadSpreader(
+    Circuit* circuit,
+    std::unique_ptr<PlacementCapacityModel> capacity_model)
+    : GlobalSpreader(circuit), capacity_model_(std::move(capacity_model)) {
+  DaliExpects(capacity_model_ != nullptr,
+              "Look-ahead spreader requires a capacity model");
+}
 
 /** Keep a component center inside a target leaf box.
  *
@@ -457,9 +466,11 @@ void LookAheadSpreader::UpdateGridBinState() {
           grid_bin.over_fill = true;
         }
       } else {
-        grid_bin.filling_rate =
-            double(grid_bin.component_area) / double(grid_bin.white_space);
-        if (grid_bin.filling_rate > placement_density_) {
+        PlacementCapacity capacity = capacity_model_->Evaluate(
+            grid_bin.component_ptrs, grid_bin.Width(), grid_bin.Height(),
+            grid_bin.white_space, placement_density_);
+        grid_bin.filling_rate = capacity.Utilization();
+        if (capacity.IsOverfilled()) {
           grid_bin.over_fill = true;
         }
       }

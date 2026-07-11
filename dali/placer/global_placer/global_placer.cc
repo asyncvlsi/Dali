@@ -109,7 +109,8 @@ void GlobalPlacer::InitializePlacementEngines() {
   optimizer_->SetShouldSaveIntermediateResult(should_save_intermediate_result_);
   optimizer_->Initialize();
 
-  auto look_ahead_spreader = std::make_unique<LookAheadSpreader>(ckt_ptr_);
+  auto look_ahead_spreader = std::make_unique<LookAheadSpreader>(
+      ckt_ptr_, std::make_unique<AreaCapacityModel>());
   look_ahead_spreader->SetGridSchedule(grid_schedule_);
   look_ahead_spreader->SetExpansionMode(lal_expansion_mode_);
   look_ahead_spreader->SetHotspotMode(lal_hotspot_mode_);
