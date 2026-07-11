@@ -54,7 +54,8 @@ class AreaCapacityModel : public PlacementCapacityModel {
 /** Capacity model that accounts for gridded rows, wells, and row completion. */
 class GriddedPlacementCapacityModel : public PlacementCapacityModel {
  public:
-  explicit GriddedPlacementCapacityModel(GriddedCapacityConfig config);
+  explicit GriddedPlacementCapacityModel(
+      GriddedCapacityConfig config, double demand_normalization = 1.0);
 
   PlacementCapacity Evaluate(const std::vector<Component*>& components,
                              int region_width, int region_height,
@@ -64,6 +65,7 @@ class GriddedPlacementCapacityModel : public PlacementCapacityModel {
 
  private:
   GriddedCapacityConfig config_;
+  double demand_normalization_ = 1.0;
 };
 
 }  // namespace dali

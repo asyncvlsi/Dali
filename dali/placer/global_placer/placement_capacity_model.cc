@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <limits>
 
+#include "dali/common/helper.h"
+
 namespace dali {
 
 double PlacementCapacity::Utilization() const {
@@ -40,8 +42,11 @@ PlacementCapacity AreaCapacityModel::Evaluate(
 }
 
 GriddedPlacementCapacityModel::GriddedPlacementCapacityModel(
-    GriddedCapacityConfig config)
-    : config_(config) {}
+    GriddedCapacityConfig config, double demand_normalization)
+    : config_(config), demand_normalization_(demand_normalization) {
+  DaliExpects(demand_normalization_ > 0.0,
+              "Gridded demand normalization must be positive");
+}
 
 PlacementCapacity GriddedPlacementCapacityModel::Evaluate(
     const std::vector<Component*>& components, int region_width,
@@ -61,11 +66,21 @@ PlacementCapacity GriddedPlacementCapacityModel::Evaluate(
       components, region_width, region_height, whitespace_area);
 
   PlacementCapacity result;
-  result.demand = static_cast<double>(estimate.required_gridded_area);
+  result.demand = static_cast<double>(estimate.required_gridded_area) /
+                  demand_normalization_;
   result.capacity = static_cast<double>(estimate.available_gridded_area);
   // The estimator has already applied target density to row width/capacity.
   result.target_utilization = 1.0;
-  return result;
+
+  PlacementCapacity area_capacity = AreaCapacityModel().Evaluate(
+      components, region_width, region_height, whitespace_area,
+      target_density, purpose);
+  double gridded_pressure = result.Utilization();
+  double area_pressure =
+      area_capacity.Utilization() / area_capacity.target_utilization;
+  // Well-aware capacity is an additional physical constraint. It may require
+  // a larger spreading region, but must never relax the raw density target.
+  return gridded_pressure > area_pressure ? result : area_capacity;
 }
 
 }  // namespace dali

@@ -84,6 +84,10 @@ class GriddedCellWellLegalizer : public Placer {
   /** Build the capacity model shared by global and final legalization. */
   GriddedCapacityConfig BuildGriddedCapacityConfig(double target_density);
 
+  /** Calibrate gridded demand so target density keeps its raw-area meaning. */
+  double EstimateGriddedDemandNormalization(
+      const GriddedCapacityConfig& config) const;
+
   /** Cache component locations before legalization. */
   void SaveInitialComponentLocation();
   /** Restore component locations and orientations saved before legalization. */

@@ -623,8 +623,11 @@ bool Dali::RunGlobalPlacementStage() {
       ConfigureWellLegalizer();
       GriddedCapacityConfig capacity_config =
           well_legalizer_.BuildGriddedCapacityConfig(target_density_);
+      double demand_normalization =
+          well_legalizer_.EstimateGriddedDemandNormalization(capacity_config);
       gb_placer_.SetCapacityModel(
-          std::make_shared<GriddedPlacementCapacityModel>(capacity_config));
+          std::make_shared<GriddedPlacementCapacityModel>(
+              capacity_config, demand_normalization));
     }
     if (!gb_placer_.StartPlacement()) {
       LOG(error) << "Global placement failed\n";

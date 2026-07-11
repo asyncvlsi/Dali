@@ -13,6 +13,7 @@
 #include <gtest/gtest.h>
 
 #include "dali/circuit/circuit.h"
+#include "dali/placer/global_placer/placement_capacity_model.h"
 
 namespace dali {
 
@@ -181,6 +182,35 @@ TEST_F(GriddedCapacityEstimatorTest, IgnoresFixedComponents) {
 
   EXPECT_EQ(estimate.raw_component_area, 40);
   EXPECT_EQ(estimate.estimated_row_count, 1);
+}
+
+TEST_F(GriddedCapacityEstimatorTest, NormalizesGriddedRegionalPressure) {
+  std::vector<Component*> components = {AddComponent("cell", 4, 4, 6)};
+  GriddedCapacityConfig config;
+  config.reserved_width = 2;
+  GriddedPlacementCapacityModel model(config, 2.0);
+
+  PlacementCapacity capacity = model.Evaluate(
+      components, 10, 10, 100, 1.0,
+      CapacityEvaluationPurpose::kSpreadingRegion);
+
+  EXPECT_DOUBLE_EQ(capacity.Utilization(), 0.5);
+  EXPECT_DOUBLE_EQ(capacity.target_utilization, 1.0);
+}
+
+TEST_F(GriddedCapacityEstimatorTest, NeverRelaxesRawDensityConstraint) {
+  std::vector<Component*> components = {AddComponent("cell", 4, 4, 6)};
+  GriddedCapacityConfig config;
+  config.reserved_width = 2;
+  GriddedPlacementCapacityModel model(config, 10.0);
+
+  PlacementCapacity capacity = model.Evaluate(
+      components, 10, 10, 100, 0.5,
+      CapacityEvaluationPurpose::kSpreadingRegion);
+
+  EXPECT_DOUBLE_EQ(capacity.demand, 40.0);
+  EXPECT_DOUBLE_EQ(capacity.capacity, 100.0);
+  EXPECT_DOUBLE_EQ(capacity.target_utilization, 0.5);
 }
 
 }  // namespace dali

@@ -140,6 +140,58 @@ GriddedCellWellLegalizer::BuildGriddedCapacityConfig(double target_density) {
   return config;
 }
 
+double GriddedCellWellLegalizer::EstimateGriddedDemandNormalization(
+    const GriddedCapacityConfig& config) const {
+  DaliExpects(ckt_ptr_ != nullptr,
+              "Cannot calibrate gridded capacity without a circuit");
+
+  int requested_row_width =
+      max_row_width_ > 0
+          ? max_row_width_
+          : static_cast<int>(std::round(2.0 * max_unplug_length_));
+  int column_pitch = requested_row_width + well_spacing_;
+  int column_count = std::max(
+      1, static_cast<int>(std::ceil(RegionWidth() / double(column_pitch))));
+  int representative_row_width =
+      std::max(1, RegionWidth() / column_count - well_spacing_);
+
+  std::vector<Component*> movable_components;
+  movable_components.reserve(ckt_ptr_->Components().size());
+  unsigned long long raw_component_area = 0;
+  for (Component& component : ckt_ptr_->Components()) {
+    if (!component.IsMovable()) continue;
+    movable_components.push_back(&component);
+    raw_component_area += component.Area();
+  }
+  if (raw_component_area == 0) return 1.0;
+
+  double raw_utilization = ckt_ptr_->WhiteSpaceUsage();
+  unsigned long long whitespace_area = static_cast<unsigned long long>(
+      std::llround(raw_component_area / raw_utilization));
+  GriddedCapacityEstimate estimate = GriddedCapacityEstimator(config).Estimate(
+      movable_components, representative_row_width, RegionHeight(),
+      whitespace_area);
+  if (estimate.available_gridded_area == 0) return 1.0;
+
+  double raw_pressure = raw_component_area /
+                        (static_cast<double>(whitespace_area) *
+                         config.target_density);
+  double gridded_pressure =
+      estimate.required_gridded_area /
+      static_cast<double>(estimate.available_gridded_area);
+  if (raw_pressure <= 0.0 || gridded_pressure <= 0.0) return 1.0;
+
+  double normalization = gridded_pressure / raw_pressure;
+  LOG(info) << "  Gridded capacity calibration:\n"
+            << "    representative row width   : "
+            << representative_row_width << "\n"
+            << "    raw pressure                : " << raw_pressure << "\n"
+            << "    gridded pressure            : " << gridded_pressure
+            << "\n"
+            << "    demand normalization        : " << normalization << "\n";
+  return normalization;
+}
+
 void GriddedCellWellLegalizer::SaveInitialComponentLocation() {
   component_init_locations_ = CaptureComponentPlacement();
 }
