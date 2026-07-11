@@ -216,6 +216,8 @@ void Dali::ShowParamsList() {
             << "  enable_end_cap_cell: " << enable_end_cap_cell_ << "\n"
             << "  enable_gridded_global_capacity: "
             << enable_gridded_global_capacity_ << "\n"
+            << "  enable_gridded_stripe_balancing: "
+            << enable_gridded_stripe_balancing_ << "\n"
             << "  enable_shrink_off_grid_die_area: "
             << enable_shrink_off_grid_die_area_ << "\n"
             << "  global_initializer: " << static_cast<int>(global_initializer_)
@@ -294,6 +296,8 @@ void Dali::LoadParamsFromConfig() {
                  &enable_end_cap_cell_);
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_global_capacity"),
                  &enable_gridded_global_capacity_);
+  LoadBoolConfig(ConfigName(prefix_, "enable_gridded_stripe_balancing"),
+                 &enable_gridded_stripe_balancing_);
   LoadBoolConfig(ConfigName(prefix_, "enable_shrink_off_grid_die_area"),
                  &enable_shrink_off_grid_die_area_);
   param_name = ConfigName(prefix_, "global_initializer");
@@ -394,6 +398,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       enable_filler_cell_,
       enable_end_cap_cell_,
       enable_gridded_global_capacity_,
+      enable_gridded_stripe_balancing_,
       enable_shrink_off_grid_die_area_,
       global_initializer_,
       global_anchor_schedule_,
@@ -727,6 +732,8 @@ void Dali::ConfigureWellLegalizer() {
   well_legalizer_.SetMaxRowWidth(max_row_width_);
   well_legalizer_.SetStripePartitionMode(
       static_cast<int>(well_legalization_mode_));
+  well_legalizer_.SetEnableStripeBalancing(
+      enable_gridded_stripe_balancing_);
   well_legalizer_.SetSnapshotCallback(
       [this](const std::string& id, const std::string& label,
              const std::string& group, const std::string& subgroup,

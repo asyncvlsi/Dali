@@ -35,3 +35,10 @@ add_test(NAME gridded_capacity_estimator_test
          COMMAND gridded_capacity_estimator_test)
 set_tests_properties(gridded_capacity_estimator_test
                      PROPERTIES LABELS "unit;placer;well_legalizer")
+
+add_executable(gridded_stripe_balancer_test gridded_stripe_balancer_test.cc)
+target_link_libraries(gridded_stripe_balancer_test
+                      PRIVATE dalilib ${DALI_GTEST_MAIN})
+add_test(NAME gridded_stripe_balancer_test COMMAND gridded_stripe_balancer_test)
+set_tests_properties(gridded_stripe_balancer_test
+                     PROPERTIES LABELS "unit;placer;well_legalizer")

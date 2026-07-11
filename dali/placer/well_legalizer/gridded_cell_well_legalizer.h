@@ -72,6 +72,11 @@ class GriddedCellWellLegalizer : public Placer {
   /** Set stripe partitioning mode. */
   void SetStripePartitionMode(int mode) { stripe_mode_ = mode; }
 
+  /** Enable capacity-aware reassignment between neighboring stripes. */
+  void SetEnableStripeBalancing(bool enable) {
+    enable_stripe_balancing_ = enable;
+  }
+
   /** Set maximum legalized row width in microns. */
   void SetMaxRowWidth(double max_row_width_microns);
 
@@ -172,6 +177,8 @@ class GriddedCellWellLegalizer : public Placer {
                     int iteration = -1);
   /** Retry strict partitioning with last-column scavenging when needed. */
   bool RetryMovableCellLegalizationWithScavenging();
+  /** Retry strict clustering after balancing measured stripe overflow. */
+  bool RetryMovableCellLegalizationWithBalancing();
   /** Log why a stripe could not be legalized inside its assigned whitespace. */
   void LogStripeLegalizationFailure(const StripeColumn& col,
                                     const Stripe& stripe, int column_index,
@@ -210,6 +217,7 @@ class GriddedCellWellLegalizer : public Placer {
   /**** stripe parameters ****/
   int stripe_mode_ = 0;
   int max_row_width_ = -1;
+  bool enable_stripe_balancing_ = false;
   WellSpacePartitioner space_partitioner_;
   GriddedDetailedPlacer gridded_detailed_placer_;
   SnapshotCallback snapshot_callback_;

@@ -28,6 +28,7 @@
 #include "dali/common/helper.h"
 #include "dali/common/placement_metrics.h"
 #include "dali/placer/well_legalizer/stripe_helper.h"
+#include "dali/placer/well_legalizer/gridded_stripe_balancer.h"
 #include "dali/placer/well_legalizer/well_geometry.h"
 #include "dali/placer/well_legalizer/well_geometry_exporter.h"
 
@@ -1131,12 +1132,47 @@ bool GriddedCellWellLegalizer::RetryMovableCellLegalizationWithScavenging() {
   LOG(warning) << "Strict well legalization failed; retry with scavenge mode\n";
   int previous_stripe_mode = stripe_mode_;
   stripe_mode_ = int(WellPartitionMode::kScavenge);
-  snapshot_attempt_ = 1;
+  ++snapshot_attempt_;
   RestoreInitialComponentLocation();
   InitializeWellLegalizer();
   bool is_success = RunMovableCellLegalizationStages();
   stripe_mode_ = previous_stripe_mode;
   return is_success;
+}
+
+bool GriddedCellWellLegalizer::RetryMovableCellLegalizationWithBalancing() {
+  if (!enable_stripe_balancing_) return false;
+
+  LOG(warning) << "Strict well legalization failed; rebalance neighboring "
+                  "stripes using observed row overflow\n";
+  GriddedCapacityConfig capacity_config = BuildGriddedCapacityConfig(1.0);
+  unsigned long long previous_overflow =
+      std::numeric_limits<unsigned long long>::max();
+  int max_rounds = std::max(1, static_cast<int>(col_list_.size()));
+  for (int round = 0; round < max_rounds; ++round) {
+    RestoreInitialComponentLocation();
+    GriddedStripeBalanceResult result =
+        GriddedStripeBalancer(ckt_ptr_, capacity_config)
+            .BalanceObservedOverflow(&col_list_);
+    LOG(info) << "  Gridded stripe balancing round " << round + 1 << ":\n"
+              << "    moved components            : "
+              << result.moved_component_count << "\n"
+              << "    overflowing stripes before : "
+              << result.overflowing_stripes_before << "\n"
+              << "    overflowing stripes after  : "
+              << result.overflowing_stripes_after << "\n"
+              << "    overflow area before/after : "
+              << result.overflow_area_before << " / "
+              << result.overflow_area_after << "\n";
+    if (result.moved_component_count == 0 ||
+        result.overflow_area_before >= previous_overflow) {
+      return false;
+    }
+    previous_overflow = result.overflow_area_before;
+    ++snapshot_attempt_;
+    if (RunMovableCellLegalizationStages()) return true;
+  }
+  return false;
 }
 
 void GriddedCellWellLegalizer::RunWellTapStage() {
@@ -1186,6 +1222,9 @@ bool GriddedCellWellLegalizer::StartPlacement() {
   InitializeWellLegalizer();
   LogEstimatedGriddedCapacity();
   bool is_success = RunMovableCellLegalizationStages();
+  if (!is_success) {
+    is_success = RetryMovableCellLegalizationWithBalancing();
+  }
   if (!is_success) {
     is_success = RetryMovableCellLegalizationWithScavenging();
   }
