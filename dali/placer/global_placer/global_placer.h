@@ -26,7 +26,7 @@
 #include <vector>
 
 #include "dali/placer/global_placer/hpwl_optimizer.h"
-#include "dali/placer/global_placer/random_initializer.h"
+#include "dali/placer/global_placer/placement_initializer.h"
 #include "dali/placer/global_placer/rough_legalizer.h"
 #include "dali/placer/placer.h"
 
@@ -57,7 +57,7 @@ class GlobalPlacer : public Placer {
 
   /** Select how movable component locations are initialized before placement.
    */
-  void SetInitializerType(RandomInitializerType initializer_type);
+  void SetInitializerType(PlacementInitializerType initializer_type);
 
   /** Select how anchor pseudo-net strength changes across iterations. */
   void SetAnchorSchedule(GlobalAnchorSchedule schedule);
@@ -131,7 +131,8 @@ class GlobalPlacer : public Placer {
   void PrintEndStatement(std::string const& name_of_process,
                          bool is_success) override;
 
-  RandomInitializerType initializer_type_ = RandomInitializerType::UNIFORM;
+  PlacementInitializerType initializer_type_ =
+      PlacementInitializerType::kUniform;
   GlobalAnchorSchedule anchor_schedule_ = GlobalAnchorSchedule::kDali;
   GlobalGridSchedule grid_schedule_ = GlobalGridSchedule::kDali;
   GlobalLalExpansionMode lal_expansion_mode_ =

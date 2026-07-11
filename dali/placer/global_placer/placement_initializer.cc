@@ -19,7 +19,7 @@
  *
  ******************************************************************************/
 
-#include "random_initializer.h"
+#include "placement_initializer.h"
 
 #include <algorithm>
 #include <cmath>
@@ -54,29 +54,30 @@ static double HaltonFraction(int index, int base) {
   return result;
 }
 
-RandomInitializer::RandomInitializer(Circuit* ckt_ptr, uint32_t random_seed)
+PlacementInitializer::PlacementInitializer(Circuit* ckt_ptr,
+                                           uint32_t random_seed)
     : ckt_ptr_(ckt_ptr), random_seed_(random_seed) {
   DaliExpects(ckt_ptr_ != nullptr, "Ckt is a null ptr?");
-  initializer_name_ = "abstract random";
+  initializer_name_ = "placement";
 }
 
-void RandomInitializer::SetShouldSaveIntermediateResult(
+void PlacementInitializer::SetShouldSaveIntermediateResult(
     bool should_save_intermediate_result) {
   should_save_intermediate_result_ = should_save_intermediate_result;
 }
 
-void RandomInitializer::PrintStartStatement() {
+void PlacementInitializer::PrintStartStatement() {
   elapsed_time_.RecordStartTime();
   RecordPlacementMetric("initialization.before", ckt_ptr_->WeightedHPWL());
   LOG(info) << "  Component location initialization:\n"
             << "    HPWL before, " << ckt_ptr_->WeightedHPWL() << "\n";
 }
 
-void RandomInitializer::SetParameters(
+void PlacementInitializer::SetParameters(
     [[maybe_unused]] std::unordered_map<std::string, std::string>&
         params_dict) {}
 
-void RandomInitializer::PrintEndStatement() {
+void PlacementInitializer::PrintEndStatement() {
   LOG(debug) << "    " << initializer_name_ << " initialization complete\n";
   RecordPlacementMetric("initialization.after", ckt_ptr_->WeightedHPWL());
   LOG(info) << "    HPWL after, " << ckt_ptr_->WeightedHPWL() << "\n";
@@ -88,11 +89,11 @@ void RandomInitializer::PrintEndStatement() {
 }
 
 UniformInitializer::UniformInitializer(Circuit* ckt_ptr, uint32_t random_seed)
-    : RandomInitializer(ckt_ptr, random_seed) {
+    : PlacementInitializer(ckt_ptr, random_seed) {
   initializer_name_ = "uniform";
 }
 
-void UniformInitializer::RandomPlace() {
+void UniformInitializer::InitializeLocations() {
   PrintStartStatement();
 
   int region_width = ckt_ptr_->RegionWidth();
@@ -121,7 +122,7 @@ void UniformInitializer::RandomPlace() {
 }
 
 GaussianInitializer::GaussianInitializer(Circuit* ckt_ptr, uint32_t random_seed)
-    : RandomInitializer(ckt_ptr, random_seed) {
+    : PlacementInitializer(ckt_ptr, random_seed) {
   initializer_name_ = "Gaussian";
 }
 
@@ -138,7 +139,7 @@ void GaussianInitializer::SetParameters(
   }
 }
 
-void GaussianInitializer::RandomPlace() {
+void GaussianInitializer::InitializeLocations() {
   PrintStartStatement();
   // initialize the random number generator
   std::minstd_rand0 generator{random_seed_};
@@ -317,11 +318,11 @@ void InitializerGridBin::InitializeComponentLocation(uint32_t random_seed,
 
 MonteCarloInitializer::MonteCarloInitializer(Circuit* ckt_ptr,
                                              uint32_t random_seed)
-    : RandomInitializer(ckt_ptr, random_seed) {
+    : PlacementInitializer(ckt_ptr, random_seed) {
   initializer_name_ = "Monte Carlo";
 }
 
-void MonteCarloInitializer::RandomPlace() {
+void MonteCarloInitializer::InitializeLocations() {
   PrintStartStatement();
 
   InitializeGridBin();
@@ -460,7 +461,7 @@ DensityAwareInitializer::DensityAwareInitializer(Circuit* ckt_ptr,
   initializer_name_ = "density-aware";
 }
 
-void DensityAwareInitializer::RandomPlace() {
+void DensityAwareInitializer::InitializeLocations() {
   PrintStartStatement();
 
   InitializeGridBin();

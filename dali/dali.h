@@ -33,7 +33,7 @@
 #include "dali/common/placement_snapshot_writer.h"
 #include "dali/placer.h"
 #include "dali/placer/detailed_placer/detailed_placer.h"
-#include "dali/placer/global_placer/random_initializer.h"
+#include "dali/placer/global_placer/placement_initializer.h"
 #include "dali/placer/legalizer/standard_cell_legalizer/standard_cell_legalizer.h"
 #include "dali/timing/star_pi_model_estimator.h"
 
@@ -62,7 +62,8 @@ class Dali {
     bool enable_filler_cell = false;
     bool enable_end_cap_cell = false;
     bool enable_shrink_off_grid_die_area = false;
-    RandomInitializerType global_initializer = RandomInitializerType::UNIFORM;
+    PlacementInitializerType global_initializer =
+        PlacementInitializerType::kUniform;
     GlobalAnchorSchedule global_anchor_schedule = GlobalAnchorSchedule::kDali;
     GlobalGridSchedule global_grid_schedule = GlobalGridSchedule::kDali;
     GlobalLalExpansionMode global_lal_expansion_mode =
@@ -181,7 +182,8 @@ class Dali {
   bool enable_filler_cell_ = false;
   bool enable_end_cap_cell_ = false;
   bool enable_shrink_off_grid_die_area_ = false;
-  RandomInitializerType global_initializer_ = RandomInitializerType::UNIFORM;
+  PlacementInitializerType global_initializer_ =
+      PlacementInitializerType::kUniform;
   GlobalAnchorSchedule global_anchor_schedule_ = GlobalAnchorSchedule::kDali;
   GlobalGridSchedule global_grid_schedule_ = GlobalGridSchedule::kDali;
   GlobalLalExpansionMode global_lal_expansion_mode_ =

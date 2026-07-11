@@ -18,8 +18,8 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
-#ifndef DALI_PLACER_GLOBAL_PLACER_RANDOM_INITIALIZER_H_
-#define DALI_PLACER_GLOBAL_PLACER_RANDOM_INITIALIZER_H_
+#ifndef DALI_PLACER_GLOBAL_PLACER_PLACEMENT_INITIALIZER_H_
+#define DALI_PLACER_GLOBAL_PLACER_PLACEMENT_INITIALIZER_H_
 
 #include <queue>
 #include <string>
@@ -32,20 +32,21 @@
 namespace dali {
 
 /** Available component-location initialization strategies. */
-enum class RandomInitializerType {
+enum class PlacementInitializerType {
   /** Preserve locations loaded from the input design. */
-  KEEP = -1,
-  UNIFORM = 0,
-  GAUSSIAN = 1,
-  MONTE_CARLO = 2,
-  DENSITY_AWARE = 3
+  kKeep = -1,
+  kUniform = 0,
+  kGaussian = 1,
+  kMonteCarlo = 2,
+  kDensityAware = 3
 };
 
-/** Interface for random initializers that seed component locations. */
-class RandomInitializer {
+/** Interface for strategies that assign movable-component starting locations.
+ */
+class PlacementInitializer {
  public:
-  RandomInitializer(Circuit* ckt_ptr, uint32_t random_seed);
-  virtual ~RandomInitializer() = default;
+  PlacementInitializer(Circuit* ckt_ptr, uint32_t random_seed);
+  virtual ~PlacementInitializer() = default;
 
   /** Set initializer-specific parameters parsed from configuration. */
   virtual void SetParameters(
@@ -55,7 +56,7 @@ class RandomInitializer {
   void SetShouldSaveIntermediateResult(bool should_save_intermediate_result);
 
   /** Assign initial component locations. */
-  virtual void RandomPlace() = 0;
+  virtual void InitializeLocations() = 0;
 
  protected:
   void PrintStartStatement();
@@ -72,27 +73,27 @@ class RandomInitializer {
 
 /** Uniformly places cells across the placement region without size awareness.
  */
-class UniformInitializer : public RandomInitializer {
+class UniformInitializer : public PlacementInitializer {
  public:
   explicit UniformInitializer(Circuit* ckt_ptr, uint32_t random_seed = 1);
   ~UniformInitializer() override = default;
-  void RandomPlace() override;
+  void InitializeLocations() override;
 };
 
 /** Places cells with a normal distribution centered on the placement region. */
-class GaussianInitializer : public RandomInitializer {
+class GaussianInitializer : public PlacementInitializer {
  public:
   explicit GaussianInitializer(Circuit* ckt_ptr, uint32_t = 1);
   ~GaussianInitializer() override = default;
   void SetParameters(
       std::unordered_map<std::string, std::string>& params_dict) override;
-  void RandomPlace() override;
+  void InitializeLocations() override;
 
  protected:
   double std_dev_ = 1.0 / 3.0;
 };
 
-/** Grid bin used to avoid fixed macros during random initialization. */
+/** Grid bin used to avoid fixed macros during placement initialization. */
 class InitializerGridBin {
  public:
   std::vector<Component*>& Macros();
@@ -141,11 +142,11 @@ struct CompareInitializerGridBinPtr {
 
 /** Uniform random initializer that rejects locations overlapping fixed macros.
  */
-class MonteCarloInitializer : public RandomInitializer {
+class MonteCarloInitializer : public PlacementInitializer {
  public:
   explicit MonteCarloInitializer(Circuit* ckt_ptr, uint32_t random_seed = 1);
   ~MonteCarloInitializer() override = default;
-  void RandomPlace() override;
+  void InitializeLocations() override;
 
  protected:
   virtual void InitializeGridBin();
@@ -167,7 +168,7 @@ class DensityAwareInitializer : public MonteCarloInitializer {
  public:
   explicit DensityAwareInitializer(Circuit* ckt_ptr, uint32_t random_seed = 1);
   ~DensityAwareInitializer() override = default;
-  void RandomPlace() override;
+  void InitializeLocations() override;
 
  protected:
   void InitializeGridBin() override;
@@ -182,4 +183,4 @@ class DensityAwareInitializer : public MonteCarloInitializer {
 
 }  // namespace dali
 
-#endif  // DALI_PLACER_GLOBAL_PLACER_RANDOM_INITIALIZER_H_
+#endif  // DALI_PLACER_GLOBAL_PLACER_PLACEMENT_INITIALIZER_H_

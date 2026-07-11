@@ -47,7 +47,8 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_FALSE(options.enable_filler_cell);
   EXPECT_FALSE(options.enable_end_cap_cell);
   EXPECT_FALSE(options.enable_shrink_off_grid_die_area);
-  EXPECT_EQ(options.global_initializer, dali::RandomInitializerType::UNIFORM);
+  EXPECT_EQ(options.global_initializer,
+            dali::PlacementInitializerType::kUniform);
   EXPECT_EQ(options.global_lal_hotspot_mode,
             dali::GlobalLalHotspotMode::kComponentArea);
   EXPECT_DOUBLE_EQ(options.global_lal_affine_weight, 0.65);
@@ -118,7 +119,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_TRUE(options.enable_filler_cell);
   EXPECT_TRUE(options.enable_end_cap_cell);
   EXPECT_TRUE(options.enable_shrink_off_grid_die_area);
-  EXPECT_EQ(options.global_initializer, dali::RandomInitializerType::KEEP);
+  EXPECT_EQ(options.global_initializer, dali::PlacementInitializerType::kKeep);
   EXPECT_EQ(options.global_lal_hotspot_mode,
             dali::GlobalLalHotspotMode::kOverflowRatio);
   EXPECT_DOUBLE_EQ(options.global_lal_affine_weight, 0.8);

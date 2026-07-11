@@ -61,7 +61,8 @@ void GlobalPlacer::SetSnapshotCallback(SnapshotCallback snapshot_callback) {
   snapshot_callback_ = std::move(snapshot_callback);
 }
 
-void GlobalPlacer::SetInitializerType(RandomInitializerType initializer_type) {
+void GlobalPlacer::SetInitializerType(
+    PlacementInitializerType initializer_type) {
   initializer_type_ = initializer_type;
 }
 
@@ -147,7 +148,7 @@ void GlobalPlacer::CloseOptimizerAndLegalizer() {
  * @param std_dev: the standard deviation if normal distribution is used
  */
 void GlobalPlacer::InitializeComponentLocation() {
-  if (initializer_type_ == RandomInitializerType::KEEP) {
+  if (initializer_type_ == PlacementInitializerType::kKeep) {
     LOG(info) << "  Component location initialization:\n"
               << "    Preserve input component locations\n"
               << "    HPWL before, " << WeightedHPWL() << "\n"
@@ -157,21 +158,21 @@ void GlobalPlacer::InitializeComponentLocation() {
     return;
   }
 
-  std::unique_ptr<RandomInitializer> initializer(nullptr);
+  std::unique_ptr<PlacementInitializer> initializer(nullptr);
   switch (initializer_type_) {
-    case RandomInitializerType::UNIFORM: {
+    case PlacementInitializerType::kUniform: {
       initializer = std::make_unique<UniformInitializer>(ckt_ptr_, 1);
       break;
     }
-    case RandomInitializerType::GAUSSIAN: {
+    case PlacementInitializerType::kGaussian: {
       initializer = std::make_unique<GaussianInitializer>(ckt_ptr_, 1);
       break;
     }
-    case RandomInitializerType::MONTE_CARLO: {
+    case PlacementInitializerType::kMonteCarlo: {
       initializer = std::make_unique<MonteCarloInitializer>(ckt_ptr_, 1);
       break;
     }
-    case RandomInitializerType::DENSITY_AWARE: {
+    case PlacementInitializerType::kDensityAware: {
       initializer = std::make_unique<DensityAwareInitializer>(ckt_ptr_, 1);
       break;
     }
@@ -181,7 +182,7 @@ void GlobalPlacer::InitializeComponentLocation() {
   }
   initializer->SetShouldSaveIntermediateResult(
       should_save_intermediate_result_);
-  initializer->RandomPlace();
+  initializer->InitializeLocations();
 }
 
 void GlobalPlacer::PreparePlacement() {

@@ -75,24 +75,25 @@ static void LoadStringConfig(const std::string& name, std::string* value) {
   }
 }
 
-static RandomInitializerType ParseGlobalInitializer(const std::string& name) {
+static PlacementInitializerType ParseGlobalInitializer(
+    const std::string& name) {
   if (name == "keep") {
-    return RandomInitializerType::KEEP;
+    return PlacementInitializerType::kKeep;
   }
   if (name == "uniform") {
-    return RandomInitializerType::UNIFORM;
+    return PlacementInitializerType::kUniform;
   }
   if (name == "gaussian") {
-    return RandomInitializerType::GAUSSIAN;
+    return PlacementInitializerType::kGaussian;
   }
   if (name == "monte_carlo") {
-    return RandomInitializerType::MONTE_CARLO;
+    return PlacementInitializerType::kMonteCarlo;
   }
   if (name == "density_aware") {
-    return RandomInitializerType::DENSITY_AWARE;
+    return PlacementInitializerType::kDensityAware;
   }
   std::cout << "Ignore unknown global_initializer: " << name << "\n";
-  return RandomInitializerType::UNIFORM;
+  return PlacementInitializerType::kUniform;
 }
 
 static GlobalAnchorSchedule ParseGlobalAnchorSchedule(const std::string& name) {
