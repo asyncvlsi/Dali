@@ -34,7 +34,6 @@
 /****Well Legalizer****/
 #include "dali/placer/well_legalizer/gridded_cell_well_legalizer.h"
 #include "dali/placer/well_legalizer/gridded_row_legalizer.h"
-#include "dali/placer/well_legalizer/well_legalizer.h"
 
 /****Well Placement Flow****/
 #include "dali/placer/well_place_flow/well_place_flow.h"
