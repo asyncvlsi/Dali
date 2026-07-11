@@ -99,6 +99,19 @@ void GlobalPlacer::SetCapacityModel(
   capacity_model_ = std::move(capacity_model);
 }
 
+void GlobalPlacer::SetUpperBoundRefiner(
+    std::unique_ptr<GlobalUpperBoundRefiner> upper_bound_refiner,
+    int warmup_iteration, int interval) {
+  DaliExpects(upper_bound_refiner != nullptr,
+              "Global upper-bound refiner cannot be null");
+  DaliExpects(warmup_iteration >= 0,
+              "Upper-bound refiner warmup cannot be negative");
+  DaliExpects(interval > 0, "Upper-bound refiner interval must be positive");
+  upper_bound_refiner_ = std::move(upper_bound_refiner);
+  upper_bound_refiner_warmup_ = warmup_iteration;
+  upper_bound_refiner_interval_ = interval;
+}
+
 /****
  * @brief Load a configuration file for this placer.
  *
@@ -127,6 +140,10 @@ void GlobalPlacer::InitializePlacementEngines() {
       should_save_intermediate_result_);
   look_ahead_spreader->Initialize(PlacementDensity());
   spreader_ = std::move(look_ahead_spreader);
+  accepted_upper_bound_hpwl_.clear();
+  if (upper_bound_refiner_) {
+    upper_bound_refiner_->Initialize(PlacementDensity());
+  }
 }
 
 void GlobalPlacer::ClosePlacementEngines() {
@@ -137,6 +154,9 @@ void GlobalPlacer::ClosePlacementEngines() {
   if (spreader_) {
     spreader_->Close();
     spreader_.reset();
+  }
+  if (upper_bound_refiner_) {
+    upper_bound_refiner_->Close();
   }
 }
 
@@ -202,10 +222,27 @@ void GlobalPlacer::RunPlacementIterations() {
     EmitIterationSnapshot("lower_bound", "Lower Bound", "lower_bound");
     spreader_->SetIteration(cur_iter_);
     spreader_->Spread();
+    double accepted_hpwl = spreader_->Hpwls().back();
+    if (ShouldRefineUpperBound()) {
+      GlobalUpperBoundRefinement refinement =
+          upper_bound_refiner_->Refine(cur_iter_);
+      if (refinement.feasible) {
+        accepted_hpwl = refinement.hpwl;
+      }
+    }
+    accepted_upper_bound_hpwl_.push_back(accepted_hpwl);
     EmitIterationSnapshot("upper_bound", "Upper Bound", "upper_bound");
     PrintHpwl();
     if (IsPlacementConverged()) break;
   }
+}
+
+bool GlobalPlacer::ShouldRefineUpperBound() const {
+  return upper_bound_refiner_ != nullptr &&
+         cur_iter_ >= upper_bound_refiner_warmup_ &&
+         (cur_iter_ - upper_bound_refiner_warmup_) %
+                 upper_bound_refiner_interval_ ==
+             0;
 }
 
 void GlobalPlacer::EmitIterationSnapshot(const std::string& id_suffix,
@@ -314,7 +351,7 @@ bool GlobalPlacer::IsPlacementConverged() {
 
   bool res;
   auto& lower_bound_hpwl = optimizer_->GetHpwls();
-  auto& upper_bound_hpwl = spreader_->Hpwls();
+  auto& upper_bound_hpwl = accepted_upper_bound_hpwl_;
   if (convergence_criteria_ == 1) {
     if (lower_bound_hpwl.empty() || upper_bound_hpwl.empty()) {
       res = false;
@@ -346,9 +383,11 @@ bool GlobalPlacer::IsPlacementConverged() {
  * @brief A helper function to format and print HPWL in each iteration.
  */
 void GlobalPlacer::PrintHpwl() const {
-  if (optimizer_->GetHpwls().empty() || spreader_->Hpwls().empty()) return;
+  if (optimizer_->GetHpwls().empty() || accepted_upper_bound_hpwl_.empty()) {
+    return;
+  }
   double lo_hpwl = optimizer_->GetHpwls().back();
-  double hi_hpwl = spreader_->Hpwls().back();
+  double hi_hpwl = accepted_upper_bound_hpwl_.back();
   double hpwl_gap = hi_hpwl - lo_hpwl;
   double hpwl_gap_percent = lo_hpwl <= 1e-10 ? 0 : hpwl_gap / lo_hpwl * 100.0;
   size_t buffer_size = 1024;
@@ -370,9 +409,14 @@ void GlobalPlacer::PrintEndStatement(std::string const& name_of_process,
   LOG(debug) << "  Iterative look-ahead legalization complete\n";
   LOG(debug) << "  Total number of iteration: " << cur_iter_ + 1 << "\n";
   LOG(debug) << "  Lower bound: " << optimizer_->GetHpwls() << "\n";
-  LOG(debug) << "  Upper bound: " << spreader_->Hpwls() << "\n";
+  LOG(debug) << "  Upper bound: " << accepted_upper_bound_hpwl_ << "\n";
   LOG(debug) << "cg time: " << optimizer_->GetTime()
-             << "s, lal time: " << spreader_->GetTime() << "s\n";
+             << "s, lal time: " << spreader_->GetTime() << "s";
+  if (upper_bound_refiner_) {
+    LOG(debug) << ", upper-bound refinement time: "
+               << upper_bound_refiner_->GetTime() << "s";
+  }
+  LOG(debug) << "\n";
   Placer::PrintEndStatement(name_of_process, is_success);
 }
 

@@ -28,6 +28,7 @@
 
 #include "dali/placer/global_placer/hpwl_optimizer.h"
 #include "dali/placer/global_placer/global_spreader.h"
+#include "dali/placer/global_placer/global_upper_bound_refiner.h"
 #include "dali/placer/global_placer/look_ahead_spreader.h"
 #include "dali/placer/global_placer/placement_initializer.h"
 #include "dali/placer/placer.h"
@@ -83,6 +84,11 @@ class GlobalPlacer : public Placer {
   void SetCapacityModel(
       std::shared_ptr<const PlacementCapacityModel> capacity_model);
 
+  /** Install an optional periodic physical upper-bound refiner. */
+  void SetUpperBoundRefiner(
+      std::unique_ptr<GlobalUpperBoundRefiner> upper_bound_refiner,
+      int warmup_iteration, int interval);
+
   /** Load global placer configuration. */
   void LoadConf(std::string const& config_file) override;
 
@@ -127,6 +133,7 @@ class GlobalPlacer : public Placer {
   bool IsPlacementConverged();
   void PreparePlacement();
   void RunPlacementIterations();
+  bool ShouldRefineUpperBound() const;
   void EmitSnapshot(const std::string& id, const std::string& label,
                     const std::string& subgroup, int iteration);
   void EmitIterationSnapshot(const std::string& id_suffix,
@@ -152,6 +159,10 @@ class GlobalPlacer : public Placer {
       std::make_shared<AreaCapacityModel>();
   std::unique_ptr<HpwlOptimizer> optimizer_;
   std::unique_ptr<GlobalSpreader> spreader_;
+  std::unique_ptr<GlobalUpperBoundRefiner> upper_bound_refiner_;
+  std::vector<double> accepted_upper_bound_hpwl_;
+  int upper_bound_refiner_warmup_ = 0;
+  int upper_bound_refiner_interval_ = 1;
 };
 
 }  // namespace dali
