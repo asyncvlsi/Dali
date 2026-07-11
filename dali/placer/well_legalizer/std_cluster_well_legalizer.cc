@@ -261,6 +261,19 @@ int StdClusterWellLegalizer::RightTapLx(const Stripe& stripe) const {
   return RightTapUx(stripe) - well_tap_width_;
 }
 
+WellRowCompletionConfig StdClusterWellLegalizer::BuildRowCompletionConfig()
+    const {
+  WellRowCompletionConfig config;
+  config.well_tap_macro = well_tap_macro_;
+  config.well_tap_count_per_row = well_tap_count_per_cluster_;
+  config.space_to_well_tap = space_to_well_tap_;
+  if (enable_end_cap_cell_) {
+    config.pre_end_cap_width = pre_end_cap_min_width_;
+    config.post_end_cap_width = post_end_cap_min_width_;
+  }
+  return config;
+}
+
 void StdClusterWellLegalizer::CreateClusterAndAppendSingleWellComponent(
     Stripe& stripe, Component& component) {
   stripe.gridded_rows_.emplace_back();
@@ -932,174 +945,6 @@ void StdClusterWellLegalizer::UpdateClusterOrient() {
   }
 }
 
-void StdClusterWellLegalizer::InsertWellTap() {
-  ckt_ptr_->design().WellTapComponentCollection().Clear();
-  size_t tot_cluster_count = 0;
-  for (auto& col : col_list_) {
-    for (auto& stripe : col.stripe_list_) {
-      tot_cluster_count += stripe.gridded_rows_.size();
-    }
-  }
-  ckt_ptr_->design().WellTapComponentCollection().Reserve(tot_cluster_count *
-                                                          2);
-
-  int counter = 0;
-  int total_well_tap_count = 0;
-  for (auto& col : col_list_) {
-    for (auto& stripe : col.stripe_list_) {
-      for (auto& row : stripe.gridded_rows_) {
-        int well_tap_count = 2;
-        total_well_tap_count += well_tap_count;
-        int left_end_cap_width =
-            enable_end_cap_cell_ ? pre_end_cap_min_width_ : 0;
-        int right_end_cap_width =
-            enable_end_cap_cell_ ? post_end_cap_min_width_ : 0;
-        int tap_width = well_tap_macro_->Width();
-        int left_margin = left_end_cap_width + tap_width + space_to_well_tap_;
-        int right_margin =
-            right_end_cap_width + tap_width + space_to_well_tap_;
-
-        // Pack only ordinary cells. Taps and end caps occupy the margins and
-        // are materialized at fixed locations after this pass.
-        row.LegalizeLooseX(0, left_margin, right_margin);
-
-        int left_tap_center =
-            row.LLX() + left_end_cap_width + tap_width / 2;
-        int right_tap_center =
-            row.URX() - right_end_cap_width - tap_width / 2;
-        int well_tap_loc = left_tap_center;
-        int step = right_tap_center - left_tap_center;
-        for (int i = 0; i < well_tap_count; ++i) {
-          std::string component_name =
-              "__well_tap__" + std::to_string(counter++);
-          auto [tap_cell, tap_cell_id] =
-              ckt_ptr_->design().WellTapComponentCollection().CreateWithId(
-                  component_name);
-          tap_cell.SetPlacementStatus(PLACED);
-          tap_cell.SetMacro(well_tap_macro_);
-          tap_cell.SetId(static_cast<int>(tap_cell_id));
-          row.InsertWellTapCell(tap_cell, well_tap_loc);
-          well_tap_loc += step;
-        }
-      }
-    }
-  }
-
-  ckt_ptr_->design().WellTapComponentCollection().Freeze();
-  LOG(info) << "Insertion complete: " << total_well_tap_count
-            << " well tap cell created\n";
-}
-
-/**
- * @brief Creates end-cap cell types for each unique (NHeight, PHeight)
- * combination found in the gridded rows of stripes in columns.
- *
- * This function iterates through the columns, stripes, and gridded rows in the
- * column list. For each unique combination of NHeight and PHeight in a row, it
- * creates both pre and post end-cap cell types. These cell types are then
- * stored in the `pre_end_cap_cell_np_heights_to_type` map to avoid duplication.
- */
-void StdClusterWellLegalizer::CreateEndCapMacros() {
-  for (auto& col : col_list_) {
-    for (auto& stripe : col.stripe_list_) {
-      for (auto& row : stripe.gridded_rows_) {
-        std::tuple<int, int> np_height = {row.NHeight(), row.PHeight()};
-
-        // Check if the end-cap cell type for this height combination already
-        // exists
-        if (pre_end_cap_cell_np_heights_to_type_id.find(np_height) ==
-            pre_end_cap_cell_np_heights_to_type_id.end()) {
-          // Create and register the pre end-cap cell type
-          std::string pre_end_cap_cell_name =
-              "pre_end_cap_n_height_" + std::to_string(row.NHeight()) +
-              "_p_height_" + std::to_string(row.PHeight());
-          int pre_end_cap_cell_macro_id = ckt_ptr_->CreateEndCapMacro(
-              pre_end_cap_cell_name, pre_end_cap_min_width_, row.NHeight(),
-              row.PHeight());
-          pre_end_cap_cell_np_heights_to_type_id[np_height] =
-              pre_end_cap_cell_macro_id;
-
-          // Create and register the post end-cap cell type
-          std::string post_end_cap_cell_name =
-              "post_end_cap_n_height_" + std::to_string(row.NHeight()) +
-              "_p_height_" + std::to_string(row.PHeight());
-          int post_end_cap_cell_macro_id = ckt_ptr_->CreateEndCapMacro(
-              post_end_cap_cell_name, post_end_cap_min_width_, row.NHeight(),
-              row.PHeight());
-          post_end_cap_cell_np_heights_to_type_id[np_height] =
-              post_end_cap_cell_macro_id;
-        }
-      }
-    }
-  }
-  ckt_ptr_->tech().EndCapCellMacroCollection().Freeze();
-}
-
-void StdClusterWellLegalizer::InsertEndCapCells() {
-  // Clear all existing instances
-  ckt_ptr_->design().EndCapComponentCollection().Clear();
-  size_t tot_cluster_count = 0;
-  for (auto& col : col_list_) {
-    for (auto& stripe : col.stripe_list_) {
-      tot_cluster_count += stripe.gridded_rows_.size();
-    }
-  }
-  ckt_ptr_->design().EndCapComponentCollection().Reserve(tot_cluster_count * 2);
-
-  int row_counter = 0;
-  int total_num_end_cap_cells = 0;
-  for (auto& col : col_list_) {
-    for (auto& stripe : col.stripe_list_) {
-      for (auto& row : stripe.gridded_rows_) {
-        std::tuple<int, int> np_height = {row.NHeight(), row.PHeight()};
-
-        // Create pre end cap cell
-        int pre_end_cap_cell_macro_id =
-            pre_end_cap_cell_np_heights_to_type_id[np_height];
-        Macro* pre_end_cap_cell_macro_ptr =
-            ckt_ptr_->tech().EndCapCellMacroCollection().GetInstanceById(
-                pre_end_cap_cell_macro_id);
-        int pre_end_cap_cell_loc =
-            row.LLX() + pre_end_cap_cell_macro_ptr->Width() / 2;
-        std::string pre_end_cap_cell_name =
-            "__pre_end_cap_cell__" + std::to_string(row_counter);
-        auto [pre_end_cap_cell, pre_end_cap_cell_id] =
-            ckt_ptr_->design().EndCapComponentCollection().CreateWithId(
-                pre_end_cap_cell_name);
-        pre_end_cap_cell.SetPlacementStatus(PLACED);
-        pre_end_cap_cell.SetMacro(pre_end_cap_cell_macro_ptr);
-        pre_end_cap_cell.SetId(static_cast<int>(pre_end_cap_cell_id));
-        row.PlacePhysicalCell(pre_end_cap_cell, pre_end_cap_cell_loc);
-
-        // Create post end cap cell
-        int post_end_cap_cell_macro_id =
-            post_end_cap_cell_np_heights_to_type_id[np_height];
-        Macro* post_end_cap_cell_macro_ptr =
-            ckt_ptr_->tech().EndCapCellMacroCollection().GetInstanceById(
-                post_end_cap_cell_macro_id);
-        int post_end_cap_cell_loc =
-            row.URX() - post_end_cap_cell_macro_ptr->Width() / 2;
-        std::string post_end_cap_cell_name =
-            "__post_end_cap_cell__" + std::to_string(row_counter);
-        auto [post_end_cap_cell, post_end_cap_cell_id] =
-            ckt_ptr_->design().EndCapComponentCollection().CreateWithId(
-                post_end_cap_cell_name);
-        post_end_cap_cell.SetPlacementStatus(PLACED);
-        post_end_cap_cell.SetMacro(post_end_cap_cell_macro_ptr);
-        post_end_cap_cell.SetId(static_cast<int>(post_end_cap_cell_id));
-        row.PlacePhysicalCell(post_end_cap_cell, post_end_cap_cell_loc);
-
-        total_num_end_cap_cells += 2;
-        row_counter += 1;
-      }
-    }
-  }
-
-  ckt_ptr_->design().EndCapComponentCollection().Freeze();
-  LOG(info) << "Insertion complete: " << total_num_end_cap_cells
-            << " pre- and post- end cap cells created\n";
-}
-
 void StdClusterWellLegalizer::ClearCachedData() {
   for (auto& component : ckt_ptr_->Components()) {
     component.SetOrient(N);
@@ -1217,7 +1062,8 @@ void StdClusterWellLegalizer::RunWellTapStage() {
     LOG(info) << "Skip inserting well tap cells\n";
   } else {
     LOG(info) << "Insert well tap cells\n";
-    InsertWellTap();
+    WellRowCompleter(ckt_ptr_, &col_list_, BuildRowCompletionConfig())
+        .InsertWellTaps();
   }
   RecordPlacementMetric("well_legalization.well_tap", WeightedHPWL());
   EmitSnapshot("well_tap", "After Well Tap Insertion", "legalization",
@@ -1227,8 +1073,8 @@ void StdClusterWellLegalizer::RunWellTapStage() {
 void StdClusterWellLegalizer::RunEndCapStage() {
   if (enable_end_cap_cell_) {
     LOG(info) << "Create end cap cells\n";
-    CreateEndCapMacros();
-    InsertEndCapCells();
+    WellRowCompleter(ckt_ptr_, &col_list_, BuildRowCompletionConfig())
+        .InsertEndCaps();
   } else {
     LOG(info) << "Skip creating end cap cells\n";
   }
@@ -1386,13 +1232,13 @@ void StdClusterWellLegalizer::GenPPNP(const std::string& name_of_file) {
         uy = pn_edge_list[i + 1];
         if (uy > ly && active_ux > active_lx) {
           if (is_p_well_rect) {
-            ostnp << active_lx << "\t" << active_ux << "\t"
-                  << active_ux << "\t" << active_lx << "\t"
-                  << ly << "\t" << ly << "\t" << uy << "\t" << uy << "\n";
+            ostnp << active_lx << "\t" << active_ux << "\t" << active_ux << "\t"
+                  << active_lx << "\t" << ly << "\t" << ly << "\t" << uy << "\t"
+                  << uy << "\n";
           } else {
-            ostpp << active_lx << "\t" << active_ux << "\t"
-                  << active_ux << "\t" << active_lx << "\t"
-                  << ly << "\t" << ly << "\t" << uy << "\t" << uy << "\n";
+            ostpp << active_lx << "\t" << active_ux << "\t" << active_ux << "\t"
+                  << active_lx << "\t" << ly << "\t" << ly << "\t" << uy << "\t"
+                  << uy << "\n";
           }
         }
         is_p_well_rect = !is_p_well_rect;
@@ -1535,12 +1381,10 @@ void StdClusterWellLegalizer::EmitPPNPRect(std::string const& name_of_file) {
         } else {
           ost << "rect # " << PP_name << " ";
         }
-        ost << active_lx * factor_x +
-                   ckt_ptr_->design().DieAreaOffsetX()
+        ost << active_lx * factor_x + ckt_ptr_->design().DieAreaOffsetX()
             << "\t" << ly * factor_y + ckt_ptr_->design().DieAreaOffsetY()
             << "\t"
-            << active_ux * factor_x +
-                   ckt_ptr_->design().DieAreaOffsetX()
+            << active_ux * factor_x + ckt_ptr_->design().DieAreaOffsetX()
             << "\t" << uy * factor_y + ckt_ptr_->design().DieAreaOffsetY()
             << "\n";
 
@@ -1677,12 +1521,12 @@ void StdClusterWellLegalizer::ExportPpNpToPhyDB(phydb::PhyDB* phydb_ptr) {
         } else {
           layer_name = PP_name;
         }
-        int rect_llx = (int)(active_lx * factor_x) +
-                       ckt_ptr_->design().DieAreaOffsetX();
+        int rect_llx =
+            (int)(active_lx * factor_x) + ckt_ptr_->design().DieAreaOffsetX();
         int rect_lly =
             (int)(ly * factor_y) + ckt_ptr_->design().DieAreaOffsetY();
-        int rect_urx = (int)(active_ux * factor_x) +
-                       ckt_ptr_->design().DieAreaOffsetX();
+        int rect_urx =
+            (int)(active_ux * factor_x) + ckt_ptr_->design().DieAreaOffsetX();
         int rect_ury =
             (int)(uy * factor_y) + ckt_ptr_->design().DieAreaOffsetY();
         phydb_layout_container->AddRectSignalLayer(

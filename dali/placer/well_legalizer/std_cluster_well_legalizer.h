@@ -22,9 +22,7 @@
 #define DALI_PLACER_WELL_LEGALIZER_STD_CLUSTER_WELL_LEGALIZER_H_
 
 #include <functional>
-#include <map>
 #include <string>
-#include <tuple>
 
 #include "component_cluster.h"
 #include "component_segment.h"
@@ -38,6 +36,7 @@
 #include "gridded_row.h"
 #include "space_partitioner.h"
 #include "stripe.h"
+#include "well_row_completer.h"
 
 namespace dali {
 
@@ -114,10 +113,6 @@ class StdClusterWellLegalizer : public Placer {
   // void SingleSegmentClusteringOptimization();
 
   void UpdateClusterOrient();
-  void InsertWellTap();
-
-  void CreateEndCapMacros();
-  void InsertEndCapCells();
 
   void ClearCachedData();
   bool WellLegalize();
@@ -154,6 +149,9 @@ class StdClusterWellLegalizer : public Placer {
   int LeftTapUx(const Stripe& stripe) const;
   int RightTapLx(const Stripe& stripe) const;
   int RightTapUx(const Stripe& stripe) const;
+
+  /** Return the boundary-cell configuration for finalized gridded rows. */
+  WellRowCompletionConfig BuildRowCompletionConfig() const;
 
   bool RunComponentClusteringStage();
   void RunClusterOrientationStage();
@@ -198,11 +196,6 @@ class StdClusterWellLegalizer : public Placer {
   int post_end_cap_min_width_ = 0;
   int post_end_cap_min_p_height_ = 0;
   int post_end_cap_min_n_height_ = 0;
-  std::map<std::tuple<int /* N height */, int /* P height */>, int>
-      pre_end_cap_cell_np_heights_to_type_id;
-  std::map<std::tuple<int /* N height */, int /* P height */>, int>
-      post_end_cap_cell_np_heights_to_type_id;
-
   /**** stripe parameters ****/
   int stripe_mode_ = 0;
   int max_row_width_ = -1;
