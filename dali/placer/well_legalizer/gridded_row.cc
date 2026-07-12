@@ -35,6 +35,21 @@ void GriddedRow::SetUsedSize(int used_size) { used_size_ = used_size; }
 
 void GriddedRow::UseSpace(int width) { used_size_ += width; }
 
+void GriddedRow::SetBoundaryMargins(int left_margin, int right_margin) {
+  DaliExpects(left_margin >= 0 && right_margin >= 0,
+              "Gridded-row boundary margins cannot be negative");
+  left_boundary_margin_ = left_margin;
+  right_boundary_margin_ = right_margin;
+}
+
+int GriddedRow::LeftBoundaryMargin() const {
+  return left_boundary_margin_;
+}
+
+int GriddedRow::RightBoundaryMargin() const {
+  return right_boundary_margin_;
+}
+
 void GriddedRow::SetLLX(int lx) { lx_ = lx; }
 
 void GriddedRow::SetURX(int ux) { lx_ = ux - width_; }
@@ -189,8 +204,7 @@ void GriddedRow::LegalizeCompactX() {
  * this cluster, two-rounds legalization is enough to make the final result
  * legal.
  * ****/
-void GriddedRow::LegalizeLooseX(int space_to_well_tap, int left_margin,
-                                int right_margin) {
+void GriddedRow::LegalizeLooseX() {
   if (components_.empty()) {
     return;
   }
@@ -199,19 +213,15 @@ void GriddedRow::LegalizeLooseX(int space_to_well_tap, int left_margin,
       [](const Component* component_ptr0, const Component* component_ptr1) {
         return component_ptr0->LLX() < component_ptr1->LLX();
       });
-  int component_contour = lx_ + left_margin;
+  int component_contour = lx_ + left_boundary_margin_;
   int res_x;
   for (auto& component : components_) {
     res_x = std::max(component_contour, int(component->LLX()));
     component->SetLLX(res_x);
     component_contour = int(component->URX());
-    if ((tap_cell_ != nullptr) &&
-        (component->MacroPtr() == tap_cell_->MacroPtr())) {
-      component_contour += space_to_well_tap;
-    }
   }
 
-  int ux = lx_ + width_ - right_margin;
+  int ux = lx_ + width_ - right_boundary_margin_;
   std::sort(
       components_.begin(), components_.end(),
       [](const Component* component_ptr0, const Component* component_ptr1) {
@@ -222,10 +232,6 @@ void GriddedRow::LegalizeLooseX(int space_to_well_tap, int left_margin,
     res_x = std::min(component_contour, int(component->URX()));
     component->SetURX(res_x);
     component_contour = int(component->LLX());
-    if ((tap_cell_ != nullptr) &&
-        (component->MacroPtr() == tap_cell_->MacroPtr())) {
-      component_contour -= space_to_well_tap;
-    }
   }
 }
 

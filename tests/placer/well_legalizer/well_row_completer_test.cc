@@ -14,6 +14,32 @@
 
 namespace dali {
 
+TEST(WellRowCompleterTest, RowLegalizationPreservesBoundaryMargins) {
+  Circuit circuit;
+  circuit.SetManufacturingGrid(1.0);
+  circuit.SetGridValue(1.0, 1.0);
+  circuit.AddMacro("ordinary", 5.0, 10.0);
+  Macro* ordinary_macro = circuit.GetMacroPtr("ordinary");
+  ASSERT_NE(ordinary_macro, nullptr);
+  ordinary_macro->AddWellRect(false, 0, 0, 5, 4);
+  ordinary_macro->AddWellRect(true, 0, 4, 5, 10);
+  circuit.ReserveSpaceForDesignImp(2, 0, 0);
+  circuit.AddComponent("left", "ordinary", 10, 20, PLACED);
+  circuit.AddComponent("right", "ordinary", 105, 20, PLACED);
+
+  GriddedRow row;
+  row.SetLLX(10);
+  row.SetWidth(100);
+  row.SetBoundaryMargins(7, 7);
+  row.AddComponent(circuit.GetComponentPtr("left"));
+  row.AddComponent(circuit.GetComponentPtr("right"));
+
+  row.LegalizeLooseX();
+
+  EXPECT_GE(circuit.GetComponentPtr("left")->LLX(), 17);
+  EXPECT_LE(circuit.GetComponentPtr("right")->URX(), 103);
+}
+
 TEST(WellRowCompleterTest, PlacesBoundaryCellsOutsideOrdinaryCellSpace) {
   Circuit circuit;
   circuit.SetManufacturingGrid(1.0);
@@ -42,6 +68,7 @@ TEST(WellRowCompleterTest, PlacesBoundaryCellsOutsideOrdinaryCellSpace) {
   row.SetWidth(100);
   row.SetLLY(20);
   row.UpdateWellHeightUpward(4, 6);
+  row.SetBoundaryMargins(7, 7);
   row.AddComponent(circuit.GetComponentPtr("cell"));
 
   WellRowCompletionConfig config;
@@ -51,6 +78,9 @@ TEST(WellRowCompleterTest, PlacesBoundaryCellsOutsideOrdinaryCellSpace) {
   config.post_end_cap_width = 2;
 
   WellRowCompleter completer(&circuit, &columns, config);
+  row.LegalizeLooseX();
+  const double ordinary_lx_before_completion =
+      circuit.GetComponentPtr("cell")->LLX();
   completer.InsertWellTaps();
   completer.InsertEndCaps();
 
@@ -71,6 +101,7 @@ TEST(WellRowCompleterTest, PlacesBoundaryCellsOutsideOrdinaryCellSpace) {
 
   const Component* ordinary = circuit.GetComponentPtr("cell");
   ASSERT_NE(ordinary, nullptr);
+  EXPECT_DOUBLE_EQ(ordinary->LLX(), ordinary_lx_before_completion);
   EXPECT_GE(ordinary->LLX(), left_tap.URX() + config.space_to_well_tap);
   EXPECT_LE(ordinary->URX(), right_tap.LLX() - config.space_to_well_tap);
 }

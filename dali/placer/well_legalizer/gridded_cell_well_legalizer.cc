@@ -376,13 +376,27 @@ void GriddedCellWellLegalizer::ClearProvisionalState() {
 }
 
 int GriddedCellWellLegalizer::PhysicalCompletionReservedWidth() const {
+  return PhysicalCompletionLeftMargin() + PhysicalCompletionRightMargin();
+}
+
+int GriddedCellWellLegalizer::PhysicalCompletionLeftMargin() const {
   int reserved_width = 0;
   if (!disable_welltap_) {
-    reserved_width = well_tap_count_per_cluster_ * well_tap_width_ +
-                     well_tap_count_per_cluster_ * space_to_well_tap_;
+    reserved_width = well_tap_width_ + space_to_well_tap_;
   }
   if (enable_end_cap_cell_) {
-    reserved_width += pre_end_cap_min_width_ + post_end_cap_min_width_;
+    reserved_width += pre_end_cap_min_width_;
+  }
+  return reserved_width;
+}
+
+int GriddedCellWellLegalizer::PhysicalCompletionRightMargin() const {
+  int reserved_width = 0;
+  if (!disable_welltap_) {
+    reserved_width = well_tap_width_ + space_to_well_tap_;
+  }
+  if (enable_end_cap_cell_) {
+    reserved_width += post_end_cap_min_width_;
   }
   return reserved_width;
 }
@@ -392,6 +406,9 @@ void GriddedCellWellLegalizer::ReservePhysicalCompletionSpace(
   if (row == nullptr) {
     return;
   }
+
+  row->SetBoundaryMargins(PhysicalCompletionLeftMargin(),
+                          PhysicalCompletionRightMargin());
 
   if (grows_upward) {
     row->UpdateWellHeightUpward(well_tap_p_height_, well_tap_n_height_);

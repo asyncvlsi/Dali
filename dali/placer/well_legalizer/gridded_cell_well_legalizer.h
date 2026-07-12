@@ -196,6 +196,12 @@ class GriddedCellWellLegalizer : public Placer {
   /** Return x-capacity reserved for taps/end caps in every gridded row. */
   int PhysicalCompletionReservedWidth() const;
 
+  /** Return the left row margin reserved for physical completion. */
+  int PhysicalCompletionLeftMargin() const;
+
+  /** Return the right row margin reserved for physical completion. */
+  int PhysicalCompletionRightMargin() const;
+
   /** Update a row so it can physically fit future tap/end-cap cells. */
   void ReservePhysicalCompletionSpace(GriddedRow* row, bool grows_upward);
 

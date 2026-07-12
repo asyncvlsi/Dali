@@ -62,6 +62,15 @@ class GriddedRow {
   /** Reserve additional row width. */
   void UseSpace(int width);
 
+  /** Reserve left and right boundary widths for taps and end caps. */
+  void SetBoundaryMargins(int left_margin, int right_margin);
+
+  /** Return the left boundary width unavailable to ordinary components. */
+  int LeftBoundaryMargin() const;
+
+  /** Return the right boundary width unavailable to ordinary components. */
+  int RightBoundaryMargin() const;
+
   /** Set lower-left x in Dali grid units. */
   void SetLLX(int lx);
 
@@ -117,8 +126,7 @@ class GriddedRow {
    * The left and right margins remain untouched for boundary cells such as
    * end caps, which are inserted only after row legalization finishes.
    */
-  void LegalizeLooseX(int space_to_well_tap = 0, int left_margin = 0,
-                      int right_margin = 0);
+  void LegalizeLooseX();
   void SetOrient(bool is_orient_N);
   void InsertWellTapCell(Component& tap_cell, int loc);
   void PlacePhysicalCell(Component& cell, int loc) const;
@@ -195,6 +203,8 @@ class GriddedRow {
   /**** total width of cells in this cluster, including reserved space for tap
    * cells ****/
   int used_size_ = 0;
+  int left_boundary_margin_ = 0;
+  int right_boundary_margin_ = 0;
 
   /**** maximum p-well height and n-well height ****/
   int p_well_height_ = 0;
