@@ -22,8 +22,9 @@
 
 #include <algorithm>
 #include <cfloat>
+#include <map>
 
-#include "dali/placer/well_legalizer/adaptive_stripe_boundary_planner.h"
+#include "dali/placer/well_legalizer/packed_stripe_boundary_planner.h"
 
 namespace dali {
 
@@ -505,18 +506,48 @@ std::vector<int> WellSpacePartitioner::PlanColumnBoundaries(
   planner_config.spacing_per_column =
       well_spacing_ + capacity_config_.reserved_width;
 
-  GriddedCapacityEstimator estimator(capacity_config_);
-  std::vector<StripeDemandSample> samples;
+  std::map<std::vector<int>, int> signature_ids;
+  std::vector<StripePackingSample> samples;
   samples.reserve(circuit_->Components().size());
   for (const Component& component : circuit_->Components()) {
     if (!component.IsMovable()) continue;
-    samples.push_back(
-        {component.X(),
-         static_cast<double>(estimator.EstimateStandaloneDemand(component))});
+    const Macro* macro = component.MacroPtr();
+    DaliExpects(macro != nullptr, "Movable component has no cell master");
+
+    std::vector<int> signature;
+    int signature_height = 0;
+    if (macro->HasCompleteWellRegions()) {
+      signature.reserve(2 * macro->RegionCount());
+      for (int region = 0; region < macro->RegionCount(); ++region) {
+        int p_height =
+            std::max(macro->PwellHeight(region, component.IsFlipped()),
+                     capacity_config_.minimum_p_well_height);
+        int n_height =
+            std::max(macro->NwellHeight(region, component.IsFlipped()),
+                     capacity_config_.minimum_n_well_height);
+        signature.push_back(p_height);
+        signature.push_back(n_height);
+        signature_height += p_height + n_height;
+      }
+    } else {
+      int p_height =
+          std::max(macro->FirstPwellHeight(),
+                   capacity_config_.minimum_p_well_height);
+      int n_height =
+          std::max(macro->FirstNwellHeight(),
+                   capacity_config_.minimum_n_well_height);
+      signature = {p_height, n_height};
+      signature_height = p_height + n_height;
+    }
+    auto [signature_entry, inserted] = signature_ids.emplace(
+        std::move(signature), static_cast<int>(signature_ids.size()));
+    (void)inserted;
+    samples.push_back({component.X(), component.Width(), signature_height,
+                       signature_entry->second});
   }
 
   AdaptiveStripeBoundaryResult plan =
-      AdaptiveStripeBoundaryPlanner(planner_config).Plan(samples);
+      PackedStripeBoundaryPlanner(planner_config).Plan(samples);
   if (!plan.feasible) {
     LOG(warning) << "  Adaptive stripe planning failed; use uniform boundaries\n";
     return uniform_boundaries;
@@ -529,8 +560,9 @@ std::vector<int> WellSpacePartitioner::PlanColumnBoundaries(
     minimum_pitch = std::min(minimum_pitch, pitch);
     maximum_pitch = std::max(maximum_pitch, pitch);
   }
-  LOG(info) << "  Adaptive stripe boundaries:\n"
+  LOG(info) << "  Packed adaptive stripe boundaries:\n"
             << "    objective       : " << plan.objective << "\n"
+            << "    row signatures  : " << signature_ids.size() << "\n"
             << "    pitch range     : "
             << minimum_pitch * circuit_->GridValueX() << "-"
             << maximum_pitch * circuit_->GridValueX() << "um\n";

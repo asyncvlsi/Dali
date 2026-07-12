@@ -45,6 +45,15 @@ add_test(NAME adaptive_stripe_boundary_planner_test
 set_tests_properties(adaptive_stripe_boundary_planner_test
                      PROPERTIES LABELS "unit;placer;well_legalizer")
 
+add_executable(packed_stripe_boundary_planner_test
+               packed_stripe_boundary_planner_test.cc)
+target_link_libraries(packed_stripe_boundary_planner_test
+                      PRIVATE dalilib ${DALI_GTEST_MAIN})
+add_test(NAME packed_stripe_boundary_planner_test
+         COMMAND packed_stripe_boundary_planner_test)
+set_tests_properties(packed_stripe_boundary_planner_test
+                     PROPERTIES LABELS "unit;placer;well_legalizer")
+
 add_executable(gridded_stripe_balancer_test gridded_stripe_balancer_test.cc)
 target_link_libraries(gridded_stripe_balancer_test
                       PRIVATE dalilib ${DALI_GTEST_MAIN})
