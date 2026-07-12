@@ -58,6 +58,7 @@ struct ProvisionalGriddedPlacementResult {
   double overflow = 0.0;
   bool used_scavenge = false;
   int balanced_component_count = 0;
+  std::vector<int> balanced_component_ids;
   std::vector<ProvisionalGriddedPlacementViolation> violations;
 };
 

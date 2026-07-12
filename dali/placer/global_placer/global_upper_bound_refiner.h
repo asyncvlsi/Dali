@@ -29,6 +29,7 @@ struct GlobalUpperBoundRefinement {
   double hpwl = 0.0;
   double overflow = 0.0;
   std::vector<GlobalUpperBoundViolation> violations;
+  std::vector<int> anchor_component_ids;
 };
 
 /** Optional periodic physical refinement of global-placement upper bounds. */

@@ -333,6 +333,7 @@ bool GriddedCellWellLegalizer::TryBalanceProvisionalPlacement(
   GriddedCapacityConfig capacity_config = BuildGriddedCapacityConfig(1.0);
   unsigned long long previous_overflow =
       std::numeric_limits<unsigned long long>::max();
+  std::vector<int> moved_component_ids;
   int max_rounds = std::max(1, static_cast<int>(col_list_.size()));
   for (int round = 0; round < max_rounds; ++round) {
     RestoreComponentPlacement(incoming_placement);
@@ -344,6 +345,9 @@ bool GriddedCellWellLegalizer::TryBalanceProvisionalPlacement(
               << " components, overflow " << balance.overflow_area_before
               << " -> " << balance.overflow_area_after << "\n";
     result->balanced_component_count += balance.moved_component_count;
+    moved_component_ids.insert(moved_component_ids.end(),
+                               balance.moved_component_ids.begin(),
+                               balance.moved_component_ids.end());
     if (balance.moved_component_count == 0 ||
         balance.overflow_area_before >= previous_overflow) {
       return false;
@@ -354,7 +358,14 @@ bool GriddedCellWellLegalizer::TryBalanceProvisionalPlacement(
     result->overflow = ProvisionalOverflowArea();
     result->violations = last_clustering_violations_;
     result->feasible = result->feasible && result->overflow == 0.0;
-    if (result->feasible) return true;
+    if (result->feasible) {
+      std::sort(moved_component_ids.begin(), moved_component_ids.end());
+      moved_component_ids.erase(
+          std::unique(moved_component_ids.begin(), moved_component_ids.end()),
+          moved_component_ids.end());
+      result->balanced_component_ids = std::move(moved_component_ids);
+      return true;
+    }
   }
   return false;
 }

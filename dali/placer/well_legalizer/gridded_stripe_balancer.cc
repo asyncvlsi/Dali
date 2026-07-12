@@ -127,7 +127,8 @@ GriddedStripeBalanceResult GriddedStripeBalancer::Balance(
   }
 
   result.moved_component_count =
-      ApplyMoves(stripe_columns, &overflow_budget, &available_spare);
+      ApplyMoves(stripe_columns, &overflow_budget, &available_spare,
+                 &result.moved_component_ids);
 
   for (StripeColumn& column : *stripe_columns) {
     for (Stripe& stripe : column.stripe_list_) {
@@ -144,7 +145,10 @@ GriddedStripeBalanceResult GriddedStripeBalancer::Balance(
 int GriddedStripeBalancer::ApplyMoves(
     std::vector<StripeColumn>* stripe_columns,
     std::unordered_map<Stripe*, unsigned long long>* overflow_budget,
-    std::unordered_map<Stripe*, unsigned long long>* available_spare) const {
+    std::unordered_map<Stripe*, unsigned long long>* available_spare,
+    std::vector<int>* moved_component_ids) const {
+  DaliExpects(moved_component_ids != nullptr,
+              "Cannot record stripe moves into a null component list");
   int moved_component_count = 0;
 
   for (int column_index = 0;
@@ -194,6 +198,7 @@ int GriddedStripeBalancer::ApplyMoves(
         candidate.target->component_ptrs_vec_.push_back(candidate.component);
         (*available_spare)[candidate.target] -= candidate.demand_area;
         relieved_area += candidate.demand_area;
+        moved_component_ids->push_back(candidate.component->Id());
         ++moved_component_count;
       }
       source.component_ptrs_vec_.erase(
@@ -242,7 +247,8 @@ GriddedStripeBalancer::BalanceObservedOverflow(
     }
   }
   result.moved_component_count =
-      ApplyMoves(stripe_columns, &overflow_budget, &available_spare);
+      ApplyMoves(stripe_columns, &overflow_budget, &available_spare,
+                 &result.moved_component_ids);
   for (const auto& [stripe, overflow] : overflow_budget) {
     (void)stripe;
     if (overflow == 0) continue;

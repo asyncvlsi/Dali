@@ -150,6 +150,10 @@ class GlobalPlacer : public Placer {
   std::vector<ComponentLocation> SaveCurrentPlacement() const;
   /** Restore component coordinates from a complete placement copy. */
   void RestorePlacement(const std::vector<ComponentLocation>& placement);
+  /** Keep refined coordinates only for selected component ids. */
+  void ApplySelectiveRefinedAnchor(
+      const std::vector<ComponentLocation>& placement_before_refinement,
+      const std::vector<int>& component_ids);
   /** Log displacement introduced by physical upper-bound refinement. */
   void LogRefinementDisplacement(
       const std::vector<ComponentLocation>& placement_before_refinement);

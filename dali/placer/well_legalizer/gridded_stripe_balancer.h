@@ -16,6 +16,7 @@ namespace dali {
 /** Summary of non-geometric component reassignment between gridded stripes. */
 struct GriddedStripeBalanceResult {
   int moved_component_count = 0;
+  std::vector<int> moved_component_ids;
   int overflowing_stripes_before = 0;
   int overflowing_stripes_after = 0;
   unsigned long long overflow_area_before = 0;
@@ -57,7 +58,8 @@ class GriddedStripeBalancer {
   int ApplyMoves(
       std::vector<StripeColumn>* stripe_columns,
       std::unordered_map<Stripe*, unsigned long long>* overflow_budget,
-      std::unordered_map<Stripe*, unsigned long long>* available_spare) const;
+      std::unordered_map<Stripe*, unsigned long long>* available_spare,
+      std::vector<int>* moved_component_ids) const;
 
   Circuit* circuit_ = nullptr;
   GriddedCapacityConfig config_;

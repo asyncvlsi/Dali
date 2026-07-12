@@ -53,6 +53,7 @@ TEST(GriddedStripeBalancerTest, RemovesOverflowWithoutMovingComponents) {
   EXPECT_EQ(result.overflowing_stripes_before, 1);
   EXPECT_EQ(result.overflowing_stripes_after, 0);
   EXPECT_GT(result.moved_component_count, 0);
+  EXPECT_EQ(result.moved_component_ids.size(), result.moved_component_count);
   for (size_t id = 0; id < components.size(); ++id) {
     EXPECT_DOUBLE_EQ(components[id]->LLX(), original_locations[id].first);
     EXPECT_DOUBLE_EQ(components[id]->LLY(), original_locations[id].second);
@@ -67,6 +68,7 @@ TEST(GriddedStripeBalancerTest, RemovesOverflowWithoutMovingComponents) {
 
   EXPECT_EQ(result.overflowing_stripes_before, 1);
   EXPECT_GT(result.moved_component_count, 0);
+  EXPECT_EQ(result.moved_component_ids.size(), result.moved_component_count);
   for (size_t id = 0; id < components.size(); ++id) {
     EXPECT_DOUBLE_EQ(components[id]->LLX(), original_locations[id].first);
     EXPECT_DOUBLE_EQ(components[id]->LLY(), original_locations[id].second);

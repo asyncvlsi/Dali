@@ -228,6 +228,7 @@ void GlobalPlacer::RunPlacementIterations() {
     spreader_->Spread();
     double accepted_hpwl = spreader_->Hpwls().back();
     bool accepted_physical_refinement = false;
+    std::vector<int> selective_anchor_component_ids;
     current_upper_bound_is_physical_ = upper_bound_refiner_ == nullptr;
     std::vector<ComponentLocation> placement_before_refinement;
     if (ShouldRefineUpperBound()) {
@@ -237,6 +238,8 @@ void GlobalPlacer::RunPlacementIterations() {
       if (refinement.feasible) {
         accepted_hpwl = refinement.hpwl;
         accepted_physical_refinement = true;
+        selective_anchor_component_ids =
+            std::move(refinement.anchor_component_ids);
         current_upper_bound_is_physical_ = true;
         LogRefinementDisplacement(placement_before_refinement);
       }
@@ -251,10 +254,36 @@ void GlobalPlacer::RunPlacementIterations() {
       RestorePlacement(placement_before_refinement);
       LOG(info) << "    legalization feedback: disabled; next anchor uses "
                    "the LAL upper bound\n";
+    } else if (accepted_physical_refinement &&
+               !selective_anchor_component_ids.empty()) {
+      ApplySelectiveRefinedAnchor(placement_before_refinement,
+                                  selective_anchor_component_ids);
     }
     PrintHpwl();
     if (IsPlacementConverged()) break;
   }
+}
+
+void GlobalPlacer::ApplySelectiveRefinedAnchor(
+    const std::vector<ComponentLocation>& placement_before_refinement,
+    const std::vector<int>& component_ids) {
+  std::vector<ComponentLocation> selected_locations;
+  selected_locations.reserve(component_ids.size());
+  for (int component_id : component_ids) {
+    DaliExpects(component_id >= 0 &&
+                    component_id <
+                        static_cast<int>(ckt_ptr_->Components().size()),
+                "Selective refined anchor contains an invalid component id");
+    const Component& component = ckt_ptr_->Components()[component_id];
+    selected_locations.push_back({component.LLX(), component.LLY()});
+  }
+  RestorePlacement(placement_before_refinement);
+  for (size_t i = 0; i < component_ids.size(); ++i) {
+    ckt_ptr_->Components()[component_ids[i]].SetLowerLeft(
+        selected_locations[i].lx, selected_locations[i].ly);
+  }
+  LOG(info) << "    legalization feedback: keep refined anchors for "
+            << component_ids.size() << " evacuated components\n";
 }
 
 void GlobalPlacer::UpdateBestUpperBoundPlacement(double upper_bound_hpwl) {
