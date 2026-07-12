@@ -263,6 +263,7 @@ void GriddedCellWellLegalizer::InitializeWellLegalizer(int cluster_width) {
   space_partitioner_.SetPartitionMode(stripe_mode_);
   space_partitioner_.SetAdaptiveStripeBoundaries(
       enable_adaptive_stripe_boundaries_, BuildGriddedCapacityConfig(1.0));
+  space_partitioner_.SetAdaptiveBoundaryBlend(adaptive_boundary_blend_);
   if (cluster_width >= 0) {
     space_partitioner_.SetMaxRowWidth(cluster_width);
   } else {
@@ -1278,12 +1279,20 @@ bool GriddedCellWellLegalizer::RunBestBoundaryClusteringStage() {
   DaliExpects(enable_adaptive_stripe_boundaries_,
               "Boundary selection requires adaptive stripes to be enabled");
 
-  RestoreInitialComponentLocation();
-  enable_adaptive_stripe_boundaries_ = true;
-  InitializeWellLegalizer();
-  bool adaptive_success = ComponentClusteringLoose();
-  double adaptive_hpwl =
-      adaptive_success ? WeightedHPWL() : std::numeric_limits<double>::max();
+  const std::vector<double> adaptive_blends = {0.25, 0.5, 0.75, 1.0};
+  std::vector<bool> adaptive_success(adaptive_blends.size(), false);
+  std::vector<double> adaptive_hpwl(
+      adaptive_blends.size(), std::numeric_limits<double>::max());
+  for (size_t candidate = 0; candidate < adaptive_blends.size(); ++candidate) {
+    RestoreInitialComponentLocation();
+    enable_adaptive_stripe_boundaries_ = true;
+    adaptive_boundary_blend_ = adaptive_blends[candidate];
+    InitializeWellLegalizer();
+    adaptive_success[candidate] = ComponentClusteringLoose();
+    if (adaptive_success[candidate]) {
+      adaptive_hpwl[candidate] = WeightedHPWL();
+    }
+  }
 
   RestoreInitialComponentLocation();
   enable_adaptive_stripe_boundaries_ = false;
@@ -1292,13 +1301,21 @@ bool GriddedCellWellLegalizer::RunBestBoundaryClusteringStage() {
   double uniform_hpwl =
       uniform_success ? WeightedHPWL() : std::numeric_limits<double>::max();
 
-  bool select_adaptive = adaptive_success && adaptive_hpwl < uniform_hpwl;
+  size_t best_adaptive = 0;
+  for (size_t candidate = 1; candidate < adaptive_hpwl.size(); ++candidate) {
+    if (adaptive_hpwl[candidate] < adaptive_hpwl[best_adaptive]) {
+      best_adaptive = candidate;
+    }
+  }
+  bool select_adaptive = adaptive_success[best_adaptive] &&
+                         adaptive_hpwl[best_adaptive] < uniform_hpwl;
   if (select_adaptive) {
     RestoreInitialComponentLocation();
     enable_adaptive_stripe_boundaries_ = true;
+    adaptive_boundary_blend_ = adaptive_blends[best_adaptive];
     InitializeWellLegalizer();
-    adaptive_success = ComponentClusteringLoose();
-    DaliExpects(adaptive_success,
+    adaptive_success[best_adaptive] = ComponentClusteringLoose();
+    DaliExpects(adaptive_success[best_adaptive],
                 "Selected adaptive clustering is not reproducible");
   }
 
@@ -1306,14 +1323,22 @@ bool GriddedCellWellLegalizer::RunBestBoundaryClusteringStage() {
             << "  stripe geometry candidates:\n"
             << "    uniform HPWL  : "
             << (uniform_success ? std::to_string(uniform_hpwl) : "infeasible")
-            << "um\n"
-            << "    adaptive HPWL : "
-            << (adaptive_success ? std::to_string(adaptive_hpwl)
-                                 : "infeasible")
-            << "um\n"
-            << "    selected       : "
-            << (select_adaptive ? "adaptive" : "uniform") << "\n";
-  bool is_success = select_adaptive ? adaptive_success : uniform_success;
+            << "um\n";
+  for (size_t candidate = 0; candidate < adaptive_blends.size(); ++candidate) {
+    LOG(info) << "    adaptive " << adaptive_blends[candidate] << " HPWL: "
+              << (adaptive_success[candidate]
+                      ? std::to_string(adaptive_hpwl[candidate])
+                      : "infeasible")
+              << "um\n";
+  }
+  LOG(info) << "    selected       : "
+            << (select_adaptive
+                    ? "adaptive " +
+                          std::to_string(adaptive_blends[best_adaptive])
+                    : "uniform")
+            << "\n";
+  bool is_success =
+      select_adaptive ? adaptive_success[best_adaptive] : uniform_success;
   ReportHPWL();
   RecordPlacementMetric("well_legalization.component_clustering",
                         WeightedHPWL());

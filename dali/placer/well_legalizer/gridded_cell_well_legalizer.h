@@ -296,6 +296,7 @@ class GriddedCellWellLegalizer : public Placer {
   int max_row_width_ = -1;
   bool enable_stripe_balancing_ = false;
   bool enable_adaptive_stripe_boundaries_ = false;
+  double adaptive_boundary_blend_ = 1.0;
   bool enable_local_reorder_ = false;
   bool enable_row_location_optimization_ = false;
   WellSpacePartitioner space_partitioner_;

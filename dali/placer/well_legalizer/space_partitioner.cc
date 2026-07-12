@@ -61,6 +61,12 @@ void SpacePartitioner::SetAdaptiveStripeBoundaries(
   capacity_config_ = capacity_config;
 }
 
+void SpacePartitioner::SetAdaptiveBoundaryBlend(double blend) {
+  DaliExpects(blend >= 0.0 && blend <= 1.0,
+              "Adaptive stripe boundary blend must be in [0, 1]");
+  adaptive_boundary_blend_ = blend;
+}
+
 void WellSpacePartitioner::FetchWellParameters() {
   Tech& tech = circuit_->tech();
   WellLayer& n_well_layer = tech.NwellLayer();
@@ -553,6 +559,19 @@ std::vector<int> WellSpacePartitioner::PlanColumnBoundaries(
     return uniform_boundaries;
   }
 
+  if (adaptive_boundary_blend_ < 1.0) {
+    for (int column = 1; column < tot_col_num_; ++column) {
+      int uniform_boundary =
+          Left() + static_cast<int>(std::llround(
+                       region_width * column /
+                       static_cast<double>(tot_col_num_)));
+      plan.boundaries[column] = static_cast<int>(std::llround(
+          uniform_boundary + adaptive_boundary_blend_ *
+                                 (plan.boundaries[column] -
+                                  uniform_boundary)));
+    }
+  }
+
   int minimum_pitch = region_width;
   int maximum_pitch = 0;
   for (size_t i = 1; i < plan.boundaries.size(); ++i) {
@@ -563,6 +582,7 @@ std::vector<int> WellSpacePartitioner::PlanColumnBoundaries(
   LOG(info) << "  Packed adaptive stripe boundaries:\n"
             << "    objective       : " << plan.objective << "\n"
             << "    row signatures  : " << signature_ids.size() << "\n"
+            << "    adaptive blend  : " << adaptive_boundary_blend_ << "\n"
             << "    pitch range     : "
             << minimum_pitch * circuit_->GridValueX() << "-"
             << maximum_pitch * circuit_->GridValueX() << "um\n";

@@ -61,6 +61,9 @@ class SpacePartitioner {
   virtual void SetAdaptiveStripeBoundaries(
       bool enable, const GriddedCapacityConfig& capacity_config);
 
+  /** Set interpolation from uniform (0) to fully adaptive (1) boundaries. */
+  virtual void SetAdaptiveBoundaryBlend(double blend);
+
   /** Run partitioning and populate the output stripe container. */
   virtual bool StartPartitioning() = 0;
 
@@ -77,6 +80,7 @@ class SpacePartitioner {
   int partition_mode_ = 0;
   int max_row_width_ = -1;
   bool use_adaptive_boundaries_ = false;
+  double adaptive_boundary_blend_ = 1.0;
   GriddedCapacityConfig capacity_config_;
 };
 
