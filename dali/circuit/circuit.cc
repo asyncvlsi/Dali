@@ -418,6 +418,7 @@ void Circuit::ExpandPlacementRegion(double scale) {
               static_cast<int>(std::floor(center_y - half_height)),
               static_cast<int>(std::ceil(center_x + half_width)),
               static_cast<int>(std::ceil(center_y + half_height)));
+  UpdateTotalComponentArea();
 }
 
 int Circuit::RegionWidth() const {
