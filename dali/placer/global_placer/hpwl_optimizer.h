@@ -85,10 +85,6 @@ class HpwlOptimizer {
   /** Enable or disable intermediate placement dumps. */
   void SetShouldSaveIntermediateResult(bool should_save_intermediate_result);
 
-  /** Override the next iteration's component anchor targets. */
-  virtual void SetExternalAnchorTargets(const std::vector<double>& x_targets,
-                                        const std::vector<double>& y_targets) = 0;
-
  protected:
   Circuit* ckt_ptr_ = nullptr;
   int cur_iter_ = 0;
@@ -115,10 +111,6 @@ class BoundToBoundHpwlOptimizer : public HpwlOptimizer {
 
   void UpdateEpsilon();
   void Initialize() override;
-
-  /** Set explicit anchor targets consumed by the next optimization call. */
-  void SetExternalAnchorTargets(const std::vector<double>& x_targets,
-                                const std::vector<double>& y_targets) override;
 
   virtual void BuildProblemX();
   virtual void BuildProblemY();
@@ -179,9 +171,6 @@ class BoundToBoundHpwlOptimizer : public HpwlOptimizer {
   Eigen::VectorXd x_anchor_weight, y_anchor_weight;
   bool x_anchor_set = false;
   bool y_anchor_set = false;
-  std::vector<double> external_x_anchor_targets_;
-  std::vector<double> external_y_anchor_targets_;
-  bool external_anchor_targets_set_ = false;
   std::vector<SparseTriplet> coefficients_x_;
   std::vector<SparseTriplet> coefficients_y_;
   Eigen::ConjugateGradient<RowMajorSparseMatrix, Eigen::Lower | Eigen::Upper>

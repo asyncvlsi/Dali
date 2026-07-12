@@ -48,7 +48,6 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_FALSE(options.enable_end_cap_cell);
   EXPECT_FALSE(options.enable_gridded_local_reorder);
   EXPECT_FALSE(options.disable_gridded_legalization_feedback);
-  EXPECT_FALSE(options.enable_gridded_legalization_residual_feedback);
   EXPECT_FALSE(options.enable_gridded_row_y_optimization);
   EXPECT_FALSE(options.enable_shrink_off_grid_die_area);
   EXPECT_EQ(options.global_initializer,
@@ -91,7 +90,6 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_int("dali.enable_gridded_global_capacity", 1);
   config_set_int("dali.enable_gridded_upper_bound_refiner", 1);
   config_set_int("dali.disable_gridded_legalization_feedback", 1);
-  config_set_int("dali.enable_gridded_legalization_residual_feedback", 1);
   config_set_int("dali.enable_gridded_stripe_balancing", 1);
   config_set_int("dali.enable_gridded_local_reorder", 1);
   config_set_int("dali.enable_gridded_row_y_optimization", 1);
@@ -133,7 +131,6 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_TRUE(options.enable_gridded_global_capacity);
   EXPECT_TRUE(options.enable_gridded_upper_bound_refiner);
   EXPECT_TRUE(options.disable_gridded_legalization_feedback);
-  EXPECT_TRUE(options.enable_gridded_legalization_residual_feedback);
   EXPECT_TRUE(options.enable_gridded_stripe_balancing);
   EXPECT_TRUE(options.enable_gridded_local_reorder);
   EXPECT_TRUE(options.enable_gridded_row_y_optimization);

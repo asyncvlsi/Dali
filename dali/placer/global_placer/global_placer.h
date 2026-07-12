@@ -95,11 +95,6 @@ class GlobalPlacer : public Placer {
     use_refined_upper_bound_as_anchor_ = enable;
   }
 
-  /** Enable accumulated analytical-to-legal residual anchor targets. */
-  void SetEnableLegalizationResidualFeedback(bool enable) {
-    enable_legalization_residual_feedback_ = enable;
-  }
-
   /** Load global placer configuration. */
   void LoadConf(std::string const& config_file) override;
 
@@ -156,9 +151,6 @@ class GlobalPlacer : public Placer {
   /** Log displacement introduced by physical upper-bound refinement. */
   void LogRefinementDisplacement(
       const std::vector<ComponentLocation>& placement_before_refinement);
-  /** Update scaled legalization residuals and the next explicit anchor. */
-  void UpdateLegalizationResidualFeedback(
-      const std::vector<ComponentLocation>& analytical_placement);
   /** Restore the lowest-HPWL accepted upper-bound placement. */
   void RestoreBestUpperBoundPlacement();
   void EmitSnapshot(const std::string& id, const std::string& label,
@@ -197,9 +189,6 @@ class GlobalPlacer : public Placer {
   int upper_bound_refiner_warmup_ = 0;
   int upper_bound_refiner_interval_ = 1;
   bool use_refined_upper_bound_as_anchor_ = true;
-  bool enable_legalization_residual_feedback_ = false;
-  std::vector<double> legalization_residual_x_;
-  std::vector<double> legalization_residual_y_;
 };
 
 }  // namespace dali
