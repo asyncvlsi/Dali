@@ -168,6 +168,12 @@ class GriddedCellWellLegalizer : public Placer {
   std::vector<PlacementWellRect> CollectWellVisualizationRects();
 
  private:
+  /** Return the left boundary width reserved for physical completion. */
+  int PhysicalCompletionLeftMargin() const;
+
+  /** Return the right boundary width reserved for physical completion. */
+  int PhysicalCompletionRightMargin() const;
+
   /** Return x-capacity reserved for taps/end caps in every gridded row. */
   int PhysicalCompletionReservedWidth() const;
 

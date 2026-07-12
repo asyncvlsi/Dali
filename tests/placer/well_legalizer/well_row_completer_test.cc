@@ -50,6 +50,14 @@ TEST(WellRowCompleterTest, PlacesBoundaryCellsOutsideOrdinaryCellSpace) {
   config.pre_end_cap_width = 2;
   config.post_end_cap_width = 2;
 
+  const int left_margin = config.pre_end_cap_width + tap_macro->Width() +
+                          config.space_to_well_tap;
+  const int right_margin = config.post_end_cap_width + tap_macro->Width() +
+                           config.space_to_well_tap;
+  row.MinDisplacementLegalization(left_margin, right_margin);
+  const double ordinary_lx_before_completion =
+      circuit.GetComponentPtr("cell")->LLX();
+
   WellRowCompleter completer(&circuit, &columns, config);
   completer.InsertWellTaps();
   completer.InsertEndCaps();
@@ -71,6 +79,7 @@ TEST(WellRowCompleterTest, PlacesBoundaryCellsOutsideOrdinaryCellSpace) {
 
   const Component* ordinary = circuit.GetComponentPtr("cell");
   ASSERT_NE(ordinary, nullptr);
+  EXPECT_DOUBLE_EQ(ordinary->LLX(), ordinary_lx_before_completion);
   EXPECT_GE(ordinary->LLX(), left_tap.URX() + config.space_to_well_tap);
   EXPECT_LE(ordinary->URX(), right_tap.LLX() - config.space_to_well_tap);
 }
