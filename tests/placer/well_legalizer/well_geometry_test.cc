@@ -39,6 +39,7 @@ TEST(WellGeometryBuilderTest, UsesFinalTapColumnsForImplantGeometry) {
   row.SetWidth(100);
   row.SetLLY(20);
   row.UpdateWellHeightUpward(4, 6);
+  row.SetBoundaryMargins(7, 7);
 
   WellRowCompletionConfig config;
   config.well_tap_macro = tap_macro;

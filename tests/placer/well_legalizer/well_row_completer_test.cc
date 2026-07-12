@@ -81,6 +81,10 @@ TEST(WellRowCompleterTest, PlacesBoundaryCellsOutsideOrdinaryCellSpace) {
   row.LegalizeLooseX();
   const double ordinary_lx_before_completion =
       circuit.GetComponentPtr("cell")->LLX();
+  const double ordinary_ly_before_completion =
+      circuit.GetComponentPtr("cell")->LLY();
+  const ComponentOrient ordinary_orient_before_completion =
+      circuit.GetComponentPtr("cell")->Orient();
   completer.InsertWellTaps();
   completer.InsertEndCaps();
 
@@ -102,6 +106,8 @@ TEST(WellRowCompleterTest, PlacesBoundaryCellsOutsideOrdinaryCellSpace) {
   const Component* ordinary = circuit.GetComponentPtr("cell");
   ASSERT_NE(ordinary, nullptr);
   EXPECT_DOUBLE_EQ(ordinary->LLX(), ordinary_lx_before_completion);
+  EXPECT_DOUBLE_EQ(ordinary->LLY(), ordinary_ly_before_completion);
+  EXPECT_EQ(ordinary->Orient(), ordinary_orient_before_completion);
   EXPECT_GE(ordinary->LLX(), left_tap.URX() + config.space_to_well_tap);
   EXPECT_LE(ordinary->URX(), right_tap.LLX() - config.space_to_well_tap);
 }

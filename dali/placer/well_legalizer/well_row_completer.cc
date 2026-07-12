@@ -46,7 +46,20 @@ void WellRowCompleter::InsertWellTaps() {
     for (auto& stripe : column.stripe_list_) {
       for (auto& row : stripe.gridded_rows_) {
         int tap_width = config_.well_tap_macro->Width();
-        row.LegalizeLooseX();
+        int required_left_margin =
+            config_.pre_end_cap_width + tap_width + config_.space_to_well_tap;
+        int required_right_margin =
+            config_.post_end_cap_width + tap_width + config_.space_to_well_tap;
+        DaliExpects(row.LeftBoundaryMargin() >= required_left_margin &&
+                        row.RightBoundaryMargin() >= required_right_margin,
+                    "Gridded row did not reserve enough physical-completion "
+                    "space");
+        for (const Component* component : row.Components()) {
+          DaliExpects(
+              component->LLX() >= row.LLX() + required_left_margin &&
+                  component->URX() <= row.URX() - required_right_margin,
+              "Ordinary component is outside the physical-completion interval");
+        }
 
         int tap_centers[] = {
             row.LLX() + config_.pre_end_cap_width + tap_width / 2,
