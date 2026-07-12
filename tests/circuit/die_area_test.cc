@@ -88,4 +88,18 @@ TEST(DieAreaTest, PreservesAnOffsetPlacementGridOrigin) {
   EXPECT_EQ(circuit.LocDali2PhydbY(718), 8619000);
 }
 
+TEST(DieAreaTest, ExpandsPlacementRegionAboutItsCenter) {
+  Circuit circuit = MakeUnitGridCircuit();
+  std::vector<int2d> die_area =
+      MakeDieArea({{10, 20}, {10, 40}, {20, 40}, {20, 20}});
+  circuit.SetRectilinearDieArea(die_area);
+
+  circuit.ExpandPlacementRegion(1.5);
+
+  EXPECT_EQ(circuit.RegionLLX(), 7);
+  EXPECT_EQ(circuit.RegionLLY(), 15);
+  EXPECT_EQ(circuit.RegionURX(), 23);
+  EXPECT_EQ(circuit.RegionURY(), 45);
+}
+
 }  // namespace dali

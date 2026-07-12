@@ -406,6 +406,20 @@ int Circuit::RegionLLY() const { return design_.die_area_.region_bottom_; }
 
 int Circuit::RegionURY() const { return design_.die_area_.region_top_; }
 
+void Circuit::ExpandPlacementRegion(double scale) {
+  DaliExpects(scale >= 1.0, "Placement-region scale must be at least 1");
+  if (scale == 1.0) return;
+
+  const double center_x = (RegionLLX() + RegionURX()) / 2.0;
+  const double center_y = (RegionLLY() + RegionURY()) / 2.0;
+  const double half_width = RegionWidth() * scale / 2.0;
+  const double half_height = RegionHeight() * scale / 2.0;
+  SetBoundary(static_cast<int>(std::floor(center_x - half_width)),
+              static_cast<int>(std::floor(center_y - half_height)),
+              static_cast<int>(std::ceil(center_x + half_width)),
+              static_cast<int>(std::ceil(center_y + half_height)));
+}
+
 int Circuit::RegionWidth() const {
   return design_.die_area_.region_right_ - design_.die_area_.region_left_;
 }

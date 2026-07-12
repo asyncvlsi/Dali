@@ -249,6 +249,9 @@ class Circuit {
   // return height of the placement region, unit is grid value in y
   int RegionHeight() const;
 
+  /** Enlarge the placement region about its center by the given scale. */
+  void ExpandPlacementRegion(double scale);
+
   // if placement boundary in DEF is not an integer multiple of grid value, this
   // is the residual
   int DieAreaOffsetX() const;

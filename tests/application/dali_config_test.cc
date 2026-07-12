@@ -100,6 +100,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_string("dali.visualization_dir", "dali_snapshots");
   config_set_int("dali.gui_debug", 1);
   config_set_string("dali.gui_pause", "off");
+  config_set_real("dali.debug_placement_region_scale", 1.1);
 
   dali::Dali placer(nullptr, dali::severity::info);
   const dali::Dali::RuntimeOptions options = placer.GetRuntimeOptions();
@@ -139,6 +140,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_EQ(options.visualization_dir, "dali_snapshots");
   EXPECT_TRUE(options.gui_debug);
   EXPECT_EQ(options.gui_pause, "off");
+  EXPECT_DOUBLE_EQ(options.debug_placement_region_scale, 1.1);
 
   placer.Close();
 }

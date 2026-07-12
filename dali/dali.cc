@@ -249,7 +249,9 @@ void Dali::ShowParamsList() {
             << "  output_name: " << output_name_ << "\n"
             << "  visualization_dir: " << visualization_dir_ << "\n"
             << "  gui_debug: " << gui_debug_ << "\n"
-            << "  gui_pause: " << gui_pause_ << "\n";
+            << "  gui_pause: " << gui_pause_ << "\n"
+            << "  debug_placement_region_scale: "
+            << debug_placement_region_scale_ << "\n";
 }
 
 void Dali::LoadParamsFromConfig() {
@@ -368,6 +370,10 @@ void Dali::LoadParamsFromConfig() {
                    &visualization_dir_);
   LoadBoolConfig(ConfigName(prefix_, "gui_debug"), &gui_debug_);
   LoadStringConfig(ConfigName(prefix_, "gui_pause"), &gui_pause_);
+  LoadRealConfig(ConfigName(prefix_, "debug_placement_region_scale"),
+                 &debug_placement_region_scale_);
+  DaliExpects(debug_placement_region_scale_ >= 1.0,
+              "debug_placement_region_scale must be at least 1");
 }
 
 void Dali::SetLogPrefix(bool disable_log_prefix) {
@@ -423,6 +429,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       visualization_dir_,
       gui_debug_,
       gui_pause_,
+      debug_placement_region_scale_,
   };
 }
 
@@ -563,12 +570,32 @@ void Dali::ApplyPlacementOverrides(double density, int number_of_threads) {
 void Dali::InitializeMainPlacementCircuit() {
   circuit_.SetEnableShrinkOffGridDieArea(enable_shrink_off_grid_die_area_);
   circuit_.InitializeFromPhyDB(phy_db_ptr_);
+  ApplyDebugPlacementRegionScale();
   is_circuit_initialized_ = true;
   circuit_.ReportBriefSummary();
   ClearPlacementMetrics();
   RecordPlacementMetric("input", circuit_.WeightedHPWL());
   InitializeVisualizationSnapshots();
   WriteVisualizationSnapshot("input", "Input", "input");
+}
+
+void Dali::ApplyDebugPlacementRegionScale() {
+  if (debug_placement_region_scale_ == 1.0) return;
+
+  const int original_left = circuit_.RegionLLX();
+  const int original_right = circuit_.RegionURX();
+  const int original_bottom = circuit_.RegionLLY();
+  const int original_top = circuit_.RegionURY();
+  circuit_.ExpandPlacementRegion(debug_placement_region_scale_);
+  LOG(warning) << "Debug placement-region expansion enabled:\n"
+               << "  scale factor      : " << debug_placement_region_scale_
+               << "\n"
+               << "  original boundary : [" << original_left << ", "
+               << original_bottom << "] - [" << original_right << ", "
+               << original_top << "]\n"
+               << "  expanded boundary : [" << circuit_.RegionLLX() << ", "
+               << circuit_.RegionLLY() << "] - [" << circuit_.RegionURX()
+               << ", " << circuit_.RegionURY() << "]\n";
 }
 
 void Dali::ResolveTargetDensity() {

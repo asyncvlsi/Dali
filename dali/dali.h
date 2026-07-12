@@ -87,6 +87,7 @@ class Dali {
     std::string visualization_dir;
     bool gui_debug = false;
     std::string gui_pause = "every_snapshot";
+    double debug_placement_region_scale = 1.0;
   };
 
   Dali(phydb::PhyDB* phy_db_ptr, const std::string& severity_level,
@@ -210,6 +211,7 @@ class Dali {
   std::string visualization_dir_;
   bool gui_debug_ = false;
   std::string gui_pause_ = "every_snapshot";
+  double debug_placement_region_scale_ = 1.0;
 
   // circuit and placer
   Circuit circuit_;
@@ -244,6 +246,8 @@ class Dali {
   void ApplyPlacementOverrides(double density, int number_of_threads);
   /** Initialize the circuit model and reset metrics for a standalone run. */
   void InitializeMainPlacementCircuit();
+  /** Enlarge the circuit placement boundary for controlled debug experiments. */
+  void ApplyDebugPlacementRegionScale();
   /** Choose the target density when the user did not provide one. */
   void ResolveTargetDensity();
   /** Return true when the loaded design has at least one movable component. */

@@ -96,6 +96,8 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "-enable_gridded_global_capacity",
                      "-enable_gridded_upper_bound_refiner",
                      "-enable_gridded_stripe_balancing",
+                     "-debug_placement_region_scale",
+                     "1.1",
                      "-save_intermediate_result",
                      "-disable_detailed_place",
                      "-disable_io_place",
@@ -122,6 +124,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_EQ(config_get_int("dali.enable_gridded_global_capacity"), 1);
   EXPECT_EQ(config_get_int("dali.enable_gridded_upper_bound_refiner"), 1);
   EXPECT_EQ(config_get_int("dali.enable_gridded_stripe_balancing"), 1);
+  EXPECT_DOUBLE_EQ(config_get_real("dali.debug_placement_region_scale"), 1.1);
   EXPECT_EQ(config_get_int("dali.save_intermediate_result"), 1);
   EXPECT_EQ(config_get_int("dali.disable_detailed_place"), 1);
   EXPECT_EQ(config_get_int("dali.disable_io_place"), 1);
@@ -135,6 +138,13 @@ TEST_F(DaliCommandLineTest, RejectsMissingRequiredInputs) {
 
   dali::DaliCommandLineOptions missing_lef_options;
   EXPECT_FALSE(Parse({"dali", "-def", "input.def"}, &missing_lef_options));
+}
+
+TEST_F(DaliCommandLineTest, RejectsPlacementRegionShrinkDebugScale) {
+  dali::DaliCommandLineOptions options;
+  EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                      "-debug_placement_region_scale", "0.9"},
+                     &options));
 }
 
 TEST_F(DaliCommandLineTest, RejectsPartialNumericTokens) {
