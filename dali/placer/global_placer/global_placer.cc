@@ -22,6 +22,7 @@
 #include "global_placer.h"
 
 #include <algorithm>
+#include <cmath>
 #include <memory>
 #include <utility>
 
@@ -226,12 +227,15 @@ void GlobalPlacer::RunPlacementIterations() {
     spreader_->Spread();
     double accepted_hpwl = spreader_->Hpwls().back();
     bool accepted_physical_refinement = false;
+    std::vector<ComponentLocation> placement_before_refinement;
     if (ShouldRefineUpperBound()) {
+      placement_before_refinement = SaveCurrentPlacement();
       GlobalUpperBoundRefinement refinement =
           upper_bound_refiner_->Refine(cur_iter_);
       if (refinement.feasible) {
         accepted_hpwl = refinement.hpwl;
         accepted_physical_refinement = true;
+        LogRefinementDisplacement(placement_before_refinement);
       }
     }
     accepted_upper_bound_hpwl_.push_back(accepted_hpwl);
@@ -239,6 +243,12 @@ void GlobalPlacer::RunPlacementIterations() {
       UpdateBestUpperBoundPlacement(accepted_hpwl);
     }
     EmitIterationSnapshot("upper_bound", "Upper Bound", "upper_bound");
+    if (accepted_physical_refinement &&
+        !use_refined_upper_bound_as_anchor_) {
+      RestorePlacement(placement_before_refinement);
+      LOG(info) << "    legalization feedback: disabled; next anchor uses "
+                   "the LAL upper bound\n";
+    }
     PrintHpwl();
     if (IsPlacementConverged()) break;
   }
@@ -248,12 +258,62 @@ void GlobalPlacer::UpdateBestUpperBoundPlacement(double upper_bound_hpwl) {
   if (upper_bound_hpwl >= best_upper_bound_hpwl_) return;
 
   best_upper_bound_hpwl_ = upper_bound_hpwl;
-  best_upper_bound_placement_.clear();
-  best_upper_bound_placement_.reserve(ckt_ptr_->Components().size());
+  best_upper_bound_placement_ = SaveCurrentPlacement();
+}
+
+std::vector<GlobalPlacer::ComponentLocation>
+GlobalPlacer::SaveCurrentPlacement() const {
+  std::vector<ComponentLocation> placement;
+  placement.reserve(ckt_ptr_->Components().size());
   for (const Component& component : ckt_ptr_->Components()) {
-    best_upper_bound_placement_.push_back(
-        {component.LLX(), component.LLY()});
+    placement.push_back({component.LLX(), component.LLY()});
   }
+  return placement;
+}
+
+void GlobalPlacer::RestorePlacement(
+    const std::vector<ComponentLocation>& placement) {
+  DaliExpects(placement.size() == ckt_ptr_->Components().size(),
+              "Cannot restore placement: component count changed");
+  for (size_t i = 0; i < placement.size(); ++i) {
+    ckt_ptr_->Components()[i].SetLowerLeft(placement[i].lx, placement[i].ly);
+  }
+}
+
+void GlobalPlacer::LogRefinementDisplacement(
+    const std::vector<ComponentLocation>& placement_before_refinement) {
+  DaliExpects(placement_before_refinement.size() ==
+                  ckt_ptr_->Components().size(),
+              "Cannot measure refinement displacement: component count "
+              "changed");
+  double sum_x = 0.0;
+  double sum_y = 0.0;
+  double max_distance = 0.0;
+  int movable_count = 0;
+  for (size_t i = 0; i < placement_before_refinement.size(); ++i) {
+    const Component& component = ckt_ptr_->Components()[i];
+    if (!component.IsMovable()) continue;
+    double displacement_x =
+        std::fabs(component.LLX() - placement_before_refinement[i].lx) *
+        ckt_ptr_->GridValueX();
+    double displacement_y =
+        std::fabs(component.LLY() - placement_before_refinement[i].ly) *
+        ckt_ptr_->GridValueY();
+    sum_x += displacement_x;
+    sum_y += displacement_y;
+    max_distance = std::max(
+        max_distance,
+        std::sqrt(displacement_x * displacement_x +
+                  displacement_y * displacement_y));
+    ++movable_count;
+  }
+  double average_x = movable_count == 0 ? 0.0 : sum_x / movable_count;
+  double average_y = movable_count == 0 ? 0.0 : sum_y / movable_count;
+  LOG(info) << "    LAL-to-legal displacement avg X/Y: " << average_x << " / "
+            << average_y << "um, max: " << max_distance << "um\n";
+  RecordPlacementMetric("global_placement.feedback.last_avg_x_um", average_x);
+  RecordPlacementMetric("global_placement.feedback.last_avg_y_um", average_y);
+  RecordPlacementMetric("global_placement.feedback.last_max_um", max_distance);
 }
 
 void GlobalPlacer::RestoreBestUpperBoundPlacement() {
@@ -262,10 +322,7 @@ void GlobalPlacer::RestoreBestUpperBoundPlacement() {
                   ckt_ptr_->Components().size(),
               "Cannot restore best global placement: component count changed");
 
-  for (size_t i = 0; i < best_upper_bound_placement_.size(); ++i) {
-    ckt_ptr_->Components()[i].SetLowerLeft(best_upper_bound_placement_[i].lx,
-                                           best_upper_bound_placement_[i].ly);
-  }
+  RestorePlacement(best_upper_bound_placement_);
   LOG(info) << "  Restore best global upper bound: "
             << best_upper_bound_hpwl_ << "um\n";
 }

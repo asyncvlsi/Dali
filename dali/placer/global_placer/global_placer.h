@@ -90,6 +90,11 @@ class GlobalPlacer : public Placer {
       std::unique_ptr<GlobalUpperBoundRefiner> upper_bound_refiner,
       int warmup_iteration, int interval);
 
+  /** Select whether a refined physical upper bound becomes the next anchor. */
+  void SetUseRefinedUpperBoundAsAnchor(bool enable) {
+    use_refined_upper_bound_as_anchor_ = enable;
+  }
+
   /** Load global placer configuration. */
   void LoadConf(std::string const& config_file) override;
 
@@ -106,6 +111,8 @@ class GlobalPlacer : public Placer {
   bool StartPlacement() override;
 
  protected:
+  struct ComponentLocation;
+
   // Iteration and convergence controls for look-ahead legalization.
   int cur_iter_ = 0;
   int max_iter_ = 100;
@@ -137,6 +144,13 @@ class GlobalPlacer : public Placer {
   bool ShouldRefineUpperBound() const;
   /** Save component coordinates when the accepted upper bound improves. */
   void UpdateBestUpperBoundPlacement(double upper_bound_hpwl);
+  /** Return a copy of all current component coordinates. */
+  std::vector<ComponentLocation> SaveCurrentPlacement() const;
+  /** Restore component coordinates from a complete placement copy. */
+  void RestorePlacement(const std::vector<ComponentLocation>& placement);
+  /** Log displacement introduced by physical upper-bound refinement. */
+  void LogRefinementDisplacement(
+      const std::vector<ComponentLocation>& placement_before_refinement);
   /** Restore the lowest-HPWL accepted upper-bound placement. */
   void RestoreBestUpperBoundPlacement();
   void EmitSnapshot(const std::string& id, const std::string& label,
@@ -174,6 +188,7 @@ class GlobalPlacer : public Placer {
   double best_upper_bound_hpwl_ = std::numeric_limits<double>::max();
   int upper_bound_refiner_warmup_ = 0;
   int upper_bound_refiner_interval_ = 1;
+  bool use_refined_upper_bound_as_anchor_ = true;
 };
 
 }  // namespace dali

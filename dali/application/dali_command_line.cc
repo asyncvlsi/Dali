@@ -85,6 +85,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -global_max_iterations <n>                 maximum global-placement iterations, default 100\n"
       << "  -enable_gridded_global_capacity            use experimental well-aware LAL capacity\n"
       << "  -enable_gridded_upper_bound_refiner        roughly legalize every gridded global-placement iteration\n"
+      << "  -disable_gridded_legalization_feedback     do not anchor the next solve to rough-legal coordinates\n"
       << "  -enable_gridded_stripe_balancing           rebalance final neighboring gridded stripes\n"
       << "  -enable_gridded_local_reorder              reorder cells within finalized gridded rows\n"
       << "  -enable_gridded_row_y_optimization         shift legal row groups toward net-optimal Y regions\n"
@@ -376,6 +377,8 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.enable_gridded_global_capacity");
     } else if (arg == "-enable_gridded_upper_bound_refiner") {
       EnableConfigFlag("dali.enable_gridded_upper_bound_refiner");
+    } else if (arg == "-disable_gridded_legalization_feedback") {
+      EnableConfigFlag("dali.disable_gridded_legalization_feedback");
     } else if (arg == "-enable_gridded_stripe_balancing") {
       EnableConfigFlag("dali.enable_gridded_stripe_balancing");
     } else if (arg == "-enable_gridded_local_reorder") {

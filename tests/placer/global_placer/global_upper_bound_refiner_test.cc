@@ -24,6 +24,9 @@ class TestableGlobalPlacer : public GlobalPlacer {
   using GlobalPlacer::ShouldRefineUpperBound;
 
   void SetIterationForTest(int iteration) { cur_iter_ = iteration; }
+  bool UsesRefinedUpperBoundAsAnchor() const {
+    return use_refined_upper_bound_as_anchor_;
+  }
 };
 
 TEST(GlobalUpperBoundRefinerTest, HonorsWarmupAndInterval) {
@@ -47,6 +50,15 @@ TEST(GlobalUpperBoundRefinerTest, CanRunOnEveryIteration) {
     placer.SetIterationForTest(iteration);
     EXPECT_TRUE(placer.ShouldRefineUpperBound());
   }
+}
+
+TEST(GlobalUpperBoundRefinerTest, RefinedAnchorFeedbackCanBeDisabled) {
+  TestableGlobalPlacer placer;
+  EXPECT_TRUE(placer.UsesRefinedUpperBoundAsAnchor());
+
+  placer.SetUseRefinedUpperBoundAsAnchor(false);
+
+  EXPECT_FALSE(placer.UsesRefinedUpperBoundAsAnchor());
 }
 
 }  // namespace dali
