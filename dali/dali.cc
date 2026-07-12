@@ -219,6 +219,8 @@ void Dali::ShowParamsList() {
             << enable_gridded_global_capacity_ << "\n"
             << "  enable_gridded_upper_bound_refiner: "
             << enable_gridded_upper_bound_refiner_ << "\n"
+            << "  enable_gridded_upper_bound_balancing: "
+            << enable_gridded_upper_bound_balancing_ << "\n"
             << "  disable_gridded_legalization_feedback: "
             << disable_gridded_legalization_feedback_ << "\n"
             << "  enable_gridded_stripe_balancing: "
@@ -309,6 +311,8 @@ void Dali::LoadParamsFromConfig() {
                  &enable_gridded_global_capacity_);
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_upper_bound_refiner"),
                  &enable_gridded_upper_bound_refiner_);
+  LoadBoolConfig(ConfigName(prefix_, "enable_gridded_upper_bound_balancing"),
+                 &enable_gridded_upper_bound_balancing_);
   LoadBoolConfig(ConfigName(prefix_, "disable_gridded_legalization_feedback"),
                  &disable_gridded_legalization_feedback_);
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_stripe_balancing"),
@@ -422,6 +426,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       enable_end_cap_cell_,
       enable_gridded_global_capacity_,
       enable_gridded_upper_bound_refiner_,
+      enable_gridded_upper_bound_balancing_,
       disable_gridded_legalization_feedback_,
       enable_gridded_stripe_balancing_,
       enable_gridded_local_reorder_,
@@ -695,7 +700,8 @@ bool Dali::RunGlobalPlacementStage() {
         LOG(info) << "  Enable rough gridded upper-bound refinement on every "
                      "global-placement iteration\n";
         gb_placer_.SetUpperBoundRefiner(
-            std::make_unique<RoughGriddedUpperBoundRefiner>(&well_legalizer_),
+            std::make_unique<RoughGriddedUpperBoundRefiner>(
+                &well_legalizer_, enable_gridded_upper_bound_balancing_),
             0, 1);
         gb_placer_.SetUseRefinedUpperBoundAsAnchor(
             !disable_gridded_legalization_feedback_);

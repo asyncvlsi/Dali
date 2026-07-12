@@ -15,7 +15,8 @@ class RoughGriddedUpperBoundRefiner : public GlobalUpperBoundRefiner {
  public:
   /** Construct a non-owning adapter around Dali's well legalizer. */
   explicit RoughGriddedUpperBoundRefiner(
-      GriddedCellWellLegalizer* well_legalizer);
+      GriddedCellWellLegalizer* well_legalizer,
+      bool enable_overflow_balancing = false);
 
   /** Forward target density to the reusable well legalizer. */
   void Initialize(double placement_density) override;
@@ -31,6 +32,7 @@ class RoughGriddedUpperBoundRefiner : public GlobalUpperBoundRefiner {
 
  private:
   GriddedCellWellLegalizer* well_legalizer_ = nullptr;
+  bool enable_overflow_balancing_ = false;
   double total_wall_time_ = 0.0;
 };
 

@@ -283,7 +283,8 @@ double GriddedCellWellLegalizer::ProvisionalOverflowArea() const {
 }
 
 ProvisionalGriddedPlacementResult
-GriddedCellWellLegalizer::RunProvisionalPlacement() {
+GriddedCellWellLegalizer::RunProvisionalPlacement(
+    bool enable_overflow_balancing) {
   const std::vector<ComponentPlacementSnapshot> incoming_placement =
       CaptureComponentPlacement();
   const int configured_stripe_mode = stripe_mode_;
@@ -298,6 +299,11 @@ GriddedCellWellLegalizer::RunProvisionalPlacement() {
   result.overflow = ProvisionalOverflowArea();
   result.violations = last_clustering_violations_;
   result.feasible = result.feasible && result.overflow == 0.0;
+
+  if (!result.feasible && enable_overflow_balancing) {
+    result.feasible =
+        TryBalanceProvisionalPlacement(incoming_placement, &result);
+  }
 
   if (!result.feasible &&
       configured_stripe_mode != int(WellPartitionMode::kScavenge)) {
@@ -317,6 +323,40 @@ GriddedCellWellLegalizer::RunProvisionalPlacement() {
     RestoreComponentPlacement(incoming_placement);
   }
   return result;
+}
+
+bool GriddedCellWellLegalizer::TryBalanceProvisionalPlacement(
+    const std::vector<ComponentPlacementSnapshot>& incoming_placement,
+    ProvisionalGriddedPlacementResult* result) {
+  DaliExpects(result != nullptr,
+              "Cannot save provisional balancing into a null result");
+  GriddedCapacityConfig capacity_config = BuildGriddedCapacityConfig(1.0);
+  unsigned long long previous_overflow =
+      std::numeric_limits<unsigned long long>::max();
+  int max_rounds = std::max(1, static_cast<int>(col_list_.size()));
+  for (int round = 0; round < max_rounds; ++round) {
+    RestoreComponentPlacement(incoming_placement);
+    GriddedStripeBalanceResult balance =
+        GriddedStripeBalancer(ckt_ptr_, capacity_config)
+            .BalanceObservedOverflow(&col_list_);
+    LOG(info) << "    provisional stripe balancing round " << round + 1
+              << ": moved " << balance.moved_component_count
+              << " components, overflow " << balance.overflow_area_before
+              << " -> " << balance.overflow_area_after << "\n";
+    result->balanced_component_count += balance.moved_component_count;
+    if (balance.moved_component_count == 0 ||
+        balance.overflow_area_before >= previous_overflow) {
+      return false;
+    }
+    previous_overflow = balance.overflow_area_before;
+
+    result->feasible = ComponentClusteringLoose();
+    result->overflow = ProvisionalOverflowArea();
+    result->violations = last_clustering_violations_;
+    result->feasible = result->feasible && result->overflow == 0.0;
+    if (result->feasible) return true;
+  }
+  return false;
 }
 
 void GriddedCellWellLegalizer::ClearProvisionalState() {

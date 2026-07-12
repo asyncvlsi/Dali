@@ -12,8 +12,9 @@
 namespace dali {
 
 RoughGriddedUpperBoundRefiner::RoughGriddedUpperBoundRefiner(
-    GriddedCellWellLegalizer* well_legalizer)
-    : well_legalizer_(well_legalizer) {
+    GriddedCellWellLegalizer* well_legalizer, bool enable_overflow_balancing)
+    : well_legalizer_(well_legalizer),
+      enable_overflow_balancing_(enable_overflow_balancing) {
   DaliExpects(well_legalizer_ != nullptr,
               "Rough gridded refiner requires a well legalizer");
 }
@@ -28,7 +29,7 @@ GlobalUpperBoundRefinement RoughGriddedUpperBoundRefiner::Refine(
   ElapsedTime timer;
   timer.RecordStartTime();
   ProvisionalGriddedPlacementResult provisional =
-      well_legalizer_->RunProvisionalPlacement();
+      well_legalizer_->RunProvisionalPlacement(enable_overflow_balancing_);
   timer.RecordEndTime();
   total_wall_time_ += timer.GetWallTime();
 
@@ -56,6 +57,8 @@ GlobalUpperBoundRefinement RoughGriddedUpperBoundRefiner::Refine(
             << "    overflow : " << provisional.overflow << "\n"
             << "    violations: " << violations.size() << "\n"
             << "    affected components: " << affected_component_count << "\n"
+            << "    balanced components: "
+            << provisional.balanced_component_count << "\n"
             << "    wall time: " << timer.GetWallTime() << "s\n";
 
   return {provisional.feasible, provisional.hpwl, provisional.overflow,

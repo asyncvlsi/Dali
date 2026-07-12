@@ -57,6 +57,7 @@ struct ProvisionalGriddedPlacementResult {
   double hpwl = 0.0;
   double overflow = 0.0;
   bool used_scavenge = false;
+  int balanced_component_count = 0;
   std::vector<ProvisionalGriddedPlacementViolation> violations;
 };
 
@@ -137,7 +138,8 @@ class GriddedCellWellLegalizer : public Placer {
    * commits provisional component coordinates; a failed pass restores every
    * incoming coordinate and orientation.
    */
-  ProvisionalGriddedPlacementResult RunProvisionalPlacement();
+  ProvisionalGriddedPlacementResult RunProvisionalPlacement(
+      bool enable_overflow_balancing = false);
 
   /** Release row and stripe state retained by provisional legalization. */
   void ClearProvisionalState();
@@ -188,6 +190,8 @@ class GriddedCellWellLegalizer : public Placer {
   std::vector<PlacementWellRect> CollectWellVisualizationRects();
 
  private:
+  struct ComponentPlacementSnapshot;
+
   /** Return x-capacity reserved for taps/end caps in every gridded row. */
   int PhysicalCompletionReservedWidth() const;
 
@@ -239,6 +243,11 @@ class GriddedCellWellLegalizer : public Placer {
 
   /** Return total gridded-row overflow area in grid units. */
   double ProvisionalOverflowArea() const;
+
+  /** Move a minimal HPWL-ranked set out of overflowing provisional stripes. */
+  bool TryBalanceProvisionalPlacement(
+      const std::vector<ComponentPlacementSnapshot>& incoming_placement,
+      ProvisionalGriddedPlacementResult* result);
 
   /** Log estimated gridded-row demand before component clustering. */
   void LogEstimatedGriddedCapacity();
