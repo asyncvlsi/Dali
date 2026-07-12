@@ -13,7 +13,7 @@ class RecordingUpperBoundRefiner : public GlobalUpperBoundRefiner {
     (void)placement_density;
   }
   GlobalUpperBoundRefinement Refine(int iteration) override {
-    return {true, static_cast<double>(iteration), 0.0, {}};
+    return {true, static_cast<double>(iteration), 0.0, 0, {}};
   }
   double GetTime() const override { return 0.0; }
   void Close() override {}
@@ -23,6 +23,7 @@ class TestableGlobalPlacer : public GlobalPlacer {
  public:
   using GlobalPlacer::ShouldRefineUpperBound;
   using GlobalPlacer::HasCurrentConvergenceUpperBound;
+  using GlobalPlacer::ShouldUseRefinedUpperBoundAsAnchor;
 
   void SetIterationForTest(int iteration) { cur_iter_ = iteration; }
   void SetCurrentUpperBoundPhysicalForTest(bool is_physical) {
@@ -30,6 +31,9 @@ class TestableGlobalPlacer : public GlobalPlacer {
   }
   bool UsesRefinedUpperBoundAsAnchor() const {
     return use_refined_upper_bound_as_anchor_;
+  }
+  void SetBestUpperBoundHpwlForTest(double hpwl) {
+    best_upper_bound_hpwl_ = hpwl;
   }
 };
 
@@ -75,6 +79,19 @@ TEST(GlobalUpperBoundRefinerTest, RefinedAnchorFeedbackCanBeDisabled) {
   placer.SetUseRefinedUpperBoundAsAnchor(false);
 
   EXPECT_FALSE(placer.UsesRefinedUpperBoundAsAnchor());
+}
+
+TEST(GlobalUpperBoundRefinerTest, QualityGatesModifiedRefinedAnchors) {
+  TestableGlobalPlacer placer;
+  placer.SetRequireImprovingModifiedRefinedAnchor(true);
+  placer.SetBestUpperBoundHpwlForTest(100.0);
+
+  EXPECT_TRUE(placer.ShouldUseRefinedUpperBoundAsAnchor(
+      {true, 90.0, 0.0, 3, {}}));
+  EXPECT_FALSE(placer.ShouldUseRefinedUpperBoundAsAnchor(
+      {true, 110.0, 0.0, 3, {}}));
+  EXPECT_TRUE(placer.ShouldUseRefinedUpperBoundAsAnchor(
+      {true, 110.0, 0.0, 0, {}}));
 }
 
 }  // namespace dali

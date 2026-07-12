@@ -228,6 +228,7 @@ void GlobalPlacer::RunPlacementIterations() {
     spreader_->Spread();
     double accepted_hpwl = spreader_->Hpwls().back();
     bool accepted_physical_refinement = false;
+    bool use_refined_upper_bound_as_anchor = true;
     current_upper_bound_is_physical_ = upper_bound_refiner_ == nullptr;
     std::vector<ComponentLocation> placement_before_refinement;
     if (ShouldRefineUpperBound()) {
@@ -237,6 +238,8 @@ void GlobalPlacer::RunPlacementIterations() {
       if (refinement.feasible) {
         accepted_hpwl = refinement.hpwl;
         accepted_physical_refinement = true;
+        use_refined_upper_bound_as_anchor =
+            ShouldUseRefinedUpperBoundAsAnchor(refinement);
         current_upper_bound_is_physical_ = true;
         LogRefinementDisplacement(placement_before_refinement);
       }
@@ -247,14 +250,24 @@ void GlobalPlacer::RunPlacementIterations() {
     }
     EmitIterationSnapshot("upper_bound", "Upper Bound", "upper_bound");
     if (accepted_physical_refinement &&
-        !use_refined_upper_bound_as_anchor_) {
+        !use_refined_upper_bound_as_anchor) {
       RestorePlacement(placement_before_refinement);
-      LOG(info) << "    legalization feedback: disabled; next anchor uses "
-                   "the LAL upper bound\n";
+      LOG(info) << "    legalization feedback: refined placement is not an "
+                   "anchor; next solve uses the LAL upper bound\n";
     }
     PrintHpwl();
     if (IsPlacementConverged()) break;
   }
+}
+
+bool GlobalPlacer::ShouldUseRefinedUpperBoundAsAnchor(
+    const GlobalUpperBoundRefinement& refinement) const {
+  if (!use_refined_upper_bound_as_anchor_) return false;
+  if (!require_improving_modified_refined_anchor_ ||
+      refinement.modified_component_count == 0) {
+    return true;
+  }
+  return refinement.hpwl < best_upper_bound_hpwl_;
 }
 
 void GlobalPlacer::UpdateBestUpperBoundPlacement(double upper_bound_hpwl) {

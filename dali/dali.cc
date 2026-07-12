@@ -705,6 +705,8 @@ bool Dali::RunGlobalPlacementStage() {
             0, 1);
         gb_placer_.SetUseRefinedUpperBoundAsAnchor(
             !disable_gridded_legalization_feedback_);
+        gb_placer_.SetRequireImprovingModifiedRefinedAnchor(
+            enable_gridded_upper_bound_balancing_);
       }
     }
     if (!gb_placer_.StartPlacement()) {

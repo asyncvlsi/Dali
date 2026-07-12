@@ -28,6 +28,7 @@ struct GlobalUpperBoundRefinement {
   bool feasible = false;
   double hpwl = 0.0;
   double overflow = 0.0;
+  int modified_component_count = 0;
   std::vector<GlobalUpperBoundViolation> violations;
 };
 
