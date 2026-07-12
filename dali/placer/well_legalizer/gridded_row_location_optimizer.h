@@ -18,6 +18,12 @@
 
 namespace dali {
 
+/** Activity and quality after one row-location optimization sweep. */
+struct GriddedRowLocationSweep {
+  int groups_moved = 0;
+  double hpwl = 0.0;
+};
+
 /** Summary of one gridded row-location optimization run. */
 struct GriddedRowLocationResult {
   int sweeps = 0;
@@ -25,6 +31,7 @@ struct GriddedRowLocationResult {
   int groups_moved = 0;
   double hpwl_before = 0.0;
   double hpwl_after = 0.0;
+  std::vector<GriddedRowLocationSweep> sweep_results;
 };
 
 /**

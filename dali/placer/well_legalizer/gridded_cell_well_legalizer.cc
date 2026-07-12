@@ -1227,6 +1227,13 @@ void GriddedCellWellLegalizer::RunRowLocationOptimizationStage() {
   GriddedRowLocationResult result =
       GriddedRowLocationOptimizer(ckt_ptr_).Optimize(&col_list_);
   timer.RecordEndTime();
+  LOG(info) << "  sweep results:\n";
+  for (size_t sweep = 0; sweep < result.sweep_results.size(); ++sweep) {
+    LOG(info) << "    " << sweep + 1
+              << ": groups moved="
+              << result.sweep_results[sweep].groups_moved
+              << ", HPWL=" << result.sweep_results[sweep].hpwl << "um\n";
+  }
   LOG(info) << "  completed sweeps  : " << result.sweeps << "\n"
             << "  groups considered : " << result.groups_considered << "\n"
             << "  groups moved      : " << result.groups_moved << "\n"

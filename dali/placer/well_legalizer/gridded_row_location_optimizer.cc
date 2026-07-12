@@ -160,7 +160,7 @@ GriddedRowLocationResult GriddedRowLocationOptimizer::Optimize(
 
   GriddedRowLocationResult result;
   result.hpwl_before = circuit_->WeightedHPWL();
-  constexpr int kMaxSweeps = 4;
+  constexpr int kMaxSweeps = 20;
   for (int sweep = 0; sweep < kMaxSweeps; ++sweep) {
     int moved_this_sweep = 0;
     for (StripeColumn& column : *columns) {
@@ -176,6 +176,8 @@ GriddedRowLocationResult GriddedRowLocationOptimizer::Optimize(
       }
     }
     ++result.sweeps;
+    result.sweep_results.push_back(
+        {moved_this_sweep, circuit_->WeightedHPWL()});
     if (moved_this_sweep == 0) break;
   }
   result.hpwl_after = circuit_->WeightedHPWL();
