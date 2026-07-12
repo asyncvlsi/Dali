@@ -34,6 +34,7 @@
 #include "gridded_capacity_estimator.h"
 #include "gridded_detailed_placer.h"
 #include "gridded_row.h"
+#include "gridded_row_location_optimizer.h"
 #include "space_partitioner.h"
 #include "stripe.h"
 #include "well_row_completer.h"
@@ -87,6 +88,11 @@ class GriddedCellWellLegalizer : public Placer {
 
   /** Enable wirelength-driven reordering within legalized gridded rows. */
   void SetEnableLocalReorder(bool enable) { enable_local_reorder_ = enable; }
+
+  /** Enable HPWL-aware vertical movement of legal gridded row groups. */
+  void SetEnableRowLocationOptimization(bool enable) {
+    enable_row_location_optimization_ = enable;
+  }
 
   /** Set maximum legalized row width in microns. */
   void SetMaxRowWidth(double max_row_width_microns);
@@ -194,6 +200,7 @@ class GriddedCellWellLegalizer : public Placer {
   /** Choose column orientation phases using exact weighted HPWL. */
   double OptimizeColumnOrientationPhases();
   void RunClusterOrientationStage();
+  void RunRowLocationOptimizationStage();
   std::vector<GriddedRow*> CollectGriddedRows();
   void RunGriddedDetailedPlacementStage();
   bool RunMovableCellLegalizationStages();
@@ -251,6 +258,7 @@ class GriddedCellWellLegalizer : public Placer {
   int max_row_width_ = -1;
   bool enable_stripe_balancing_ = false;
   bool enable_local_reorder_ = false;
+  bool enable_row_location_optimization_ = false;
   WellSpacePartitioner space_partitioner_;
   GriddedDetailedPlacer gridded_detailed_placer_;
   SnapshotCallback snapshot_callback_;

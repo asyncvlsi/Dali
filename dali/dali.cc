@@ -223,6 +223,8 @@ void Dali::ShowParamsList() {
             << enable_gridded_stripe_balancing_ << "\n"
             << "  enable_gridded_local_reorder: "
             << enable_gridded_local_reorder_ << "\n"
+            << "  enable_gridded_row_y_optimization: "
+            << enable_gridded_row_y_optimization_ << "\n"
             << "  enable_shrink_off_grid_die_area: "
             << enable_shrink_off_grid_die_area_ << "\n"
             << "  global_initializer: " << static_cast<int>(global_initializer_)
@@ -309,6 +311,8 @@ void Dali::LoadParamsFromConfig() {
                  &enable_gridded_stripe_balancing_);
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_local_reorder"),
                  &enable_gridded_local_reorder_);
+  LoadBoolConfig(ConfigName(prefix_, "enable_gridded_row_y_optimization"),
+                 &enable_gridded_row_y_optimization_);
   LoadBoolConfig(ConfigName(prefix_, "enable_shrink_off_grid_die_area"),
                  &enable_shrink_off_grid_die_area_);
   param_name = ConfigName(prefix_, "global_initializer");
@@ -416,6 +420,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       enable_gridded_upper_bound_refiner_,
       enable_gridded_stripe_balancing_,
       enable_gridded_local_reorder_,
+      enable_gridded_row_y_optimization_,
       enable_shrink_off_grid_die_area_,
       global_initializer_,
       global_anchor_schedule_,
@@ -790,6 +795,8 @@ void Dali::ConfigureWellLegalizer() {
   well_legalizer_.SetEnableStripeBalancing(
       enable_gridded_stripe_balancing_);
   well_legalizer_.SetEnableLocalReorder(enable_gridded_local_reorder_);
+  well_legalizer_.SetEnableRowLocationOptimization(
+      enable_gridded_row_y_optimization_);
   well_legalizer_.SetSnapshotCallback(
       [this](const std::string& id, const std::string& label,
              const std::string& group, const std::string& subgroup,

@@ -25,6 +25,7 @@
 #include <limits>
 #include <utility>
 
+#include "dali/common/elapsed_time.h"
 #include "dali/common/helper.h"
 #include "dali/common/placement_metrics.h"
 #include "dali/placer/well_legalizer/stripe_helper.h"
@@ -1219,9 +1220,34 @@ void GriddedCellWellLegalizer::RunGriddedDetailedPlacementStage() {
                "detailed_placement", "final");
 }
 
+void GriddedCellWellLegalizer::RunRowLocationOptimizationStage() {
+  LOG(info) << "Optimize gridded row Y locations\n";
+  ElapsedTime timer;
+  timer.RecordStartTime();
+  GriddedRowLocationResult result =
+      GriddedRowLocationOptimizer(ckt_ptr_).Optimize(&col_list_);
+  timer.RecordEndTime();
+  LOG(info) << "  completed sweeps  : " << result.sweeps << "\n"
+            << "  groups considered : " << result.groups_considered << "\n"
+            << "  groups moved      : " << result.groups_moved << "\n"
+            << "  HPWL improvement  : "
+            << result.hpwl_before - result.hpwl_after << "um\n"
+            << "  wall time         : " << timer.GetWallTime() << "s\n";
+  RecordPlacementMetric("well_legalization.row_location", result.hpwl_after);
+  RecordPlacementMetric("time.well_legalization.row_location.wall_s",
+                        timer.GetWallTime());
+  RecordPlacementMetric("time.well_legalization.row_location.cpu_s",
+                        timer.GetCpuTime());
+  EmitSnapshot("row_location", "After Gridded Row Location Optimization",
+               "legalization", "row_location");
+}
+
 bool GriddedCellWellLegalizer::RunMovableCellLegalizationStages() {
   bool is_success = RunComponentClusteringStage();
   RunClusterOrientationStage();
+  if (is_success && enable_row_location_optimization_) {
+    RunRowLocationOptimizationStage();
+  }
   if (is_success && enable_local_reorder_) {
     RunGriddedDetailedPlacementStage();
   }

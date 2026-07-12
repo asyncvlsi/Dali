@@ -42,3 +42,12 @@ target_link_libraries(gridded_stripe_balancer_test
 add_test(NAME gridded_stripe_balancer_test COMMAND gridded_stripe_balancer_test)
 set_tests_properties(gridded_stripe_balancer_test
                      PROPERTIES LABELS "unit;placer;well_legalizer")
+
+add_executable(gridded_row_location_optimizer_test
+               gridded_row_location_optimizer_test.cc)
+target_link_libraries(gridded_row_location_optimizer_test
+                      PRIVATE dalilib ${DALI_GTEST_MAIN})
+add_test(NAME gridded_row_location_optimizer_test
+         COMMAND gridded_row_location_optimizer_test)
+set_tests_properties(gridded_row_location_optimizer_test
+                     PROPERTIES LABELS "unit;placer;well_legalizer")

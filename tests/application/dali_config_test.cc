@@ -47,6 +47,7 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_FALSE(options.enable_filler_cell);
   EXPECT_FALSE(options.enable_end_cap_cell);
   EXPECT_FALSE(options.enable_gridded_local_reorder);
+  EXPECT_FALSE(options.enable_gridded_row_y_optimization);
   EXPECT_FALSE(options.enable_shrink_off_grid_die_area);
   EXPECT_EQ(options.global_initializer,
             dali::PlacementInitializerType::kUniform);
@@ -89,6 +90,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_int("dali.enable_gridded_upper_bound_refiner", 1);
   config_set_int("dali.enable_gridded_stripe_balancing", 1);
   config_set_int("dali.enable_gridded_local_reorder", 1);
+  config_set_int("dali.enable_gridded_row_y_optimization", 1);
   config_set_int("dali.enable_shrink_off_grid_die_area", 1);
   config_set_string("dali.global_initializer", "keep");
   config_set_string("dali.global_lal_hotspot", "overflow_ratio");
@@ -128,6 +130,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_TRUE(options.enable_gridded_upper_bound_refiner);
   EXPECT_TRUE(options.enable_gridded_stripe_balancing);
   EXPECT_TRUE(options.enable_gridded_local_reorder);
+  EXPECT_TRUE(options.enable_gridded_row_y_optimization);
   EXPECT_TRUE(options.enable_shrink_off_grid_die_area);
   EXPECT_EQ(options.global_initializer, dali::PlacementInitializerType::kKeep);
   EXPECT_EQ(options.global_lal_hotspot_mode,
