@@ -23,6 +23,8 @@
 #include <algorithm>
 #include <cfloat>
 
+#include "dali/placer/well_legalizer/adaptive_stripe_boundary_planner.h"
+
 namespace dali {
 
 void SpacePartitioner::SetCircuit(Circuit* circuit) {
@@ -50,6 +52,12 @@ void SpacePartitioner::SetPartitionMode(int partition_mode) {
 
 void SpacePartitioner::SetMaxRowWidth(int max_row_width) {
   max_row_width_ = max_row_width;
+}
+
+void SpacePartitioner::SetAdaptiveStripeBoundaries(
+    bool enable, const GriddedCapacityConfig& capacity_config) {
+  use_adaptive_boundaries_ = enable;
+  capacity_config_ = capacity_config;
 }
 
 void WellSpacePartitioner::FetchWellParameters() {
@@ -343,9 +351,11 @@ bool WellSpacePartitioner::StartPartitioning() {
             << "um, " << stripe_width_ << "\n";
   DaliWarns(stripe_width_ < max_component_width_,
             "Maximum component width is longer than gridded row width?");
+  std::vector<int> column_boundaries = PlanColumnBoundaries(region_width);
   for (int i = 0; i < tot_col_num_; ++i) {
-    col_list[i].lx_ = Left() + i * stripe_width_;
-    col_list[i].width_ = stripe_width_ - well_spacing_;
+    col_list[i].lx_ = column_boundaries[i];
+    col_list[i].width_ =
+        column_boundaries[i + 1] - column_boundaries[i] - well_spacing_;
     DaliExpects(col_list[i].width_ > 0,
                 "CELL configuration is problematic, leading to non-positive "
                 "column width");
@@ -460,14 +470,71 @@ int WellSpacePartitioner::RowToLoc(int row_num, int displacement) const {
 }
 
 int WellSpacePartitioner::LocToCol(int x) const {
-  int col_num = (x - Left()) / stripe_width_;
-  if (col_num < 0) {
-    col_num = 0;
+  const std::vector<StripeColumn>& columns = *output_stripes_;
+  auto column = std::upper_bound(
+      columns.begin(), columns.end(), x,
+      [](int location, const StripeColumn& candidate) {
+        return location < candidate.LLX();
+      });
+  if (column == columns.begin()) return 0;
+  return static_cast<int>(std::distance(columns.begin(), column) - 1);
+}
+
+std::vector<int> WellSpacePartitioner::PlanColumnBoundaries(
+    int region_width) const {
+  std::vector<int> uniform_boundaries(tot_col_num_ + 1);
+  for (int column = 0; column <= tot_col_num_; ++column) {
+    uniform_boundaries[column] = Left() + stripe_width_ * column;
   }
-  if (col_num >= tot_col_num_) {
-    col_num = tot_col_num_ - 1;
+  if (!use_adaptive_boundaries_ || tot_col_num_ == 1) {
+    return uniform_boundaries;
   }
-  return col_num;
+
+  const int average_pitch = region_width / tot_col_num_;
+  AdaptiveStripeBoundaryConfig planner_config;
+  planner_config.region_left = Left();
+  planner_config.region_right = Right();
+  planner_config.column_count = tot_col_num_;
+  planner_config.minimum_column_pitch =
+      std::max(max_component_width_ + well_spacing_ +
+                   capacity_config_.reserved_width,
+               average_pitch / 2);
+  planner_config.maximum_column_pitch =
+      std::min(region_width, average_pitch * 3 / 2);
+  planner_config.boundary_step = std::max(1, max_component_width_);
+  planner_config.spacing_per_column =
+      well_spacing_ + capacity_config_.reserved_width;
+
+  GriddedCapacityEstimator estimator(capacity_config_);
+  std::vector<StripeDemandSample> samples;
+  samples.reserve(circuit_->Components().size());
+  for (const Component& component : circuit_->Components()) {
+    if (!component.IsMovable()) continue;
+    samples.push_back(
+        {component.X(),
+         static_cast<double>(estimator.EstimateStandaloneDemand(component))});
+  }
+
+  AdaptiveStripeBoundaryResult plan =
+      AdaptiveStripeBoundaryPlanner(planner_config).Plan(samples);
+  if (!plan.feasible) {
+    LOG(warning) << "  Adaptive stripe planning failed; use uniform boundaries\n";
+    return uniform_boundaries;
+  }
+
+  int minimum_pitch = region_width;
+  int maximum_pitch = 0;
+  for (size_t i = 1; i < plan.boundaries.size(); ++i) {
+    int pitch = plan.boundaries[i] - plan.boundaries[i - 1];
+    minimum_pitch = std::min(minimum_pitch, pitch);
+    maximum_pitch = std::max(maximum_pitch, pitch);
+  }
+  LOG(info) << "  Adaptive stripe boundaries:\n"
+            << "    objective       : " << plan.objective << "\n"
+            << "    pitch range     : "
+            << minimum_pitch * circuit_->GridValueX() << "-"
+            << maximum_pitch * circuit_->GridValueX() << "um\n";
+  return plan.boundaries;
 }
 
 }  // namespace dali

@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "dali/circuit/circuit.h"
+#include "dali/placer/well_legalizer/gridded_capacity_estimator.h"
 #include "stripe.h"
 
 namespace dali {
@@ -56,6 +57,10 @@ class SpacePartitioner {
   /** Set maximum row width for generated stripes. */
   virtual void SetMaxRowWidth(int max_row_width);
 
+  /** Configure opt-in demand-aware nonuniform stripe boundaries. */
+  virtual void SetAdaptiveStripeBoundaries(
+      bool enable, const GriddedCapacityConfig& capacity_config);
+
   /** Run partitioning and populate the output stripe container. */
   virtual bool StartPartitioning() = 0;
 
@@ -71,6 +76,8 @@ class SpacePartitioner {
 
   int partition_mode_ = 0;
   int max_row_width_ = -1;
+  bool use_adaptive_boundaries_ = false;
+  GriddedCapacityConfig capacity_config_;
 };
 
 enum class WellPartitionMode { kStrict = 0, kScavenge = 1 };
@@ -124,6 +131,8 @@ class WellSpacePartitioner : public SpacePartitioner {
   int EndRow(int y_loc) const;
   int RowToLoc(int row_num, int displacement = 0) const;
   int LocToCol(int x) const;
+
+  std::vector<int> PlanColumnBoundaries(int region_width) const;
 };
 
 }  // namespace dali

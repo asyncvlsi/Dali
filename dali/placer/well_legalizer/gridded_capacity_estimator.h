@@ -62,6 +62,16 @@ class GriddedCapacityEstimator {
       const std::vector<Component*>& components, int region_width,
       int region_height, unsigned long long raw_whitespace_area) const;
 
+  /**
+   * Estimate one component's standalone gridded demand.
+   *
+   * The value is component width multiplied by the sum of its P/N-well region
+   * heights after applying physical-cell minimum heights. It intentionally
+   * excludes row sharing, which is unknown before stripe boundaries exist.
+   */
+  unsigned long long EstimateStandaloneDemand(
+      const Component& component) const;
+
  private:
   GriddedCapacityConfig config_;
 };

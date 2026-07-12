@@ -30,6 +30,28 @@ GriddedCapacityEstimator::GriddedCapacityEstimator(GriddedCapacityConfig config)
               "Gridded capacity target density must be in (0, 1]");
 }
 
+unsigned long long GriddedCapacityEstimator::EstimateStandaloneDemand(
+    const Component& component) const {
+  const Macro* macro = component.MacroPtr();
+  DaliExpects(macro != nullptr, "Movable component has no cell master");
+
+  int total_height = 0;
+  if (macro->HasCompleteWellRegions()) {
+    for (int region_id = 0; region_id < macro->RegionCount(); ++region_id) {
+      total_height +=
+          std::max(macro->PwellHeight(region_id, component.IsFlipped()),
+                   config_.minimum_p_well_height) +
+          std::max(macro->NwellHeight(region_id, component.IsFlipped()),
+                   config_.minimum_n_well_height);
+    }
+  } else {
+    total_height =
+        std::max(macro->FirstPwellHeight(), config_.minimum_p_well_height) +
+        std::max(macro->FirstNwellHeight(), config_.minimum_n_well_height);
+  }
+  return static_cast<unsigned long long>(component.Width()) * total_height;
+}
+
 GriddedCapacityEstimate GriddedCapacityEstimator::Estimate(
     const std::vector<Component*>& components, int region_width,
     int region_height, unsigned long long raw_whitespace_area) const {

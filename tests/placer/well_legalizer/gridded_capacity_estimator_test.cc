@@ -137,6 +137,7 @@ TEST_F(GriddedCapacityEstimatorTest, AccountsForEveryMacroWellRegion) {
   EXPECT_EQ(estimate.estimated_row_count, 2);
   EXPECT_EQ(estimate.required_row_height, 20);
   EXPECT_EQ(estimate.required_gridded_area, 160);
+  EXPECT_EQ(estimator.EstimateStandaloneDemand(*components.front()), 80U);
 }
 
 TEST_F(GriddedCapacityEstimatorTest, FallsBackForUnpairedWellGeometry) {
