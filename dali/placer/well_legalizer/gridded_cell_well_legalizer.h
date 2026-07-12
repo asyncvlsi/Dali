@@ -99,6 +99,11 @@ class GriddedCellWellLegalizer : public Placer {
     enable_stripe_balancing_ = enable;
   }
 
+  /** Enable demand-aware nonuniform stripe boundaries. */
+  void SetEnableAdaptiveStripeBoundaries(bool enable) {
+    enable_adaptive_stripe_boundaries_ = enable;
+  }
+
   /** Enable wirelength-driven reordering within legalized gridded rows. */
   void SetEnableLocalReorder(bool enable) { enable_local_reorder_ = enable; }
 
@@ -286,6 +291,7 @@ class GriddedCellWellLegalizer : public Placer {
   int stripe_mode_ = 0;
   int max_row_width_ = -1;
   bool enable_stripe_balancing_ = false;
+  bool enable_adaptive_stripe_boundaries_ = false;
   bool enable_local_reorder_ = false;
   bool enable_row_location_optimization_ = false;
   WellSpacePartitioner space_partitioner_;

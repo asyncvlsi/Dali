@@ -261,6 +261,8 @@ void GriddedCellWellLegalizer::InitializeWellLegalizer(int cluster_width) {
                                                     well_spacing_, 1, 1);
   }
   space_partitioner_.SetPartitionMode(stripe_mode_);
+  space_partitioner_.SetAdaptiveStripeBoundaries(
+      enable_adaptive_stripe_boundaries_, BuildGriddedCapacityConfig(1.0));
   if (cluster_width >= 0) {
     space_partitioner_.SetMaxRowWidth(cluster_width);
   } else {

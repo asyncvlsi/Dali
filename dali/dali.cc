@@ -212,6 +212,8 @@ void Dali::ShowParamsList() {
             << "  disable_welltap: " << disable_welltap_ << "\n"
             << "  disable_cell_flip: " << disable_cell_flip_ << "\n"
             << "  max_row_width: " << max_row_width_ << "\n"
+            << "  enable_adaptive_stripe_boundaries: "
+            << enable_adaptive_stripe_boundaries_ << "\n"
             << "  is_standard_cell: " << is_standard_cell_ << "\n"
             << "  enable_filler_cell: " << enable_filler_cell_ << "\n"
             << "  enable_end_cap_cell: " << enable_end_cap_cell_ << "\n"
@@ -302,6 +304,8 @@ void Dali::LoadParamsFromConfig() {
   LoadBoolConfig(ConfigName(prefix_, "disable_welltap"), &disable_welltap_);
   LoadBoolConfig(ConfigName(prefix_, "disable_cell_flip"), &disable_cell_flip_);
   LoadRealConfig(ConfigName(prefix_, "max_row_width"), &max_row_width_);
+  LoadBoolConfig(ConfigName(prefix_, "enable_adaptive_stripe_boundaries"),
+                 &enable_adaptive_stripe_boundaries_);
   LoadBoolConfig(ConfigName(prefix_, "is_standard_cell"), &is_standard_cell_);
   LoadBoolConfig(ConfigName(prefix_, "enable_filler_cell"),
                  &enable_filler_cell_);
@@ -421,6 +425,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       disable_welltap_,
       disable_cell_flip_,
       max_row_width_,
+      enable_adaptive_stripe_boundaries_,
       is_standard_cell_,
       enable_filler_cell_,
       enable_end_cap_cell_,
@@ -803,6 +808,8 @@ void Dali::ConfigureWellLegalizer() {
   well_legalizer_.disable_cell_flip_ = disable_cell_flip_;
   well_legalizer_.enable_end_cap_cell_ = enable_end_cap_cell_;
   well_legalizer_.SetMaxRowWidth(max_row_width_);
+  well_legalizer_.SetEnableAdaptiveStripeBoundaries(
+      enable_adaptive_stripe_boundaries_);
   well_legalizer_.SetStripePartitionMode(
       static_cast<int>(well_legalization_mode_));
   well_legalizer_.SetEnableStripeBalancing(

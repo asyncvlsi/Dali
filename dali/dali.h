@@ -58,6 +58,7 @@ class Dali {
     bool disable_welltap = false;
     bool disable_cell_flip = false;
     double max_row_width = 0;
+    bool enable_adaptive_stripe_boundaries = false;
     bool is_standard_cell = false;
     bool enable_filler_cell = false;
     bool enable_end_cap_cell = false;
@@ -186,6 +187,7 @@ class Dali {
   bool disable_welltap_ = false;
   bool disable_cell_flip_ = false;
   double max_row_width_ = 0;
+  bool enable_adaptive_stripe_boundaries_ = false;
   bool is_standard_cell_ = false;
   bool enable_filler_cell_ = false;
   bool enable_end_cap_cell_ = false;

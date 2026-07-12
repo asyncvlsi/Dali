@@ -43,6 +43,7 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_FALSE(options.disable_welltap);
   EXPECT_FALSE(options.disable_cell_flip);
   EXPECT_DOUBLE_EQ(options.max_row_width, 0);
+  EXPECT_FALSE(options.enable_adaptive_stripe_boundaries);
   EXPECT_FALSE(options.is_standard_cell);
   EXPECT_FALSE(options.enable_filler_cell);
   EXPECT_FALSE(options.enable_end_cap_cell);
@@ -85,6 +86,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_int("dali.disable_welltap", 1);
   config_set_int("dali.disable_cell_flip", 1);
   config_set_real("dali.max_row_width", 42.5);
+  config_set_int("dali.enable_adaptive_stripe_boundaries", 1);
   config_set_int("dali.is_standard_cell", 1);
   config_set_int("dali.enable_filler_cell", 1);
   config_set_int("dali.enable_end_cap_cell", 1);
@@ -127,6 +129,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_TRUE(options.disable_welltap);
   EXPECT_TRUE(options.disable_cell_flip);
   EXPECT_DOUBLE_EQ(options.max_row_width, 42.5);
+  EXPECT_TRUE(options.enable_adaptive_stripe_boundaries);
   EXPECT_TRUE(options.is_standard_cell);
   EXPECT_TRUE(options.enable_filler_cell);
   EXPECT_TRUE(options.enable_end_cap_cell);

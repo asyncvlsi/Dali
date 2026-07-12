@@ -86,6 +86,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -enable_gridded_global_capacity            use experimental well-aware LAL capacity\n"
       << "  -enable_gridded_upper_bound_refiner        roughly legalize every gridded global-placement iteration\n"
       << "  -enable_gridded_upper_bound_balancing      minimally rebalance failed rough-legal stripes\n"
+      << "  -enable_adaptive_stripe_boundaries         optimize nonuniform gridded stripe widths\n"
       << "  -disable_gridded_legalization_feedback     do not anchor the next solve to rough-legal coordinates\n"
       << "  -enable_gridded_stripe_balancing           rebalance final neighboring gridded stripes\n"
       << "  -enable_gridded_local_reorder              reorder cells within finalized gridded rows\n"
@@ -346,6 +347,8 @@ bool ParseDaliCommandLine(int argc, char* argv[],
         return false;
       }
       config_set_real("dali.max_row_width", max_row_width);
+    } else if (arg == "-enable_adaptive_stripe_boundaries") {
+      EnableConfigFlag("dali.enable_adaptive_stripe_boundaries");
     } else if (arg == "-disable_welltap") {
       EnableConfigFlag("dali.disable_welltap");
     } else if (arg == "-disable_cell_flip") {
