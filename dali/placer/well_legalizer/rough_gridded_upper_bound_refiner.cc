@@ -3,6 +3,8 @@
  *******************************************************************************/
 #include "rough_gridded_upper_bound_refiner.h"
 
+#include <utility>
+
 #include "dali/common/elapsed_time.h"
 #include "dali/common/logging.h"
 #include "gridded_cell_well_legalizer.h"
@@ -30,15 +32,34 @@ GlobalUpperBoundRefinement RoughGriddedUpperBoundRefiner::Refine(
   timer.RecordEndTime();
   total_wall_time_ += timer.GetWallTime();
 
+  std::vector<GlobalUpperBoundViolation> violations;
+  violations.reserve(provisional.violations.size());
+  size_t affected_component_count = 0;
+  for (const ProvisionalGriddedPlacementViolation& provisional_violation :
+       provisional.violations) {
+    GlobalUpperBoundViolation violation;
+    violation.lx = provisional_violation.lx;
+    violation.ly = provisional_violation.ly;
+    violation.ux = provisional_violation.ux;
+    violation.uy = provisional_violation.uy;
+    violation.overflow = provisional_violation.overflow_height;
+    violation.component_ids = provisional_violation.component_ids;
+    affected_component_count += violation.component_ids.size();
+    violations.push_back(std::move(violation));
+  }
+
   LOG(info) << "  Rough gridded upper bound, iteration " << iteration << ":\n"
             << "    feasible : " << provisional.feasible << "\n"
             << "    mode     : "
             << (provisional.used_scavenge ? "scavenge" : "configured") << "\n"
             << "    HPWL     : " << provisional.hpwl << "\n"
             << "    overflow : " << provisional.overflow << "\n"
+            << "    violations: " << violations.size() << "\n"
+            << "    affected components: " << affected_component_count << "\n"
             << "    wall time: " << timer.GetWallTime() << "s\n";
 
-  return {provisional.feasible, provisional.hpwl, provisional.overflow};
+  return {provisional.feasible, provisional.hpwl, provisional.overflow,
+          std::move(violations)};
 }
 
 double RoughGriddedUpperBoundRefiner::GetTime() const {

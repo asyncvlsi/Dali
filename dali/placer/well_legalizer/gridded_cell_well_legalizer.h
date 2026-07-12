@@ -41,12 +41,23 @@
 
 namespace dali {
 
+/** One stripe that provisional gridded legalization could not fit. */
+struct ProvisionalGriddedPlacementViolation {
+  int lx = 0;
+  int ly = 0;
+  int ux = 0;
+  int uy = 0;
+  int overflow_height = 0;
+  std::vector<int> component_ids;
+};
+
 /** Outcome of a provisional gridded legalization pass. */
 struct ProvisionalGriddedPlacementResult {
   bool feasible = false;
   double hpwl = 0.0;
   double overflow = 0.0;
   bool used_scavenge = false;
+  std::vector<ProvisionalGriddedPlacementViolation> violations;
 };
 
 /**
@@ -219,6 +230,8 @@ class GriddedCellWellLegalizer : public Placer {
   void LogStripeLegalizationFailure(const StripeColumn& col,
                                     const Stripe& stripe, int column_index,
                                     int stripe_index) const;
+  /** Save structured failure data for the last clustering attempt. */
+  void RecordStripeLegalizationFailure(const Stripe& stripe);
   /** Log a summary after component clustering to make failures debuggable. */
   void LogComponentClusteringSummary(int failed_stripe_count) const;
   /** Count component rectangle overlaps after legalization. */
@@ -263,6 +276,8 @@ class GriddedCellWellLegalizer : public Placer {
   GriddedDetailedPlacer gridded_detailed_placer_;
   SnapshotCallback snapshot_callback_;
   int snapshot_attempt_ = 0;
+  std::vector<ProvisionalGriddedPlacementViolation>
+      last_clustering_violations_;
 
   /**** cached well tap cell parameters ****/
   Macro* well_tap_macro_ = nullptr;

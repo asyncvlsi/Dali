@@ -296,6 +296,7 @@ GriddedCellWellLegalizer::RunProvisionalPlacement() {
   ProvisionalGriddedPlacementResult result;
   result.feasible = run_clustering();
   result.overflow = ProvisionalOverflowArea();
+  result.violations = last_clustering_violations_;
   result.feasible = result.feasible && result.overflow == 0.0;
 
   if (!result.feasible &&
@@ -305,6 +306,7 @@ GriddedCellWellLegalizer::RunProvisionalPlacement() {
     result.used_scavenge = true;
     result.feasible = run_clustering();
     result.overflow = ProvisionalOverflowArea();
+    result.violations = last_clustering_violations_;
     result.feasible = result.feasible && result.overflow == 0.0;
   }
 
@@ -782,6 +784,7 @@ bool GriddedCellWellLegalizer::ComponentClusteringLoose() {
   int count = 0;
   bool res = true;
   int failed_stripe_count = 0;
+  last_clustering_violations_.clear();
   for (int col_id = 0; col_id < static_cast<int>(col_list_.size()); ++col_id) {
     auto& col = col_list_[col_id];
     bool is_success = true;
@@ -807,6 +810,7 @@ bool GriddedCellWellLegalizer::ComponentClusteringLoose() {
       res = res && is_success;
       if (!is_success) {
         ++failed_stripe_count;
+        RecordStripeLegalizationFailure(stripe);
         LogStripeLegalizationFailure(col, stripe, col_id, stripe_id);
       }
       /*if (is_success) {
@@ -829,11 +833,32 @@ bool GriddedCellWellLegalizer::ComponentClusteringLoose() {
         }
       }
       stripe.MinDisplacementAdjustment();
+      if (is_success && stripe.used_height_ > stripe.Height()) {
+        ++failed_stripe_count;
+        RecordStripeLegalizationFailure(stripe);
+        LogStripeLegalizationFailure(col, stripe, col_id, stripe_id);
+      }
     }
   }
 
   LogComponentClusteringSummary(failed_stripe_count);
   return res;
+}
+
+void GriddedCellWellLegalizer::RecordStripeLegalizationFailure(
+    const Stripe& stripe) {
+  ProvisionalGriddedPlacementViolation violation;
+  violation.lx = stripe.LLX();
+  violation.ly = stripe.LLY();
+  violation.ux = stripe.URX();
+  violation.uy = stripe.URY();
+  violation.overflow_height =
+      std::max(0, stripe.used_height_ - stripe.Height());
+  violation.component_ids.reserve(stripe.component_ptrs_vec_.size());
+  for (const Component* component : stripe.component_ptrs_vec_) {
+    violation.component_ids.push_back(component->Id());
+  }
+  last_clustering_violations_.push_back(std::move(violation));
 }
 
 void GriddedCellWellLegalizer::LogStripeLegalizationFailure(

@@ -13,7 +13,7 @@ class RecordingUpperBoundRefiner : public GlobalUpperBoundRefiner {
     (void)placement_density;
   }
   GlobalUpperBoundRefinement Refine(int iteration) override {
-    return {true, static_cast<double>(iteration), 0.0};
+    return {true, static_cast<double>(iteration), 0.0, {}};
   }
   double GetTime() const override { return 0.0; }
   void Close() override {}
