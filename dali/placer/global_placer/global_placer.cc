@@ -225,15 +225,19 @@ void GlobalPlacer::RunPlacementIterations() {
     spreader_->SetIteration(cur_iter_);
     spreader_->Spread();
     double accepted_hpwl = spreader_->Hpwls().back();
+    bool accepted_physical_refinement = false;
     if (ShouldRefineUpperBound()) {
       GlobalUpperBoundRefinement refinement =
           upper_bound_refiner_->Refine(cur_iter_);
       if (refinement.feasible) {
         accepted_hpwl = refinement.hpwl;
+        accepted_physical_refinement = true;
       }
     }
     accepted_upper_bound_hpwl_.push_back(accepted_hpwl);
-    UpdateBestUpperBoundPlacement(accepted_hpwl);
+    if (accepted_physical_refinement) {
+      UpdateBestUpperBoundPlacement(accepted_hpwl);
+    }
     EmitIterationSnapshot("upper_bound", "Upper Bound", "upper_bound");
     PrintHpwl();
     if (IsPlacementConverged()) break;
