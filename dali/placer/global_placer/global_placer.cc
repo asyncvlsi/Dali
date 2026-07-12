@@ -144,6 +144,8 @@ void GlobalPlacer::InitializePlacementEngines() {
   accepted_upper_bound_hpwl_.clear();
   best_upper_bound_placement_.clear();
   best_upper_bound_hpwl_ = std::numeric_limits<double>::max();
+  legalization_residual_x_.assign(ckt_ptr_->Components().size(), 0.0);
+  legalization_residual_y_.assign(ckt_ptr_->Components().size(), 0.0);
   if (upper_bound_refiner_) {
     upper_bound_refiner_->Initialize(PlacementDensity());
   }
@@ -222,6 +224,10 @@ void GlobalPlacer::RunPlacementIterations() {
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
     optimizer_->SetIteration(cur_iter_);
     optimizer_->OptimizeHpwl();
+    std::vector<ComponentLocation> analytical_placement;
+    if (enable_legalization_residual_feedback_) {
+      analytical_placement = SaveCurrentPlacement();
+    }
     EmitIterationSnapshot("lower_bound", "Lower Bound", "lower_bound");
     spreader_->SetIteration(cur_iter_);
     spreader_->Spread();
@@ -236,6 +242,9 @@ void GlobalPlacer::RunPlacementIterations() {
         accepted_hpwl = refinement.hpwl;
         accepted_physical_refinement = true;
         LogRefinementDisplacement(placement_before_refinement);
+        if (enable_legalization_residual_feedback_) {
+          UpdateLegalizationResidualFeedback(analytical_placement);
+        }
       }
     }
     accepted_upper_bound_hpwl_.push_back(accepted_hpwl);
@@ -314,6 +323,53 @@ void GlobalPlacer::LogRefinementDisplacement(
   RecordPlacementMetric("global_placement.feedback.last_avg_x_um", average_x);
   RecordPlacementMetric("global_placement.feedback.last_avg_y_um", average_y);
   RecordPlacementMetric("global_placement.feedback.last_max_um", max_distance);
+}
+
+void GlobalPlacer::UpdateLegalizationResidualFeedback(
+    const std::vector<ComponentLocation>& analytical_placement) {
+  DaliExpects(use_refined_upper_bound_as_anchor_,
+              "Residual legalization feedback requires refined anchors");
+  DaliExpects(analytical_placement.size() == ckt_ptr_->Components().size(),
+              "Cannot update legalization residual: component count changed");
+
+  std::vector<double> x_targets(analytical_placement.size(), 0.0);
+  std::vector<double> y_targets(analytical_placement.size(), 0.0);
+  double residual_x_sum = 0.0;
+  double residual_y_sum = 0.0;
+  double residual_max = 0.0;
+  int movable_count = 0;
+  for (size_t i = 0; i < analytical_placement.size(); ++i) {
+    const Component& component = ckt_ptr_->Components()[i];
+    if (component.IsMovable()) {
+      legalization_residual_x_[i] +=
+          analytical_placement[i].lx - component.LLX();
+      legalization_residual_y_[i] +=
+          analytical_placement[i].ly - component.LLY();
+      double residual_x =
+          std::fabs(legalization_residual_x_[i]) * ckt_ptr_->GridValueX();
+      double residual_y =
+          std::fabs(legalization_residual_y_[i]) * ckt_ptr_->GridValueY();
+      residual_x_sum += residual_x;
+      residual_y_sum += residual_y;
+      residual_max =
+          std::max(residual_max,
+                   std::sqrt(residual_x * residual_x + residual_y * residual_y));
+      ++movable_count;
+    }
+    x_targets[i] = component.LLX() - legalization_residual_x_[i];
+    y_targets[i] = component.LLY() - legalization_residual_y_[i];
+  }
+  optimizer_->SetExternalAnchorTargets(x_targets, y_targets);
+
+  double average_x =
+      movable_count == 0 ? 0.0 : residual_x_sum / movable_count;
+  double average_y =
+      movable_count == 0 ? 0.0 : residual_y_sum / movable_count;
+  LOG(info) << "    accumulated legalization residual avg X/Y: " << average_x
+            << " / " << average_y << "um, max: " << residual_max << "um\n";
+  RecordPlacementMetric("global_placement.residual.last_avg_x_um", average_x);
+  RecordPlacementMetric("global_placement.residual.last_avg_y_um", average_y);
+  RecordPlacementMetric("global_placement.residual.last_max_um", residual_max);
 }
 
 void GlobalPlacer::RestoreBestUpperBoundPlacement() {
