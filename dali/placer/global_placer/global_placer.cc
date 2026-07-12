@@ -144,6 +144,11 @@ void GlobalPlacer::InitializePlacementEngines() {
   accepted_upper_bound_hpwl_.clear();
   best_upper_bound_placement_.clear();
   best_upper_bound_hpwl_ = std::numeric_limits<double>::max();
+  size_t component_count = ckt_ptr_->Components().size();
+  average_legalization_correction_x_.assign(component_count, 0.0);
+  average_legalization_correction_y_.assign(component_count, 0.0);
+  legalization_correction_streak_x_.assign(component_count, 0);
+  legalization_correction_streak_y_.assign(component_count, 0);
   if (upper_bound_refiner_) {
     upper_bound_refiner_->Initialize(PlacementDensity());
   }
@@ -236,6 +241,9 @@ void GlobalPlacer::RunPlacementIterations() {
         accepted_hpwl = refinement.hpwl;
         accepted_physical_refinement = true;
         LogRefinementDisplacement(placement_before_refinement);
+        if (enable_persistent_legalization_feedback_) {
+          UpdatePersistentLegalizationFeedback(placement_before_refinement);
+        }
       }
     }
     accepted_upper_bound_hpwl_.push_back(accepted_hpwl);
@@ -314,6 +322,106 @@ void GlobalPlacer::LogRefinementDisplacement(
   RecordPlacementMetric("global_placement.feedback.last_avg_x_um", average_x);
   RecordPlacementMetric("global_placement.feedback.last_avg_y_um", average_y);
   RecordPlacementMetric("global_placement.feedback.last_max_um", max_distance);
+}
+
+void GlobalPlacer::UpdatePersistentLegalizationFeedback(
+    const std::vector<ComponentLocation>& placement_before_refinement) {
+  DaliExpects(use_refined_upper_bound_as_anchor_,
+              "Persistent legalization feedback requires refined anchors");
+  DaliExpects(placement_before_refinement.size() ==
+                  ckt_ptr_->Components().size(),
+              "Cannot update persistent feedback: component count changed");
+
+  std::vector<double> x_targets(placement_before_refinement.size(), 0.0);
+  std::vector<double> y_targets(placement_before_refinement.size(), 0.0);
+  double target_offset_x_sum = 0.0;
+  double target_offset_y_sum = 0.0;
+  int selected_component_count = 0;
+  int movable_component_count = 0;
+
+  auto update_correction = [](double correction, double* average,
+                              int* streak) {
+    if (std::fabs(correction) <= 1e-9) {
+      *average = 0.0;
+      *streak = 0;
+      return false;
+    }
+    if (*streak > 0 && *average * correction > 0.0) {
+      ++(*streak);
+      *average += (correction - *average) / *streak;
+    } else {
+      *average = correction;
+      *streak = 1;
+    }
+    return *streak >= 2;
+  };
+
+  for (size_t i = 0; i < placement_before_refinement.size(); ++i) {
+    const Component& component = ckt_ptr_->Components()[i];
+    double legal_x = component.LLX();
+    double legal_y = component.LLY();
+    bool use_x_correction = false;
+    bool use_y_correction = false;
+    if (component.IsMovable()) {
+      use_x_correction = update_correction(
+          placement_before_refinement[i].lx - legal_x,
+          &average_legalization_correction_x_[i],
+          &legalization_correction_streak_x_[i]);
+      use_y_correction = update_correction(
+          placement_before_refinement[i].ly - legal_y,
+          &average_legalization_correction_y_[i],
+          &legalization_correction_streak_y_[i]);
+      ++movable_component_count;
+    }
+
+    double target_x =
+        legal_x - (use_x_correction ? average_legalization_correction_x_[i]
+                                    : 0.0);
+    double target_y =
+        legal_y - (use_y_correction ? average_legalization_correction_y_[i]
+                                    : 0.0);
+    target_x = std::clamp(target_x, static_cast<double>(ckt_ptr_->RegionLLX()),
+                          static_cast<double>(ckt_ptr_->RegionURX() -
+                                              component.Width()));
+    target_y = std::clamp(target_y, static_cast<double>(ckt_ptr_->RegionLLY()),
+                          static_cast<double>(ckt_ptr_->RegionURY() -
+                                              component.Height()));
+    x_targets[i] = target_x;
+    y_targets[i] = target_y;
+    if (use_x_correction || use_y_correction) {
+      ++selected_component_count;
+      target_offset_x_sum +=
+          std::fabs(target_x - legal_x) * ckt_ptr_->GridValueX();
+      target_offset_y_sum +=
+          std::fabs(target_y - legal_y) * ckt_ptr_->GridValueY();
+    }
+  }
+  optimizer_->SetExternalAnchorTargets(x_targets, y_targets);
+
+  double selected_fraction =
+      movable_component_count == 0
+          ? 0.0
+          : static_cast<double>(selected_component_count) /
+                movable_component_count;
+  double average_target_offset_x =
+      selected_component_count == 0
+          ? 0.0
+          : target_offset_x_sum / selected_component_count;
+  double average_target_offset_y =
+      selected_component_count == 0
+          ? 0.0
+          : target_offset_y_sum / selected_component_count;
+  LOG(info) << "    persistent legalization feedback: selected "
+            << selected_component_count << " components ("
+            << selected_fraction * 100.0 << "%), target offset avg X/Y: "
+            << average_target_offset_x << " / " << average_target_offset_y
+            << "um\n";
+  RecordPlacementMetric("global_placement.persistent.selected_fraction",
+                        selected_fraction);
+  RecordPlacementMetric("global_placement.persistent.last_avg_x_um",
+                        average_target_offset_x);
+  RecordPlacementMetric("global_placement.persistent.last_avg_y_um",
+                        average_target_offset_y);
 }
 
 void GlobalPlacer::RestoreBestUpperBoundPlacement() {

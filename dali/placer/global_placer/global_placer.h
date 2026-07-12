@@ -95,6 +95,11 @@ class GlobalPlacer : public Placer {
     use_refined_upper_bound_as_anchor_ = enable;
   }
 
+  /** Enable bounded feedback from persistent LAL-to-legal corrections. */
+  void SetEnablePersistentLegalizationFeedback(bool enable) {
+    enable_persistent_legalization_feedback_ = enable;
+  }
+
   /** Load global placer configuration. */
   void LoadConf(std::string const& config_file) override;
 
@@ -151,6 +156,9 @@ class GlobalPlacer : public Placer {
   /** Log displacement introduced by physical upper-bound refinement. */
   void LogRefinementDisplacement(
       const std::vector<ComponentLocation>& placement_before_refinement);
+  /** Update persistent correction state and the next explicit anchor target. */
+  void UpdatePersistentLegalizationFeedback(
+      const std::vector<ComponentLocation>& placement_before_refinement);
   /** Restore the lowest-HPWL accepted upper-bound placement. */
   void RestoreBestUpperBoundPlacement();
   void EmitSnapshot(const std::string& id, const std::string& label,
@@ -189,6 +197,11 @@ class GlobalPlacer : public Placer {
   int upper_bound_refiner_warmup_ = 0;
   int upper_bound_refiner_interval_ = 1;
   bool use_refined_upper_bound_as_anchor_ = true;
+  bool enable_persistent_legalization_feedback_ = false;
+  std::vector<double> average_legalization_correction_x_;
+  std::vector<double> average_legalization_correction_y_;
+  std::vector<int> legalization_correction_streak_x_;
+  std::vector<int> legalization_correction_streak_y_;
 };
 
 }  // namespace dali

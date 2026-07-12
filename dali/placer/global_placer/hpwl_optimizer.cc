@@ -106,6 +106,17 @@ void BoundToBoundHpwlOptimizer::Initialize() {
   Ay.reserve(static_cast<SparseIndex>(coefficient_size));
 }
 
+void BoundToBoundHpwlOptimizer::SetExternalAnchorTargets(
+    const std::vector<double>& x_targets,
+    const std::vector<double>& y_targets) {
+  DaliExpects(x_targets.size() == ckt_ptr_->Components().size() &&
+                  y_targets.size() == ckt_ptr_->Components().size(),
+              "External anchor target count does not match component count");
+  external_x_anchor_targets_ = x_targets;
+  external_y_anchor_targets_ = y_targets;
+  external_anchor_targets_set_ = true;
+}
+
 void BoundToBoundHpwlOptimizer::BuildProblemX() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
@@ -562,13 +573,19 @@ void BoundToBoundHpwlOptimizer::UpdateAnchorLocation() {
 
   for (int i = 0; i < sz; ++i) {
     double tmp_loc_x = x_anchor[i];
-    x_anchor[i] = component_list[i].LLX();
+    x_anchor[i] = external_anchor_targets_set_
+                      ? external_x_anchor_targets_[i]
+                      : component_list[i].LLX();
     component_list[i].SetLLX(tmp_loc_x);
 
     double tmp_loc_y = y_anchor[i];
-    y_anchor[i] = component_list[i].LLY();
+    y_anchor[i] = external_anchor_targets_set_
+                      ? external_y_anchor_targets_[i]
+                      : component_list[i].LLY();
     component_list[i].SetLLY(tmp_loc_y);
   }
+
+  external_anchor_targets_set_ = false;
 
   x_anchor_set = true;
   y_anchor_set = true;

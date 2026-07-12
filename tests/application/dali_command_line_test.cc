@@ -98,6 +98,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "-enable_gridded_global_capacity",
                      "-enable_gridded_upper_bound_refiner",
                      "-disable_gridded_legalization_feedback",
+                     "-enable_gridded_persistent_legalization_feedback",
                      "-enable_gridded_stripe_balancing",
                      "-enable_gridded_local_reorder",
                      "-enable_gridded_row_y_optimization",
@@ -130,6 +131,9 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_EQ(config_get_int("dali.enable_gridded_global_capacity"), 1);
   EXPECT_EQ(config_get_int("dali.enable_gridded_upper_bound_refiner"), 1);
   EXPECT_EQ(config_get_int("dali.disable_gridded_legalization_feedback"), 1);
+  EXPECT_EQ(
+      config_get_int("dali.enable_gridded_persistent_legalization_feedback"),
+      1);
   EXPECT_EQ(config_get_int("dali.enable_gridded_stripe_balancing"), 1);
   EXPECT_EQ(config_get_int("dali.enable_gridded_local_reorder"), 1);
   EXPECT_EQ(config_get_int("dali.enable_gridded_row_y_optimization"), 1);
