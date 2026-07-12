@@ -144,6 +144,7 @@ void GlobalPlacer::InitializePlacementEngines() {
   accepted_upper_bound_hpwl_.clear();
   best_upper_bound_placement_.clear();
   best_upper_bound_hpwl_ = std::numeric_limits<double>::max();
+  current_upper_bound_is_physical_ = upper_bound_refiner_ == nullptr;
   size_t component_count = ckt_ptr_->Components().size();
   average_legalization_correction_x_.assign(component_count, 0.0);
   average_legalization_correction_y_.assign(component_count, 0.0);
@@ -232,6 +233,7 @@ void GlobalPlacer::RunPlacementIterations() {
     spreader_->Spread();
     double accepted_hpwl = spreader_->Hpwls().back();
     bool accepted_physical_refinement = false;
+    current_upper_bound_is_physical_ = upper_bound_refiner_ == nullptr;
     std::vector<ComponentLocation> placement_before_refinement;
     if (ShouldRefineUpperBound()) {
       placement_before_refinement = SaveCurrentPlacement();
@@ -240,6 +242,7 @@ void GlobalPlacer::RunPlacementIterations() {
       if (refinement.feasible) {
         accepted_hpwl = refinement.hpwl;
         accepted_physical_refinement = true;
+        current_upper_bound_is_physical_ = true;
         LogRefinementDisplacement(placement_before_refinement);
         if (enable_persistent_legalization_feedback_) {
           UpdatePersistentLegalizationFeedback(placement_before_refinement);
@@ -443,6 +446,10 @@ bool GlobalPlacer::ShouldRefineUpperBound() const {
              0;
 }
 
+bool GlobalPlacer::HasCurrentConvergenceUpperBound() const {
+  return upper_bound_refiner_ == nullptr || current_upper_bound_is_physical_;
+}
+
 void GlobalPlacer::EmitIterationSnapshot(const std::string& id_suffix,
                                          const std::string& label_suffix,
                                          const std::string& subgroup) {
@@ -547,6 +554,7 @@ bool GlobalPlacer::HasUpperBoundHpwlStalled(
  * ****/
 bool GlobalPlacer::IsPlacementConverged() {
   if (cur_iter_ + 1 < min_iter_) return false;
+  if (!HasCurrentConvergenceUpperBound()) return false;
 
   bool res;
   auto& lower_bound_hpwl = optimizer_->GetHpwls();

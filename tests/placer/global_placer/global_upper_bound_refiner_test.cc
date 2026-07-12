@@ -22,8 +22,12 @@ class RecordingUpperBoundRefiner : public GlobalUpperBoundRefiner {
 class TestableGlobalPlacer : public GlobalPlacer {
  public:
   using GlobalPlacer::ShouldRefineUpperBound;
+  using GlobalPlacer::HasCurrentConvergenceUpperBound;
 
   void SetIterationForTest(int iteration) { cur_iter_ = iteration; }
+  void SetCurrentUpperBoundPhysicalForTest(bool is_physical) {
+    current_upper_bound_is_physical_ = is_physical;
+  }
   bool UsesRefinedUpperBoundAsAnchor() const {
     return use_refined_upper_bound_as_anchor_;
   }
@@ -59,6 +63,18 @@ TEST(GlobalUpperBoundRefinerTest, CanRunOnEveryIteration) {
     placer.SetIterationForTest(iteration);
     EXPECT_TRUE(placer.ShouldRefineUpperBound());
   }
+}
+
+TEST(GlobalUpperBoundRefinerTest, RequiresFreshPhysicalConvergenceBound) {
+  TestableGlobalPlacer placer;
+  EXPECT_TRUE(placer.HasCurrentConvergenceUpperBound());
+
+  placer.SetUpperBoundRefiner(std::make_unique<RecordingUpperBoundRefiner>(), 0,
+                              1);
+  EXPECT_FALSE(placer.HasCurrentConvergenceUpperBound());
+
+  placer.SetCurrentUpperBoundPhysicalForTest(true);
+  EXPECT_TRUE(placer.HasCurrentConvergenceUpperBound());
 }
 
 TEST(GlobalUpperBoundRefinerTest, RefinedAnchorFeedbackCanBeDisabled) {

@@ -144,6 +144,8 @@ class GlobalPlacer : public Placer {
       const std::vector<double>& upper_bound_hpwl) const;
 
   bool IsPlacementConverged();
+  /** Return true when this iteration has a valid bound for convergence. */
+  bool HasCurrentConvergenceUpperBound() const;
   void PreparePlacement();
   void RunPlacementIterations();
   bool ShouldRefineUpperBound() const;
@@ -197,6 +199,7 @@ class GlobalPlacer : public Placer {
   int upper_bound_refiner_warmup_ = 0;
   int upper_bound_refiner_interval_ = 1;
   bool use_refined_upper_bound_as_anchor_ = true;
+  bool current_upper_bound_is_physical_ = false;
   bool enable_persistent_legalization_feedback_ = false;
   std::vector<double> average_legalization_correction_x_;
   std::vector<double> average_legalization_correction_y_;
