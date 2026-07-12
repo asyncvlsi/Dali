@@ -34,6 +34,7 @@
 #include "dali/common/logging.h"
 #include "dali/common/phydb_helper.h"
 #include "dali/common/placement_metrics.h"
+#include "dali/placer/well_legalizer/rough_gridded_upper_bound_refiner.h"
 
 namespace dali {
 
@@ -216,6 +217,8 @@ void Dali::ShowParamsList() {
             << "  enable_end_cap_cell: " << enable_end_cap_cell_ << "\n"
             << "  enable_gridded_global_capacity: "
             << enable_gridded_global_capacity_ << "\n"
+            << "  enable_gridded_upper_bound_refiner: "
+            << enable_gridded_upper_bound_refiner_ << "\n"
             << "  enable_gridded_stripe_balancing: "
             << enable_gridded_stripe_balancing_ << "\n"
             << "  enable_shrink_off_grid_die_area: "
@@ -296,6 +299,8 @@ void Dali::LoadParamsFromConfig() {
                  &enable_end_cap_cell_);
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_global_capacity"),
                  &enable_gridded_global_capacity_);
+  LoadBoolConfig(ConfigName(prefix_, "enable_gridded_upper_bound_refiner"),
+                 &enable_gridded_upper_bound_refiner_);
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_stripe_balancing"),
                  &enable_gridded_stripe_balancing_);
   LoadBoolConfig(ConfigName(prefix_, "enable_shrink_off_grid_die_area"),
@@ -398,6 +403,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       enable_filler_cell_,
       enable_end_cap_cell_,
       enable_gridded_global_capacity_,
+      enable_gridded_upper_bound_refiner_,
       enable_gridded_stripe_balancing_,
       enable_shrink_off_grid_die_area_,
       global_initializer_,
@@ -621,11 +627,16 @@ bool Dali::RunGlobalPlacementStage() {
     gb_placer_.SetLalMacroBoundaryMode(global_lal_macro_boundary_mode_);
     gb_placer_.SetMinIteration(global_min_iterations_);
     gb_placer_.SetMaxIteration(global_max_iterations_);
+    const bool needs_gridded_legalizer =
+        !is_standard_cell_ && (enable_gridded_global_capacity_ ||
+                               enable_gridded_upper_bound_refiner_);
+    if (needs_gridded_legalizer) {
+      ConfigureWellLegalizer();
+    }
     if (is_standard_cell_ || !enable_gridded_global_capacity_) {
       gb_placer_.SetCapacityModel(std::make_shared<AreaCapacityModel>());
     } else {
       LOG(info) << "  Enable experimental gridded global capacity model\n";
-      ConfigureWellLegalizer();
       GriddedCapacityConfig capacity_config =
           well_legalizer_.BuildGriddedCapacityConfig(target_density_);
       double demand_normalization =
@@ -633,6 +644,18 @@ bool Dali::RunGlobalPlacementStage() {
       gb_placer_.SetCapacityModel(
           std::make_shared<GriddedPlacementCapacityModel>(
               capacity_config, demand_normalization));
+    }
+    if (enable_gridded_upper_bound_refiner_) {
+      if (is_standard_cell_) {
+        LOG(warning) << "Ignore gridded upper-bound refiner for standard-cell "
+                        "placement\n";
+      } else {
+        LOG(info) << "  Enable rough gridded upper-bound refinement on every "
+                     "global-placement iteration\n";
+        gb_placer_.SetUpperBoundRefiner(
+            std::make_unique<RoughGriddedUpperBoundRefiner>(&well_legalizer_),
+            0, 1);
+      }
     }
     if (!gb_placer_.StartPlacement()) {
       LOG(error) << "Global placement failed\n";

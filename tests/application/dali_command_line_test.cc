@@ -94,6 +94,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "-detailed_max_move_candidates",
                      "500",
                      "-enable_gridded_global_capacity",
+                     "-enable_gridded_upper_bound_refiner",
                      "-enable_gridded_stripe_balancing",
                      "-save_intermediate_result",
                      "-disable_detailed_place",
@@ -119,6 +120,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_EQ(config_get_int("dali.detailed_max_rounds"), 2);
   EXPECT_EQ(config_get_int("dali.detailed_max_move_candidates"), 500);
   EXPECT_EQ(config_get_int("dali.enable_gridded_global_capacity"), 1);
+  EXPECT_EQ(config_get_int("dali.enable_gridded_upper_bound_refiner"), 1);
   EXPECT_EQ(config_get_int("dali.enable_gridded_stripe_balancing"), 1);
   EXPECT_EQ(config_get_int("dali.save_intermediate_result"), 1);
   EXPECT_EQ(config_get_int("dali.disable_detailed_place"), 1);

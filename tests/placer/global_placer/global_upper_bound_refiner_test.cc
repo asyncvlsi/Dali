@@ -38,4 +38,15 @@ TEST(GlobalUpperBoundRefinerTest, HonorsWarmupAndInterval) {
   }
 }
 
+TEST(GlobalUpperBoundRefinerTest, CanRunOnEveryIteration) {
+  TestableGlobalPlacer placer;
+  placer.SetUpperBoundRefiner(std::make_unique<RecordingUpperBoundRefiner>(), 0,
+                              1);
+
+  for (int iteration = 0; iteration < 8; ++iteration) {
+    placer.SetIterationForTest(iteration);
+    EXPECT_TRUE(placer.ShouldRefineUpperBound());
+  }
+}
+
 }  // namespace dali

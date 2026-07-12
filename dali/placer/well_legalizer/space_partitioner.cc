@@ -295,6 +295,12 @@ bool WellSpacePartitioner::StartPartitioning() {
   DaliExpects(circuit_ != nullptr, "Circuit is not set");
   DaliExpects(output_stripes_ != nullptr, "Output location is not set");
 
+  // Partitioning is reused by provisional legalization during global
+  // placement. Clear all output and row caches before rebuilding them from
+  // the current component locations.
+  output_stripes_->clear();
+  white_space_in_rows_.clear();
+
   // initialize row height and white space segments
   DetectAvailSpace();
 

@@ -40,6 +40,14 @@
 
 namespace dali {
 
+/** Outcome of a provisional gridded legalization pass. */
+struct ProvisionalGriddedPlacementResult {
+  bool feasible = false;
+  double hpwl = 0.0;
+  double overflow = 0.0;
+  bool used_scavenge = false;
+};
+
 /**
  * Standard cluster-based well legalizer and DEF/well-shape emitter.
  *
@@ -100,6 +108,19 @@ class GriddedCellWellLegalizer : public Placer {
 
   /** Initialize stripes, clusters, and cached parameters. */
   void InitializeWellLegalizer(int cluster_width = -1);
+
+  /**
+   * Roughly legalize the current global-placement upper bound.
+   *
+   * This method forms gridded rows but intentionally skips orientation,
+   * detailed placement, taps, end caps, and well geometry. A successful pass
+   * commits provisional component coordinates; a failed pass restores every
+   * incoming coordinate and orientation.
+   */
+  ProvisionalGriddedPlacementResult RunProvisionalPlacement();
+
+  /** Release row and stripe state retained by provisional legalization. */
+  void ClearProvisionalState();
 
   void CreateClusterAndAppendSingleWellComponent(Stripe& stripe,
                                                  Component& component);
@@ -187,6 +208,9 @@ class GriddedCellWellLegalizer : public Placer {
   void LogComponentClusteringSummary(int failed_stripe_count) const;
   /** Count component rectangle overlaps after legalization. */
   size_t CountComponentOverlapsInRows() const;
+
+  /** Return total gridded-row overflow area in grid units. */
+  double ProvisionalOverflowArea() const;
 
   /** Log estimated gridded-row demand before component clustering. */
   void LogEstimatedGriddedCapacity();

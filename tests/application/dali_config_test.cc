@@ -85,6 +85,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_int("dali.enable_filler_cell", 1);
   config_set_int("dali.enable_end_cap_cell", 1);
   config_set_int("dali.enable_gridded_global_capacity", 1);
+  config_set_int("dali.enable_gridded_upper_bound_refiner", 1);
   config_set_int("dali.enable_gridded_stripe_balancing", 1);
   config_set_int("dali.enable_shrink_off_grid_die_area", 1);
   config_set_string("dali.global_initializer", "keep");
@@ -121,6 +122,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_TRUE(options.enable_filler_cell);
   EXPECT_TRUE(options.enable_end_cap_cell);
   EXPECT_TRUE(options.enable_gridded_global_capacity);
+  EXPECT_TRUE(options.enable_gridded_upper_bound_refiner);
   EXPECT_TRUE(options.enable_gridded_stripe_balancing);
   EXPECT_TRUE(options.enable_shrink_off_grid_die_area);
   EXPECT_EQ(options.global_initializer, dali::PlacementInitializerType::kKeep);

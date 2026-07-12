@@ -83,6 +83,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -global_min_iterations <n>                 minimum global-placement iterations, default 10\n"
       << "  -global_max_iterations <n>                 maximum global-placement iterations, default 100\n"
       << "  -enable_gridded_global_capacity            use experimental well-aware LAL capacity\n"
+      << "  -enable_gridded_upper_bound_refiner        roughly legalize every gridded global-placement iteration\n"
       << "  -enable_gridded_stripe_balancing           rebalance final neighboring gridded stripes\n"
       << "  -standard_cell_legalizer_cost <displacement/hpwl>  default displacement\n"
       << "  -detailed_max_rounds <n>                   detailed-placement optimization rounds, default 1\n"
@@ -364,6 +365,8 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.enable_end_cap_cell");
     } else if (arg == "-enable_gridded_global_capacity") {
       EnableConfigFlag("dali.enable_gridded_global_capacity");
+    } else if (arg == "-enable_gridded_upper_bound_refiner") {
+      EnableConfigFlag("dali.enable_gridded_upper_bound_refiner");
     } else if (arg == "-enable_gridded_stripe_balancing") {
       EnableConfigFlag("dali.enable_gridded_stripe_balancing");
     } else if (arg == "-enable_shrink_off_grid_die_area") {

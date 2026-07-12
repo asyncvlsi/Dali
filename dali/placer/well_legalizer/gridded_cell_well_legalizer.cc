@@ -270,6 +270,57 @@ void GriddedCellWellLegalizer::InitializeWellLegalizer(int cluster_width) {
   index_loc_list_.resize(ckt_ptr_->Components().size());
 }
 
+double GriddedCellWellLegalizer::ProvisionalOverflowArea() const {
+  double overflow_area = 0.0;
+  for (const StripeColumn& column : col_list_) {
+    for (const Stripe& stripe : column.stripe_list_) {
+      int overflow_height = std::max(0, stripe.used_height_ - stripe.Height());
+      overflow_area += static_cast<double>(overflow_height) * stripe.Width();
+    }
+  }
+  return overflow_area;
+}
+
+ProvisionalGriddedPlacementResult
+GriddedCellWellLegalizer::RunProvisionalPlacement() {
+  const std::vector<ComponentPlacementSnapshot> incoming_placement =
+      CaptureComponentPlacement();
+  const int configured_stripe_mode = stripe_mode_;
+
+  auto run_clustering = [this]() {
+    InitializeWellLegalizer();
+    return ComponentClusteringLoose();
+  };
+
+  ProvisionalGriddedPlacementResult result;
+  result.feasible = run_clustering();
+  result.overflow = ProvisionalOverflowArea();
+  result.feasible = result.feasible && result.overflow == 0.0;
+
+  if (!result.feasible &&
+      configured_stripe_mode != int(WellPartitionMode::kScavenge)) {
+    RestoreComponentPlacement(incoming_placement);
+    stripe_mode_ = int(WellPartitionMode::kScavenge);
+    result.used_scavenge = true;
+    result.feasible = run_clustering();
+    result.overflow = ProvisionalOverflowArea();
+    result.feasible = result.feasible && result.overflow == 0.0;
+  }
+
+  stripe_mode_ = configured_stripe_mode;
+  if (result.feasible) {
+    result.hpwl = WeightedHPWL();
+  } else {
+    RestoreComponentPlacement(incoming_placement);
+  }
+  return result;
+}
+
+void GriddedCellWellLegalizer::ClearProvisionalState() {
+  col_list_.clear();
+  index_loc_list_.clear();
+}
+
 int GriddedCellWellLegalizer::PhysicalCompletionReservedWidth() const {
   int reserved_width = 0;
   if (!disable_welltap_) {
