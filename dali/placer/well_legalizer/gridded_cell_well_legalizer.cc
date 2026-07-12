@@ -334,10 +334,7 @@ bool GriddedCellWellLegalizer::TryBalanceProvisionalPlacement(
   unsigned long long previous_overflow =
       std::numeric_limits<unsigned long long>::max();
   std::vector<int> moved_component_ids;
-  // Most useful repairs converge quickly. Bound failed attempts so rough
-  // legalization remains a global-placement aid rather than its bottleneck.
-  int max_rounds =
-      std::min(3, std::max(1, static_cast<int>(col_list_.size())));
+  int max_rounds = std::max(1, static_cast<int>(col_list_.size()));
   for (int round = 0; round < max_rounds; ++round) {
     RestoreComponentPlacement(incoming_placement);
     GriddedStripeBalanceResult balance =
