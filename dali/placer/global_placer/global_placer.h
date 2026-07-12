@@ -22,6 +22,7 @@
 #define DALI_PLACER_GLOBAL_PLACER_GLOBAL_PLACER_H_
 
 #include <functional>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -134,6 +135,10 @@ class GlobalPlacer : public Placer {
   void PreparePlacement();
   void RunPlacementIterations();
   bool ShouldRefineUpperBound() const;
+  /** Save component coordinates when the accepted upper bound improves. */
+  void UpdateBestUpperBoundPlacement(double upper_bound_hpwl);
+  /** Restore the lowest-HPWL accepted upper-bound placement. */
+  void RestoreBestUpperBoundPlacement();
   void EmitSnapshot(const std::string& id, const std::string& label,
                     const std::string& subgroup, int iteration);
   void EmitIterationSnapshot(const std::string& id_suffix,
@@ -161,6 +166,12 @@ class GlobalPlacer : public Placer {
   std::unique_ptr<GlobalSpreader> spreader_;
   std::unique_ptr<GlobalUpperBoundRefiner> upper_bound_refiner_;
   std::vector<double> accepted_upper_bound_hpwl_;
+  struct ComponentLocation {
+    double lx = 0.0;
+    double ly = 0.0;
+  };
+  std::vector<ComponentLocation> best_upper_bound_placement_;
+  double best_upper_bound_hpwl_ = std::numeric_limits<double>::max();
   int upper_bound_refiner_warmup_ = 0;
   int upper_bound_refiner_interval_ = 1;
 };

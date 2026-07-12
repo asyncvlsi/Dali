@@ -141,6 +141,8 @@ void GlobalPlacer::InitializePlacementEngines() {
   look_ahead_spreader->Initialize(PlacementDensity());
   spreader_ = std::move(look_ahead_spreader);
   accepted_upper_bound_hpwl_.clear();
+  best_upper_bound_placement_.clear();
+  best_upper_bound_hpwl_ = std::numeric_limits<double>::max();
   if (upper_bound_refiner_) {
     upper_bound_refiner_->Initialize(PlacementDensity());
   }
@@ -231,10 +233,37 @@ void GlobalPlacer::RunPlacementIterations() {
       }
     }
     accepted_upper_bound_hpwl_.push_back(accepted_hpwl);
+    UpdateBestUpperBoundPlacement(accepted_hpwl);
     EmitIterationSnapshot("upper_bound", "Upper Bound", "upper_bound");
     PrintHpwl();
     if (IsPlacementConverged()) break;
   }
+}
+
+void GlobalPlacer::UpdateBestUpperBoundPlacement(double upper_bound_hpwl) {
+  if (upper_bound_hpwl >= best_upper_bound_hpwl_) return;
+
+  best_upper_bound_hpwl_ = upper_bound_hpwl;
+  best_upper_bound_placement_.clear();
+  best_upper_bound_placement_.reserve(ckt_ptr_->Components().size());
+  for (const Component& component : ckt_ptr_->Components()) {
+    best_upper_bound_placement_.push_back(
+        {component.LLX(), component.LLY()});
+  }
+}
+
+void GlobalPlacer::RestoreBestUpperBoundPlacement() {
+  if (best_upper_bound_placement_.empty()) return;
+  DaliExpects(best_upper_bound_placement_.size() ==
+                  ckt_ptr_->Components().size(),
+              "Cannot restore best global placement: component count changed");
+
+  for (size_t i = 0; i < best_upper_bound_placement_.size(); ++i) {
+    ckt_ptr_->Components()[i].SetLowerLeft(best_upper_bound_placement_[i].lx,
+                                           best_upper_bound_placement_[i].ly);
+  }
+  LOG(info) << "  Restore best global upper bound: "
+            << best_upper_bound_hpwl_ << "um\n";
 }
 
 bool GlobalPlacer::ShouldRefineUpperBound() const {
@@ -265,6 +294,7 @@ void GlobalPlacer::EmitSnapshot(const std::string& id, const std::string& label,
 }
 
 void GlobalPlacer::FinalizePlacement() {
+  RestoreBestUpperBoundPlacement();
   UpdateMovableComponentPlacementStatus();
   RecordPlacementMetric("global_placement", WeightedHPWL());
 }
