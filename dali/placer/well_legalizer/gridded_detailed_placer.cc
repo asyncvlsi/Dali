@@ -753,4 +753,29 @@ bool GriddedDetailedPlacer::StartPlacement() {
   return true;
 }
 
+bool GriddedDetailedPlacer::StartLocalReorder() {
+  PrintStartStatement("gridded local reorder");
+  DaliExpects(ckt_ptr_ != nullptr,
+              "No input circuit specified for gridded local reorder");
+
+  ElapsedTime timer;
+  timer.RecordStartTime();
+  double hpwl_before = WeightedHPWL();
+  RunLocalReorderStage();
+  timer.RecordEndTime();
+
+  LOG(info) << "Gridded local reorder:\n"
+            << "  gridded rows: " << rows_.size() << "\n"
+            << "  HPWL before : " << hpwl_before << "um\n"
+            << "  HPWL after  : " << WeightedHPWL() << "um\n"
+            << "  wall time   : " << timer.GetWallTime() << "s\n"
+            << "  cpu time    : " << timer.GetCpuTime() << "s\n";
+  RecordPlacementMetric("time.gridded_detailed.local_reorder.wall_s",
+                        timer.GetWallTime());
+  RecordPlacementMetric("time.gridded_detailed.local_reorder.cpu_s",
+                        timer.GetCpuTime());
+  PrintEndStatement("gridded local reorder", true);
+  return true;
+}
+
 }  // namespace dali

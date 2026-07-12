@@ -86,6 +86,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -enable_gridded_global_capacity            use experimental well-aware LAL capacity\n"
       << "  -enable_gridded_upper_bound_refiner        roughly legalize every gridded global-placement iteration\n"
       << "  -enable_gridded_stripe_balancing           rebalance final neighboring gridded stripes\n"
+      << "  -enable_gridded_local_reorder              reorder cells within finalized gridded rows\n"
       << "  -debug_placement_region_scale <factor>      enlarge the placement boundary for debugging, default 1\n"
       << "  -standard_cell_legalizer_cost <displacement/hpwl>  default displacement\n"
       << "  -detailed_max_rounds <n>                   detailed-placement optimization rounds, default 1\n"
@@ -376,6 +377,8 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.enable_gridded_upper_bound_refiner");
     } else if (arg == "-enable_gridded_stripe_balancing") {
       EnableConfigFlag("dali.enable_gridded_stripe_balancing");
+    } else if (arg == "-enable_gridded_local_reorder") {
+      EnableConfigFlag("dali.enable_gridded_local_reorder");
     } else if (arg == "-debug_placement_region_scale") {
       double scale = 0;
       if (!TryGetValue(argc, argv, &i, &value) ||

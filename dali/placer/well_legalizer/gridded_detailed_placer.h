@@ -44,6 +44,9 @@ class GriddedDetailedPlacer : public Placer {
   /** Run gridded detailed placement on the attached rows. */
   bool StartPlacement() override;
 
+  /** Reorder cells within each row without attempting cross-row swaps. */
+  bool StartLocalReorder();
+
  private:
   static constexpr int kLocalReorderWindowSize = 3;
   static constexpr int kMaxLocalReorderIterations = 6;

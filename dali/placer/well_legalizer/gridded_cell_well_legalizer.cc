@@ -1203,7 +1203,7 @@ std::vector<GriddedRow*> GriddedCellWellLegalizer::CollectGriddedRows() {
 }
 
 void GriddedCellWellLegalizer::RunGriddedDetailedPlacementStage() {
-  LOG(info) << "Run gridded detailed placement\n";
+  LOG(info) << "Run gridded local reorder\n";
   gridded_detailed_placer_.CopyPlacementContextFrom(this);
   gridded_detailed_placer_.SetRows(CollectGriddedRows());
   gridded_detailed_placer_.SetSnapshotCallback(
@@ -1213,7 +1213,7 @@ void GriddedCellWellLegalizer::RunGriddedDetailedPlacementStage() {
       });
   EmitSnapshot("gridded.start", "Before Gridded Detailed Placement",
                "detailed_placement", "start");
-  gridded_detailed_placer_.StartPlacement();
+  gridded_detailed_placer_.StartLocalReorder();
   RecordPlacementMetric("well_legalization.local_reorder", WeightedHPWL());
   EmitSnapshot("gridded.final", "After Gridded Detailed Placement",
                "detailed_placement", "final");
@@ -1222,6 +1222,9 @@ void GriddedCellWellLegalizer::RunGriddedDetailedPlacementStage() {
 bool GriddedCellWellLegalizer::RunMovableCellLegalizationStages() {
   bool is_success = RunComponentClusteringStage();
   RunClusterOrientationStage();
+  if (is_success && enable_local_reorder_) {
+    RunGriddedDetailedPlacementStage();
+  }
   return is_success;
 }
 

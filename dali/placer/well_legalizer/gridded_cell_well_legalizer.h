@@ -85,6 +85,9 @@ class GriddedCellWellLegalizer : public Placer {
     enable_stripe_balancing_ = enable;
   }
 
+  /** Enable wirelength-driven reordering within legalized gridded rows. */
+  void SetEnableLocalReorder(bool enable) { enable_local_reorder_ = enable; }
+
   /** Set maximum legalized row width in microns. */
   void SetMaxRowWidth(double max_row_width_microns);
 
@@ -247,6 +250,7 @@ class GriddedCellWellLegalizer : public Placer {
   int stripe_mode_ = 0;
   int max_row_width_ = -1;
   bool enable_stripe_balancing_ = false;
+  bool enable_local_reorder_ = false;
   WellSpacePartitioner space_partitioner_;
   GriddedDetailedPlacer gridded_detailed_placer_;
   SnapshotCallback snapshot_callback_;
