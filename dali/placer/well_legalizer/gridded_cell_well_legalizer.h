@@ -221,6 +221,8 @@ class GriddedCellWellLegalizer : public Placer {
   WellRowCompletionConfig BuildRowCompletionConfig() const;
 
   bool RunComponentClusteringStage();
+  /** Trial uniform and adaptive clustering and retain the lower legal HPWL. */
+  bool RunBestBoundaryClusteringStage();
   /** Apply one of the two legal alternating orientation phases to a column. */
   void ApplyColumnOrientationPhase(StripeColumn* column,
                                    bool first_row_orient_n);
@@ -230,6 +232,8 @@ class GriddedCellWellLegalizer : public Placer {
   void RunRowLocationOptimizationStage();
   std::vector<GriddedRow*> CollectGriddedRows();
   void RunGriddedDetailedPlacementStage();
+  /** Run all configured stages after component clustering. */
+  void RunPostClusteringStages(bool clustering_succeeded);
   bool RunMovableCellLegalizationStages();
   void RunWellTapStage();
   void RunEndCapStage();

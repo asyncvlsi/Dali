@@ -290,6 +290,12 @@ GriddedCellWellLegalizer::RunProvisionalPlacement(
   const std::vector<ComponentPlacementSnapshot> incoming_placement =
       CaptureComponentPlacement();
   const int configured_stripe_mode = stripe_mode_;
+  const bool configured_adaptive_boundaries =
+      enable_adaptive_stripe_boundaries_;
+  // Final legalization selects adaptive geometry using exact legal HPWL. Keep
+  // provisional upper bounds uniform so rejected geometry cannot feed back
+  // into the analytical placement.
+  enable_adaptive_stripe_boundaries_ = false;
 
   auto run_clustering = [this]() {
     InitializeWellLegalizer();
@@ -319,6 +325,7 @@ GriddedCellWellLegalizer::RunProvisionalPlacement(
   }
 
   stripe_mode_ = configured_stripe_mode;
+  enable_adaptive_stripe_boundaries_ = configured_adaptive_boundaries;
   if (result.feasible) {
     result.hpwl = WeightedHPWL();
   } else {
@@ -1267,6 +1274,54 @@ bool GriddedCellWellLegalizer::RunComponentClusteringStage() {
   return is_success;
 }
 
+bool GriddedCellWellLegalizer::RunBestBoundaryClusteringStage() {
+  DaliExpects(enable_adaptive_stripe_boundaries_,
+              "Boundary selection requires adaptive stripes to be enabled");
+
+  RestoreInitialComponentLocation();
+  enable_adaptive_stripe_boundaries_ = true;
+  InitializeWellLegalizer();
+  bool adaptive_success = ComponentClusteringLoose();
+  double adaptive_hpwl =
+      adaptive_success ? WeightedHPWL() : std::numeric_limits<double>::max();
+
+  RestoreInitialComponentLocation();
+  enable_adaptive_stripe_boundaries_ = false;
+  InitializeWellLegalizer();
+  bool uniform_success = ComponentClusteringLoose();
+  double uniform_hpwl =
+      uniform_success ? WeightedHPWL() : std::numeric_limits<double>::max();
+
+  bool select_adaptive = adaptive_success && adaptive_hpwl < uniform_hpwl;
+  if (select_adaptive) {
+    RestoreInitialComponentLocation();
+    enable_adaptive_stripe_boundaries_ = true;
+    InitializeWellLegalizer();
+    adaptive_success = ComponentClusteringLoose();
+    DaliExpects(adaptive_success,
+                "Selected adaptive clustering is not reproducible");
+  }
+
+  LOG(info) << "Form component clustering\n"
+            << "  stripe geometry candidates:\n"
+            << "    uniform HPWL  : "
+            << (uniform_success ? std::to_string(uniform_hpwl) : "infeasible")
+            << "um\n"
+            << "    adaptive HPWL : "
+            << (adaptive_success ? std::to_string(adaptive_hpwl)
+                                 : "infeasible")
+            << "um\n"
+            << "    selected       : "
+            << (select_adaptive ? "adaptive" : "uniform") << "\n";
+  bool is_success = select_adaptive ? adaptive_success : uniform_success;
+  ReportHPWL();
+  RecordPlacementMetric("well_legalization.component_clustering",
+                        WeightedHPWL());
+  EmitSnapshot("component_clustering", "After Component Clustering",
+               "legalization", "component_clustering");
+  return is_success;
+}
+
 void GriddedCellWellLegalizer::RunClusterOrientationStage() {
   if (disable_cell_flip_) {
     LOG(info) << "Skip flipping cluster orientation\n";
@@ -1344,15 +1399,20 @@ void GriddedCellWellLegalizer::RunRowLocationOptimizationStage() {
                "legalization", "row_location");
 }
 
-bool GriddedCellWellLegalizer::RunMovableCellLegalizationStages() {
-  bool is_success = RunComponentClusteringStage();
+void GriddedCellWellLegalizer::RunPostClusteringStages(
+    bool clustering_succeeded) {
   RunClusterOrientationStage();
-  if (is_success && enable_row_location_optimization_) {
+  if (clustering_succeeded && enable_row_location_optimization_) {
     RunRowLocationOptimizationStage();
   }
-  if (is_success && enable_local_reorder_) {
+  if (clustering_succeeded && enable_local_reorder_) {
     RunGriddedDetailedPlacementStage();
   }
+}
+
+bool GriddedCellWellLegalizer::RunMovableCellLegalizationStages() {
+  bool is_success = RunComponentClusteringStage();
+  RunPostClusteringStages(is_success);
   return is_success;
 }
 
@@ -1450,9 +1510,16 @@ bool GriddedCellWellLegalizer::StartPlacement() {
 
   snapshot_attempt_ = 0;
   SaveInitialComponentLocation();
-  InitializeWellLegalizer();
-  LogEstimatedGriddedCapacity();
-  bool is_success = RunMovableCellLegalizationStages();
+  bool is_success = false;
+  if (enable_adaptive_stripe_boundaries_) {
+    is_success = RunBestBoundaryClusteringStage();
+    LogEstimatedGriddedCapacity();
+    RunPostClusteringStages(is_success);
+  } else {
+    InitializeWellLegalizer();
+    LogEstimatedGriddedCapacity();
+    is_success = RunMovableCellLegalizationStages();
+  }
   if (!is_success) {
     is_success = RetryMovableCellLegalizationWithBalancing();
   }
