@@ -95,11 +95,6 @@ class GlobalPlacer : public Placer {
     use_refined_upper_bound_as_anchor_ = enable;
   }
 
-  /** Require a modified physical refinement to improve before anchoring it. */
-  void SetRequireImprovingModifiedRefinedAnchor(bool enable) {
-    require_improving_modified_refined_anchor_ = enable;
-  }
-
   /** Load global placer configuration. */
   void LoadConf(std::string const& config_file) override;
 
@@ -149,9 +144,6 @@ class GlobalPlacer : public Placer {
   void PreparePlacement();
   void RunPlacementIterations();
   bool ShouldRefineUpperBound() const;
-  /** Decide whether a physical refinement should anchor the next solve. */
-  bool ShouldUseRefinedUpperBoundAsAnchor(
-      const GlobalUpperBoundRefinement& refinement) const;
   /** Save component coordinates when the accepted upper bound improves. */
   void UpdateBestUpperBoundPlacement(double upper_bound_hpwl);
   /** Return a copy of all current component coordinates. */
@@ -199,7 +191,6 @@ class GlobalPlacer : public Placer {
   int upper_bound_refiner_warmup_ = 0;
   int upper_bound_refiner_interval_ = 1;
   bool use_refined_upper_bound_as_anchor_ = true;
-  bool require_improving_modified_refined_anchor_ = false;
   bool current_upper_bound_is_physical_ = false;
 };
 

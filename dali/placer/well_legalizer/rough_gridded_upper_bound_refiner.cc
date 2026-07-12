@@ -62,7 +62,6 @@ GlobalUpperBoundRefinement RoughGriddedUpperBoundRefiner::Refine(
             << "    wall time: " << timer.GetWallTime() << "s\n";
 
   return {provisional.feasible, provisional.hpwl, provisional.overflow,
-          provisional.balanced_component_count,
           std::move(violations)};
 }
 
