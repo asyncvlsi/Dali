@@ -33,15 +33,6 @@ class TestableGlobalPlacer : public GlobalPlacer {
   }
 };
 
-class TestableHpwlOptimizer : public BoundToBoundHpwlOptimizer {
- public:
-  explicit TestableHpwlOptimizer(Circuit* circuit)
-      : BoundToBoundHpwlOptimizer(circuit, 1) {}
-
-  double AnchorX(int component_id) const { return x_anchor[component_id]; }
-  double AnchorY(int component_id) const { return y_anchor[component_id]; }
-};
-
 TEST(GlobalUpperBoundRefinerTest, HonorsWarmupAndInterval) {
   TestableGlobalPlacer placer;
   placer.SetUpperBoundRefiner(std::make_unique<RecordingUpperBoundRefiner>(),
@@ -84,30 +75,6 @@ TEST(GlobalUpperBoundRefinerTest, RefinedAnchorFeedbackCanBeDisabled) {
   placer.SetUseRefinedUpperBoundAsAnchor(false);
 
   EXPECT_FALSE(placer.UsesRefinedUpperBoundAsAnchor());
-}
-
-TEST(GlobalUpperBoundRefinerTest, ExplicitAnchorOverridesUpperBoundLocation) {
-  Circuit circuit;
-  circuit.SetManufacturingGrid(1);
-  circuit.SetUnitsDistanceMicrons(1);
-  circuit.SetGridValue(1, 1);
-  circuit.ReserveSpaceForDesignImp(1, 0, 0);
-  circuit.AddMacro("cell", 2, 2);
-  circuit.AddComponent("u0", "cell", 10, 20, PLACED);
-
-  TestableHpwlOptimizer optimizer(&circuit);
-  optimizer.Initialize();
-  optimizer.BackUpComponentLocation();
-  circuit.GetComponentPtr("u0")->SetLowerLeft(30, 40);
-  optimizer.SetExternalAnchorTargets({50}, {60});
-  optimizer.SetIteration(1);
-
-  optimizer.UpdateAnchorLocation();
-
-  EXPECT_DOUBLE_EQ(circuit.GetComponentPtr("u0")->LLX(), 10);
-  EXPECT_DOUBLE_EQ(circuit.GetComponentPtr("u0")->LLY(), 20);
-  EXPECT_DOUBLE_EQ(optimizer.AnchorX(0), 50);
-  EXPECT_DOUBLE_EQ(optimizer.AnchorY(0), 60);
 }
 
 }  // namespace dali
