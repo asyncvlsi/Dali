@@ -38,6 +38,13 @@ TEST(WellRowCompleterTest, RowLegalizationPreservesBoundaryMargins) {
 
   EXPECT_GE(circuit.GetComponentPtr("left")->LLX(), 17);
   EXPECT_LE(circuit.GetComponentPtr("right")->URX(), 103);
+
+  circuit.GetComponentPtr("left")->SetLLX(10);
+  circuit.GetComponentPtr("right")->SetLLX(105);
+  row.MinDisplacementLegalization();
+
+  EXPECT_GE(circuit.GetComponentPtr("left")->LLX(), 17);
+  EXPECT_LE(circuit.GetComponentPtr("right")->URX(), 103);
 }
 
 TEST(WellRowCompleterTest, PlacesBoundaryCellsOutsideOrdinaryCellSpace) {

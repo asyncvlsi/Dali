@@ -42,13 +42,9 @@ void GriddedRow::SetBoundaryMargins(int left_margin, int right_margin) {
   right_boundary_margin_ = right_margin;
 }
 
-int GriddedRow::LeftBoundaryMargin() const {
-  return left_boundary_margin_;
-}
+int GriddedRow::LeftBoundaryMargin() const { return left_boundary_margin_; }
 
-int GriddedRow::RightBoundaryMargin() const {
-  return right_boundary_margin_;
-}
+int GriddedRow::RightBoundaryMargin() const { return right_boundary_margin_; }
 
 void GriddedRow::SetLLX(int lx) { lx_ = lx; }
 
@@ -186,7 +182,7 @@ void GriddedRow::LegalizeCompactX() {
       [](const Component* component_ptr0, const Component* component_ptr1) {
         return component_ptr0->LLX() < component_ptr1->LLX();
       });
-  int current_x = lx_;
+  int current_x = lx_ + left_boundary_margin_;
   for (auto& component : components_) {
     component->SetLLX(current_x);
     current_x += component->Width();
@@ -296,7 +292,7 @@ void GriddedRow::UpdateComponentLocationCompact() {
       [](const Component* component_ptr0, const Component* component_ptr1) {
         return component_ptr0->LLX() < component_ptr1->LLX();
       });
-  int current_x = lx_;
+  int current_x = lx_ + left_boundary_margin_;
   for (auto& component : components_) {
     component->SetLLX(current_x);
     component->SetCenterY(CenterY());
@@ -317,8 +313,8 @@ void GriddedRow::MinDisplacementLegalization() {
               "Component number does not equal initial location number\n");
 
   size_t sz = components_.size();
-  int lower_bound = lx_;
-  int upper_bound = lx_ + width_;
+  int lower_bound = lx_ + left_boundary_margin_;
+  int upper_bound = lx_ + width_ - right_boundary_margin_;
   for (size_t i = 0; i < sz; ++i) {
     // create a segment which contains only this component
     Component* component_ptr = components_[i];
