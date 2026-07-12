@@ -1061,22 +1061,65 @@ void GriddedCellWellLegalizer::SingleSegmentClusteringOptimization() {
 
 void GriddedCellWellLegalizer::UpdateClusterOrient() {
   for (auto& col : col_list_) {
-    bool is_orient_N = is_first_row_orient_N_;
-    for (auto& stripe : col.stripe_list_) {
-      if (stripe.is_bottom_up_) {
-        for (auto& cluster : stripe.gridded_rows_) {
-          cluster.SetOrient(is_orient_N);
-          is_orient_N = !is_orient_N;
-        }
-      } else {
-        int sz = stripe.gridded_rows_.size();
-        for (int i = sz - 1; i >= 0; --i) {
-          stripe.gridded_rows_[i].SetOrient(is_orient_N);
-          is_orient_N = !is_orient_N;
-        }
+    ApplyColumnOrientationPhase(&col, is_first_row_orient_N_);
+  }
+}
+
+void GriddedCellWellLegalizer::ApplyColumnOrientationPhase(
+    StripeColumn* column, bool first_row_orient_n) {
+  DaliExpects(column != nullptr, "Cannot orient a null stripe column");
+  bool orient_n = first_row_orient_n;
+  for (Stripe& stripe : column->stripe_list_) {
+    stripe.is_first_row_orient_N_ = orient_n;
+    if (stripe.is_bottom_up_) {
+      for (GriddedRow& row : stripe.gridded_rows_) {
+        row.SetOrient(orient_n);
+        orient_n = !orient_n;
+      }
+    } else {
+      for (int i = static_cast<int>(stripe.gridded_rows_.size()) - 1; i >= 0;
+           --i) {
+        stripe.gridded_rows_[i].SetOrient(orient_n);
+        orient_n = !orient_n;
       }
     }
   }
+}
+
+double GriddedCellWellLegalizer::OptimizeColumnOrientationPhases() {
+  constexpr int kMaxOrientationSweeps = 4;
+  constexpr double kMinHpwlImprovement = 1e-9;
+  std::vector<bool> first_row_orient_n(col_list_.size(),
+                                       is_first_row_orient_N_);
+  double best_hpwl = WeightedHPWL();
+  int flipped_column_count = 0;
+  int completed_sweeps = 0;
+
+  for (int sweep = 0; sweep < kMaxOrientationSweeps; ++sweep) {
+    bool improved = false;
+    for (size_t column_id = 0; column_id < col_list_.size(); ++column_id) {
+      bool candidate_phase = !first_row_orient_n[column_id];
+      ApplyColumnOrientationPhase(&col_list_[column_id], candidate_phase);
+      double candidate_hpwl = WeightedHPWL();
+      if (candidate_hpwl + kMinHpwlImprovement < best_hpwl) {
+        first_row_orient_n[column_id] = candidate_phase;
+        best_hpwl = candidate_hpwl;
+        ++flipped_column_count;
+        improved = true;
+      } else {
+        ApplyColumnOrientationPhase(&col_list_[column_id],
+                                    first_row_orient_n[column_id]);
+      }
+    }
+    ++completed_sweeps;
+    if (!improved) break;
+  }
+
+  LOG(info) << "  Orientation phase optimization:\n"
+            << "    completed sweeps : " << completed_sweeps << "\n"
+            << "    accepted flips   : " << flipped_column_count << "\n"
+            << "    optimized HPWL   : " << best_hpwl << "um\n";
+  return best_hpwl;
 }
 
 void GriddedCellWellLegalizer::ClearCachedData() {
@@ -1135,6 +1178,12 @@ void GriddedCellWellLegalizer::RunClusterOrientationStage() {
   }
   LOG(info) << "Flip cluster orientation\n";
   UpdateClusterOrient();
+  double fixed_phase_hpwl = WeightedHPWL();
+  RecordPlacementMetric("well_legalization.orientation.fixed_phase",
+                        fixed_phase_hpwl);
+  double optimized_hpwl = OptimizeColumnOrientationPhases();
+  LOG(info) << "  orientation phase improvement: "
+            << fixed_phase_hpwl - optimized_hpwl << "um\n";
   ReportHPWL();
   RecordPlacementMetric("well_legalization.orientation", WeightedHPWL());
   EmitSnapshot("orientation", "After Cluster Orientation", "legalization",
