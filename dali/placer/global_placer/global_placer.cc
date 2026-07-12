@@ -374,6 +374,14 @@ void GlobalPlacer::UpdatePersistentLegalizationFeedback(
           placement_before_refinement[i].ly - legal_y,
           &average_legalization_correction_y_[i],
           &legalization_correction_streak_y_[i]);
+      use_x_correction =
+          use_x_correction &&
+          std::fabs(average_legalization_correction_x_[i]) >=
+              component.Width();
+      use_y_correction =
+          use_y_correction &&
+          std::fabs(average_legalization_correction_y_[i]) >=
+              component.Height();
       ++movable_component_count;
     }
 
