@@ -69,6 +69,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -gui_pause <every_snapshot/off>            GUI pause policy, default every_snapshot\n"
       << "  -g/-grid <grid_value_x> <grid_value_y>     (optional, default metal1 and metal2 pitch values)\n"
       << "  -d/-target_density <density>               (optional, value interval (0,1], default max(space_utility, 0.7))\n"
+      << "  -net_hpwl_file <file.tsv>                  write final per-net weighted HPWL metrics\n"
       << "  -disable_legalization                      optional, if this flag is present, then legalization is skipped\n"
       << "  -disable_detailed_place                    optional, skip post-legalization detailed placement\n"
       << "  -io_metal_layer                            metal layer number for I/O placement (optional, default 1 for m1)\n"
@@ -136,6 +137,11 @@ bool ParseDaliCommandLine(int argc, char* argv[],
     } else if (arg == "-metrics_file") {
       if (!TryGetValue(argc, argv, &i, &options->metrics_file_name)) {
         error_output << "Invalid metrics file name!\n";
+        return false;
+      }
+    } else if (arg == "-net_hpwl_file") {
+      if (!TryGetValue(argc, argv, &i, &options->net_hpwl_file_name)) {
+        error_output << "Invalid net HPWL file name!\n";
         return false;
       }
     } else if (arg == "-visualization_dir") {

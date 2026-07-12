@@ -69,6 +69,8 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "placed",
                      "-metrics_file",
                      "metrics.json",
+                     "-net_hpwl_file",
+                     "net_hpwl.tsv",
                      "-target_density",
                      "0.72",
                      "-visualization_dir",
@@ -108,6 +110,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
 
   EXPECT_EQ(options.output_name, "placed");
   EXPECT_EQ(options.metrics_file_name, "metrics.json");
+  EXPECT_EQ(options.net_hpwl_file_name, "net_hpwl.tsv");
   EXPECT_EQ(options.visualization_dir, "dali_snapshots");
   EXPECT_DOUBLE_EQ(config_get_real("dali.target_density"), 0.72);
   EXPECT_STREQ(config_get_string("dali.visualization_dir"), "dali_snapshots");

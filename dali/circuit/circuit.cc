@@ -1169,6 +1169,24 @@ void Circuit::ReportHPWL() {
   LOG(info) << "  current weighted HPWL: " << WeightedHPWL() << "um\n";
 }
 
+bool Circuit::WriteNetHpwlTable(const std::string& file_name) {
+  std::ofstream output(file_name);
+  if (!output.is_open()) {
+    LOG(error) << "Cannot write net HPWL table: " << file_name << "\n";
+    return false;
+  }
+
+  output << "net_id\tfanout\tweight\thpwl_x_um\thpwl_y_um\thpwl_um\n";
+  output << std::setprecision(12);
+  for (Net& net : design_.nets_) {
+    const double hpwl_x = net.WeightedHPWLX() * GridValueX();
+    const double hpwl_y = net.WeightedHPWLY() * GridValueY();
+    output << net.Id() << '\t' << net.PinCnt() << '\t' << net.Weight() << '\t'
+           << hpwl_x << '\t' << hpwl_y << '\t' << hpwl_x + hpwl_y << '\n';
+  }
+  return true;
+}
+
 double Circuit::WeightedBoundingBoxX() {
   double bbox_x = 0;
   for (auto& net : design_.nets_) {

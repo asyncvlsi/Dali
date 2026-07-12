@@ -463,6 +463,9 @@ class Circuit {
   // simple function to report HPWL
   void ReportHPWL();
 
+  /** Write compact per-net weighted HPWL values in micron units. */
+  bool WriteNetHpwlTable(const std::string& file_name);
+
   // returns bounding box in the x direction, unit in micron
   double WeightedBoundingBoxX();
 

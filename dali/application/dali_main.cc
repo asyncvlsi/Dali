@@ -124,6 +124,10 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
+  if (!options.net_hpwl_file_name.empty()) {
+    dali.GetCircuit().WriteNetHpwlTable(options.net_hpwl_file_name);
+  }
+
   // Export both Dali's textual outputs and the updated in-memory PhyDB view.
   dali.MaybeExportToLEF(options.lef_file_name, options.output_name);
   dali.ExportToDEF(options.def_file_name, options.output_name);
