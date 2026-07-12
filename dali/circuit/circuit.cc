@@ -1165,6 +1165,14 @@ double Circuit::WeightedHPWL() {
   return hpwl_x * GridValueX() + hpwl_y * GridValueY();
 }
 
+double Circuit::NetWeightedHPWL(int net_id) {
+  DaliExpects(net_id >= 0 && net_id < static_cast<int>(design_.nets_.size()),
+              "Net id is outside the circuit net list");
+  Net& net = design_.nets_[net_id];
+  return net.WeightedHPWLX() * GridValueX() +
+         net.WeightedHPWLY() * GridValueY();
+}
+
 void Circuit::ReportHPWL() {
   LOG(info) << "  current weighted HPWL: " << WeightedHPWL() << "um\n";
 }

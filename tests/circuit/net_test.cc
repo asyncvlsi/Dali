@@ -34,4 +34,22 @@ TEST(NetTest, UpdatesCenterToCenterExtremesByComponentCenter) {
   EXPECT_EQ(net->MaxComponentPtrX()->Name(), "u_right");
 }
 
+TEST(NetTest, ReportsPhysicalHpwlOnAnisotropicGrid) {
+  Circuit circuit;
+  circuit.SetManufacturingGrid(0.1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(0.6, 0.3);
+  circuit.ReserveSpaceForDesignImp(2, 0, 1);
+  circuit.AddMacro("cell", 1, 1);
+  Macro* macro = circuit.GetMacroPtr("cell");
+  circuit.AddMacroPin(macro, "p", true)->SetOffset(0, 0);
+  circuit.AddComponent("u0", "cell", 0, 0);
+  circuit.AddComponent("u1", "cell", 10, 20);
+  Net* net = circuit.AddNet("n0", 2);
+  circuit.AddComponentPinToNet("u0", "p", "n0");
+  circuit.AddComponentPinToNet("u1", "p", "n0");
+
+  EXPECT_DOUBLE_EQ(circuit.NetWeightedHPWL(net->Id()), 12.0);
+}
+
 }  // namespace dali

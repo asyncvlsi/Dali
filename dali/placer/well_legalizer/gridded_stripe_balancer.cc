@@ -81,13 +81,13 @@ double GriddedStripeBalancer::EstimateAffectedNetHpwlDelta(
 
   double hpwl_before = 0.0;
   for (int net_id : component->NetList()) {
-    hpwl_before += circuit_->Nets()[net_id].WeightedHPWL();
+    hpwl_before += circuit_->NetWeightedHPWL(net_id);
   }
   component->SetCenterX(target_x);
   component->SetCenterY(target_y);
   double hpwl_after = 0.0;
   for (int net_id : component->NetList()) {
-    hpwl_after += circuit_->Nets()[net_id].WeightedHPWL();
+    hpwl_after += circuit_->NetWeightedHPWL(net_id);
   }
   component->SetCenterX(original_x);
   component->SetCenterY(original_y);

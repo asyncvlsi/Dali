@@ -460,6 +460,9 @@ class Circuit {
   // returns total HPWL, considering cell pin offsets, unit in micron
   double WeightedHPWL();
 
+  /** Return one net's weighted HPWL in physical micron units. */
+  double NetWeightedHPWL(int net_id);
+
   // simple function to report HPWL
   void ReportHPWL();
 

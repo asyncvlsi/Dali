@@ -304,7 +304,7 @@ double GriddedDetailedPlacer::RowPairWireLengthCost(
 
   double cost = 0;
   for (int net_id : net_ids) {
-    cost += ckt_ptr_->Nets()[net_id].WeightedHPWL();
+    cost += ckt_ptr_->NetWeightedHPWL(net_id);
   }
   return cost;
 }
@@ -415,7 +415,7 @@ double GriddedDetailedPlacer::ComponentPairWireLengthCost(
 
   double cost = 0;
   for (int net_id : net_ids) {
-    cost += ckt_ptr_->Nets()[net_id].WeightedHPWL();
+    cost += ckt_ptr_->NetWeightedHPWL(net_id);
   }
   return cost;
 }
