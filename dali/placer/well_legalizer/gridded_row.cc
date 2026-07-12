@@ -298,12 +298,7 @@ void GriddedRow::UpdateComponentLocationCompact() {
   }
 }
 
-void GriddedRow::MinDisplacementLegalization(int left_margin,
-                                              int right_margin) {
-  DaliExpects(left_margin >= 0 && right_margin >= 0,
-              "Row legalization margins cannot be negative");
-  DaliExpects(left_margin + right_margin <= width_,
-              "Row legalization margins exceed row width");
+void GriddedRow::MinDisplacementLegalization() {
   std::sort(
       components_.begin(), components_.end(),
       [](const Component* component_ptr0, const Component* component_ptr1) {
@@ -316,8 +311,8 @@ void GriddedRow::MinDisplacementLegalization(int left_margin,
               "Component number does not equal initial location number\n");
 
   size_t sz = components_.size();
-  int lower_bound = lx_ + left_margin;
-  int upper_bound = lx_ + width_ - right_margin;
+  int lower_bound = lx_;
+  int upper_bound = lx_ + width_;
   for (size_t i = 0; i < sz; ++i) {
     // create a segment which contains only this component
     Component* component_ptr = components_[i];

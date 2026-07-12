@@ -321,24 +321,16 @@ void GriddedCellWellLegalizer::ClearProvisionalState() {
   index_loc_list_.clear();
 }
 
-int GriddedCellWellLegalizer::PhysicalCompletionLeftMargin() const {
-  int margin = enable_end_cap_cell_ ? pre_end_cap_min_width_ : 0;
-  if (!disable_welltap_) {
-    margin += well_tap_width_ + space_to_well_tap_;
-  }
-  return margin;
-}
-
-int GriddedCellWellLegalizer::PhysicalCompletionRightMargin() const {
-  int margin = enable_end_cap_cell_ ? post_end_cap_min_width_ : 0;
-  if (!disable_welltap_) {
-    margin += well_tap_width_ + space_to_well_tap_;
-  }
-  return margin;
-}
-
 int GriddedCellWellLegalizer::PhysicalCompletionReservedWidth() const {
-  return PhysicalCompletionLeftMargin() + PhysicalCompletionRightMargin();
+  int reserved_width = 0;
+  if (!disable_welltap_) {
+    reserved_width = well_tap_count_per_cluster_ * well_tap_width_ +
+                     well_tap_count_per_cluster_ * space_to_well_tap_;
+  }
+  if (enable_end_cap_cell_) {
+    reserved_width += pre_end_cap_min_width_ + post_end_cap_min_width_;
+  }
+  return reserved_width;
 }
 
 void GriddedCellWellLegalizer::ReservePhysicalCompletionSpace(
@@ -824,8 +816,7 @@ bool GriddedCellWellLegalizer::ComponentClusteringLoose() {
 
       for (auto& row : stripe.gridded_rows_) {
         row.UpdateComponentLocY();
-        row.MinDisplacementLegalization(PhysicalCompletionLeftMargin(),
-                                        PhysicalCompletionRightMargin());
+        row.MinDisplacementLegalization();
         if (is_dump) {
           if (count % step == 0) {
             std::string tmp_file_name =

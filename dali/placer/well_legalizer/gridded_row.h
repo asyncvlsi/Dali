@@ -128,14 +128,7 @@ class GriddedRow {
 
   void UpdateComponentLocationCompact();
 
-  /**
-   * Legalize cells near their initial X locations inside the usable interval.
-   *
-   * Margins reserve the row boundaries for physical cells inserted after
-   * ordinary-cell legalization.
-   */
-  void MinDisplacementLegalization(int left_margin = 0,
-                                   int right_margin = 0);
+  void MinDisplacementLegalization();
   void UpdateMinDisplacementLLY();
   double MinDisplacementLLY() const;
 
