@@ -253,58 +253,36 @@ bool GriddedDetailedPlacer::IsSwapCandidate(Component* component) const {
          component->MacroPtr() != ckt_ptr_->tech().IoDummyMacroPtr();
 }
 
-int GriddedDetailedPlacer::UsedWidthAfterSwap(GriddedRow* row,
-                                              Component* removed,
-                                              Component* added) const {
-  int used_width = 0;
-  for (Component* component : row->Components()) {
-    used_width += component == removed ? added->Width() : component->Width();
-  }
-  return used_width;
-}
-
-int GriddedDetailedPlacer::RequiredPHeightAfterSwap(GriddedRow* row,
-                                                    Component* removed,
-                                                    Component* added) const {
-  int required_height = 0;
+GriddedDetailedPlacer::RowRequirements
+GriddedDetailedPlacer::ComputeRowRequirementsAfterSwap(
+    GriddedRow* row, Component* removed, Component* added) const {
+  RowRequirements requirements;
   for (Component* component : row->Components()) {
     Component* candidate = component == removed ? added : component;
-    required_height =
-        std::max(required_height, candidate->MacroPtr()->FirstPwellHeight());
+    requirements.used_width += candidate->Width();
+    requirements.p_well_height =
+        std::max(requirements.p_well_height,
+                 candidate->MacroPtr()->FirstPwellHeight());
+    requirements.n_well_height =
+        std::max(requirements.n_well_height,
+                 candidate->MacroPtr()->FirstNwellHeight());
   }
-  return required_height;
-}
-
-int GriddedDetailedPlacer::RequiredNHeightAfterSwap(GriddedRow* row,
-                                                    Component* removed,
-                                                    Component* added) const {
-  int required_height = 0;
-  for (Component* component : row->Components()) {
-    Component* candidate = component == removed ? added : component;
-    required_height =
-        std::max(required_height, candidate->MacroPtr()->FirstNwellHeight());
-  }
-  return required_height;
+  return requirements;
 }
 
 bool GriddedDetailedPlacer::IsNonHeightIncreasingSwap(
     GriddedRow* first_row, Component* first_component, GriddedRow* second_row,
     Component* second_component) const {
-  if (UsedWidthAfterSwap(first_row, first_component, second_component) >
-          first_row->UsableWidth() ||
-      UsedWidthAfterSwap(second_row, second_component, first_component) >
-          second_row->UsableWidth()) {
-    return false;
-  }
-
-  return RequiredPHeightAfterSwap(first_row, first_component,
-                                  second_component) <= first_row->PHeight() &&
-         RequiredNHeightAfterSwap(first_row, first_component,
-                                  second_component) <= first_row->NHeight() &&
-         RequiredPHeightAfterSwap(second_row, second_component,
-                                  first_component) <= second_row->PHeight() &&
-         RequiredNHeightAfterSwap(second_row, second_component,
-                                  first_component) <= second_row->NHeight();
+  RowRequirements first_requirements = ComputeRowRequirementsAfterSwap(
+      first_row, first_component, second_component);
+  RowRequirements second_requirements = ComputeRowRequirementsAfterSwap(
+      second_row, second_component, first_component);
+  return first_requirements.used_width <= first_row->UsableWidth() &&
+         second_requirements.used_width <= second_row->UsableWidth() &&
+         first_requirements.p_well_height <= first_row->PHeight() &&
+         first_requirements.n_well_height <= first_row->NHeight() &&
+         second_requirements.p_well_height <= second_row->PHeight() &&
+         second_requirements.n_well_height <= second_row->NHeight();
 }
 
 double GriddedDetailedPlacer::RowPairWireLengthCost(

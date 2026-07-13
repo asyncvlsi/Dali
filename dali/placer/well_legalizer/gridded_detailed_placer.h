@@ -82,6 +82,12 @@ class GriddedDetailedPlacer : public Placer {
     std::vector<GriddedRow*> rows;
   };
 
+  struct RowRequirements {
+    int used_width = 0;
+    int p_well_height = 0;
+    int n_well_height = 0;
+  };
+
   double WireLengthCost(GriddedRow* row, int left_index, int right_index) const;
   void FindBestLocalOrder(std::vector<Component*>& result, double& cost,
                           GriddedRow* row, int current_index, int left_index,
@@ -92,12 +98,9 @@ class GriddedDetailedPlacer : public Placer {
   int RunLocalReorderStage();
 
   bool IsSwapCandidate(Component* component) const;
-  int UsedWidthAfterSwap(GriddedRow* row, Component* removed,
-                         Component* added) const;
-  int RequiredPHeightAfterSwap(GriddedRow* row, Component* removed,
-                               Component* added) const;
-  int RequiredNHeightAfterSwap(GriddedRow* row, Component* removed,
-                               Component* added) const;
+  /** Compute row width and well-height demand after replacing one component. */
+  RowRequirements ComputeRowRequirementsAfterSwap(
+      GriddedRow* row, Component* removed, Component* added) const;
   bool IsNonHeightIncreasingSwap(GriddedRow* first_row,
                                  Component* first_component,
                                  GriddedRow* second_row,
