@@ -87,6 +87,10 @@ void GriddedDetailedPlacer::SetMinRelativeImprovement(
   min_relative_improvement_ = min_relative_improvement;
 }
 
+void GriddedDetailedPlacer::SetEnableVerticalSwap(bool enable) {
+  enable_vertical_swap_ = enable;
+}
+
 double GriddedDetailedPlacer::WireLengthCost(GriddedRow* row, int left_index,
                                              int right_index) const {
   auto& net_list = ckt_ptr_->Nets();
@@ -727,6 +731,8 @@ bool GriddedDetailedPlacer::StartPlacement() {
             << "  maximum rounds: " << max_rounds_ << "\n"
             << "  relative convergence threshold: "
             << min_relative_improvement_ << "\n"
+            << "  vertical swap: "
+            << (enable_vertical_swap_ ? "enabled" : "disabled") << "\n"
             << "  HPWL before : " << WeightedHPWL() << "um\n";
 
   double previous_hpwl = WeightedHPWL();
@@ -752,20 +758,23 @@ bool GriddedDetailedPlacer::StartPlacement() {
                      " Global Swap",
                  "global_swap", iteration);
 
-    hpwl_before_stage = WeightedHPWL();
-    stage_timer.RecordStartTime();
-    SwapStats vertical_swap_stats = RunVerticalSwapStage();
-    total_vertical_swap_stats.candidates += vertical_swap_stats.candidates;
-    total_vertical_swap_stats.accepted += vertical_swap_stats.accepted;
-    stage_timer.RecordEndTime();
-    vertical_swap_wall_time += stage_timer.GetWallTime();
-    vertical_swap_cpu_time += stage_timer.GetCpuTime();
-    LogSwapStage("vertical swap", vertical_swap_stats, hpwl_before_stage);
-    RecordPlacementMetric("gridded_detailed.vertical_swap", WeightedHPWL());
-    EmitSnapshot("gridded.iter_" + std::to_string(iteration) + ".vertical_swap",
-                 "Gridded Detailed Iteration " + std::to_string(iteration) +
-                     " Vertical Swap",
-                 "vertical_swap", iteration);
+    if (enable_vertical_swap_) {
+      hpwl_before_stage = WeightedHPWL();
+      stage_timer.RecordStartTime();
+      SwapStats vertical_swap_stats = RunVerticalSwapStage();
+      total_vertical_swap_stats.candidates += vertical_swap_stats.candidates;
+      total_vertical_swap_stats.accepted += vertical_swap_stats.accepted;
+      stage_timer.RecordEndTime();
+      vertical_swap_wall_time += stage_timer.GetWallTime();
+      vertical_swap_cpu_time += stage_timer.GetCpuTime();
+      LogSwapStage("vertical swap", vertical_swap_stats, hpwl_before_stage);
+      RecordPlacementMetric("gridded_detailed.vertical_swap", WeightedHPWL());
+      EmitSnapshot(
+          "gridded.iter_" + std::to_string(iteration) + ".vertical_swap",
+          "Gridded Detailed Iteration " + std::to_string(iteration) +
+              " Vertical Swap",
+          "vertical_swap", iteration);
+    }
 
     stage_timer.RecordStartTime();
     RunLocalReorderStage();

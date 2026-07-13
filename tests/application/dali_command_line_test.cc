@@ -107,6 +107,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "5",
                      "-gridded_detailed_min_relative_improvement",
                      "0.002",
+                     "-disable_gridded_vertical_swap",
                      "-enable_gridded_row_y_optimization",
                      "-debug_placement_region_scale",
                      "1.1",
@@ -146,6 +147,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_DOUBLE_EQ(
       config_get_real("dali.gridded_detailed_min_relative_improvement"),
       0.002);
+  EXPECT_EQ(config_get_int("dali.disable_gridded_vertical_swap"), 1);
   EXPECT_EQ(config_get_int("dali.enable_gridded_row_y_optimization"), 1);
   EXPECT_DOUBLE_EQ(config_get_real("dali.debug_placement_region_scale"), 1.1);
   EXPECT_EQ(config_get_int("dali.save_intermediate_result"), 1);

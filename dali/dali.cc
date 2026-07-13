@@ -235,6 +235,8 @@ void Dali::ShowParamsList() {
             << gridded_detailed_max_rounds_ << "\n"
             << "  gridded_detailed_min_relative_improvement: "
             << gridded_detailed_min_relative_improvement_ << "\n"
+            << "  disable_gridded_vertical_swap: "
+            << disable_gridded_vertical_swap_ << "\n"
             << "  enable_gridded_row_y_optimization: "
             << enable_gridded_row_y_optimization_ << "\n"
             << "  enable_shrink_off_grid_die_area: "
@@ -341,6 +343,8 @@ void Dali::LoadParamsFromConfig() {
   DaliExpects(gridded_detailed_min_relative_improvement_ >= 0.0 &&
                   gridded_detailed_min_relative_improvement_ <= 1.0,
               "gridded_detailed_min_relative_improvement must be in [0, 1]");
+  LoadBoolConfig(ConfigName(prefix_, "disable_gridded_vertical_swap"),
+                 &disable_gridded_vertical_swap_);
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_row_y_optimization"),
                  &enable_gridded_row_y_optimization_);
   LoadBoolConfig(ConfigName(prefix_, "enable_shrink_off_grid_die_area"),
@@ -456,6 +460,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       enable_gridded_detailed_placement_,
       gridded_detailed_max_rounds_,
       gridded_detailed_min_relative_improvement_,
+      disable_gridded_vertical_swap_,
       enable_gridded_row_y_optimization_,
       enable_shrink_off_grid_die_area_,
       global_initializer_,
@@ -841,6 +846,8 @@ void Dali::ConfigureWellLegalizer() {
   well_legalizer_.SetDetailedPlacementConvergence(
       gridded_detailed_max_rounds_,
       gridded_detailed_min_relative_improvement_);
+  well_legalizer_.SetEnableDetailedVerticalSwap(
+      !disable_gridded_vertical_swap_);
   well_legalizer_.SetEnableRowLocationOptimization(
       enable_gridded_row_y_optimization_);
   well_legalizer_.SetSnapshotCallback(

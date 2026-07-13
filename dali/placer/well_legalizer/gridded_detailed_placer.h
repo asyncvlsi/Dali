@@ -47,6 +47,9 @@ class GriddedDetailedPlacer : public Placer {
   /** Set the minimum relative HPWL gain required to start another round. */
   void SetMinRelativeImprovement(double min_relative_improvement);
 
+  /** Enable or disable the within-stripe vertical-swap stage. */
+  void SetEnableVerticalSwap(bool enable);
+
   /** Run gridded detailed placement on the attached rows. */
   bool StartPlacement() override;
 
@@ -132,6 +135,7 @@ class GriddedDetailedPlacer : public Placer {
   SnapshotCallback snapshot_callback_;
   int max_rounds_ = 6;
   double min_relative_improvement_ = 0.001;
+  bool enable_vertical_swap_ = true;
 };
 
 }  // namespace dali

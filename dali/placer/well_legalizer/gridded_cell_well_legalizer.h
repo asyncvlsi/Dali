@@ -120,6 +120,11 @@ class GriddedCellWellLegalizer : public Placer {
         min_relative_improvement);
   }
 
+  /** Enable or disable vertical swaps in gridded detailed placement. */
+  void SetEnableDetailedVerticalSwap(bool enable) {
+    gridded_detailed_placer_.SetEnableVerticalSwap(enable);
+  }
+
   /** Enable HPWL-aware vertical movement of legal gridded row groups. */
   void SetEnableRowLocationOptimization(bool enable) {
     enable_row_location_optimization_ = enable;

@@ -93,6 +93,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -enable_gridded_detailed_placement         run gridded global swap, vertical swap, and local reorder\n"
       << "  -gridded_detailed_max_rounds <n>           maximum gridded detailed rounds, default 6\n"
       << "  -gridded_detailed_min_relative_improvement <0..1>  convergence threshold, default 0.001\n"
+      << "  -disable_gridded_vertical_swap            skip vertical swaps in gridded detailed placement\n"
       << "  -enable_gridded_row_y_optimization         shift legal row groups toward net-optimal Y regions\n"
       << "  -debug_placement_region_scale <factor>      enlarge the placement boundary for debugging, default 1\n"
       << "  -standard_cell_legalizer_cost <displacement/hpwl>  default displacement\n"
@@ -412,6 +413,8 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       }
       config_set_real("dali.gridded_detailed_min_relative_improvement",
                       min_relative_improvement);
+    } else if (arg == "-disable_gridded_vertical_swap") {
+      EnableConfigFlag("dali.disable_gridded_vertical_swap");
     } else if (arg == "-enable_gridded_row_y_optimization") {
       EnableConfigFlag("dali.enable_gridded_row_y_optimization");
     } else if (arg == "-debug_placement_region_scale") {
