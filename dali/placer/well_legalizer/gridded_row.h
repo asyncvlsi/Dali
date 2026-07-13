@@ -92,6 +92,9 @@ class GriddedRow {
   /** Return row width in Dali grid units. */
   int Width() const;
 
+  /** Return width available to ordinary components after boundary margins. */
+  int UsableWidth() const;
+
   void SetLLY(int ly);
   void SetURY(int uy);
   int LLY() const;

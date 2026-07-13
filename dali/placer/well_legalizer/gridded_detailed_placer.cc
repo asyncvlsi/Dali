@@ -271,9 +271,9 @@ bool GriddedDetailedPlacer::IsNonHeightIncreasingSwap(
     GriddedRow* first_row, Component* first_component, GriddedRow* second_row,
     Component* second_component) const {
   if (UsedWidthAfterSwap(first_row, first_component, second_component) >
-          first_row->Width() ||
+          first_row->UsableWidth() ||
       UsedWidthAfterSwap(second_row, second_component, first_component) >
-          second_row->Width()) {
+          second_row->UsableWidth()) {
     return false;
   }
 

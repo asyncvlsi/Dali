@@ -60,6 +60,10 @@ void GriddedRow::SetWidth(int width) { width_ = width; }
 
 int GriddedRow::Width() const { return width_; }
 
+int GriddedRow::UsableWidth() const {
+  return std::max(0, width_ - left_boundary_margin_ - right_boundary_margin_);
+}
+
 void GriddedRow::SetLLY(int ly) { ly_ = ly; }
 
 void GriddedRow::SetURY(int uy) { ly_ = uy - Height(); }

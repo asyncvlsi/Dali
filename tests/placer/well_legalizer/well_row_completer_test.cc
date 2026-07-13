@@ -31,6 +31,7 @@ TEST(WellRowCompleterTest, RowLegalizationPreservesBoundaryMargins) {
   row.SetLLX(10);
   row.SetWidth(100);
   row.SetBoundaryMargins(7, 7);
+  EXPECT_EQ(row.UsableWidth(), 86);
   row.AddComponent(circuit.GetComponentPtr("left"));
   row.AddComponent(circuit.GetComponentPtr("right"));
 
