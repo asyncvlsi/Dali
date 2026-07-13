@@ -290,12 +290,10 @@ bool GriddedDetailedPlacer::IsNonHeightIncreasingSwap(
 double GriddedDetailedPlacer::RowPairWireLengthCost(
     GriddedRow* first_row, GriddedRow* second_row) const {
   std::set<int> net_ids;
-  auto collect_row_net_ids = [this, &net_ids](GriddedRow* row) {
+  auto collect_row_net_ids = [&net_ids](GriddedRow* row) {
     for (Component* component : row->Components()) {
       for (int net_id : component->NetList()) {
-        if (ckt_ptr_->Nets()[net_id].PinCnt() < 100) {
-          net_ids.insert(net_id);
-        }
+        net_ids.insert(net_id);
       }
     }
   };
@@ -399,27 +397,6 @@ GriddedDetailedPlacer::ComputeOptimalRegion(Component* component) const {
           y_bounds[uy_index]};
 }
 
-double GriddedDetailedPlacer::ComponentPairWireLengthCost(
-    Component* first_component, Component* second_component) const {
-  std::set<int> net_ids;
-  for (int net_id : first_component->NetList()) {
-    if (ckt_ptr_->Nets()[net_id].PinCnt() < 100) {
-      net_ids.insert(net_id);
-    }
-  }
-  for (int net_id : second_component->NetList()) {
-    if (ckt_ptr_->Nets()[net_id].PinCnt() < 100) {
-      net_ids.insert(net_id);
-    }
-  }
-
-  double cost = 0;
-  for (int net_id : net_ids) {
-    cost += ckt_ptr_->NetWeightedHPWL(net_id);
-  }
-  return cost;
-}
-
 void GriddedDetailedPlacer::PlaceComponentInRow(GriddedRow* row,
                                                 Component* component) const {
   component->SetOrient(row->IsOrientN() ? N : FS);
@@ -456,32 +433,19 @@ bool GriddedDetailedPlacer::TrySwap(GriddedRow* first_row, int first_index,
     return false;
   }
 
-  double local_cost_before =
-      ComponentPairWireLengthCost(first_component, second_component);
+  double row_pair_cost_before = RowPairWireLengthCost(first_row, second_row);
   auto row_state_before_swap = SaveRowState({first_row, second_row});
   std::swap(first_row->Components()[first_index],
             second_row->Components()[second_index]);
   LegalizeRowsAfterSwap(first_row, second_row);
 
-  double local_cost_after =
-      ComponentPairWireLengthCost(first_component, second_component);
-  if (local_cost_after + kMinSignificantHpwlImprovement >= local_cost_before) {
+  double row_pair_cost_after = RowPairWireLengthCost(first_row, second_row);
+  if (row_pair_cost_after + kMinSignificantHpwlImprovement >=
+      row_pair_cost_before) {
     RestoreRowState(row_state_before_swap);
     return false;
   }
-
-  double row_pair_cost_after = RowPairWireLengthCost(first_row, second_row);
-  RestoreRowState(row_state_before_swap);
-  double row_pair_cost_before = RowPairWireLengthCost(first_row, second_row);
-  if (row_pair_cost_after + kMinSignificantHpwlImprovement <
-      row_pair_cost_before) {
-    std::swap(first_row->Components()[first_index],
-              second_row->Components()[second_index]);
-    LegalizeRowsAfterSwap(first_row, second_row);
-    return true;
-  }
-
-  return false;
+  return true;
 }
 
 GriddedDetailedPlacer::SwapStats

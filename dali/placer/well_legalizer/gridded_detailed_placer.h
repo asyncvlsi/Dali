@@ -96,8 +96,6 @@ class GriddedDetailedPlacer : public Placer {
   double DistanceToOptimalRegionY(GriddedRow* row, Component* component,
                                   const OptimalRegion& region) const;
   OptimalRegion ComputeOptimalRegion(Component* component) const;
-  double ComponentPairWireLengthCost(Component* first_component,
-                                     Component* second_component) const;
   void PlaceComponentInRow(GriddedRow* row, Component* component) const;
   void LegalizeRowsAfterSwap(GriddedRow* first_row, GriddedRow* second_row);
   bool TrySwap(GriddedRow* first_row, int first_index, GriddedRow* second_row,
