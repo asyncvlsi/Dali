@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
+#include <map>
 #include <set>
 #include <utility>
 
@@ -590,11 +591,22 @@ GriddedDetailedPlacer::SwapStats GriddedDetailedPlacer::TryOptimalRegionSwaps(
 
 GriddedDetailedPlacer::SwapStats GriddedDetailedPlacer::RunVerticalSwapStage() {
   SwapStats total_stats;
-  for (size_t i = 1; i < rows_.size(); ++i) {
-    SwapStats row_pair_stats = TryClosestComponentSwaps(
-        rows_[i - 1], rows_[i], kMaxSwapCandidatesPerRowPair);
-    total_stats.candidates += row_pair_stats.candidates;
-    total_stats.accepted += row_pair_stats.accepted;
+  std::map<std::pair<int, int>, std::vector<GriddedRow*>> stripe_rows;
+  for (GriddedRow* row : rows_) {
+    stripe_rows[{row->LLX(), row->URX()}].push_back(row);
+  }
+
+  for (auto& [bounds, rows] : stripe_rows) {
+    std::sort(rows.begin(), rows.end(),
+              [](const GriddedRow* lhs, const GriddedRow* rhs) {
+                return lhs->LLY() < rhs->LLY();
+              });
+    for (size_t i = 1; i < rows.size(); ++i) {
+      SwapStats row_pair_stats = TryClosestComponentSwaps(
+          rows[i - 1], rows[i], kMaxSwapCandidatesPerRowPair);
+      total_stats.candidates += row_pair_stats.candidates;
+      total_stats.accepted += row_pair_stats.accepted;
+    }
   }
   return total_stats;
 }
