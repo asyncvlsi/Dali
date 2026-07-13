@@ -50,7 +50,7 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_FALSE(options.enable_gridded_local_reorder);
   EXPECT_FALSE(options.enable_gridded_detailed_placement);
   EXPECT_EQ(options.gridded_detailed_max_rounds, 6);
-  EXPECT_DOUBLE_EQ(options.gridded_detailed_min_relative_improvement, 0.001);
+  EXPECT_DOUBLE_EQ(options.gridded_detailed_min_relative_improvement, 0.005);
   EXPECT_FALSE(options.disable_gridded_vertical_swap);
   EXPECT_FALSE(options.disable_gridded_legalization_feedback);
   EXPECT_FALSE(options.enable_gridded_upper_bound_balancing);

@@ -134,7 +134,7 @@ class GriddedDetailedPlacer : public Placer {
   std::vector<RowStripe> row_stripes_;
   SnapshotCallback snapshot_callback_;
   int max_rounds_ = 6;
-  double min_relative_improvement_ = 0.001;
+  double min_relative_improvement_ = 0.005;
   bool enable_vertical_swap_ = true;
 };
 

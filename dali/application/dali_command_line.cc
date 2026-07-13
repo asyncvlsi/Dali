@@ -92,7 +92,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -enable_gridded_local_reorder              reorder cells within finalized gridded rows\n"
       << "  -enable_gridded_detailed_placement         run gridded global swap, vertical swap, and local reorder\n"
       << "  -gridded_detailed_max_rounds <n>           maximum gridded detailed rounds, default 6\n"
-      << "  -gridded_detailed_min_relative_improvement <0..1>  convergence threshold, default 0.001\n"
+      << "  -gridded_detailed_min_relative_improvement <0..1>  convergence threshold, default 0.005\n"
       << "  -disable_gridded_vertical_swap            skip vertical swaps in gridded detailed placement\n"
       << "  -enable_gridded_row_y_optimization         shift legal row groups toward net-optimal Y regions\n"
       << "  -debug_placement_region_scale <factor>      enlarge the placement boundary for debugging, default 1\n"
