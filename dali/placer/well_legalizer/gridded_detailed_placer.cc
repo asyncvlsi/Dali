@@ -733,6 +733,8 @@ bool GriddedDetailedPlacer::StartPlacement() {
   int iteration_count = 0;
   for (int iteration = 0; iteration < max_rounds_; ++iteration) {
     LOG(info) << "  detailed iteration " << iteration << "\n";
+    ElapsedTime round_timer;
+    round_timer.RecordStartTime();
 
     double hpwl_before_stage = WeightedHPWL();
     ElapsedTime stage_timer;
@@ -779,8 +781,20 @@ bool GriddedDetailedPlacer::StartPlacement() {
     double improvement = previous_hpwl - current_hpwl;
     double relative_improvement =
         previous_hpwl > 0 ? improvement / previous_hpwl : 0;
+    round_timer.RecordEndTime();
     LOG(info) << "  iteration improvement: " << improvement << "um ("
-              << relative_improvement * 100.0 << "%)\n";
+              << relative_improvement * 100.0 << "%)"
+              << ", wall time: " << round_timer.GetWallTime() << "s\n";
+    std::string round_metric =
+        "gridded_detailed.round_" + std::to_string(iteration);
+    RecordPlacementMetric(round_metric + ".hpwl", current_hpwl);
+    RecordPlacementMetric(round_metric + ".improvement", improvement);
+    RecordPlacementMetric(round_metric + ".relative_improvement",
+                          relative_improvement);
+    RecordPlacementMetric("time." + round_metric + ".wall_s",
+                          round_timer.GetWallTime());
+    RecordPlacementMetric("time." + round_metric + ".cpu_s",
+                          round_timer.GetCpuTime());
     if (improvement <= kMinSignificantHpwlImprovement) {
       break;
     }
