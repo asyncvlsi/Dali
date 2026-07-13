@@ -12,6 +12,7 @@
 #define DALI_PLACER_WELL_LEGALIZER_GRIDDED_DETAILED_PLACER_H_
 
 #include <functional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -105,8 +106,11 @@ class GriddedDetailedPlacer : public Placer {
                                  Component* first_component,
                                  GriddedRow* second_row,
                                  Component* second_component) const;
-  double RowPairWireLengthCost(GriddedRow* first_row,
-                               GriddedRow* second_row) const;
+  /** Collect the unchanged union of nets affected by repacking two rows. */
+  std::set<int> CollectRowPairNetIds(GriddedRow* first_row,
+                                     GriddedRow* second_row) const;
+  /** Compute weighted HPWL for a sorted set of net identifiers. */
+  double NetWireLengthCost(const std::set<int>& net_ids) const;
   double DistanceToOptimalRegionX(Component* component,
                                   const OptimalRegion& region) const;
   double DistanceToOptimalRegionY(GriddedRow* row, Component* component,
