@@ -90,6 +90,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -disable_gridded_legalization_feedback     do not anchor the next solve to rough-legal coordinates\n"
       << "  -enable_gridded_stripe_balancing           rebalance final neighboring gridded stripes\n"
       << "  -enable_gridded_local_reorder              reorder cells within finalized gridded rows\n"
+      << "  -enable_gridded_detailed_placement         run gridded global swap, vertical swap, and local reorder\n"
       << "  -enable_gridded_row_y_optimization         shift legal row groups toward net-optimal Y regions\n"
       << "  -debug_placement_region_scale <factor>      enlarge the placement boundary for debugging, default 1\n"
       << "  -standard_cell_legalizer_cost <displacement/hpwl>  default displacement\n"
@@ -389,6 +390,8 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.enable_gridded_stripe_balancing");
     } else if (arg == "-enable_gridded_local_reorder") {
       EnableConfigFlag("dali.enable_gridded_local_reorder");
+    } else if (arg == "-enable_gridded_detailed_placement") {
+      EnableConfigFlag("dali.enable_gridded_detailed_placement");
     } else if (arg == "-enable_gridded_row_y_optimization") {
       EnableConfigFlag("dali.enable_gridded_row_y_optimization");
     } else if (arg == "-debug_placement_region_scale") {

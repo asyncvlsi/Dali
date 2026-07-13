@@ -107,6 +107,11 @@ class GriddedCellWellLegalizer : public Placer {
   /** Enable wirelength-driven reordering within legalized gridded rows. */
   void SetEnableLocalReorder(bool enable) { enable_local_reorder_ = enable; }
 
+  /** Enable cross-row swaps followed by local reordering. */
+  void SetEnableDetailedPlacement(bool enable) {
+    enable_detailed_placement_ = enable;
+  }
+
   /** Enable HPWL-aware vertical movement of legal gridded row groups. */
   void SetEnableRowLocationOptimization(bool enable) {
     enable_row_location_optimization_ = enable;
@@ -301,6 +306,7 @@ class GriddedCellWellLegalizer : public Placer {
   double adaptive_boundary_blend_ = 1.0;
   std::vector<int> stripe_boundaries_override_;
   bool enable_local_reorder_ = false;
+  bool enable_detailed_placement_ = false;
   bool enable_row_location_optimization_ = false;
   WellSpacePartitioner space_partitioner_;
   GriddedDetailedPlacer gridded_detailed_placer_;
