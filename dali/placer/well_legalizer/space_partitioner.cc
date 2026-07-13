@@ -67,6 +67,11 @@ void SpacePartitioner::SetAdaptiveBoundaryBlend(double blend) {
   adaptive_boundary_blend_ = blend;
 }
 
+void SpacePartitioner::SetColumnBoundaries(
+    const std::vector<int>& boundaries) {
+  column_boundaries_override_ = boundaries;
+}
+
 void WellSpacePartitioner::FetchWellParameters() {
   Tech& tech = circuit_->tech();
   WellLayer& n_well_layer = tech.NwellLayer();
@@ -492,6 +497,22 @@ std::vector<int> WellSpacePartitioner::PlanColumnBoundaries(
   std::vector<int> uniform_boundaries(tot_col_num_ + 1);
   for (int column = 0; column <= tot_col_num_; ++column) {
     uniform_boundaries[column] = Left() + stripe_width_ * column;
+  }
+  if (!column_boundaries_override_.empty()) {
+    DaliExpects(column_boundaries_override_.size() ==
+                    static_cast<size_t>(tot_col_num_ + 1),
+                "Explicit stripe boundary count does not match column count");
+    DaliExpects(column_boundaries_override_.front() == Left(),
+                "Explicit stripe boundaries do not start at region left");
+    DaliExpects(column_boundaries_override_.back() <= Right(),
+                "Explicit stripe boundaries exceed region right");
+    DaliExpects(std::adjacent_find(
+                    column_boundaries_override_.begin(),
+                    column_boundaries_override_.end(),
+                    [](int lhs, int rhs) { return lhs >= rhs; }) ==
+                    column_boundaries_override_.end(),
+                "Explicit stripe boundaries must be strictly increasing");
+    return column_boundaries_override_;
   }
   if (!use_adaptive_boundaries_ || tot_col_num_ == 1) {
     return uniform_boundaries;

@@ -30,6 +30,7 @@
 #include "dali/common/placement_metrics.h"
 #include "dali/placer/well_legalizer/stripe_helper.h"
 #include "dali/placer/well_legalizer/gridded_stripe_balancer.h"
+#include "dali/placer/well_legalizer/stripe_boundary_coordinate_optimizer.h"
 #include "dali/placer/well_legalizer/well_geometry.h"
 #include "dali/placer/well_legalizer/well_geometry_exporter.h"
 
@@ -264,6 +265,7 @@ void GriddedCellWellLegalizer::InitializeWellLegalizer(int cluster_width) {
   space_partitioner_.SetAdaptiveStripeBoundaries(
       enable_adaptive_stripe_boundaries_, BuildGriddedCapacityConfig(1.0));
   space_partitioner_.SetAdaptiveBoundaryBlend(adaptive_boundary_blend_);
+  space_partitioner_.SetColumnBoundaries(stripe_boundaries_override_);
   if (cluster_width >= 0) {
     space_partitioner_.SetMaxRowWidth(cluster_width);
   } else {
@@ -1279,72 +1281,80 @@ bool GriddedCellWellLegalizer::RunBestBoundaryClusteringStage() {
   DaliExpects(enable_adaptive_stripe_boundaries_,
               "Boundary selection requires adaptive stripes to be enabled");
 
-  const std::vector<double> adaptive_blends = {0.25, 0.5, 0.75, 1.0};
-  std::vector<bool> adaptive_success(adaptive_blends.size(), false);
-  std::vector<double> adaptive_hpwl(
-      adaptive_blends.size(), std::numeric_limits<double>::max());
-  for (size_t candidate = 0; candidate < adaptive_blends.size(); ++candidate) {
-    RestoreInitialComponentLocation();
-    enable_adaptive_stripe_boundaries_ = true;
-    adaptive_boundary_blend_ = adaptive_blends[candidate];
-    InitializeWellLegalizer();
-    adaptive_success[candidate] = ComponentClusteringLoose();
-    if (adaptive_success[candidate]) {
-      adaptive_hpwl[candidate] = WeightedHPWL();
+  enable_adaptive_stripe_boundaries_ = false;
+  stripe_boundaries_override_.clear();
+  RestoreInitialComponentLocation();
+  InitializeWellLegalizer();
+  std::vector<int> initial_boundaries = CollectColumnBoundaries();
+
+  int max_component_width = 0;
+  for (const Component& component : ckt_ptr_->Components()) {
+    if (component.IsMovable()) {
+      max_component_width =
+          std::max(max_component_width, component.Width());
     }
   }
+  int average_pitch =
+      (initial_boundaries.back() - initial_boundaries.front()) /
+      static_cast<int>(initial_boundaries.size() - 1);
+  StripeBoundaryCoordinateConfig search_config;
+  search_config.step = std::max(1, max_component_width);
+  search_config.minimum_pitch =
+      max_component_width + well_spacing_ + PhysicalCompletionReservedWidth();
+  search_config.maximum_pitch = average_pitch * 3 / 2;
+  search_config.minimum_improvement = 1e-6;
+
+  auto evaluator = [this](const std::vector<int>& boundaries) {
+    RestoreInitialComponentLocation();
+    stripe_boundaries_override_ = boundaries;
+    InitializeWellLegalizer();
+    bool feasible = ComponentClusteringLoose();
+    return StripeBoundaryEvaluation{feasible,
+                                    feasible ? WeightedHPWL() : 0.0};
+  };
+  StripeBoundaryCoordinateResult search_result =
+      StripeBoundaryCoordinateOptimizer(search_config)
+          .Optimize(initial_boundaries, evaluator);
 
   RestoreInitialComponentLocation();
-  enable_adaptive_stripe_boundaries_ = false;
+  stripe_boundaries_override_ = search_result.feasible
+                                    ? search_result.boundaries
+                                    : initial_boundaries;
   InitializeWellLegalizer();
-  bool uniform_success = ComponentClusteringLoose();
-  double uniform_hpwl =
-      uniform_success ? WeightedHPWL() : std::numeric_limits<double>::max();
-
-  size_t best_adaptive = 0;
-  for (size_t candidate = 1; candidate < adaptive_hpwl.size(); ++candidate) {
-    if (adaptive_hpwl[candidate] < adaptive_hpwl[best_adaptive]) {
-      best_adaptive = candidate;
-    }
-  }
-  bool select_adaptive = adaptive_success[best_adaptive] &&
-                         adaptive_hpwl[best_adaptive] < uniform_hpwl;
-  if (select_adaptive) {
-    RestoreInitialComponentLocation();
-    enable_adaptive_stripe_boundaries_ = true;
-    adaptive_boundary_blend_ = adaptive_blends[best_adaptive];
-    InitializeWellLegalizer();
-    adaptive_success[best_adaptive] = ComponentClusteringLoose();
-    DaliExpects(adaptive_success[best_adaptive],
-                "Selected adaptive clustering is not reproducible");
-  }
+  bool is_success = ComponentClusteringLoose();
+  DaliExpects(!search_result.feasible || is_success,
+              "Selected stripe boundary search result is not reproducibly legal");
 
   LOG(info) << "Form component clustering\n"
-            << "  stripe geometry candidates:\n"
-            << "    uniform HPWL  : "
-            << (uniform_success ? std::to_string(uniform_hpwl) : "infeasible")
-            << "um\n";
-  for (size_t candidate = 0; candidate < adaptive_blends.size(); ++candidate) {
-    LOG(info) << "    adaptive " << adaptive_blends[candidate] << " HPWL: "
-              << (adaptive_success[candidate]
-                      ? std::to_string(adaptive_hpwl[candidate])
-                      : "infeasible")
+            << "  local stripe-boundary search:\n"
+            << "    candidates evaluated : "
+            << search_result.evaluated_candidates << "\n"
+            << "    accepted moves       : " << search_result.accepted_moves
+            << "\n"
+            << "    initial feasible     : " << search_result.feasible << "\n";
+  if (search_result.feasible) {
+    LOG(info) << "    initial HPWL         : " << search_result.initial_cost
+              << "um\n"
+              << "    selected HPWL        : " << search_result.final_cost
               << "um\n";
   }
-  LOG(info) << "    selected       : "
-            << (select_adaptive
-                    ? "adaptive " +
-                          std::to_string(adaptive_blends[best_adaptive])
-                    : "uniform")
-            << "\n";
-  bool is_success =
-      select_adaptive ? adaptive_success[best_adaptive] : uniform_success;
   ReportHPWL();
   RecordPlacementMetric("well_legalization.component_clustering",
                         WeightedHPWL());
   EmitSnapshot("component_clustering", "After Component Clustering",
                "legalization", "component_clustering");
   return is_success;
+}
+
+std::vector<int> GriddedCellWellLegalizer::CollectColumnBoundaries() const {
+  DaliExpects(!col_list_.empty(),
+              "Cannot collect boundaries from an empty stripe partition");
+  std::vector<int> boundaries(col_list_.size() + 1);
+  for (size_t column = 0; column < col_list_.size(); ++column) {
+    boundaries[column] = col_list_[column].LLX();
+  }
+  boundaries.back() = col_list_.back().URX() + well_spacing_;
+  return boundaries;
 }
 
 void GriddedCellWellLegalizer::RunClusterOrientationStage() {

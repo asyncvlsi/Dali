@@ -223,6 +223,8 @@ class GriddedCellWellLegalizer : public Placer {
   bool RunComponentClusteringStage();
   /** Trial uniform and adaptive clustering and retain the lower legal HPWL. */
   bool RunBestBoundaryClusteringStage();
+  /** Return the column pitch boundaries used by the current partition. */
+  std::vector<int> CollectColumnBoundaries() const;
   /** Apply one of the two legal alternating orientation phases to a column. */
   void ApplyColumnOrientationPhase(StripeColumn* column,
                                    bool first_row_orient_n);
@@ -297,6 +299,7 @@ class GriddedCellWellLegalizer : public Placer {
   bool enable_stripe_balancing_ = false;
   bool enable_adaptive_stripe_boundaries_ = false;
   double adaptive_boundary_blend_ = 1.0;
+  std::vector<int> stripe_boundaries_override_;
   bool enable_local_reorder_ = false;
   bool enable_row_location_optimization_ = false;
   WellSpacePartitioner space_partitioner_;
