@@ -285,23 +285,25 @@ bool GriddedDetailedPlacer::IsNonHeightIncreasingSwap(
          second_requirements.n_well_height <= second_row->NHeight();
 }
 
-std::set<int> GriddedDetailedPlacer::CollectRowPairNetIds(
+std::vector<int> GriddedDetailedPlacer::CollectRowPairNetIds(
     GriddedRow* first_row, GriddedRow* second_row) const {
-  std::set<int> net_ids;
+  std::vector<int> net_ids;
   auto collect_row_net_ids = [&net_ids](GriddedRow* row) {
     for (Component* component : row->Components()) {
       for (int net_id : component->NetList()) {
-        net_ids.insert(net_id);
+        net_ids.push_back(net_id);
       }
     }
   };
   collect_row_net_ids(first_row);
   collect_row_net_ids(second_row);
+  std::sort(net_ids.begin(), net_ids.end());
+  net_ids.erase(std::unique(net_ids.begin(), net_ids.end()), net_ids.end());
   return net_ids;
 }
 
 double GriddedDetailedPlacer::NetWireLengthCost(
-    const std::set<int>& net_ids) const {
+    const std::vector<int>& net_ids) const {
   double cost = 0;
   for (int net_id : net_ids) {
     cost += ckt_ptr_->NetWeightedHPWL(net_id);
@@ -449,7 +451,7 @@ bool GriddedDetailedPlacer::TrySwap(GriddedRow* first_row, int first_index,
     return false;
   }
 
-  std::set<int> affected_net_ids =
+  std::vector<int> affected_net_ids =
       CollectRowPairNetIds(first_row, second_row);
   double row_pair_cost_before = NetWireLengthCost(affected_net_ids);
   auto row_state_before_swap = SaveRowState({first_row, second_row});
