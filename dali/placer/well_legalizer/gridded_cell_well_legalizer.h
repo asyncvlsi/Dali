@@ -112,6 +112,14 @@ class GriddedCellWellLegalizer : public Placer {
     enable_detailed_placement_ = enable;
   }
 
+  /** Configure gridded detailed-placement convergence. */
+  void SetDetailedPlacementConvergence(int max_rounds,
+                                       double min_relative_improvement) {
+    gridded_detailed_placer_.SetMaxRounds(max_rounds);
+    gridded_detailed_placer_.SetMinRelativeImprovement(
+        min_relative_improvement);
+  }
+
   /** Enable HPWL-aware vertical movement of legal gridded row groups. */
   void SetEnableRowLocationOptimization(bool enable) {
     enable_row_location_optimization_ = enable;

@@ -41,6 +41,12 @@ class GriddedDetailedPlacer : public Placer {
   /** Set a callback invoked after each gridded detailed-placement stage. */
   void SetSnapshotCallback(SnapshotCallback snapshot_callback);
 
+  /** Set the safety cap on complete gridded detailed-placement rounds. */
+  void SetMaxRounds(int max_rounds);
+
+  /** Set the minimum relative HPWL gain required to start another round. */
+  void SetMinRelativeImprovement(double min_relative_improvement);
+
   /** Run gridded detailed placement on the attached rows. */
   bool StartPlacement() override;
 
@@ -50,7 +56,6 @@ class GriddedDetailedPlacer : public Placer {
  private:
   static constexpr int kLocalReorderWindowSize = 3;
   static constexpr int kMaxLocalReorderIterations = 6;
-  static constexpr int kMaxDetailedIterations = 2;
   static constexpr int kMaxSwapCandidatesPerRowPair = 1;
   static constexpr int kMaxOptimalRegionRowsPerComponent = 4;
   static constexpr int kMaxOptimalRegionRowsPerStripe = 2;
@@ -125,6 +130,8 @@ class GriddedDetailedPlacer : public Placer {
   std::vector<GriddedRow*> rows_;
   std::vector<RowStripe> row_stripes_;
   SnapshotCallback snapshot_callback_;
+  int max_rounds_ = 6;
+  double min_relative_improvement_ = 0.001;
 };
 
 }  // namespace dali

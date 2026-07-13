@@ -103,6 +103,10 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "-enable_gridded_stripe_balancing",
                      "-enable_gridded_local_reorder",
                      "-enable_gridded_detailed_placement",
+                     "-gridded_detailed_max_rounds",
+                     "5",
+                     "-gridded_detailed_min_relative_improvement",
+                     "0.002",
                      "-enable_gridded_row_y_optimization",
                      "-debug_placement_region_scale",
                      "1.1",
@@ -138,6 +142,10 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_EQ(config_get_int("dali.enable_gridded_stripe_balancing"), 1);
   EXPECT_EQ(config_get_int("dali.enable_gridded_local_reorder"), 1);
   EXPECT_EQ(config_get_int("dali.enable_gridded_detailed_placement"), 1);
+  EXPECT_EQ(config_get_int("dali.gridded_detailed_max_rounds"), 5);
+  EXPECT_DOUBLE_EQ(
+      config_get_real("dali.gridded_detailed_min_relative_improvement"),
+      0.002);
   EXPECT_EQ(config_get_int("dali.enable_gridded_row_y_optimization"), 1);
   EXPECT_DOUBLE_EQ(config_get_real("dali.debug_placement_region_scale"), 1.1);
   EXPECT_EQ(config_get_int("dali.save_intermediate_result"), 1);
@@ -210,6 +218,13 @@ TEST_F(DaliCommandLineTest, RejectsOutOfRangeOptions) {
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
                       "-detailed_max_move_candidates", "-1"},
                      &options));
+  EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                      "-gridded_detailed_max_rounds", "-1"},
+                     &options));
+  EXPECT_FALSE(Parse(
+      {"dali", "-lef", "input.lef", "-def", "input.def",
+       "-gridded_detailed_min_relative_improvement", "1.1"},
+      &options));
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
                       "-gui_pause", "sometimes"},
                      &options));

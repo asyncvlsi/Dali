@@ -231,6 +231,10 @@ void Dali::ShowParamsList() {
             << enable_gridded_local_reorder_ << "\n"
             << "  enable_gridded_detailed_placement: "
             << enable_gridded_detailed_placement_ << "\n"
+            << "  gridded_detailed_max_rounds: "
+            << gridded_detailed_max_rounds_ << "\n"
+            << "  gridded_detailed_min_relative_improvement: "
+            << gridded_detailed_min_relative_improvement_ << "\n"
             << "  enable_gridded_row_y_optimization: "
             << enable_gridded_row_y_optimization_ << "\n"
             << "  enable_shrink_off_grid_die_area: "
@@ -327,6 +331,16 @@ void Dali::LoadParamsFromConfig() {
                  &enable_gridded_local_reorder_);
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_detailed_placement"),
                  &enable_gridded_detailed_placement_);
+  LoadIntConfig(ConfigName(prefix_, "gridded_detailed_max_rounds"),
+                &gridded_detailed_max_rounds_);
+  DaliExpects(gridded_detailed_max_rounds_ >= 0,
+              "gridded_detailed_max_rounds must be non-negative");
+  LoadRealConfig(
+      ConfigName(prefix_, "gridded_detailed_min_relative_improvement"),
+      &gridded_detailed_min_relative_improvement_);
+  DaliExpects(gridded_detailed_min_relative_improvement_ >= 0.0 &&
+                  gridded_detailed_min_relative_improvement_ <= 1.0,
+              "gridded_detailed_min_relative_improvement must be in [0, 1]");
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_row_y_optimization"),
                  &enable_gridded_row_y_optimization_);
   LoadBoolConfig(ConfigName(prefix_, "enable_shrink_off_grid_die_area"),
@@ -440,6 +454,8 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       enable_gridded_stripe_balancing_,
       enable_gridded_local_reorder_,
       enable_gridded_detailed_placement_,
+      gridded_detailed_max_rounds_,
+      gridded_detailed_min_relative_improvement_,
       enable_gridded_row_y_optimization_,
       enable_shrink_off_grid_die_area_,
       global_initializer_,
@@ -822,6 +838,9 @@ void Dali::ConfigureWellLegalizer() {
   well_legalizer_.SetEnableLocalReorder(enable_gridded_local_reorder_);
   well_legalizer_.SetEnableDetailedPlacement(
       enable_gridded_detailed_placement_);
+  well_legalizer_.SetDetailedPlacementConvergence(
+      gridded_detailed_max_rounds_,
+      gridded_detailed_min_relative_improvement_);
   well_legalizer_.SetEnableRowLocationOptimization(
       enable_gridded_row_y_optimization_);
   well_legalizer_.SetSnapshotCallback(

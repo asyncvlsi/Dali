@@ -73,6 +73,20 @@ void GriddedDetailedPlacer::SetSnapshotCallback(
   snapshot_callback_ = std::move(snapshot_callback);
 }
 
+void GriddedDetailedPlacer::SetMaxRounds(int max_rounds) {
+  DaliExpects(max_rounds >= 0,
+              "Gridded detailed placement rounds cannot be negative");
+  max_rounds_ = max_rounds;
+}
+
+void GriddedDetailedPlacer::SetMinRelativeImprovement(
+    double min_relative_improvement) {
+  DaliExpects(min_relative_improvement >= 0.0 &&
+                  min_relative_improvement <= 1.0,
+              "Gridded detailed relative improvement must be in [0, 1]");
+  min_relative_improvement_ = min_relative_improvement;
+}
+
 double GriddedDetailedPlacer::WireLengthCost(GriddedRow* row, int left_index,
                                              int right_index) const {
   auto& net_list = ckt_ptr_->Nets();
@@ -710,11 +724,14 @@ bool GriddedDetailedPlacer::StartPlacement() {
 
   LOG(info) << "Gridded detailed placement:\n"
             << "  gridded rows: " << rows_.size() << "\n"
+            << "  maximum rounds: " << max_rounds_ << "\n"
+            << "  relative convergence threshold: "
+            << min_relative_improvement_ << "\n"
             << "  HPWL before : " << WeightedHPWL() << "um\n";
 
   double previous_hpwl = WeightedHPWL();
   int iteration_count = 0;
-  for (int iteration = 0; iteration < kMaxDetailedIterations; ++iteration) {
+  for (int iteration = 0; iteration < max_rounds_; ++iteration) {
     LOG(info) << "  detailed iteration " << iteration << "\n";
 
     double hpwl_before_stage = WeightedHPWL();
@@ -760,12 +777,21 @@ bool GriddedDetailedPlacer::StartPlacement() {
 
     double current_hpwl = WeightedHPWL();
     double improvement = previous_hpwl - current_hpwl;
-    LOG(info) << "  iteration improvement: " << improvement << "um\n";
+    double relative_improvement =
+        previous_hpwl > 0 ? improvement / previous_hpwl : 0;
+    LOG(info) << "  iteration improvement: " << improvement << "um ("
+              << relative_improvement * 100.0 << "%)\n";
     if (improvement <= kMinSignificantHpwlImprovement) {
       break;
     }
     ++iteration_count;
     previous_hpwl = current_hpwl;
+    if (relative_improvement < min_relative_improvement_) {
+      LOG(info) << "  detailed placement converged: relative improvement "
+                << relative_improvement << " is below "
+                << min_relative_improvement_ << "\n";
+      break;
+    }
   }
 
   total_timer.RecordEndTime();

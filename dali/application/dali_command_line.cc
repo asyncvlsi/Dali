@@ -91,6 +91,8 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -enable_gridded_stripe_balancing           rebalance final neighboring gridded stripes\n"
       << "  -enable_gridded_local_reorder              reorder cells within finalized gridded rows\n"
       << "  -enable_gridded_detailed_placement         run gridded global swap, vertical swap, and local reorder\n"
+      << "  -gridded_detailed_max_rounds <n>           maximum gridded detailed rounds, default 6\n"
+      << "  -gridded_detailed_min_relative_improvement <0..1>  convergence threshold, default 0.001\n"
       << "  -enable_gridded_row_y_optimization         shift legal row groups toward net-optimal Y regions\n"
       << "  -debug_placement_region_scale <factor>      enlarge the placement boundary for debugging, default 1\n"
       << "  -standard_cell_legalizer_cost <displacement/hpwl>  default displacement\n"
@@ -392,6 +394,24 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.enable_gridded_local_reorder");
     } else if (arg == "-enable_gridded_detailed_placement") {
       EnableConfigFlag("dali.enable_gridded_detailed_placement");
+    } else if (arg == "-gridded_detailed_max_rounds") {
+      int max_rounds = 0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseInt(value, &max_rounds) || max_rounds < 0) {
+        error_output << "Invalid gridded detailed maximum round count!\n";
+        return false;
+      }
+      config_set_int("dali.gridded_detailed_max_rounds", max_rounds);
+    } else if (arg == "-gridded_detailed_min_relative_improvement") {
+      double min_relative_improvement = 0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseDouble(value, &min_relative_improvement) ||
+          min_relative_improvement < 0 || min_relative_improvement > 1) {
+        error_output << "Invalid gridded detailed convergence threshold!\n";
+        return false;
+      }
+      config_set_real("dali.gridded_detailed_min_relative_improvement",
+                      min_relative_improvement);
     } else if (arg == "-enable_gridded_row_y_optimization") {
       EnableConfigFlag("dali.enable_gridded_row_y_optimization");
     } else if (arg == "-debug_placement_region_scale") {
