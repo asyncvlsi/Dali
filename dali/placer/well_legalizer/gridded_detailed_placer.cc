@@ -705,6 +705,8 @@ bool GriddedDetailedPlacer::StartPlacement() {
   double vertical_swap_cpu_time = 0;
   double local_reorder_wall_time = 0;
   double local_reorder_cpu_time = 0;
+  SwapStats total_global_swap_stats;
+  SwapStats total_vertical_swap_stats;
 
   LOG(info) << "Gridded detailed placement:\n"
             << "  gridded rows: " << rows_.size() << "\n"
@@ -719,6 +721,8 @@ bool GriddedDetailedPlacer::StartPlacement() {
     ElapsedTime stage_timer;
     stage_timer.RecordStartTime();
     SwapStats global_swap_stats = RunGlobalSwapStage();
+    total_global_swap_stats.candidates += global_swap_stats.candidates;
+    total_global_swap_stats.accepted += global_swap_stats.accepted;
     stage_timer.RecordEndTime();
     global_swap_wall_time += stage_timer.GetWallTime();
     global_swap_cpu_time += stage_timer.GetCpuTime();
@@ -732,6 +736,8 @@ bool GriddedDetailedPlacer::StartPlacement() {
     hpwl_before_stage = WeightedHPWL();
     stage_timer.RecordStartTime();
     SwapStats vertical_swap_stats = RunVerticalSwapStage();
+    total_vertical_swap_stats.candidates += vertical_swap_stats.candidates;
+    total_vertical_swap_stats.accepted += vertical_swap_stats.accepted;
     stage_timer.RecordEndTime();
     vertical_swap_wall_time += stage_timer.GetWallTime();
     vertical_swap_cpu_time += stage_timer.GetCpuTime();
@@ -774,6 +780,32 @@ bool GriddedDetailedPlacer::StartPlacement() {
             << "s, cpu=" << local_reorder_cpu_time << "s\n"
             << "    total         : wall=" << total_timer.GetWallTime()
             << "s, cpu=" << total_timer.GetCpuTime() << "s\n";
+
+  RecordPlacementMetric("gridded_detailed.iterations", iteration_count);
+  RecordPlacementMetric("gridded_detailed.global_swap.candidates",
+                        total_global_swap_stats.candidates);
+  RecordPlacementMetric("gridded_detailed.global_swap.accepted",
+                        total_global_swap_stats.accepted);
+  RecordPlacementMetric("gridded_detailed.vertical_swap.candidates",
+                        total_vertical_swap_stats.candidates);
+  RecordPlacementMetric("gridded_detailed.vertical_swap.accepted",
+                        total_vertical_swap_stats.accepted);
+  RecordPlacementMetric("time.gridded_detailed.global_swap.wall_s",
+                        global_swap_wall_time);
+  RecordPlacementMetric("time.gridded_detailed.global_swap.cpu_s",
+                        global_swap_cpu_time);
+  RecordPlacementMetric("time.gridded_detailed.vertical_swap.wall_s",
+                        vertical_swap_wall_time);
+  RecordPlacementMetric("time.gridded_detailed.vertical_swap.cpu_s",
+                        vertical_swap_cpu_time);
+  RecordPlacementMetric("time.gridded_detailed.local_reorder.wall_s",
+                        local_reorder_wall_time);
+  RecordPlacementMetric("time.gridded_detailed.local_reorder.cpu_s",
+                        local_reorder_cpu_time);
+  RecordPlacementMetric("time.gridded_detailed.total.wall_s",
+                        total_timer.GetWallTime());
+  RecordPlacementMetric("time.gridded_detailed.total.cpu_s",
+                        total_timer.GetCpuTime());
 
   PrintEndStatement("gridded detailed placement", true);
   return true;

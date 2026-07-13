@@ -1406,10 +1406,12 @@ void GriddedCellWellLegalizer::RunGriddedDetailedPlacementStage() {
                "detailed_placement", "start");
   if (enable_detailed_placement_) {
     gridded_detailed_placer_.StartPlacement();
+    RecordPlacementMetric("well_legalization.gridded_detailed",
+                          WeightedHPWL());
   } else {
     gridded_detailed_placer_.StartLocalReorder();
+    RecordPlacementMetric("well_legalization.local_reorder", WeightedHPWL());
   }
-  RecordPlacementMetric("well_legalization.local_reorder", WeightedHPWL());
   EmitSnapshot("gridded.final", "After Gridded Detailed Placement",
                "detailed_placement", "final");
 }
