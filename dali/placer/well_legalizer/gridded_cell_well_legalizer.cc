@@ -1298,7 +1298,10 @@ bool GriddedCellWellLegalizer::RunBestBoundaryClusteringStage() {
       (initial_boundaries.back() - initial_boundaries.front()) /
       static_cast<int>(initial_boundaries.size() - 1);
   StripeBoundaryCoordinateConfig search_config;
-  search_config.step = std::max(1, max_component_width);
+  // A one-grid move changes ownership only for components immediately beside
+  // the cutline. Cell-width moves were too disruptive on test_case_3 and had
+  // no improving candidate in either direction.
+  search_config.step = 1;
   search_config.minimum_pitch =
       max_component_width + well_spacing_ + PhysicalCompletionReservedWidth();
   search_config.maximum_pitch = average_pitch * 3 / 2;
