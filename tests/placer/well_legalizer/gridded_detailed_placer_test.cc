@@ -17,7 +17,7 @@
 
 namespace dali {
 
-TEST(GriddedDetailedPlacerTest, VerticalSwapKeepsComponentsInTheirStripe) {
+TEST(GriddedDetailedPlacerTest, GlobalSwapImprovesHpwlWithinRowBounds) {
   Circuit circuit;
   circuit.SetDatabaseMicrons(1000);
   circuit.SetManufacturingGrid(1);
@@ -68,12 +68,16 @@ TEST(GriddedDetailedPlacerTest, VerticalSwapKeepsComponentsInTheirStripe) {
   GriddedDetailedPlacer placer;
   placer.SetCircuit(&circuit);
   placer.SetRows(row_pointers);
+  const double hpwl_before = circuit.WeightedHPWL();
   ASSERT_TRUE(placer.StartPlacement());
 
-  EXPECT_DOUBLE_EQ(circuit.GetComponentPtr("a")->LLX(), 0);
-  EXPECT_DOUBLE_EQ(circuit.GetComponentPtr("b")->LLX(), 100);
-  EXPECT_DOUBLE_EQ(circuit.GetComponentPtr("c")->LLX(), 0);
-  EXPECT_DOUBLE_EQ(circuit.GetComponentPtr("d")->LLX(), 100);
+  EXPECT_LT(circuit.WeightedHPWL(), hpwl_before);
+  for (const GriddedRow& row : rows) {
+    for (const Component* component : row.Components()) {
+      EXPECT_GE(component->LLX(), row.LLX() + row.LeftBoundaryMargin());
+      EXPECT_LE(component->URX(), row.URX() - row.RightBoundaryMargin());
+    }
+  }
 }
 
 }  // namespace dali

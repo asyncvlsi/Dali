@@ -53,6 +53,7 @@ class GriddedDetailedPlacer : public Placer {
   static constexpr int kMaxDetailedIterations = 2;
   static constexpr int kMaxSwapCandidatesPerRowPair = 1;
   static constexpr int kMaxOptimalRegionRowsPerComponent = 4;
+  static constexpr int kMaxOptimalRegionRowsPerStripe = 2;
   static constexpr int kMaxOptimalRegionCandidatesPerRow = 2;
   static constexpr double kMinSignificantHpwlImprovement = 1e-9;
 
@@ -67,6 +68,10 @@ class GriddedDetailedPlacer : public Placer {
     double ly = 0;
     double ux = 0;
     double uy = 0;
+  };
+
+  struct RowStripe {
+    std::vector<GriddedRow*> rows;
   };
 
   double WireLengthCost(GriddedRow* row, int left_index, int right_index) const;
@@ -95,6 +100,10 @@ class GriddedDetailedPlacer : public Placer {
                                   const OptimalRegion& region) const;
   double DistanceToOptimalRegionY(GriddedRow* row, Component* component,
                                   const OptimalRegion& region) const;
+  /** Estimate the closest legal X distance from a row to an optimal region. */
+  double DistanceFromRowToOptimalRegionX(
+      GriddedRow* row, Component* component,
+      const OptimalRegion& region) const;
   OptimalRegion ComputeOptimalRegion(Component* component) const;
   void PlaceComponentInRow(GriddedRow* row, Component* component) const;
   void LegalizeRowsAfterSwap(GriddedRow* first_row, GriddedRow* second_row);
@@ -110,8 +119,11 @@ class GriddedDetailedPlacer : public Placer {
                     double hpwl_before);
   void EmitSnapshot(const std::string& id, const std::string& label,
                     const std::string& subgroup, int iteration);
+  /** Group rows by stripe bounds and sort each stripe from bottom to top. */
+  void BuildRowStripeIndex();
 
   std::vector<GriddedRow*> rows_;
+  std::vector<RowStripe> row_stripes_;
   SnapshotCallback snapshot_callback_;
 };
 

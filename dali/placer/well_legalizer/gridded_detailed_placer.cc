@@ -65,6 +65,7 @@ static void RestoreRowState(const std::vector<GriddedRowSnapshot>& snapshots) {
 
 void GriddedDetailedPlacer::SetRows(std::vector<GriddedRow*> rows) {
   rows_ = std::move(rows);
+  BuildRowStripeIndex();
 }
 
 void GriddedDetailedPlacer::SetSnapshotCallback(
@@ -337,6 +338,20 @@ double GriddedDetailedPlacer::DistanceToOptimalRegionY(
   return 0;
 }
 
+double GriddedDetailedPlacer::DistanceFromRowToOptimalRegionX(
+    GriddedRow* row, Component* component,
+    const OptimalRegion& region) const {
+  double min_lx = row->LLX() + row->LeftBoundaryMargin();
+  double max_lx = row->URX() - row->RightBoundaryMargin() - component->Width();
+  if (max_lx < region.lx) {
+    return region.lx - max_lx;
+  }
+  if (min_lx > region.ux) {
+    return min_lx - region.ux;
+  }
+  return 0;
+}
+
 GriddedDetailedPlacer::OptimalRegion
 GriddedDetailedPlacer::ComputeOptimalRegion(Component* component) const {
   std::vector<double> x_bounds;
@@ -530,23 +545,48 @@ GriddedDetailedPlacer::SwapStats GriddedDetailedPlacer::TryOptimalRegionSwaps(
   if (!region.valid) {
     return {};
   }
-  double current_y_distance =
+  double current_distance =
+      DistanceToOptimalRegionX(source_component, region) +
       DistanceToOptimalRegionY(source_row, source_component, region);
-  if (current_y_distance <= kMinSignificantHpwlImprovement) {
+  if (current_distance <= kMinSignificantHpwlImprovement) {
     return {};
   }
 
   std::vector<CandidateRow> candidate_rows;
-  candidate_rows.reserve(rows_.size());
-  for (GriddedRow* row : rows_) {
-    if (row == source_row) {
-      continue;
+  candidate_rows.reserve(row_stripes_.size() *
+                         kMaxOptimalRegionRowsPerStripe);
+  double target_y = (region.ly + region.uy) / 2.0;
+  for (const RowStripe& stripe : row_stripes_) {
+    auto nearest = std::lower_bound(
+        stripe.rows.begin(), stripe.rows.end(), target_y,
+        [](const GriddedRow* row, double y) { return row->CenterY() < y; });
+    int nearest_index = static_cast<int>(nearest - stripe.rows.begin());
+    int first_index = std::max(0, nearest_index - 2);
+    int end_index = std::min(static_cast<int>(stripe.rows.size()),
+                             nearest_index + 2);
+
+    std::vector<CandidateRow> stripe_candidates;
+    for (int i = first_index; i < end_index; ++i) {
+      GriddedRow* row = stripe.rows[i];
+      if (row == source_row) {
+        continue;
+      }
+      double row_distance =
+          DistanceFromRowToOptimalRegionX(row, source_component, region) +
+          DistanceToOptimalRegionY(row, source_component, region);
+      if (row_distance < current_distance) {
+        stripe_candidates.push_back({row, row_distance});
+      }
     }
-    double row_distance =
-        DistanceToOptimalRegionY(row, source_component, region);
-    if (row_distance < current_y_distance) {
-      candidate_rows.push_back({row, row_distance});
-    }
+    std::sort(stripe_candidates.begin(), stripe_candidates.end(),
+              [](const CandidateRow& lhs, const CandidateRow& rhs) {
+                return lhs.distance < rhs.distance;
+              });
+    int stripe_limit =
+        std::min(kMaxOptimalRegionRowsPerStripe,
+                 static_cast<int>(stripe_candidates.size()));
+    candidate_rows.insert(candidate_rows.end(), stripe_candidates.begin(),
+                          stripe_candidates.begin() + stripe_limit);
   }
   std::sort(candidate_rows.begin(), candidate_rows.end(),
             [](const CandidateRow& lhs, const CandidateRow& rhs) {
@@ -591,19 +631,11 @@ GriddedDetailedPlacer::SwapStats GriddedDetailedPlacer::TryOptimalRegionSwaps(
 
 GriddedDetailedPlacer::SwapStats GriddedDetailedPlacer::RunVerticalSwapStage() {
   SwapStats total_stats;
-  std::map<std::pair<int, int>, std::vector<GriddedRow*>> stripe_rows;
-  for (GriddedRow* row : rows_) {
-    stripe_rows[{row->LLX(), row->URX()}].push_back(row);
-  }
-
-  for (auto& [bounds, rows] : stripe_rows) {
-    std::sort(rows.begin(), rows.end(),
-              [](const GriddedRow* lhs, const GriddedRow* rhs) {
-                return lhs->LLY() < rhs->LLY();
-              });
-    for (size_t i = 1; i < rows.size(); ++i) {
+  for (const RowStripe& stripe : row_stripes_) {
+    for (size_t i = 1; i < stripe.rows.size(); ++i) {
       SwapStats row_pair_stats = TryClosestComponentSwaps(
-          rows[i - 1], rows[i], kMaxSwapCandidatesPerRowPair);
+          stripe.rows[i - 1], stripe.rows[i],
+          kMaxSwapCandidatesPerRowPair);
       total_stats.candidates += row_pair_stats.candidates;
       total_stats.accepted += row_pair_stats.accepted;
     }
@@ -640,6 +672,24 @@ void GriddedDetailedPlacer::EmitSnapshot(const std::string& id,
                                          int iteration) {
   if (!snapshot_callback_) return;
   snapshot_callback_(id, label, subgroup, iteration);
+}
+
+void GriddedDetailedPlacer::BuildRowStripeIndex() {
+  std::map<std::pair<int, int>, std::vector<GriddedRow*>> grouped_rows;
+  for (GriddedRow* row : rows_) {
+    grouped_rows[{row->LLX(), row->URX()}].push_back(row);
+  }
+
+  row_stripes_.clear();
+  row_stripes_.reserve(grouped_rows.size());
+  for (auto& entry : grouped_rows) {
+    std::vector<GriddedRow*>& rows = entry.second;
+    std::sort(rows.begin(), rows.end(),
+              [](const GriddedRow* lhs, const GriddedRow* rhs) {
+                return lhs->CenterY() < rhs->CenterY();
+              });
+    row_stripes_.push_back({std::move(rows)});
+  }
 }
 
 bool GriddedDetailedPlacer::StartPlacement() {
