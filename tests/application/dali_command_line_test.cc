@@ -105,6 +105,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "-enable_gridded_stripe_balancing",
                      "-enable_gridded_local_reorder",
                      "-enable_gridded_detailed_placement",
+                     "-enable_gridded_detailed_relocation",
                      "-gridded_detailed_max_rounds",
                      "5",
                      "-gridded_detailed_min_relative_improvement",
@@ -146,6 +147,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_EQ(config_get_int("dali.enable_gridded_stripe_balancing"), 1);
   EXPECT_EQ(config_get_int("dali.enable_gridded_local_reorder"), 1);
   EXPECT_EQ(config_get_int("dali.enable_gridded_detailed_placement"), 1);
+  EXPECT_EQ(config_get_int("dali.enable_gridded_detailed_relocation"), 1);
   EXPECT_EQ(config_get_int("dali.gridded_detailed_max_rounds"), 5);
   EXPECT_DOUBLE_EQ(
       config_get_real("dali.gridded_detailed_min_relative_improvement"), 0.002);

@@ -92,6 +92,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -enable_gridded_stripe_balancing           rebalance final neighboring gridded stripes\n"
       << "  -enable_gridded_local_reorder              reorder cells within finalized gridded rows\n"
       << "  -enable_gridded_detailed_placement         run gridded global swap, vertical swap, and local reorder\n"
+      << "  -enable_gridded_detailed_relocation        move cells into legal row whitespace before swaps\n"
       << "  -gridded_detailed_max_rounds <n>           maximum gridded detailed rounds, default 6\n"
       << "  -gridded_detailed_min_relative_improvement <0..1>  convergence threshold, default 0.005\n"
       << "  -disable_gridded_vertical_swap            skip vertical swaps in gridded detailed placement\n"
@@ -405,6 +406,8 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.enable_gridded_local_reorder");
     } else if (arg == "-enable_gridded_detailed_placement") {
       EnableConfigFlag("dali.enable_gridded_detailed_placement");
+    } else if (arg == "-enable_gridded_detailed_relocation") {
+      EnableConfigFlag("dali.enable_gridded_detailed_relocation");
     } else if (arg == "-gridded_detailed_max_rounds") {
       int max_rounds = 0;
       if (!TryGetValue(argc, argv, &i, &value) ||

@@ -80,4 +80,71 @@ TEST(GriddedDetailedPlacerTest, GlobalSwapImprovesHpwlWithinRowBounds) {
   }
 }
 
+TEST(GriddedDetailedPlacerTest, RelocationUsesLegalWhitespaceToImproveHpwl) {
+  Circuit circuit;
+  circuit.SetDatabaseMicrons(1000);
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.SetDieArea(0, 0, 30, 20);
+  circuit.ReserveSpaceForDesignImp(6, 0, 3);
+
+  Macro* cell = circuit.AddMacro("cell", 10, 10);
+  ASSERT_NE(cell, nullptr);
+  cell->AddWellRect(false, 0, 0, 10, 4);
+  cell->AddWellRect(true, 0, 4, 10, 10);
+  circuit.AddMacroPin(cell, "p", true)->SetOffset(5, 5);
+
+  circuit.AddComponent("move", "cell", 0, 0, PLACED);
+  circuit.AddComponent("stay", "cell", 10, 0, PLACED);
+  circuit.AddComponent("target", "cell", 20, 10, PLACED);
+  circuit.AddComponent("move_anchor", "cell", 0, 10, FIXED);
+  circuit.AddComponent("stay_anchor", "cell", 10, 0, FIXED);
+  circuit.AddComponent("target_anchor", "cell", 20, 10, FIXED);
+
+  const std::vector<std::string> movable_names = {"move", "stay", "target"};
+  for (const std::string& name : movable_names) {
+    const std::string net_name = name + "_net";
+    circuit.AddNet(net_name, 2);
+    circuit.AddComponentPinToNet(name, "p", net_name);
+    circuit.AddComponentPinToNet(name + "_anchor", "p", net_name);
+  }
+
+  std::vector<GriddedRow> rows(2);
+  for (size_t i = 0; i < rows.size(); ++i) {
+    rows[i].SetLLX(0);
+    rows[i].SetWidth(30);
+    rows[i].SetLLY(static_cast<int>(i) * 10);
+    rows[i].UpdateWellHeightUpward(4, 6);
+    rows[i].SetOrient(true);
+  }
+  rows[0].AddComponent(circuit.GetComponentPtr("move"));
+  rows[0].AddComponent(circuit.GetComponentPtr("stay"));
+  rows[1].AddComponent(circuit.GetComponentPtr("target"));
+
+  GriddedDetailedPlacer placer;
+  placer.SetCircuit(&circuit);
+  placer.SetRows({&rows[0], &rows[1]});
+  placer.SetEnableRelocation(true);
+  placer.SetEnableVerticalSwap(false);
+  placer.SetMaxRounds(1);
+  const double hpwl_before = circuit.WeightedHPWL();
+  ASSERT_TRUE(placer.StartPlacement());
+
+  EXPECT_DOUBLE_EQ(circuit.WeightedHPWL(), 0);
+  EXPECT_LT(circuit.WeightedHPWL(), hpwl_before);
+  EXPECT_EQ(rows[0].Components().size(), 1);
+  EXPECT_EQ(rows[1].Components().size(), 2);
+  EXPECT_EQ(rows[0].UsedSize(), 10);
+  EXPECT_EQ(rows[1].UsedSize(), 20);
+  EXPECT_EQ(rows[0].InitLocations().count(circuit.GetComponentPtr("move")), 0);
+  EXPECT_EQ(rows[1].InitLocations().count(circuit.GetComponentPtr("move")), 1);
+  for (const GriddedRow& row : rows) {
+    for (const Component* component : row.Components()) {
+      EXPECT_GE(component->LLX(), row.LLX() + row.LeftBoundaryMargin());
+      EXPECT_LE(component->URX(), row.URX() - row.RightBoundaryMargin());
+    }
+  }
+}
+
 }  // namespace dali

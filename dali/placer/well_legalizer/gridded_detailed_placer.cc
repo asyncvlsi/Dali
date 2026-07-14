@@ -91,6 +91,10 @@ void GriddedDetailedPlacer::SetEnableVerticalSwap(bool enable) {
   enable_vertical_swap_ = enable;
 }
 
+void GriddedDetailedPlacer::SetEnableRelocation(bool enable) {
+  enable_relocation_ = enable;
+}
+
 void GriddedDetailedPlacer::SetNetIgnoreThreshold(int net_ignore_threshold) {
   DaliExpects(net_ignore_threshold > 1,
               "Net ignore threshold must be greater than one");
@@ -260,17 +264,25 @@ bool GriddedDetailedPlacer::IsSwapCandidate(Component* component) const {
 }
 
 GriddedDetailedPlacer::RowRequirements
-GriddedDetailedPlacer::ComputeRowRequirementsAfterSwap(GriddedRow* row,
-                                                       Component* removed,
-                                                       Component* added) const {
+GriddedDetailedPlacer::ComputeRowRequirementsAfterAssignment(
+    GriddedRow* row, Component* removed, Component* added) const {
   RowRequirements requirements;
   for (Component* component : row->Components()) {
-    Component* candidate = component == removed ? added : component;
-    requirements.used_width += candidate->Width();
+    if (component == removed) {
+      continue;
+    }
+    requirements.used_width += component->Width();
     requirements.p_well_height = std::max(
-        requirements.p_well_height, candidate->MacroPtr()->FirstPwellHeight());
+        requirements.p_well_height, component->MacroPtr()->FirstPwellHeight());
     requirements.n_well_height = std::max(
-        requirements.n_well_height, candidate->MacroPtr()->FirstNwellHeight());
+        requirements.n_well_height, component->MacroPtr()->FirstNwellHeight());
+  }
+  if (added != nullptr) {
+    requirements.used_width += added->Width();
+    requirements.p_well_height = std::max(
+        requirements.p_well_height, added->MacroPtr()->FirstPwellHeight());
+    requirements.n_well_height = std::max(
+        requirements.n_well_height, added->MacroPtr()->FirstNwellHeight());
   }
   return requirements;
 }
@@ -278,9 +290,9 @@ GriddedDetailedPlacer::ComputeRowRequirementsAfterSwap(GriddedRow* row,
 bool GriddedDetailedPlacer::IsNonHeightIncreasingSwap(
     GriddedRow* first_row, Component* first_component, GriddedRow* second_row,
     Component* second_component) const {
-  RowRequirements first_requirements = ComputeRowRequirementsAfterSwap(
+  RowRequirements first_requirements = ComputeRowRequirementsAfterAssignment(
       first_row, first_component, second_component);
-  RowRequirements second_requirements = ComputeRowRequirementsAfterSwap(
+  RowRequirements second_requirements = ComputeRowRequirementsAfterAssignment(
       second_row, second_component, first_component);
   return first_requirements.used_width <= first_row->UsableWidth() &&
          second_requirements.used_width <= second_row->UsableWidth() &&
@@ -288,6 +300,15 @@ bool GriddedDetailedPlacer::IsNonHeightIncreasingSwap(
          first_requirements.n_well_height <= first_row->NHeight() &&
          second_requirements.p_well_height <= second_row->PHeight() &&
          second_requirements.n_well_height <= second_row->NHeight();
+}
+
+bool GriddedDetailedPlacer::IsNonHeightIncreasingMove(
+    GriddedRow* target_row, Component* component) const {
+  RowRequirements requirements =
+      ComputeRowRequirementsAfterAssignment(target_row, nullptr, component);
+  return requirements.used_width <= target_row->UsableWidth() &&
+         requirements.p_well_height <= target_row->PHeight() &&
+         requirements.n_well_height <= target_row->NHeight();
 }
 
 std::vector<int> GriddedDetailedPlacer::CollectRowPairNetIds(
@@ -356,6 +377,78 @@ double GriddedDetailedPlacer::DistanceFromRowToOptimalRegionX(
     return min_lx - region.ux;
   }
   return 0;
+}
+
+std::vector<GriddedDetailedPlacer::CandidateRow>
+GriddedDetailedPlacer::FindCandidateRows(GriddedRow* source_row,
+                                         Component* component,
+                                         const OptimalRegion& region) const {
+  double current_distance =
+      DistanceToOptimalRegionX(component, region) +
+      DistanceToOptimalRegionY(source_row, component, region);
+  if (current_distance <= kMinSignificantHpwlImprovement) {
+    return {};
+  }
+
+  std::vector<CandidateRow> candidate_rows;
+  candidate_rows.reserve(row_stripes_.size() * kMaxOptimalRegionRowsPerStripe);
+  double target_y = (region.ly + region.uy) / 2.0;
+  for (const RowStripe& stripe : row_stripes_) {
+    auto nearest = std::lower_bound(
+        stripe.rows.begin(), stripe.rows.end(), target_y,
+        [](const GriddedRow* row, double y) { return row->CenterY() < y; });
+    int nearest_index = static_cast<int>(nearest - stripe.rows.begin());
+    int first_index = std::max(0, nearest_index - 2);
+    int end_index =
+        std::min(static_cast<int>(stripe.rows.size()), nearest_index + 2);
+
+    std::vector<CandidateRow> stripe_candidates;
+    for (int i = first_index; i < end_index; ++i) {
+      GriddedRow* row = stripe.rows[i];
+      if (row == source_row) {
+        continue;
+      }
+      double row_distance =
+          DistanceFromRowToOptimalRegionX(row, component, region) +
+          DistanceToOptimalRegionY(row, component, region);
+      if (row_distance < current_distance) {
+        stripe_candidates.push_back({row, row_distance});
+      }
+    }
+    std::sort(stripe_candidates.begin(), stripe_candidates.end(),
+              [](const CandidateRow& lhs, const CandidateRow& rhs) {
+                return lhs.distance < rhs.distance;
+              });
+    int stripe_limit = std::min(kMaxOptimalRegionRowsPerStripe,
+                                static_cast<int>(stripe_candidates.size()));
+    candidate_rows.insert(candidate_rows.end(), stripe_candidates.begin(),
+                          stripe_candidates.begin() + stripe_limit);
+  }
+  std::sort(candidate_rows.begin(), candidate_rows.end(),
+            [](const CandidateRow& lhs, const CandidateRow& rhs) {
+              return lhs.distance < rhs.distance;
+            });
+  if (candidate_rows.size() > kMaxOptimalRegionRowsPerComponent) {
+    candidate_rows.resize(kMaxOptimalRegionRowsPerComponent);
+  }
+  return candidate_rows;
+}
+
+double GriddedDetailedPlacer::ComputeMoveTargetX(
+    GriddedRow* target_row, Component* component,
+    const OptimalRegion& region) const {
+  double min_lx = target_row->LLX() + target_row->LeftBoundaryMargin();
+  double max_lx = target_row->URX() - target_row->RightBoundaryMargin() -
+                  component->Width();
+  if (max_lx < region.lx) {
+    return max_lx;
+  }
+  if (min_lx > region.ux) {
+    return min_lx;
+  }
+  double overlap_lx = std::max(min_lx, region.lx);
+  double overlap_ux = std::min(max_lx, region.ux);
+  return std::clamp(component->LLX(), overlap_lx, overlap_ux);
 }
 
 GriddedDetailedPlacer::OptimalRegion
@@ -431,8 +524,8 @@ void GriddedDetailedPlacer::PlaceComponentInRow(GriddedRow* row,
   component->SetLLY(y);
 }
 
-void GriddedDetailedPlacer::LegalizeRowsAfterSwap(GriddedRow* first_row,
-                                                  GriddedRow* second_row) {
+void GriddedDetailedPlacer::LegalizeRowsAfterAssignment(
+    GriddedRow* first_row, GriddedRow* second_row) {
   for (Component* component : first_row->Components()) {
     PlaceComponentInRow(first_row, component);
   }
@@ -441,6 +534,26 @@ void GriddedDetailedPlacer::LegalizeRowsAfterSwap(GriddedRow* first_row,
   }
   first_row->LegalizeLooseX();
   second_row->LegalizeLooseX();
+}
+
+void GriddedDetailedPlacer::SynchronizeRowUsedSize(GriddedRow* row) const {
+  int used_width = row->LeftBoundaryMargin() + row->RightBoundaryMargin();
+  for (Component* component : row->Components()) {
+    used_width += component->Width();
+  }
+  row->SetUsedSize(used_width);
+}
+
+void GriddedDetailedPlacer::TransferInitialLocation(
+    GriddedRow* source_row, GriddedRow* target_row,
+    Component* component) const {
+  auto& source_locations = source_row->InitLocations();
+  auto location = source_locations.find(component);
+  if (location == source_locations.end()) {
+    return;
+  }
+  target_row->InitLocations()[component] = location->second;
+  source_locations.erase(location);
 }
 
 bool GriddedDetailedPlacer::TrySwap(GriddedRow* first_row, int first_index,
@@ -461,7 +574,7 @@ bool GriddedDetailedPlacer::TrySwap(GriddedRow* first_row, int first_index,
   auto row_state_before_swap = SaveRowState({first_row, second_row});
   std::swap(first_row->Components()[first_index],
             second_row->Components()[second_index]);
-  LegalizeRowsAfterSwap(first_row, second_row);
+  LegalizeRowsAfterAssignment(first_row, second_row);
 
   double row_pair_cost_after = NetWireLengthCost(affected_net_ids);
   if (row_pair_cost_after + kMinSignificantHpwlImprovement >=
@@ -469,6 +582,45 @@ bool GriddedDetailedPlacer::TrySwap(GriddedRow* first_row, int first_index,
     RestoreRowState(row_state_before_swap);
     return false;
   }
+  TransferInitialLocation(first_row, second_row, first_component);
+  TransferInitialLocation(second_row, first_row, second_component);
+  SynchronizeRowUsedSize(first_row);
+  SynchronizeRowUsedSize(second_row);
+  return true;
+}
+
+bool GriddedDetailedPlacer::TryMove(GriddedRow* source_row,
+                                    Component* component,
+                                    GriddedRow* target_row, double target_lx) {
+  if (source_row == target_row || source_row->Components().size() <= 1 ||
+      !IsSwapCandidate(component) ||
+      !IsNonHeightIncreasingMove(target_row, component)) {
+    return false;
+  }
+  auto source_component = std::find(source_row->Components().begin(),
+                                    source_row->Components().end(), component);
+  if (source_component == source_row->Components().end()) {
+    return false;
+  }
+
+  std::vector<int> affected_net_ids =
+      CollectRowPairNetIds(source_row, target_row);
+  double row_pair_cost_before = NetWireLengthCost(affected_net_ids);
+  auto row_state_before_move = SaveRowState({source_row, target_row});
+  source_row->Components().erase(source_component);
+  target_row->Components().push_back(component);
+  component->SetLLX(target_lx);
+  LegalizeRowsAfterAssignment(source_row, target_row);
+
+  double row_pair_cost_after = NetWireLengthCost(affected_net_ids);
+  if (row_pair_cost_after + kMinSignificantHpwlImprovement >=
+      row_pair_cost_before) {
+    RestoreRowState(row_state_before_move);
+    return false;
+  }
+  TransferInitialLocation(source_row, target_row, component);
+  SynchronizeRowUsedSize(source_row);
+  SynchronizeRowUsedSize(target_row);
   return true;
 }
 
@@ -535,10 +687,6 @@ GriddedDetailedPlacer::TryClosestComponentSwaps(GriddedRow* first_row,
 
 GriddedDetailedPlacer::SwapStats GriddedDetailedPlacer::TryOptimalRegionSwaps(
     GriddedRow* source_row, int source_index) {
-  struct CandidateRow {
-    GriddedRow* row = nullptr;
-    double distance = 0;
-  };
   struct CandidateComponent {
     int index = -1;
     double distance = 0;
@@ -553,57 +701,12 @@ GriddedDetailedPlacer::SwapStats GriddedDetailedPlacer::TryOptimalRegionSwaps(
   if (!region.valid) {
     return {};
   }
-  double current_distance =
-      DistanceToOptimalRegionX(source_component, region) +
-      DistanceToOptimalRegionY(source_row, source_component, region);
-  if (current_distance <= kMinSignificantHpwlImprovement) {
-    return {};
-  }
-
-  std::vector<CandidateRow> candidate_rows;
-  candidate_rows.reserve(row_stripes_.size() * kMaxOptimalRegionRowsPerStripe);
-  double target_y = (region.ly + region.uy) / 2.0;
-  for (const RowStripe& stripe : row_stripes_) {
-    auto nearest = std::lower_bound(
-        stripe.rows.begin(), stripe.rows.end(), target_y,
-        [](const GriddedRow* row, double y) { return row->CenterY() < y; });
-    int nearest_index = static_cast<int>(nearest - stripe.rows.begin());
-    int first_index = std::max(0, nearest_index - 2);
-    int end_index =
-        std::min(static_cast<int>(stripe.rows.size()), nearest_index + 2);
-
-    std::vector<CandidateRow> stripe_candidates;
-    for (int i = first_index; i < end_index; ++i) {
-      GriddedRow* row = stripe.rows[i];
-      if (row == source_row) {
-        continue;
-      }
-      double row_distance =
-          DistanceFromRowToOptimalRegionX(row, source_component, region) +
-          DistanceToOptimalRegionY(row, source_component, region);
-      if (row_distance < current_distance) {
-        stripe_candidates.push_back({row, row_distance});
-      }
-    }
-    std::sort(stripe_candidates.begin(), stripe_candidates.end(),
-              [](const CandidateRow& lhs, const CandidateRow& rhs) {
-                return lhs.distance < rhs.distance;
-              });
-    int stripe_limit = std::min(kMaxOptimalRegionRowsPerStripe,
-                                static_cast<int>(stripe_candidates.size()));
-    candidate_rows.insert(candidate_rows.end(), stripe_candidates.begin(),
-                          stripe_candidates.begin() + stripe_limit);
-  }
-  std::sort(candidate_rows.begin(), candidate_rows.end(),
-            [](const CandidateRow& lhs, const CandidateRow& rhs) {
-              return lhs.distance < rhs.distance;
-            });
+  std::vector<CandidateRow> candidate_rows =
+      FindCandidateRows(source_row, source_component, region);
 
   SwapStats stats;
-  int row_limit = std::min(kMaxOptimalRegionRowsPerComponent,
-                           static_cast<int>(candidate_rows.size()));
-  for (int row_id = 0; row_id < row_limit; ++row_id) {
-    GriddedRow* target_row = candidate_rows[row_id].row;
+  for (const CandidateRow& candidate_row : candidate_rows) {
+    GriddedRow* target_row = candidate_row.row;
     std::vector<CandidateComponent> target_components;
     target_components.reserve(target_row->Components().size());
     for (int target_index = 0;
@@ -633,6 +736,46 @@ GriddedDetailedPlacer::SwapStats GriddedDetailedPlacer::TryOptimalRegionSwaps(
     }
   }
   return stats;
+}
+
+GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::TryOptimalRegionMove(
+    GriddedRow* source_row, Component* component) {
+  if (!IsSwapCandidate(component)) {
+    return {};
+  }
+  OptimalRegion region = ComputeOptimalRegion(component);
+  if (!region.valid) {
+    return {};
+  }
+
+  MoveStats stats;
+  for (const CandidateRow& candidate_row :
+       FindCandidateRows(source_row, component, region)) {
+    ++stats.candidates;
+    double target_lx = ComputeMoveTargetX(candidate_row.row, component, region);
+    if (TryMove(source_row, component, candidate_row.row, target_lx)) {
+      ++stats.accepted;
+      break;
+    }
+  }
+  return stats;
+}
+
+GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::RunRelocationStage() {
+  std::vector<std::pair<GriddedRow*, Component*>> components;
+  for (GriddedRow* row : rows_) {
+    for (Component* component : row->Components()) {
+      components.emplace_back(row, component);
+    }
+  }
+
+  MoveStats total_stats;
+  for (const auto& [source_row, component] : components) {
+    MoveStats component_stats = TryOptimalRegionMove(source_row, component);
+    total_stats.candidates += component_stats.candidates;
+    total_stats.accepted += component_stats.accepted;
+  }
+  return total_stats;
 }
 
 GriddedDetailedPlacer::SwapStats GriddedDetailedPlacer::RunVerticalSwapStage() {
@@ -704,12 +847,15 @@ bool GriddedDetailedPlacer::StartPlacement() {
 
   ElapsedTime total_timer;
   total_timer.RecordStartTime();
+  double relocation_wall_time = 0;
+  double relocation_cpu_time = 0;
   double global_swap_wall_time = 0;
   double global_swap_cpu_time = 0;
   double vertical_swap_wall_time = 0;
   double vertical_swap_cpu_time = 0;
   double local_reorder_wall_time = 0;
   double local_reorder_cpu_time = 0;
+  MoveStats total_relocation_stats;
   SwapStats total_global_swap_stats;
   SwapStats total_vertical_swap_stats;
 
@@ -718,6 +864,8 @@ bool GriddedDetailedPlacer::StartPlacement() {
             << "  maximum rounds: " << max_rounds_ << "\n"
             << "  relative convergence threshold: " << min_relative_improvement_
             << "\n"
+            << "  row relocation: "
+            << (enable_relocation_ ? "enabled" : "disabled") << "\n"
             << "  vertical swap: "
             << (enable_vertical_swap_ ? "enabled" : "disabled") << "\n"
             << "  HPWL before : " << WeightedHPWL() << "um\n";
@@ -731,6 +879,28 @@ bool GriddedDetailedPlacer::StartPlacement() {
 
     double hpwl_before_stage = WeightedHPWL();
     ElapsedTime stage_timer;
+    if (enable_relocation_) {
+      stage_timer.RecordStartTime();
+      MoveStats relocation_stats = RunRelocationStage();
+      total_relocation_stats.candidates += relocation_stats.candidates;
+      total_relocation_stats.accepted += relocation_stats.accepted;
+      stage_timer.RecordEndTime();
+      relocation_wall_time += stage_timer.GetWallTime();
+      relocation_cpu_time += stage_timer.GetCpuTime();
+      LOG(info) << "  row relocation: candidates="
+                << relocation_stats.candidates
+                << ", accepted=" << relocation_stats.accepted
+                << ", HPWL=" << WeightedHPWL()
+                << "um, improvement=" << hpwl_before_stage - WeightedHPWL()
+                << "um\n";
+      RecordPlacementHpwlMetrics("gridded_detailed.relocation", *ckt_ptr_);
+      EmitSnapshot("gridded.iter_" + std::to_string(iteration) + ".relocation",
+                   "Gridded Detailed Iteration " + std::to_string(iteration) +
+                       " Row Relocation",
+                   "relocation", iteration);
+      hpwl_before_stage = WeightedHPWL();
+    }
+
     stage_timer.RecordStartTime();
     SwapStats global_swap_stats = RunGlobalSwapStage();
     total_global_swap_stats.candidates += global_swap_stats.candidates;
@@ -808,6 +978,8 @@ bool GriddedDetailedPlacer::StartPlacement() {
   LOG(info) << "  accepted detailed iterations: " << iteration_count << "\n"
             << "  HPWL after  : " << WeightedHPWL() << "um\n"
             << "  time summary:\n"
+            << "    row relocation: wall=" << relocation_wall_time
+            << "s, cpu=" << relocation_cpu_time << "s\n"
             << "    global swap   : wall=" << global_swap_wall_time
             << "s, cpu=" << global_swap_cpu_time << "s\n"
             << "    vertical swap : wall=" << vertical_swap_wall_time
@@ -818,6 +990,10 @@ bool GriddedDetailedPlacer::StartPlacement() {
             << "s, cpu=" << total_timer.GetCpuTime() << "s\n";
 
   RecordPlacementMetric("gridded_detailed.iterations", iteration_count);
+  RecordPlacementMetric("gridded_detailed.relocation.candidates",
+                        total_relocation_stats.candidates);
+  RecordPlacementMetric("gridded_detailed.relocation.accepted",
+                        total_relocation_stats.accepted);
   RecordPlacementMetric("gridded_detailed.global_swap.candidates",
                         total_global_swap_stats.candidates);
   RecordPlacementMetric("gridded_detailed.global_swap.accepted",
@@ -826,6 +1002,10 @@ bool GriddedDetailedPlacer::StartPlacement() {
                         total_vertical_swap_stats.candidates);
   RecordPlacementMetric("gridded_detailed.vertical_swap.accepted",
                         total_vertical_swap_stats.accepted);
+  RecordPlacementMetric("time.gridded_detailed.relocation.wall_s",
+                        relocation_wall_time);
+  RecordPlacementMetric("time.gridded_detailed.relocation.cpu_s",
+                        relocation_cpu_time);
   RecordPlacementMetric("time.gridded_detailed.global_swap.wall_s",
                         global_swap_wall_time);
   RecordPlacementMetric("time.gridded_detailed.global_swap.cpu_s",

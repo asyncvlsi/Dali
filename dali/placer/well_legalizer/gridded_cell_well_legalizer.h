@@ -112,6 +112,11 @@ class GriddedCellWellLegalizer : public Placer {
     enable_detailed_placement_ = enable;
   }
 
+  /** Enable exact gridded cross-row moves into existing row whitespace. */
+  void SetEnableDetailedRelocation(bool enable) {
+    gridded_detailed_placer_.SetEnableRelocation(enable);
+  }
+
   /** Configure gridded detailed-placement convergence. */
   void SetDetailedPlacementConvergence(int max_rounds,
                                        double min_relative_improvement) {

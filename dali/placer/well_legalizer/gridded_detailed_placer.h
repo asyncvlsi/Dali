@@ -51,6 +51,9 @@ class GriddedDetailedPlacer : public Placer {
   /** Enable or disable the within-stripe vertical-swap stage. */
   void SetEnableVerticalSwap(bool enable);
 
+  /** Enable or disable exact cross-row moves into existing row whitespace. */
+  void SetEnableRelocation(bool enable);
+
   /** Set the pin-count cutoff for nets omitted from move proposals and costs.
    */
   void SetNetIgnoreThreshold(int net_ignore_threshold);
@@ -75,6 +78,11 @@ class GriddedDetailedPlacer : public Placer {
     int accepted = 0;
   };
 
+  struct MoveStats {
+    int candidates = 0;
+    int accepted = 0;
+  };
+
   struct OptimalRegion {
     bool valid = false;
     double lx = 0;
@@ -85,6 +93,11 @@ class GriddedDetailedPlacer : public Placer {
 
   struct RowStripe {
     std::vector<GriddedRow*> rows;
+  };
+
+  struct CandidateRow {
+    GriddedRow* row = nullptr;
+    double distance = 0;
   };
 
   struct RowRequirements {
@@ -103,14 +116,17 @@ class GriddedDetailedPlacer : public Placer {
   int RunLocalReorderStage();
 
   bool IsSwapCandidate(Component* component) const;
-  /** Compute row width and well-height demand after replacing one component. */
-  RowRequirements ComputeRowRequirementsAfterSwap(GriddedRow* row,
-                                                  Component* removed,
-                                                  Component* added) const;
+  /** Compute row demand after optionally removing and adding a component. */
+  RowRequirements ComputeRowRequirementsAfterAssignment(GriddedRow* row,
+                                                        Component* removed,
+                                                        Component* added) const;
   bool IsNonHeightIncreasingSwap(GriddedRow* first_row,
                                  Component* first_component,
                                  GriddedRow* second_row,
                                  Component* second_component) const;
+  /** Return true when a component fits without increasing target-row wells. */
+  bool IsNonHeightIncreasingMove(GriddedRow* target_row,
+                                 Component* component) const;
   /** Collect the unchanged union of nets affected by repacking two rows. */
   std::vector<int> CollectRowPairNetIds(GriddedRow* first_row,
                                         GriddedRow* second_row) const;
@@ -123,15 +139,35 @@ class GriddedDetailedPlacer : public Placer {
   /** Estimate the closest legal X distance from a row to an optimal region. */
   double DistanceFromRowToOptimalRegionX(GriddedRow* row, Component* component,
                                          const OptimalRegion& region) const;
+  /** Return candidate rows closer to a component's optimal region. */
+  std::vector<CandidateRow> FindCandidateRows(
+      GriddedRow* source_row, Component* component,
+      const OptimalRegion& region) const;
+  /** Return the nearest legal target X inside a row and optimal region. */
+  double ComputeMoveTargetX(GriddedRow* target_row, Component* component,
+                            const OptimalRegion& region) const;
   OptimalRegion ComputeOptimalRegion(Component* component) const;
   void PlaceComponentInRow(GriddedRow* row, Component* component) const;
-  void LegalizeRowsAfterSwap(GriddedRow* first_row, GriddedRow* second_row);
+  /** Recompute component Y/orientation and legalize X in two changed rows. */
+  void LegalizeRowsAfterAssignment(GriddedRow* first_row,
+                                   GriddedRow* second_row);
+  /** Recompute used width from row margins and assigned ordinary components. */
+  void SynchronizeRowUsedSize(GriddedRow* row) const;
+  /** Transfer a component's original-location record between row owners. */
+  void TransferInitialLocation(GriddedRow* source_row, GriddedRow* target_row,
+                               Component* component) const;
   bool TrySwap(GriddedRow* first_row, int first_index, GriddedRow* second_row,
                int second_index);
+  /** Trial-move one component and commit only a legal exact-HPWL improvement.
+   */
+  bool TryMove(GriddedRow* source_row, Component* component,
+               GriddedRow* target_row, double target_lx);
   SwapStats TryClosestComponentSwaps(GriddedRow* first_row,
                                      GriddedRow* second_row,
                                      int max_candidates);
   SwapStats TryOptimalRegionSwaps(GriddedRow* source_row, int source_index);
+  MoveStats TryOptimalRegionMove(GriddedRow* source_row, Component* component);
+  MoveStats RunRelocationStage();
   SwapStats RunVerticalSwapStage();
   SwapStats RunGlobalSwapStage();
   void LogSwapStage(const std::string& stage_name, const SwapStats& stats,
@@ -147,6 +183,7 @@ class GriddedDetailedPlacer : public Placer {
   int max_rounds_ = 6;
   double min_relative_improvement_ = 0.005;
   bool enable_vertical_swap_ = true;
+  bool enable_relocation_ = false;
   size_t net_ignore_threshold_ = 100;
 };
 

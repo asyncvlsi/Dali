@@ -50,6 +50,7 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_FALSE(options.enable_end_cap_cell);
   EXPECT_FALSE(options.enable_gridded_local_reorder);
   EXPECT_FALSE(options.enable_gridded_detailed_placement);
+  EXPECT_FALSE(options.enable_gridded_detailed_relocation);
   EXPECT_EQ(options.gridded_detailed_max_rounds, 6);
   EXPECT_DOUBLE_EQ(options.gridded_detailed_min_relative_improvement, 0.005);
   EXPECT_FALSE(options.disable_gridded_vertical_swap);
@@ -103,6 +104,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_int("dali.enable_gridded_stripe_balancing", 1);
   config_set_int("dali.enable_gridded_local_reorder", 1);
   config_set_int("dali.enable_gridded_detailed_placement", 1);
+  config_set_int("dali.enable_gridded_detailed_relocation", 1);
   config_set_int("dali.gridded_detailed_max_rounds", 5);
   config_set_real("dali.gridded_detailed_min_relative_improvement", 0.002);
   config_set_int("dali.disable_gridded_vertical_swap", 1);
@@ -151,6 +153,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_TRUE(options.enable_gridded_stripe_balancing);
   EXPECT_TRUE(options.enable_gridded_local_reorder);
   EXPECT_TRUE(options.enable_gridded_detailed_placement);
+  EXPECT_TRUE(options.enable_gridded_detailed_relocation);
   EXPECT_EQ(options.gridded_detailed_max_rounds, 5);
   EXPECT_DOUBLE_EQ(options.gridded_detailed_min_relative_improvement, 0.002);
   EXPECT_TRUE(options.disable_gridded_vertical_swap);
