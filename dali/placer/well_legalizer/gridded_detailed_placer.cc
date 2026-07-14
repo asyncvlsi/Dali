@@ -1205,55 +1205,64 @@ GriddedDetailedPlacer::MoveStats
 GriddedDetailedPlacer::RunBatchedAssignmentCycles(
     const std::vector<Component*>& deferred_components) {
   MoveStats stats;
-  std::vector<ClosedCyclePlan> plans;
-  plans.reserve(deferred_components.size());
-  for (Component* component : deferred_components) {
-    auto source = component_rows_.find(component);
-    if (source == component_rows_.end()) continue;
-    GriddedRow* source_row = source->second;
-    if (std::find(source_row->Components().begin(),
-                  source_row->Components().end(),
-                  component) == source_row->Components().end()) {
-      continue;
-    }
+  std::vector<Component*> pending_components = deferred_components;
+  for (int pass = 0;
+       pass < kMaxAssignmentBatchPasses && !pending_components.empty();
+       ++pass) {
+    std::vector<ClosedCyclePlan> plans;
+    plans.reserve(pending_components.size());
+    for (Component* component : pending_components) {
+      auto source = component_rows_.find(component);
+      if (source == component_rows_.end()) continue;
+      GriddedRow* source_row = source->second;
+      if (std::find(source_row->Components().begin(),
+                    source_row->Components().end(),
+                    component) == source_row->Components().end()) {
+        continue;
+      }
 
-    OptimalRegion source_region = ComputeOptimalRegion(component);
-    if (!source_region.valid) continue;
-    GriddedRow* target_row = nullptr;
-    for (const CandidateRow& candidate_row :
-         FindCandidateRows(source_row, component, source_region)) {
-      RowRequirements requirements = ComputeRowRequirementsAfterAssignment(
-          candidate_row.row, nullptr, component);
-      if (requirements.used_width > candidate_row.row->UsableWidth()) {
-        target_row = candidate_row.row;
-        break;
+      OptimalRegion source_region = ComputeOptimalRegion(component);
+      if (!source_region.valid) continue;
+      GriddedRow* target_row = nullptr;
+      for (const CandidateRow& candidate_row :
+           FindCandidateRows(source_row, component, source_region)) {
+        RowRequirements requirements = ComputeRowRequirementsAfterAssignment(
+            candidate_row.row, nullptr, component);
+        if (requirements.used_width > candidate_row.row->UsableWidth()) {
+          target_row = candidate_row.row;
+          break;
+        }
+      }
+      if (target_row == nullptr) continue;
+
+      ClosedCycleCandidate candidate = FindBestClosedAssignmentCycle(
+          source_row, component, target_row, source_region, &stats);
+      if (candidate.displaced_component != nullptr) {
+        plans.push_back(
+            {source_row, component, target_row, source_region, candidate});
       }
     }
-    if (target_row == nullptr) continue;
 
-    ClosedCycleCandidate candidate = FindBestClosedAssignmentCycle(
-        source_row, component, target_row, source_region, &stats);
-    if (candidate.displaced_component != nullptr) {
-      plans.push_back(
-          {source_row, component, target_row, source_region, candidate});
+    std::sort(plans.begin(), plans.end(),
+              [](const ClosedCyclePlan& lhs, const ClosedCyclePlan& rhs) {
+                if (lhs.candidate.hpwl_improvement !=
+                    rhs.candidate.hpwl_improvement) {
+                  return lhs.candidate.hpwl_improvement >
+                         rhs.candidate.hpwl_improvement;
+                }
+                return lhs.component->Id() < rhs.component->Id();
+              });
+    std::vector<Component*> invalidated_components;
+    invalidated_components.reserve(plans.size());
+    for (const ClosedCyclePlan& plan : plans) {
+      if (!CommitClosedAssignmentCycle(plan.source_row, plan.component,
+                                       plan.target_row, plan.source_region,
+                                       plan.candidate, &stats)) {
+        ++stats.cycle_invalidated;
+        invalidated_components.push_back(plan.component);
+      }
     }
-  }
-
-  std::sort(
-      plans.begin(), plans.end(),
-      [](const ClosedCyclePlan& lhs, const ClosedCyclePlan& rhs) {
-        if (lhs.candidate.hpwl_improvement != rhs.candidate.hpwl_improvement) {
-          return lhs.candidate.hpwl_improvement >
-                 rhs.candidate.hpwl_improvement;
-        }
-        return lhs.component->Id() < rhs.component->Id();
-      });
-  for (const ClosedCyclePlan& plan : plans) {
-    if (!CommitClosedAssignmentCycle(plan.source_row, plan.component,
-                                     plan.target_row, plan.source_region,
-                                     plan.candidate, &stats)) {
-      ++stats.cycle_invalidated;
-    }
+    pending_components = std::move(invalidated_components);
   }
   return stats;
 }

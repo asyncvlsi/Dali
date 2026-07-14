@@ -83,6 +83,7 @@ class GriddedDetailedPlacer : public Placer {
   static constexpr int kMaxEjectionDestinationRows = 1;
   static constexpr int kMaxCycleReceiverRows = 2;
   static constexpr int kMaxCycleComponentsPerReceiver = 2;
+  static constexpr int kMaxAssignmentBatchPasses = 2;
   static constexpr int kMaxFinalClusteringPasses = 6;
   static constexpr double kMinClusteringRelativeImprovement = 0.0001;
   static constexpr double kMinSignificantHpwlImprovement = 1e-9;
