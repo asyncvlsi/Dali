@@ -846,10 +846,23 @@ bool GriddedDetailedPlacer::TryEjectionChain(GriddedRow* source_row,
 bool GriddedDetailedPlacer::TryClosedAssignmentCycle(
     GriddedRow* source_row, Component* component, GriddedRow* target_row,
     const OptimalRegion& source_region, MoveStats* stats) {
+  ClosedCycleCandidate best_candidate = FindBestClosedAssignmentCycle(
+      source_row, component, target_row, source_region, stats);
+  if (best_candidate.displaced_component == nullptr) {
+    return false;
+  }
+  return CommitClosedAssignmentCycle(source_row, component, target_row,
+                                     source_region, best_candidate, stats);
+}
+
+GriddedDetailedPlacer::ClosedCycleCandidate
+GriddedDetailedPlacer::FindBestClosedAssignmentCycle(
+    GriddedRow* source_row, Component* component, GriddedRow* target_row,
+    const OptimalRegion& source_region, MoveStats* stats) {
   DaliExpects(stats != nullptr, "Assignment-cycle statistics cannot be null");
   ++stats->cycle_attempts;
   if (source_row->Components().size() <= 1) {
-    return false;
+    return {};
   }
 
   struct ReturnCandidate {
@@ -937,24 +950,33 @@ bool GriddedDetailedPlacer::TryClosedAssignmentCycle(
     }
   }
 
-  if (best_candidate.displaced_component == nullptr) {
+  return best_candidate;
+}
+
+bool GriddedDetailedPlacer::CommitClosedAssignmentCycle(
+    GriddedRow* source_row, Component* component, GriddedRow* target_row,
+    const OptimalRegion& source_region, const ClosedCycleCandidate& candidate,
+    MoveStats* stats) {
+  DaliExpects(stats != nullptr, "Assignment-cycle statistics cannot be null");
+  GriddedRowAssignmentTransaction transaction(
+      ckt_ptr_, {source_row, target_row, candidate.receiver_row});
+  if (!ApplyClosedAssignmentCycle(source_row, component, target_row,
+                                  source_region, candidate) ||
+      !transaction.ImprovesHpwl(kMinSignificantHpwlImprovement)) {
+    transaction.Restore();
     return false;
   }
-  DaliExpects(ApplyClosedAssignmentCycle(source_row, component, target_row,
-                                         source_region, best_candidate),
-              "Selected gridded assignment cycle is no longer applicable");
   TransferInitialLocation(source_row, target_row, component);
-  TransferInitialLocation(target_row, best_candidate.receiver_row,
-                          best_candidate.displaced_component);
-  TransferInitialLocation(best_candidate.receiver_row, source_row,
-                          best_candidate.returning_component);
+  TransferInitialLocation(target_row, candidate.receiver_row,
+                          candidate.displaced_component);
+  TransferInitialLocation(candidate.receiver_row, source_row,
+                          candidate.returning_component);
   SynchronizeRowUsedSize(source_row);
   SynchronizeRowUsedSize(target_row);
-  SynchronizeRowUsedSize(best_candidate.receiver_row);
+  SynchronizeRowUsedSize(candidate.receiver_row);
   component_rows_[component] = target_row;
-  component_rows_[best_candidate.displaced_component] =
-      best_candidate.receiver_row;
-  component_rows_[best_candidate.returning_component] = source_row;
+  component_rows_[candidate.displaced_component] = candidate.receiver_row;
+  component_rows_[candidate.returning_component] = source_row;
   ++stats->cycle_accepted;
   return true;
 }
@@ -974,6 +996,26 @@ bool GriddedDetailedPlacer::ApplyClosedAssignmentCycle(
   if (source_component == source_row->Components().end() ||
       target_component == target_row->Components().end() ||
       receiver_component == candidate.receiver_row->Components().end()) {
+    return false;
+  }
+
+  RowRequirements source_requirements = ComputeRowRequirementsAfterAssignment(
+      source_row, component, candidate.returning_component);
+  RowRequirements target_requirements = ComputeRowRequirementsAfterAssignment(
+      target_row, candidate.displaced_component, component);
+  RowRequirements receiver_requirements = ComputeRowRequirementsAfterAssignment(
+      candidate.receiver_row, candidate.returning_component,
+      candidate.displaced_component);
+  if (source_requirements.used_width > source_row->UsableWidth() ||
+      source_requirements.p_well_height > source_row->PHeight() ||
+      source_requirements.n_well_height > source_row->NHeight() ||
+      target_requirements.used_width > target_row->UsableWidth() ||
+      target_requirements.p_well_height > target_row->PHeight() ||
+      target_requirements.n_well_height > target_row->NHeight() ||
+      receiver_requirements.used_width >
+          candidate.receiver_row->UsableWidth() ||
+      receiver_requirements.p_well_height > candidate.receiver_row->PHeight() ||
+      receiver_requirements.n_well_height > candidate.receiver_row->NHeight()) {
     return false;
   }
 

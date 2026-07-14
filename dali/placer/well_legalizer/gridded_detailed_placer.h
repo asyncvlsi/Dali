@@ -249,6 +249,17 @@ class GriddedDetailedPlacer : public Placer {
                                 GriddedRow* target_row,
                                 const OptimalRegion& source_region,
                                 MoveStats* stats);
+  /** Find the largest exact-HPWL cycle in the bounded candidate neighborhood.
+   */
+  ClosedCycleCandidate FindBestClosedAssignmentCycle(
+      GriddedRow* source_row, Component* component, GriddedRow* target_row,
+      const OptimalRegion& source_region, MoveStats* stats);
+  /** Revalidate and commit a previously evaluated assignment cycle. */
+  bool CommitClosedAssignmentCycle(GriddedRow* source_row, Component* component,
+                                   GriddedRow* target_row,
+                                   const OptimalRegion& source_region,
+                                   const ClosedCycleCandidate& candidate,
+                                   MoveStats* stats);
   /** Apply one previously validated closed three-row cycle candidate. */
   bool ApplyClosedAssignmentCycle(GriddedRow* source_row, Component* component,
                                   GriddedRow* target_row,
