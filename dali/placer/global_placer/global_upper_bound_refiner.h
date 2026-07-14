@@ -18,6 +18,8 @@ enum class GlobalRefinementFeedbackMode {
   kYOnly,
   /** Keep Y only when refinement moves a component by at least its height. */
   kYRowScale,
+  /** Keep row-scale Y moves that do not worsen local weighted HPWL. */
+  kYRowHpwl,
   /** Restore both analytical coordinates after scoring the refinement. */
   kNone,
 };

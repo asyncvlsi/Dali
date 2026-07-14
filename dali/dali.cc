@@ -123,6 +123,9 @@ static GlobalRefinementFeedbackMode ParseGlobalRefinementFeedbackMode(
   if (name == "y_row_scale") {
     return GlobalRefinementFeedbackMode::kYRowScale;
   }
+  if (name == "y_row_hpwl") {
+    return GlobalRefinementFeedbackMode::kYRowHpwl;
+  }
   if (name == "none") {
     return GlobalRefinementFeedbackMode::kNone;
   }

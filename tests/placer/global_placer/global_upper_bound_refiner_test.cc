@@ -148,4 +148,34 @@ TEST(GlobalUpperBoundRefinerTest, RowScaleFeedbackKeepsOnlyLargeYMoves) {
   EXPECT_DOUBLE_EQ(large_move.LLY(), 24);
 }
 
+TEST(GlobalUpperBoundRefinerTest, HpwlFilterKeepsOnlyNonWorseningYMoves) {
+  Circuit circuit;
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.SetDieArea(0, 0, 100, 100);
+  circuit.ReserveSpaceForDesignImp(4, 0, 2);
+  circuit.AddMacro("cell", 2, 2);
+  Macro* macro = circuit.GetMacroPtr("cell");
+  circuit.AddMacroPin(macro, "p", true)->SetOffset(0, 0);
+  circuit.AddComponent("toward_anchor", "cell", 10, 12, PLACED);
+  circuit.AddComponent("toward_anchor_fixed", "cell", 10, 0, FIXED);
+  circuit.AddComponent("away_from_anchor", "cell", 20, 20, PLACED);
+  circuit.AddComponent("away_from_anchor_fixed", "cell", 20, 0, FIXED);
+  circuit.AddNet("toward_net", 2);
+  circuit.AddComponentPinToNet("toward_anchor", "p", "toward_net");
+  circuit.AddComponentPinToNet("toward_anchor_fixed", "p", "toward_net");
+  circuit.AddNet("away_net", 2);
+  circuit.AddComponentPinToNet("away_from_anchor", "p", "away_net");
+  circuit.AddComponentPinToNet("away_from_anchor_fixed", "p", "away_net");
+
+  TestableGlobalPlacer placer;
+  placer.SetCircuit(&circuit);
+  placer.SetRefinementFeedbackMode(GlobalRefinementFeedbackMode::kYRowHpwl);
+  placer.ApplyFeedbackForTest({{10, 20}, {10, 0}, {20, 10}, {20, 0}});
+
+  EXPECT_DOUBLE_EQ(circuit.Components()[0].LLY(), 12);
+  EXPECT_DOUBLE_EQ(circuit.Components()[2].LLY(), 10);
+}
+
 }  // namespace dali

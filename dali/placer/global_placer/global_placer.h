@@ -162,6 +162,11 @@ class GlobalPlacer : public Placer {
   void ApplyRefinedAnchorFeedback(
       const std::vector<ComponentLocation>& placement_before_refinement,
       const std::vector<int>& component_ids);
+  /** Return weighted Y HPWL for modeled nets incident to a component. */
+  double ConnectedNetWeightedHpwlY(const Component& component) const;
+  /** Return whether refined Y is no worse than the analytical Y locally. */
+  bool IsRefinedYLocallyNonWorsening(Component& component,
+                                     double analytical_y) const;
   /** Update LAL demand from physical pressure observed by the refiner. */
   void UpdateLegalizationPressure(const GlobalUpperBoundRefinement& refinement);
   /** Log displacement introduced by physical upper-bound refinement. */

@@ -68,6 +68,16 @@ TEST_F(DaliCommandLineTest, ParsesRowScaleLegalizationFeedback) {
                "y_row_scale");
 }
 
+TEST_F(DaliCommandLineTest, ParsesHpwlFilteredLegalizationFeedback) {
+  dali::DaliCommandLineOptions options;
+  EXPECT_TRUE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                     "-gridded_legalization_feedback", "y_row_hpwl"},
+                    &options));
+
+  EXPECT_STREQ(config_get_string("dali.gridded_legalization_feedback"),
+               "y_row_hpwl");
+}
+
 TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   dali::DaliCommandLineOptions options;
   EXPECT_TRUE(Parse({"dali",

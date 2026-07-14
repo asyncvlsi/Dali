@@ -42,6 +42,8 @@ const char* RefinementFeedbackModeName(GlobalRefinementFeedbackMode mode) {
       return "y_only";
     case GlobalRefinementFeedbackMode::kYRowScale:
       return "y_row_scale";
+    case GlobalRefinementFeedbackMode::kYRowHpwl:
+      return "y_row_hpwl";
     case GlobalRefinementFeedbackMode::kNone:
       return "none";
   }
@@ -345,40 +347,84 @@ void GlobalPlacer::ApplyRefinedAnchorFeedback(
     selected_components[component_id] = true;
   }
 
-  bool keep_x =
+  const bool keep_x =
       refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kFull ||
       refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kXOnly;
-  bool keep_y =
+  const bool keep_y =
       refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kFull ||
       refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYOnly ||
-      refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYRowScale;
-  bool require_row_scale_y =
-      refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYRowScale;
+      refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYRowScale ||
+      refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYRowHpwl;
+  const bool require_row_scale_y =
+      refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYRowScale ||
+      refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYRowHpwl;
+  const bool require_non_worsening_hpwl =
+      refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYRowHpwl;
+
+  // Classify every candidate against the same complete refined placement.
+  // Applying restorations in a second pass keeps this filter independent of
+  // component traversal order.
+  std::vector<bool> keep_component_y(ckt_ptr_->Components().size(), false);
   int selected_movable_count = 0;
   for (size_t i = 0; i < ckt_ptr_->Components().size(); ++i) {
     Component& component = ckt_ptr_->Components()[i];
-    bool selected = selected_components[i];
-    bool keep_component_y = selected && keep_y;
+    const bool selected = selected_components[i];
+    keep_component_y[i] = selected && keep_y;
     // A move shorter than the component height is treated as local packing
     // noise rather than evidence that the analytical placement chose a bad
     // row. This preserves only the discrete part of rough legalization.
-    if (keep_component_y && require_row_scale_y &&
+    if (keep_component_y[i] && require_row_scale_y &&
         std::fabs(component.LLY() - placement_before_refinement[i].ly) <
             component.Height()) {
-      keep_component_y = false;
+      keep_component_y[i] = false;
     }
-    if (component.IsMovable() && ((selected && keep_x) || keep_component_y)) {
+    if (keep_component_y[i] && require_non_worsening_hpwl &&
+        !IsRefinedYLocallyNonWorsening(component,
+                                       placement_before_refinement[i].ly)) {
+      keep_component_y[i] = false;
+    }
+  }
+
+  for (size_t i = 0; i < ckt_ptr_->Components().size(); ++i) {
+    Component& component = ckt_ptr_->Components()[i];
+    const bool selected = selected_components[i];
+    if (component.IsMovable() &&
+        ((selected && keep_x) || keep_component_y[i])) {
       ++selected_movable_count;
     }
-    double lx = selected && keep_x ? component.LLX()
-                                   : placement_before_refinement[i].lx;
-    double ly =
-        keep_component_y ? component.LLY() : placement_before_refinement[i].ly;
+    const double lx = selected && keep_x ? component.LLX()
+                                         : placement_before_refinement[i].lx;
+    const double ly = keep_component_y[i] ? component.LLY()
+                                          : placement_before_refinement[i].ly;
     component.SetLowerLeft(lx, ly);
   }
   LOG(info) << "    legalization feedback: "
             << RefinementFeedbackModeName(refinement_feedback_mode_) << ", "
             << selected_movable_count << " selected components\n";
+}
+
+double GlobalPlacer::ConnectedNetWeightedHpwlY(
+    const Component& component) const {
+  double hpwl = 0.0;
+  for (int net_id : component.NetList()) {
+    Net& net = ckt_ptr_->Nets()[net_id];
+    if (net.PinCnt() <= 1 ||
+        net.PinCnt() >= static_cast<size_t>(net_ignore_threshold_)) {
+      continue;
+    }
+    hpwl += net.WeightedHPWLY() * ckt_ptr_->GridValueY();
+  }
+  return hpwl;
+}
+
+bool GlobalPlacer::IsRefinedYLocallyNonWorsening(Component& component,
+                                                 double analytical_y) const {
+  const double refined_y = component.LLY();
+  const double refined_hpwl = ConnectedNetWeightedHpwlY(component);
+  component.SetLLY(analytical_y);
+  const double analytical_hpwl = ConnectedNetWeightedHpwlY(component);
+  component.SetLLY(refined_y);
+  return refined_hpwl <= analytical_hpwl;
 }
 
 void GlobalPlacer::UpdateBestUpperBoundPlacement(double upper_bound_hpwl) {
