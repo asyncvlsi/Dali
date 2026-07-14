@@ -16,6 +16,8 @@
 #include <fstream>
 #include <string>
 
+#include "dali/circuit/circuit.h"
+
 static std::string ReadFile(const std::filesystem::path& path) {
   std::ifstream input(path);
   return std::string(std::istreambuf_iterator<char>(input),
@@ -66,4 +68,35 @@ TEST(PlacementMetricsTest, GlobalWrapperClearRemovesOldStageValues) {
   EXPECT_NE(json.find("\"new\": 2"), std::string::npos);
 
   std::filesystem::remove(metrics_file);
+}
+
+TEST(PlacementMetricsTest, AttributesWeightedHpwlByAxisAndFanout) {
+  dali::Circuit circuit;
+  circuit.SetManufacturingGrid(0.05);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(0.5, 0.25);
+  circuit.ReserveSpaceForDesignImp(3, 0, 2);
+  circuit.AddMacro("cell", 1, 1);
+  dali::Macro* macro = circuit.GetMacroPtr("cell");
+  circuit.AddMacroPin(macro, "p", true)->SetOffset(0, 0);
+  circuit.AddComponent("u0", "cell", 0, 0);
+  circuit.AddComponent("u1", "cell", 10, 20);
+  circuit.AddComponent("u2", "cell", 20, 40);
+
+  circuit.AddNet("two_pin", 2);
+  circuit.AddComponentPinToNet("u0", "p", "two_pin");
+  circuit.AddComponentPinToNet("u1", "p", "two_pin");
+  circuit.AddNet("three_pin", 3);
+  circuit.AddComponentPinToNet("u0", "p", "three_pin");
+  circuit.AddComponentPinToNet("u1", "p", "three_pin");
+  circuit.AddComponentPinToNet("u2", "p", "three_pin");
+
+  dali::WeightedHpwlBreakdown hpwl =
+      dali::ComputeWeightedHpwlBreakdown(circuit);
+
+  EXPECT_DOUBLE_EQ(hpwl.x, 15.0);
+  EXPECT_DOUBLE_EQ(hpwl.y, 15.0);
+  EXPECT_DOUBLE_EQ(hpwl.fanout_2, 10.0);
+  EXPECT_DOUBLE_EQ(hpwl.fanout_3, 20.0);
+  EXPECT_DOUBLE_EQ(hpwl.Total(), 30.0);
 }

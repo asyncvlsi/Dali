@@ -28,9 +28,9 @@
 #include "dali/common/elapsed_time.h"
 #include "dali/common/helper.h"
 #include "dali/common/placement_metrics.h"
-#include "dali/placer/well_legalizer/stripe_helper.h"
 #include "dali/placer/well_legalizer/gridded_stripe_balancer.h"
 #include "dali/placer/well_legalizer/stripe_boundary_coordinate_optimizer.h"
+#include "dali/placer/well_legalizer/stripe_helper.h"
 #include "dali/placer/well_legalizer/well_geometry.h"
 #include "dali/placer/well_legalizer/well_geometry_exporter.h"
 
@@ -120,8 +120,8 @@ void GriddedCellWellLegalizer::FetchNpWellParams() {
   physical_parameter_circuit_ = ckt_ptr_;
 }
 
-GriddedCapacityConfig
-GriddedCellWellLegalizer::BuildGriddedCapacityConfig(double target_density) {
+GriddedCapacityConfig GriddedCellWellLegalizer::BuildGriddedCapacityConfig(
+    double target_density) {
   CheckWellStatus();
   FetchNpWellParams();
 
@@ -176,9 +176,9 @@ double GriddedCellWellLegalizer::EstimateGriddedDemandNormalization(
       whitespace_area);
   if (estimate.available_gridded_area == 0) return 1.0;
 
-  double raw_pressure = raw_component_area /
-                        (static_cast<double>(whitespace_area) *
-                         config.target_density);
+  double raw_pressure =
+      raw_component_area /
+      (static_cast<double>(whitespace_area) * config.target_density);
   double gridded_pressure =
       estimate.required_gridded_area /
       static_cast<double>(estimate.available_gridded_area);
@@ -186,11 +186,10 @@ double GriddedCellWellLegalizer::EstimateGriddedDemandNormalization(
 
   double normalization = gridded_pressure / raw_pressure;
   LOG(info) << "  Gridded capacity calibration:\n"
-            << "    representative row width   : "
-            << representative_row_width << "\n"
-            << "    raw pressure                : " << raw_pressure << "\n"
-            << "    gridded pressure            : " << gridded_pressure
+            << "    representative row width   : " << representative_row_width
             << "\n"
+            << "    raw pressure                : " << raw_pressure << "\n"
+            << "    gridded pressure            : " << gridded_pressure << "\n"
             << "    demand normalization        : " << normalization << "\n";
   return normalization;
 }
@@ -1270,8 +1269,8 @@ bool GriddedCellWellLegalizer::RunComponentClusteringStage() {
   LOG(info) << "Form component clustering\n";
   bool is_success = ComponentClusteringLoose();
   ReportHPWL();
-  RecordPlacementMetric("well_legalization.component_clustering",
-                        WeightedHPWL());
+  RecordPlacementHpwlMetrics("well_legalization.component_clustering",
+                             *ckt_ptr_);
   EmitSnapshot("component_clustering", "After Component Clustering",
                "legalization", "component_clustering");
   return is_success;
@@ -1290,13 +1289,11 @@ bool GriddedCellWellLegalizer::RunBestBoundaryClusteringStage() {
   int max_component_width = 0;
   for (const Component& component : ckt_ptr_->Components()) {
     if (component.IsMovable()) {
-      max_component_width =
-          std::max(max_component_width, component.Width());
+      max_component_width = std::max(max_component_width, component.Width());
     }
   }
-  int average_pitch =
-      (initial_boundaries.back() - initial_boundaries.front()) /
-      static_cast<int>(initial_boundaries.size() - 1);
+  int average_pitch = (initial_boundaries.back() - initial_boundaries.front()) /
+                      static_cast<int>(initial_boundaries.size() - 1);
   StripeBoundaryCoordinateConfig search_config;
   // A one-grid move changes ownership only for components immediately beside
   // the cutline. Cell-width moves were too disruptive on test_case_3 and had
@@ -1312,21 +1309,20 @@ bool GriddedCellWellLegalizer::RunBestBoundaryClusteringStage() {
     stripe_boundaries_override_ = boundaries;
     InitializeWellLegalizer();
     bool feasible = ComponentClusteringLoose();
-    return StripeBoundaryEvaluation{feasible,
-                                    feasible ? WeightedHPWL() : 0.0};
+    return StripeBoundaryEvaluation{feasible, feasible ? WeightedHPWL() : 0.0};
   };
   StripeBoundaryCoordinateResult search_result =
       StripeBoundaryCoordinateOptimizer(search_config)
           .Optimize(initial_boundaries, evaluator);
 
   RestoreInitialComponentLocation();
-  stripe_boundaries_override_ = search_result.feasible
-                                    ? search_result.boundaries
-                                    : initial_boundaries;
+  stripe_boundaries_override_ =
+      search_result.feasible ? search_result.boundaries : initial_boundaries;
   InitializeWellLegalizer();
   bool is_success = ComponentClusteringLoose();
-  DaliExpects(!search_result.feasible || is_success,
-              "Selected stripe boundary search result is not reproducibly legal");
+  DaliExpects(
+      !search_result.feasible || is_success,
+      "Selected stripe boundary search result is not reproducibly legal");
 
   LOG(info) << "Form component clustering\n"
             << "  local stripe-boundary search:\n"
@@ -1342,8 +1338,8 @@ bool GriddedCellWellLegalizer::RunBestBoundaryClusteringStage() {
               << "um\n";
   }
   ReportHPWL();
-  RecordPlacementMetric("well_legalization.component_clustering",
-                        WeightedHPWL());
+  RecordPlacementHpwlMetrics("well_legalization.component_clustering",
+                             *ckt_ptr_);
   EmitSnapshot("component_clustering", "After Component Clustering",
                "legalization", "component_clustering");
   return is_success;
@@ -1368,13 +1364,13 @@ void GriddedCellWellLegalizer::RunClusterOrientationStage() {
   LOG(info) << "Flip cluster orientation\n";
   UpdateClusterOrient();
   double fixed_phase_hpwl = WeightedHPWL();
-  RecordPlacementMetric("well_legalization.orientation.fixed_phase",
-                        fixed_phase_hpwl);
+  RecordPlacementHpwlMetrics("well_legalization.orientation.fixed_phase",
+                             *ckt_ptr_);
   double optimized_hpwl = OptimizeColumnOrientationPhases();
   LOG(info) << "  orientation phase improvement: "
             << fixed_phase_hpwl - optimized_hpwl << "um\n";
   ReportHPWL();
-  RecordPlacementMetric("well_legalization.orientation", WeightedHPWL());
+  RecordPlacementHpwlMetrics("well_legalization.orientation", *ckt_ptr_);
   EmitSnapshot("orientation", "After Cluster Orientation", "legalization",
                "orientation");
 }
@@ -1392,9 +1388,8 @@ std::vector<GriddedRow*> GriddedCellWellLegalizer::CollectGriddedRows() {
 }
 
 void GriddedCellWellLegalizer::RunGriddedDetailedPlacementStage() {
-  LOG(info) << (enable_detailed_placement_
-                    ? "Run gridded detailed placement\n"
-                    : "Run gridded local reorder\n");
+  LOG(info) << (enable_detailed_placement_ ? "Run gridded detailed placement\n"
+                                           : "Run gridded local reorder\n");
   gridded_detailed_placer_.CopyPlacementContextFrom(this);
   gridded_detailed_placer_.SetRows(CollectGriddedRows());
   gridded_detailed_placer_.SetSnapshotCallback(
@@ -1406,11 +1401,10 @@ void GriddedCellWellLegalizer::RunGriddedDetailedPlacementStage() {
                "detailed_placement", "start");
   if (enable_detailed_placement_) {
     gridded_detailed_placer_.StartPlacement();
-    RecordPlacementMetric("well_legalization.gridded_detailed",
-                          WeightedHPWL());
+    RecordPlacementHpwlMetrics("well_legalization.gridded_detailed", *ckt_ptr_);
   } else {
     gridded_detailed_placer_.StartLocalReorder();
-    RecordPlacementMetric("well_legalization.local_reorder", WeightedHPWL());
+    RecordPlacementHpwlMetrics("well_legalization.local_reorder", *ckt_ptr_);
   }
   EmitSnapshot("gridded.final", "After Gridded Detailed Placement",
                "detailed_placement", "final");
@@ -1426,8 +1420,7 @@ void GriddedCellWellLegalizer::RunRowLocationOptimizationStage() {
   LOG(info) << "  sweep results:\n";
   for (size_t sweep = 0; sweep < result.sweep_results.size(); ++sweep) {
     LOG(info) << "    " << sweep + 1
-              << ": groups moved="
-              << result.sweep_results[sweep].groups_moved
+              << ": groups moved=" << result.sweep_results[sweep].groups_moved
               << ", HPWL=" << result.sweep_results[sweep].hpwl << "um\n";
   }
   LOG(info) << "  completed sweeps  : " << result.sweeps << "\n"
@@ -1436,7 +1429,7 @@ void GriddedCellWellLegalizer::RunRowLocationOptimizationStage() {
             << "  HPWL improvement  : "
             << result.hpwl_before - result.hpwl_after << "um\n"
             << "  wall time         : " << timer.GetWallTime() << "s\n";
-  RecordPlacementMetric("well_legalization.row_location", result.hpwl_after);
+  RecordPlacementHpwlMetrics("well_legalization.row_location", *ckt_ptr_);
   RecordPlacementMetric("time.well_legalization.row_location.wall_s",
                         timer.GetWallTime());
   RecordPlacementMetric("time.well_legalization.row_location.cpu_s",
@@ -1521,7 +1514,7 @@ void GriddedCellWellLegalizer::RunWellTapStage() {
     WellRowCompleter(ckt_ptr_, &col_list_, BuildRowCompletionConfig())
         .InsertWellTaps();
   }
-  RecordPlacementMetric("well_legalization.well_tap", WeightedHPWL());
+  RecordPlacementHpwlMetrics("well_legalization.well_tap", *ckt_ptr_);
   EmitSnapshot("well_tap", "After Well Tap Insertion", "legalization",
                "well_tap");
 }
@@ -1588,8 +1581,7 @@ bool GriddedCellWellLegalizer::StartPlacement() {
 }
 
 void GriddedCellWellLegalizer::LogEstimatedGriddedCapacity() {
-  GriddedCapacityConfig config =
-      BuildGriddedCapacityConfig(PlacementDensity());
+  GriddedCapacityConfig config = BuildGriddedCapacityConfig(PlacementDensity());
   GriddedCapacityEstimator estimator(config);
   unsigned long long raw_component_area = 0;
   unsigned long long required_gridded_area = 0;

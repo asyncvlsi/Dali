@@ -195,81 +195,79 @@ void Dali::SetGuiSnapshotSinkFactory(SnapshotSinkFactory factory) {
 }
 
 void Dali::ShowParamsList() {
-  LOG(info) << "Dali runtime parameters:\n"
-            << "  log_file_name: " << log_file_name_ << "\n"
-            << "  disable_log_prefix: " << disable_log_prefix_ << "\n"
-            << "  num_threads: " << num_threads_ << "\n"
-            << "  well_legalization_mode: "
-            << static_cast<int>(well_legalization_mode_) << "\n"
-            << "  disable_global_place: " << disable_global_place_ << "\n"
-            << "  disable_legalization: " << disable_legalization_ << "\n"
-            << "  disable_detailed_place: " << disable_detailed_place_ << "\n"
-            << "  disable_io_place: " << disable_io_place_ << "\n"
-            << "  target_density: " << target_density_ << "\n"
-            << "  io_metal_layer: " << io_metal_layer_ << "\n"
-            << "  export_well_cluster_matlab: " << export_well_cluster_matlab_
-            << "\n"
-            << "  disable_welltap: " << disable_welltap_ << "\n"
-            << "  disable_cell_flip: " << disable_cell_flip_ << "\n"
-            << "  max_row_width: " << max_row_width_ << "\n"
-            << "  enable_adaptive_stripe_boundaries: "
-            << enable_adaptive_stripe_boundaries_ << "\n"
-            << "  is_standard_cell: " << is_standard_cell_ << "\n"
-            << "  enable_filler_cell: " << enable_filler_cell_ << "\n"
-            << "  enable_end_cap_cell: " << enable_end_cap_cell_ << "\n"
-            << "  enable_gridded_global_capacity: "
-            << enable_gridded_global_capacity_ << "\n"
-            << "  enable_gridded_upper_bound_refiner: "
-            << enable_gridded_upper_bound_refiner_ << "\n"
-            << "  enable_gridded_upper_bound_balancing: "
-            << enable_gridded_upper_bound_balancing_ << "\n"
-            << "  disable_gridded_legalization_feedback: "
-            << disable_gridded_legalization_feedback_ << "\n"
-            << "  enable_gridded_stripe_balancing: "
-            << enable_gridded_stripe_balancing_ << "\n"
-            << "  enable_gridded_local_reorder: "
-            << enable_gridded_local_reorder_ << "\n"
-            << "  enable_gridded_detailed_placement: "
-            << enable_gridded_detailed_placement_ << "\n"
-            << "  gridded_detailed_max_rounds: "
-            << gridded_detailed_max_rounds_ << "\n"
-            << "  gridded_detailed_min_relative_improvement: "
-            << gridded_detailed_min_relative_improvement_ << "\n"
-            << "  disable_gridded_vertical_swap: "
-            << disable_gridded_vertical_swap_ << "\n"
-            << "  enable_gridded_row_y_optimization: "
-            << enable_gridded_row_y_optimization_ << "\n"
-            << "  enable_shrink_off_grid_die_area: "
-            << enable_shrink_off_grid_die_area_ << "\n"
-            << "  global_initializer: " << static_cast<int>(global_initializer_)
-            << "\n"
-            << "  global_anchor_schedule: "
-            << static_cast<int>(global_anchor_schedule_) << "\n"
-            << "  global_grid_schedule: "
-            << static_cast<int>(global_grid_schedule_) << "\n"
-            << "  global_lal_expansion: "
-            << static_cast<int>(global_lal_expansion_mode_) << "\n"
-            << "  global_lal_hotspot: "
-            << static_cast<int>(global_lal_hotspot_mode_) << "\n"
-            << "  global_lal_affine_weight: " << global_lal_affine_weight_
-            << "\n"
-            << "  global_lal_macro_boundary: "
-            << static_cast<int>(global_lal_macro_boundary_mode_) << "\n"
-            << "  global_min_iterations: " << global_min_iterations_ << "\n"
-            << "  global_max_iterations: " << global_max_iterations_ << "\n"
-            << "  standard_cell_legalizer_cost: "
-            << static_cast<int>(standard_cell_legalizer_cost_mode_) << "\n"
-            << "  detailed_max_rounds: " << detailed_max_rounds_ << "\n"
-            << "  detailed_max_move_candidates: "
-            << detailed_max_move_candidates_ << "\n"
-            << "  save_intermediate_result: " << save_intermediate_result_
-            << "\n"
-            << "  output_name: " << output_name_ << "\n"
-            << "  visualization_dir: " << visualization_dir_ << "\n"
-            << "  gui_debug: " << gui_debug_ << "\n"
-            << "  gui_pause: " << gui_pause_ << "\n"
-            << "  debug_placement_region_scale: "
-            << debug_placement_region_scale_ << "\n";
+  LOG(info)
+      << "Dali runtime parameters:\n"
+      << "  log_file_name: " << log_file_name_ << "\n"
+      << "  disable_log_prefix: " << disable_log_prefix_ << "\n"
+      << "  num_threads: " << num_threads_ << "\n"
+      << "  well_legalization_mode: "
+      << static_cast<int>(well_legalization_mode_) << "\n"
+      << "  disable_global_place: " << disable_global_place_ << "\n"
+      << "  disable_legalization: " << disable_legalization_ << "\n"
+      << "  disable_detailed_place: " << disable_detailed_place_ << "\n"
+      << "  disable_io_place: " << disable_io_place_ << "\n"
+      << "  target_density: " << target_density_ << "\n"
+      << "  io_metal_layer: " << io_metal_layer_ << "\n"
+      << "  export_well_cluster_matlab: " << export_well_cluster_matlab_ << "\n"
+      << "  disable_welltap: " << disable_welltap_ << "\n"
+      << "  disable_cell_flip: " << disable_cell_flip_ << "\n"
+      << "  max_row_width: " << max_row_width_ << "\n"
+      << "  enable_adaptive_stripe_boundaries: "
+      << enable_adaptive_stripe_boundaries_ << "\n"
+      << "  is_standard_cell: " << is_standard_cell_ << "\n"
+      << "  enable_filler_cell: " << enable_filler_cell_ << "\n"
+      << "  enable_end_cap_cell: " << enable_end_cap_cell_ << "\n"
+      << "  enable_gridded_global_capacity: " << enable_gridded_global_capacity_
+      << "\n"
+      << "  enable_gridded_upper_bound_refiner: "
+      << enable_gridded_upper_bound_refiner_ << "\n"
+      << "  enable_gridded_upper_bound_balancing: "
+      << enable_gridded_upper_bound_balancing_ << "\n"
+      << "  disable_gridded_legalization_feedback: "
+      << disable_gridded_legalization_feedback_ << "\n"
+      << "  enable_gridded_stripe_balancing: "
+      << enable_gridded_stripe_balancing_ << "\n"
+      << "  enable_gridded_local_reorder: " << enable_gridded_local_reorder_
+      << "\n"
+      << "  enable_gridded_detailed_placement: "
+      << enable_gridded_detailed_placement_ << "\n"
+      << "  gridded_detailed_max_rounds: " << gridded_detailed_max_rounds_
+      << "\n"
+      << "  gridded_detailed_min_relative_improvement: "
+      << gridded_detailed_min_relative_improvement_ << "\n"
+      << "  disable_gridded_vertical_swap: " << disable_gridded_vertical_swap_
+      << "\n"
+      << "  enable_gridded_row_y_optimization: "
+      << enable_gridded_row_y_optimization_ << "\n"
+      << "  enable_shrink_off_grid_die_area: "
+      << enable_shrink_off_grid_die_area_ << "\n"
+      << "  global_initializer: " << static_cast<int>(global_initializer_)
+      << "\n"
+      << "  global_anchor_schedule: "
+      << static_cast<int>(global_anchor_schedule_) << "\n"
+      << "  global_grid_schedule: " << static_cast<int>(global_grid_schedule_)
+      << "\n"
+      << "  global_lal_expansion: "
+      << static_cast<int>(global_lal_expansion_mode_) << "\n"
+      << "  global_lal_hotspot: " << static_cast<int>(global_lal_hotspot_mode_)
+      << "\n"
+      << "  global_lal_affine_weight: " << global_lal_affine_weight_ << "\n"
+      << "  global_lal_macro_boundary: "
+      << static_cast<int>(global_lal_macro_boundary_mode_) << "\n"
+      << "  global_min_iterations: " << global_min_iterations_ << "\n"
+      << "  global_max_iterations: " << global_max_iterations_ << "\n"
+      << "  standard_cell_legalizer_cost: "
+      << static_cast<int>(standard_cell_legalizer_cost_mode_) << "\n"
+      << "  detailed_max_rounds: " << detailed_max_rounds_ << "\n"
+      << "  detailed_max_move_candidates: " << detailed_max_move_candidates_
+      << "\n"
+      << "  save_intermediate_result: " << save_intermediate_result_ << "\n"
+      << "  output_name: " << output_name_ << "\n"
+      << "  visualization_dir: " << visualization_dir_ << "\n"
+      << "  gui_debug: " << gui_debug_ << "\n"
+      << "  gui_pause: " << gui_pause_ << "\n"
+      << "  debug_placement_region_scale: " << debug_placement_region_scale_
+      << "\n";
 }
 
 void Dali::LoadParamsFromConfig() {
@@ -625,7 +623,7 @@ void Dali::InitializeMainPlacementCircuit() {
   is_circuit_initialized_ = true;
   circuit_.ReportBriefSummary();
   ClearPlacementMetrics();
-  RecordPlacementMetric("input", circuit_.WeightedHPWL());
+  RecordPlacementHpwlMetrics("input", circuit_);
   InitializeVisualizationSnapshots();
   WriteVisualizationSnapshot("input", "Input", "input");
 }
@@ -782,7 +780,7 @@ bool Dali::RunStandardCellLegalization() {
     }
   }
   legalization_timer.RecordEndTime();
-  RecordPlacementMetric("legalization", circuit_.WeightedHPWL());
+  RecordPlacementHpwlMetrics("legalization", circuit_);
   RecordPlacementMetric("time.legalization.wall_s",
                         legalization_timer.GetWallTime());
   RecordPlacementMetric("time.legalization.cpu_s",
@@ -818,7 +816,7 @@ bool Dali::RunDetailedPlacement() {
     return false;
   }
   stage_timer.RecordEndTime();
-  RecordPlacementMetric("detailed_placement", circuit_.WeightedHPWL());
+  RecordPlacementHpwlMetrics("detailed_placement", circuit_);
   RecordPlacementMetric("time.detailed_placement.wall_s",
                         stage_timer.GetWallTime());
   RecordPlacementMetric("time.detailed_placement.cpu_s",
@@ -838,14 +836,12 @@ void Dali::ConfigureWellLegalizer() {
       enable_adaptive_stripe_boundaries_);
   well_legalizer_.SetStripePartitionMode(
       static_cast<int>(well_legalization_mode_));
-  well_legalizer_.SetEnableStripeBalancing(
-      enable_gridded_stripe_balancing_);
+  well_legalizer_.SetEnableStripeBalancing(enable_gridded_stripe_balancing_);
   well_legalizer_.SetEnableLocalReorder(enable_gridded_local_reorder_);
   well_legalizer_.SetEnableDetailedPlacement(
       enable_gridded_detailed_placement_);
   well_legalizer_.SetDetailedPlacementConvergence(
-      gridded_detailed_max_rounds_,
-      gridded_detailed_min_relative_improvement_);
+      gridded_detailed_max_rounds_, gridded_detailed_min_relative_improvement_);
   well_legalizer_.SetEnableDetailedVerticalSwap(
       !disable_gridded_vertical_swap_);
   well_legalizer_.SetEnableRowLocationOptimization(
@@ -1039,7 +1035,7 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
   }
 
   LOG(debug) << "dali git commit: " << get_git_version_short() << "\n";
-  RecordPlacementMetric("final", circuit_.WeightedHPWL());
+  RecordPlacementHpwlMetrics("final", circuit_);
   std::vector<PlacementWellRect> final_well_rects;
   if (!is_standard_cell_ && !disable_legalization_) {
     final_well_rects = well_legalizer_.CollectWellVisualizationRects();

@@ -17,6 +17,24 @@
 
 namespace dali {
 
+class Circuit;
+
+/** Weighted HPWL split by axis and net fanout, in physical micron units. */
+struct WeightedHpwlBreakdown {
+  double x = 0.0;
+  double y = 0.0;
+  double fanout_2 = 0.0;
+  double fanout_3 = 0.0;
+  double fanout_4_to_19 = 0.0;
+  double fanout_20_to_39 = 0.0;
+  double fanout_40_to_79 = 0.0;
+  double fanout_80_to_159 = 0.0;
+  double fanout_160_plus = 0.0;
+
+  /** Return total weighted HPWL across both axes. */
+  double Total() const { return x + y; }
+};
+
 /** Collects named placement metrics and writes them in Dali's JSON format. */
 class PlacementMetrics {
  public:
@@ -33,6 +51,12 @@ void ClearPlacementMetrics();
 
 /** Record or update one named placement metric. */
 void RecordPlacementMetric(const std::string& name, double value);
+
+/** Compute weighted HPWL attribution for the circuit's current placement. */
+WeightedHpwlBreakdown ComputeWeightedHpwlBreakdown(Circuit& circuit);
+
+/** Record total, axis, and fanout HPWL metrics under one stage name. */
+void RecordPlacementHpwlMetrics(const std::string& name, Circuit& circuit);
 
 /** Write collected placement metrics as JSON. */
 bool WritePlacementMetricsJson(const std::string& file_name, bool completed);

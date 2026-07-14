@@ -68,7 +68,7 @@ void PlacementInitializer::SetShouldSaveIntermediateResult(
 
 void PlacementInitializer::PrintStartStatement() {
   elapsed_time_.RecordStartTime();
-  RecordPlacementMetric("initialization.before", ckt_ptr_->WeightedHPWL());
+  RecordPlacementHpwlMetrics("initialization.before", *ckt_ptr_);
   LOG(info) << "  Component location initialization:\n"
             << "    HPWL before, " << ckt_ptr_->WeightedHPWL() << "\n";
 }
@@ -79,7 +79,7 @@ void PlacementInitializer::SetParameters(
 
 void PlacementInitializer::PrintEndStatement() {
   LOG(debug) << "    " << initializer_name_ << " initialization complete\n";
-  RecordPlacementMetric("initialization.after", ckt_ptr_->WeightedHPWL());
+  RecordPlacementHpwlMetrics("initialization.after", *ckt_ptr_);
   LOG(info) << "    HPWL after, " << ckt_ptr_->WeightedHPWL() << "\n";
   elapsed_time_.RecordEndTime();
   elapsed_time_.PrintTimeElapsed(severity::debug);

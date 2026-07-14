@@ -14,6 +14,7 @@
 #include <iomanip>
 #include <string>
 
+#include "dali/circuit/circuit.h"
 #include "dali/common/git_version.h"
 #include "dali/common/logging.h"
 
@@ -95,6 +96,49 @@ void ClearPlacementMetrics() { GlobalPlacementMetrics().Clear(); }
 
 void RecordPlacementMetric(const std::string& name, double value) {
   GlobalPlacementMetrics().Record(name, value);
+}
+
+WeightedHpwlBreakdown ComputeWeightedHpwlBreakdown(Circuit& circuit) {
+  WeightedHpwlBreakdown result;
+  for (Net& net : circuit.Nets()) {
+    double net_x = net.WeightedHPWLX() * circuit.GridValueX();
+    double net_y = net.WeightedHPWLY() * circuit.GridValueY();
+    double net_hpwl = net_x + net_y;
+    result.x += net_x;
+    result.y += net_y;
+
+    size_t fanout = net.PinCnt();
+    if (fanout == 2) {
+      result.fanout_2 += net_hpwl;
+    } else if (fanout == 3) {
+      result.fanout_3 += net_hpwl;
+    } else if (fanout <= 19) {
+      result.fanout_4_to_19 += net_hpwl;
+    } else if (fanout <= 39) {
+      result.fanout_20_to_39 += net_hpwl;
+    } else if (fanout <= 79) {
+      result.fanout_40_to_79 += net_hpwl;
+    } else if (fanout <= 159) {
+      result.fanout_80_to_159 += net_hpwl;
+    } else {
+      result.fanout_160_plus += net_hpwl;
+    }
+  }
+  return result;
+}
+
+void RecordPlacementHpwlMetrics(const std::string& name, Circuit& circuit) {
+  WeightedHpwlBreakdown hpwl = ComputeWeightedHpwlBreakdown(circuit);
+  RecordPlacementMetric(name, hpwl.Total());
+  RecordPlacementMetric(name + ".x", hpwl.x);
+  RecordPlacementMetric(name + ".y", hpwl.y);
+  RecordPlacementMetric(name + ".fanout.2", hpwl.fanout_2);
+  RecordPlacementMetric(name + ".fanout.3", hpwl.fanout_3);
+  RecordPlacementMetric(name + ".fanout.4_19", hpwl.fanout_4_to_19);
+  RecordPlacementMetric(name + ".fanout.20_39", hpwl.fanout_20_to_39);
+  RecordPlacementMetric(name + ".fanout.40_79", hpwl.fanout_40_to_79);
+  RecordPlacementMetric(name + ".fanout.80_159", hpwl.fanout_80_to_159);
+  RecordPlacementMetric(name + ".fanout.160_plus", hpwl.fanout_160_plus);
 }
 
 bool WritePlacementMetricsJson(const std::string& file_name, bool completed) {
