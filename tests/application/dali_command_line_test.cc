@@ -99,6 +99,17 @@ TEST_F(DaliCommandLineTest, ParsesPositiveTransactionalFeedback) {
                "y_row_transactional_positive");
 }
 
+TEST_F(DaliCommandLineTest, ParsesConsistentTransactionalFeedback) {
+  dali::DaliCommandLineOptions options;
+  EXPECT_TRUE(Parse(
+      {"dali", "-lef", "input.lef", "-def", "input.def",
+       "-gridded_legalization_feedback", "y_row_transactional_consistent"},
+      &options));
+
+  EXPECT_STREQ(config_get_string("dali.gridded_legalization_feedback"),
+               "y_row_transactional_consistent");
+}
+
 TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   dali::DaliCommandLineOptions options;
   EXPECT_TRUE(Parse({"dali",

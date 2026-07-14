@@ -24,6 +24,8 @@ enum class GlobalRefinementFeedbackMode {
   kYRowTransactional,
   /** Keep only transactional assignments with strictly positive Y gain. */
   kYRowTransactionalPositive,
+  /** Require positive Y gain in both baseline and transactional contexts. */
+  kYRowTransactionalConsistent,
   /** Restore both analytical coordinates after scoring the refinement. */
   kNone,
 };

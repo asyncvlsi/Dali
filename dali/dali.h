@@ -68,7 +68,7 @@ class Dali {
     bool enable_gridded_upper_bound_balancing = false;
     bool enable_gridded_legalization_pressure = false;
     GlobalRefinementFeedbackMode gridded_legalization_feedback_mode =
-        GlobalRefinementFeedbackMode::kYRowTransactionalPositive;
+        GlobalRefinementFeedbackMode::kYRowTransactionalConsistent;
     bool enable_gridded_stripe_balancing = false;
     bool enable_gridded_local_reorder = false;
     bool enable_gridded_detailed_placement = false;
@@ -207,7 +207,7 @@ class Dali {
   bool enable_gridded_upper_bound_balancing_ = false;
   bool enable_gridded_legalization_pressure_ = false;
   GlobalRefinementFeedbackMode gridded_legalization_feedback_mode_ =
-      GlobalRefinementFeedbackMode::kYRowTransactionalPositive;
+      GlobalRefinementFeedbackMode::kYRowTransactionalConsistent;
   bool enable_gridded_stripe_balancing_ = false;
   bool enable_gridded_local_reorder_ = false;
   bool enable_gridded_detailed_placement_ = false;

@@ -88,7 +88,7 @@ TEST(GlobalUpperBoundRefinerTest, RequiresFreshPhysicalConvergenceBound) {
 TEST(GlobalUpperBoundRefinerTest, RefinedAnchorFeedbackCanBeDisabled) {
   TestableGlobalPlacer placer;
   EXPECT_EQ(placer.RefinementFeedbackMode(),
-            GlobalRefinementFeedbackMode::kYRowTransactionalPositive);
+            GlobalRefinementFeedbackMode::kYRowTransactionalConsistent);
 
   placer.SetUseRefinedUpperBoundAsAnchor(false);
 
@@ -237,6 +237,48 @@ TEST(GlobalUpperBoundRefinerTest,
       GlobalRefinementFeedbackMode::kYRowTransactionalPositive);
   placer.ApplyFeedbackForTest({{10, 5}, {20, 0}, {30, 10}});
   EXPECT_DOUBLE_EQ(circuit.Components()[0].LLY(), 5);
+}
+
+TEST(GlobalUpperBoundRefinerTest,
+     ConsistentTransactionalFeedbackRejectsContextCreatedGain) {
+  Circuit circuit;
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.SetDieArea(0, 0, 100, 100);
+  circuit.ReserveSpaceForDesignImp(3, 0, 2);
+  circuit.AddMacro("cell", 2, 1);
+  Macro* macro = circuit.GetMacroPtr("cell");
+  circuit.AddMacroPin(macro, "p", true)->SetOffset(0, 0);
+  circuit.AddComponent("center", "cell", 10, 2, PLACED);
+  circuit.AddComponent("context_move", "cell", 20, 2, PLACED);
+  circuit.AddComponent("other_neighbor", "cell", 30, 0, PLACED);
+  circuit.AddNet("context_net", 2);
+  circuit.AddComponentPinToNet("center", "p", "context_net");
+  circuit.AddComponentPinToNet("context_move", "p", "context_net");
+  circuit.AddNet("other_net", 2);
+  circuit.AddComponentPinToNet("center", "p", "other_net");
+  circuit.AddComponentPinToNet("other_neighbor", "p", "other_net");
+
+  TestableGlobalPlacer placer;
+  placer.SetCircuit(&circuit);
+  placer.SetRefinementFeedbackMode(
+      GlobalRefinementFeedbackMode::kYRowTransactionalPositive);
+  placer.ApplyFeedbackForTest({{10, 0}, {20, 1}, {30, 2}});
+  EXPECT_DOUBLE_EQ(circuit.Components()[1].LLY(), 2);
+  EXPECT_DOUBLE_EQ(circuit.WeightedHPWLY(), 0);
+
+  circuit.Components()[0].SetLLY(2);
+  circuit.Components()[1].SetLLY(2);
+  circuit.Components()[2].SetLLY(0);
+  placer.SetRefinementFeedbackMode(
+      GlobalRefinementFeedbackMode::kYRowTransactionalConsistent);
+  placer.ApplyFeedbackForTest({{10, 0}, {20, 1}, {30, 2}});
+
+  EXPECT_DOUBLE_EQ(circuit.Components()[0].LLY(), 2);
+  EXPECT_DOUBLE_EQ(circuit.Components()[1].LLY(), 1);
+  EXPECT_DOUBLE_EQ(circuit.Components()[2].LLY(), 2);
+  EXPECT_DOUBLE_EQ(circuit.WeightedHPWLY(), 1);
 }
 
 }  // namespace dali

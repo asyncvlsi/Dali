@@ -57,7 +57,7 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_DOUBLE_EQ(options.gridded_detailed_min_relative_improvement, 0.005);
   EXPECT_FALSE(options.disable_gridded_vertical_swap);
   EXPECT_EQ(options.gridded_legalization_feedback_mode,
-            dali::GlobalRefinementFeedbackMode::kYRowTransactionalPositive);
+            dali::GlobalRefinementFeedbackMode::kYRowTransactionalConsistent);
   EXPECT_FALSE(options.enable_gridded_upper_bound_balancing);
   EXPECT_FALSE(options.enable_gridded_legalization_pressure);
   EXPECT_FALSE(options.enable_gridded_row_y_optimization);
@@ -247,6 +247,19 @@ TEST_F(DaliConfigTest, LoadsPositiveTransactionalFeedback) {
 
   EXPECT_EQ(options.gridded_legalization_feedback_mode,
             dali::GlobalRefinementFeedbackMode::kYRowTransactionalPositive);
+
+  placer.Close();
+}
+
+TEST_F(DaliConfigTest, LoadsConsistentTransactionalFeedback) {
+  config_set_string("dali.gridded_legalization_feedback",
+                    "y_row_transactional_consistent");
+
+  dali::Dali placer(nullptr, dali::severity::info);
+  const dali::Dali::RuntimeOptions options = placer.GetRuntimeOptions();
+
+  EXPECT_EQ(options.gridded_legalization_feedback_mode,
+            dali::GlobalRefinementFeedbackMode::kYRowTransactionalConsistent);
 
   placer.Close();
 }
