@@ -36,6 +36,10 @@ void GriddedDetailedPlacer::MoveStats::Add(const MoveStats& other) {
   ejection_evaluated += other.ejection_evaluated;
   ejection_no_hpwl_improvement += other.ejection_no_hpwl_improvement;
   ejection_accepted += other.ejection_accepted;
+  cycle_attempts += other.cycle_attempts;
+  cycle_evaluated += other.cycle_evaluated;
+  cycle_no_hpwl_improvement += other.cycle_no_hpwl_improvement;
+  cycle_accepted += other.cycle_accepted;
 }
 
 void GriddedDetailedPlacer::ClusterStats::Add(const ClusterStats& other) {
@@ -500,6 +504,41 @@ GriddedDetailedPlacer::FindEjectionDestinationRows(
   return candidate_rows;
 }
 
+std::vector<GriddedDetailedPlacer::DisplacementCandidate>
+GriddedDetailedPlacer::FindDisplacementCandidates(GriddedRow* target_row,
+                                                  Component* incoming) const {
+  std::vector<DisplacementCandidate> candidates;
+  for (Component* displaced : target_row->Components()) {
+    if (!IsSwapCandidate(displaced)) {
+      continue;
+    }
+    RowRequirements target_requirements =
+        ComputeRowRequirementsAfterAssignment(target_row, displaced, incoming);
+    if (target_requirements.used_width > target_row->UsableWidth() ||
+        target_requirements.p_well_height > target_row->PHeight() ||
+        target_requirements.n_well_height > target_row->NHeight()) {
+      continue;
+    }
+    OptimalRegion region = ComputeOptimalRegion(displaced);
+    if (!region.valid) {
+      continue;
+    }
+    double current_distance =
+        DistanceToOptimalRegionX(displaced, region) +
+        DistanceToOptimalRegionY(target_row, displaced, region);
+    candidates.push_back({displaced, region, current_distance});
+  }
+  std::sort(
+      candidates.begin(), candidates.end(),
+      [](const DisplacementCandidate& lhs, const DisplacementCandidate& rhs) {
+        return lhs.current_distance > rhs.current_distance;
+      });
+  if (candidates.size() > kMaxEjectionComponentsPerTarget) {
+    candidates.resize(kMaxEjectionComponentsPerTarget);
+  }
+  return candidates;
+}
+
 double GriddedDetailedPlacer::ComputeMoveTargetX(
     GriddedRow* target_row, Component* component,
     const OptimalRegion& region) const {
@@ -729,42 +768,8 @@ bool GriddedDetailedPlacer::TryEjectionChain(GriddedRow* source_row,
     return false;
   }
 
-  struct EjectionComponent {
-    Component* component = nullptr;
-    OptimalRegion region;
-    double current_distance = 0;
-  };
-  std::vector<EjectionComponent> ejection_components;
-  for (Component* displaced : target_row->Components()) {
-    if (!IsSwapCandidate(displaced)) {
-      continue;
-    }
-    RowRequirements target_requirements =
-        ComputeRowRequirementsAfterAssignment(target_row, displaced, component);
-    if (target_requirements.used_width > target_row->UsableWidth() ||
-        target_requirements.p_well_height > target_row->PHeight() ||
-        target_requirements.n_well_height > target_row->NHeight()) {
-      continue;
-    }
-    OptimalRegion displaced_region = ComputeOptimalRegion(displaced);
-    if (!displaced_region.valid) {
-      continue;
-    }
-    double current_distance =
-        DistanceToOptimalRegionX(displaced, displaced_region) +
-        DistanceToOptimalRegionY(target_row, displaced, displaced_region);
-    ejection_components.push_back(
-        {displaced, displaced_region, current_distance});
-  }
-  std::sort(ejection_components.begin(), ejection_components.end(),
-            [](const EjectionComponent& lhs, const EjectionComponent& rhs) {
-              return lhs.current_distance > rhs.current_distance;
-            });
-  if (ejection_components.size() > kMaxEjectionComponentsPerTarget) {
-    ejection_components.resize(kMaxEjectionComponentsPerTarget);
-  }
-
-  for (const EjectionComponent& ejection : ejection_components) {
+  for (const DisplacementCandidate& ejection :
+       FindDisplacementCandidates(target_row, component)) {
     for (const CandidateRow& receiver : FindEjectionDestinationRows(
              source_row, target_row, ejection.component, ejection.region)) {
       ++stats->ejection_evaluated;
@@ -814,6 +819,144 @@ bool GriddedDetailedPlacer::TryEjectionChain(GriddedRow* source_row,
       component_rows_[ejection.component] = receiver.row;
       ++stats->ejection_accepted;
       return true;
+    }
+  }
+  return false;
+}
+
+bool GriddedDetailedPlacer::TryClosedAssignmentCycle(
+    GriddedRow* source_row, Component* component, GriddedRow* target_row,
+    const OptimalRegion& source_region, MoveStats* stats) {
+  DaliExpects(stats != nullptr, "Assignment-cycle statistics cannot be null");
+  ++stats->cycle_attempts;
+  if (source_row->Components().size() <= 1) {
+    return false;
+  }
+
+  struct ReturnCandidate {
+    Component* component = nullptr;
+    OptimalRegion region;
+    double score = 0;
+  };
+
+  for (const DisplacementCandidate& displacement :
+       FindDisplacementCandidates(target_row, component)) {
+    int receiver_count = 0;
+    for (const CandidateRow& receiver : FindCandidateRows(
+             target_row, displacement.component, displacement.region)) {
+      if (receiver.row == source_row || receiver.row == target_row) {
+        continue;
+      }
+      if (receiver_count++ >= kMaxCycleReceiverRows) {
+        break;
+      }
+
+      std::vector<ReturnCandidate> return_candidates;
+      for (Component* returning : receiver.row->Components()) {
+        if (!IsSwapCandidate(returning)) {
+          continue;
+        }
+        RowRequirements receiver_requirements =
+            ComputeRowRequirementsAfterAssignment(receiver.row, returning,
+                                                  displacement.component);
+        RowRequirements source_requirements =
+            ComputeRowRequirementsAfterAssignment(source_row, component,
+                                                  returning);
+        if (receiver_requirements.used_width > receiver.row->UsableWidth() ||
+            receiver_requirements.p_well_height > receiver.row->PHeight() ||
+            receiver_requirements.n_well_height > receiver.row->NHeight() ||
+            source_requirements.used_width > source_row->UsableWidth() ||
+            source_requirements.p_well_height > source_row->PHeight() ||
+            source_requirements.n_well_height > source_row->NHeight()) {
+          continue;
+        }
+
+        OptimalRegion returning_region = ComputeOptimalRegion(returning);
+        double return_distance =
+            std::fabs(returning->CenterX() - source_row->CenterX()) +
+            std::fabs(returning->CenterY() - source_row->CenterY());
+        if (returning_region.valid) {
+          return_distance =
+              DistanceFromRowToOptimalRegionX(source_row, returning,
+                                              returning_region) +
+              DistanceToOptimalRegionY(source_row, returning, returning_region);
+        }
+        return_candidates.push_back(
+            {returning, returning_region, receiver.distance + return_distance});
+      }
+      std::sort(return_candidates.begin(), return_candidates.end(),
+                [](const ReturnCandidate& lhs, const ReturnCandidate& rhs) {
+                  return lhs.score < rhs.score;
+                });
+      if (return_candidates.size() > kMaxCycleComponentsPerReceiver) {
+        return_candidates.resize(kMaxCycleComponentsPerReceiver);
+      }
+
+      for (const ReturnCandidate& return_candidate : return_candidates) {
+        auto source_component =
+            std::find(source_row->Components().begin(),
+                      source_row->Components().end(), component);
+        auto target_component =
+            std::find(target_row->Components().begin(),
+                      target_row->Components().end(), displacement.component);
+        auto receiver_component = std::find(receiver.row->Components().begin(),
+                                            receiver.row->Components().end(),
+                                            return_candidate.component);
+        if (source_component == source_row->Components().end() ||
+            target_component == target_row->Components().end() ||
+            receiver_component == receiver.row->Components().end()) {
+          continue;
+        }
+
+        ++stats->cycle_evaluated;
+        std::vector<int> affected_net_ids =
+            CollectRowNetIds({source_row, target_row, receiver.row});
+        double cost_before = NetWireLengthCost(affected_net_ids);
+        auto row_state_before_cycle =
+            SaveRowState({source_row, target_row, receiver.row});
+
+        source_row->Components().erase(source_component);
+        target_row->Components().erase(target_component);
+        receiver.row->Components().erase(receiver_component);
+        target_row->Components().push_back(component);
+        receiver.row->Components().push_back(displacement.component);
+        source_row->Components().push_back(return_candidate.component);
+        component->SetLLX(
+            ComputeMoveTargetX(target_row, component, source_region));
+        displacement.component->SetLLX(ComputeMoveTargetX(
+            receiver.row, displacement.component, displacement.region));
+        if (return_candidate.region.valid) {
+          return_candidate.component->SetLLX(ComputeMoveTargetX(
+              source_row, return_candidate.component, return_candidate.region));
+        }
+        for (GriddedRow* row : {source_row, target_row, receiver.row}) {
+          for (Component* row_component : row->Components()) {
+            PlaceComponentInRow(row, row_component);
+          }
+          row->LegalizeLooseX();
+        }
+
+        double cost_after = NetWireLengthCost(affected_net_ids);
+        if (cost_after + kMinSignificantHpwlImprovement >= cost_before) {
+          RestoreRowState(row_state_before_cycle);
+          ++stats->cycle_no_hpwl_improvement;
+          continue;
+        }
+
+        TransferInitialLocation(source_row, target_row, component);
+        TransferInitialLocation(target_row, receiver.row,
+                                displacement.component);
+        TransferInitialLocation(receiver.row, source_row,
+                                return_candidate.component);
+        SynchronizeRowUsedSize(source_row);
+        SynchronizeRowUsedSize(target_row);
+        SynchronizeRowUsedSize(receiver.row);
+        component_rows_[component] = target_row;
+        component_rows_[displacement.component] = receiver.row;
+        component_rows_[return_candidate.component] = source_row;
+        ++stats->cycle_accepted;
+        return true;
+      }
     }
   }
   return false;
@@ -959,7 +1102,11 @@ GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::TryOptimalRegionMove(
     }
   }
   if (enable_ejection && ejection_target != nullptr) {
-    TryEjectionChain(source_row, component, ejection_target, region, &stats);
+    if (!TryEjectionChain(source_row, component, ejection_target, region,
+                          &stats)) {
+      TryClosedAssignmentCycle(source_row, component, ejection_target, region,
+                               &stats);
+    }
   }
   return stats;
 }
@@ -1116,6 +1263,10 @@ void GriddedDetailedPlacer::LogMoveStage(const MoveStats& stats,
             << ", evaluated=" << stats.ejection_evaluated
             << ", accepted=" << stats.ejection_accepted
             << ", no-HPWL-gain=" << stats.ejection_no_hpwl_improvement << ")"
+            << ", cycle(attempted=" << stats.cycle_attempts
+            << ", evaluated=" << stats.cycle_evaluated
+            << ", accepted=" << stats.cycle_accepted
+            << ", no-HPWL-gain=" << stats.cycle_no_hpwl_improvement << ")"
             << ", HPWL=" << hpwl_after
             << "um, improvement=" << hpwl_before - hpwl_after << "um\n";
 }
@@ -1403,6 +1554,14 @@ bool GriddedDetailedPlacer::StartPlacement() {
                         total_relocation_stats.ejection_no_hpwl_improvement);
   RecordPlacementMetric("gridded_detailed.ejection.accepted",
                         total_relocation_stats.ejection_accepted);
+  RecordPlacementMetric("gridded_detailed.assignment_cycle.attempts",
+                        total_relocation_stats.cycle_attempts);
+  RecordPlacementMetric("gridded_detailed.assignment_cycle.evaluated",
+                        total_relocation_stats.cycle_evaluated);
+  RecordPlacementMetric("gridded_detailed.assignment_cycle.no_hpwl_improvement",
+                        total_relocation_stats.cycle_no_hpwl_improvement);
+  RecordPlacementMetric("gridded_detailed.assignment_cycle.accepted",
+                        total_relocation_stats.cycle_accepted);
   RecordPlacementMetric("gridded_detailed.global_swap.candidates",
                         total_global_swap_stats.candidates);
   RecordPlacementMetric("gridded_detailed.global_swap.accepted",

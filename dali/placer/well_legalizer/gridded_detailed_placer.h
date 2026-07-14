@@ -77,6 +77,8 @@ class GriddedDetailedPlacer : public Placer {
   static constexpr int kMaxOptimalRegionCandidatesPerRow = 2;
   static constexpr int kMaxEjectionComponentsPerTarget = 2;
   static constexpr int kMaxEjectionDestinationRows = 1;
+  static constexpr int kMaxCycleReceiverRows = 2;
+  static constexpr int kMaxCycleComponentsPerReceiver = 2;
   static constexpr int kMaxFinalClusteringPasses = 6;
   static constexpr double kMinClusteringRelativeImprovement = 0.0001;
   static constexpr double kMinSignificantHpwlImprovement = 1e-9;
@@ -99,6 +101,10 @@ class GriddedDetailedPlacer : public Placer {
     int ejection_evaluated = 0;
     int ejection_no_hpwl_improvement = 0;
     int ejection_accepted = 0;
+    int cycle_attempts = 0;
+    int cycle_evaluated = 0;
+    int cycle_no_hpwl_improvement = 0;
+    int cycle_accepted = 0;
 
     /** Accumulate counters from another relocation traversal. */
     void Add(const MoveStats& other);
@@ -125,6 +131,12 @@ class GriddedDetailedPlacer : public Placer {
     int used_width = 0;
     int p_well_height = 0;
     int n_well_height = 0;
+  };
+
+  struct DisplacementCandidate {
+    Component* component = nullptr;
+    OptimalRegion region;
+    double current_distance = 0;
   };
 
   struct ClusterStats {
@@ -176,6 +188,9 @@ class GriddedDetailedPlacer : public Placer {
   std::vector<CandidateRow> FindEjectionDestinationRows(
       GriddedRow* source_row, GriddedRow* target_row, Component* component,
       const OptimalRegion& region) const;
+  /** Return target-row cells whose removal makes an incoming cell legal. */
+  std::vector<DisplacementCandidate> FindDisplacementCandidates(
+      GriddedRow* target_row, Component* incoming) const;
   /** Return the nearest legal target X inside a row and optimal region. */
   double ComputeMoveTargetX(GriddedRow* target_row, Component* component,
                             const OptimalRegion& region) const;
@@ -206,6 +221,18 @@ class GriddedDetailedPlacer : public Placer {
   bool TryEjectionChain(GriddedRow* source_row, Component* component,
                         GriddedRow* target_row,
                         const OptimalRegion& source_region, MoveStats* stats);
+  /**
+   * Trial a closed three-row assignment cycle without requiring free capacity.
+   *
+   * The source cell enters a full target row, one target resident enters a
+   * receiver row, and one receiver resident returns to the newly freed source
+   * row. The cycle is committed only when all fixed row capacities remain
+   * legal and exact affected-net HPWL decreases.
+   */
+  bool TryClosedAssignmentCycle(GriddedRow* source_row, Component* component,
+                                GriddedRow* target_row,
+                                const OptimalRegion& source_region,
+                                MoveStats* stats);
   SwapStats TryClosestComponentSwaps(GriddedRow* first_row,
                                      GriddedRow* second_row,
                                      int max_candidates);

@@ -215,6 +215,81 @@ TEST(GriddedDetailedPlacerTest, EjectionChainCreatesRowWhitespace) {
             rows[2].Components().end());
 }
 
+TEST(GriddedDetailedPlacerTest, ClosedAssignmentCycleUsesFreedSourceSpace) {
+  Circuit circuit;
+  circuit.SetDatabaseMicrons(1000);
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.SetDieArea(0, 0, 20, 30);
+  circuit.ReserveSpaceForDesignImp(12, 0, 6);
+
+  Macro* cell = circuit.AddMacro("cell", 10, 10);
+  ASSERT_NE(cell, nullptr);
+  cell->AddWellRect(false, 0, 0, 10, 4);
+  cell->AddWellRect(true, 0, 4, 10, 10);
+  circuit.AddMacroPin(cell, "p", true)->SetOffset(5, 5);
+
+  const std::vector<std::string> moving_names = {"a", "b", "c"};
+  const std::vector<int> initial_y = {0, 10, 20};
+  const std::vector<int> desired_y = {10, 20, 0};
+  for (size_t i = 0; i < moving_names.size(); ++i) {
+    circuit.AddComponent(moving_names[i], "cell", 0, initial_y[i], PLACED);
+    circuit.AddComponent(moving_names[i] + "_anchor", "cell", 0, desired_y[i],
+                         FIXED);
+  }
+  for (int row = 0; row < 3; ++row) {
+    circuit.AddComponent("stay_" + std::to_string(row), "cell", 10, row * 10,
+                         PLACED);
+    circuit.AddComponent("stay_anchor_" + std::to_string(row), "cell", 10,
+                         row * 10, FIXED);
+  }
+  for (const std::string& moving_name : moving_names) {
+    const std::string net_name = moving_name + "_net";
+    circuit.AddNet(net_name, 2);
+    circuit.AddComponentPinToNet(moving_name, "p", net_name);
+    circuit.AddComponentPinToNet(moving_name + "_anchor", "p", net_name);
+  }
+  for (int row = 0; row < 3; ++row) {
+    const std::string net_name = "stay_net_" + std::to_string(row);
+    circuit.AddNet(net_name, 2);
+    circuit.AddComponentPinToNet("stay_" + std::to_string(row), "p", net_name);
+    circuit.AddComponentPinToNet("stay_anchor_" + std::to_string(row), "p",
+                                 net_name);
+  }
+
+  std::vector<GriddedRow> rows(3);
+  for (size_t i = 0; i < rows.size(); ++i) {
+    rows[i].SetLLX(0);
+    rows[i].SetWidth(20);
+    rows[i].SetLLY(static_cast<int>(i) * 10);
+    rows[i].UpdateWellHeightUpward(4, 6);
+    rows[i].SetOrient(true);
+    rows[i].AddComponent(circuit.GetComponentPtr(moving_names[i]));
+    rows[i].AddComponent(circuit.GetComponentPtr("stay_" + std::to_string(i)));
+  }
+
+  GriddedDetailedPlacer placer;
+  placer.SetCircuit(&circuit);
+  placer.SetRows({&rows[0], &rows[1], &rows[2]});
+  placer.SetEnableRelocation(true);
+  placer.SetEnableVerticalSwap(false);
+  placer.SetMaxRounds(1);
+  const double hpwl_before = circuit.WeightedHPWL();
+  ASSERT_TRUE(placer.StartPlacement());
+
+  EXPECT_LT(circuit.WeightedHPWL(), hpwl_before);
+  EXPECT_NE(std::find(rows[1].Components().begin(), rows[1].Components().end(),
+                      circuit.GetComponentPtr("a")),
+            rows[1].Components().end());
+  EXPECT_NE(std::find(rows[2].Components().begin(), rows[2].Components().end(),
+                      circuit.GetComponentPtr("b")),
+            rows[2].Components().end());
+  EXPECT_NE(std::find(rows[0].Components().begin(), rows[0].Components().end(),
+                      circuit.GetComponentPtr("c")),
+            rows[0].Components().end());
+}
+
 TEST(GriddedDetailedPlacerTest, SingleSegmentClusteringPreservesOrder) {
   Circuit circuit;
   circuit.SetDatabaseMicrons(1000);
