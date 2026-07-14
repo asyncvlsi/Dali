@@ -28,6 +28,7 @@
 #include <string>
 #include <utility>
 
+#include "dali/circuit/hpwl_lower_bound.h"
 #include "dali/common/elapsed_time.h"
 #include "dali/common/git_version.h"
 #include "dali/common/helper.h"
@@ -624,8 +625,25 @@ void Dali::InitializeMainPlacementCircuit() {
   circuit_.ReportBriefSummary();
   ClearPlacementMetrics();
   RecordPlacementHpwlMetrics("input", circuit_);
+  RecordPlacementLowerBounds();
   InitializeVisualizationSnapshots();
   WriteVisualizationSnapshot("input", "Input", "input");
+}
+
+void Dali::RecordPlacementLowerBounds() {
+  HpwlLowerBound fixed_terminal = ComputeFixedTerminalHpwlLowerBound(circuit_);
+  HpwlLowerBound placement_box = ComputePlacementBoxHpwlLowerBound(circuit_);
+
+  RecordPlacementMetric("lower_bound.fixed_terminal", fixed_terminal.Total());
+  RecordPlacementMetric("lower_bound.fixed_terminal.x", fixed_terminal.x);
+  RecordPlacementMetric("lower_bound.fixed_terminal.y", fixed_terminal.y);
+  RecordPlacementMetric("lower_bound.placement_box", placement_box.Total());
+  RecordPlacementMetric("lower_bound.placement_box.x", placement_box.x);
+  RecordPlacementMetric("lower_bound.placement_box.y", placement_box.y);
+
+  LOG(info) << "HPWL lower bounds:\n"
+            << "  fixed-terminal bound : " << fixed_terminal.Total() << "um\n"
+            << "  placement-box bound  : " << placement_box.Total() << "um\n";
 }
 
 void Dali::ApplyDebugPlacementRegionScale() {

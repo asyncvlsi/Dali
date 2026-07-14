@@ -264,7 +264,10 @@ class Dali {
   void ApplyPlacementOverrides(double density, int number_of_threads);
   /** Initialize the circuit model and reset metrics for a standalone run. */
   void InitializeMainPlacementCircuit();
-  /** Enlarge the circuit placement boundary for controlled debug experiments. */
+  /** Compute and record certified HPWL lower bounds for this circuit. */
+  void RecordPlacementLowerBounds();
+  /** Enlarge the circuit placement boundary for controlled debug experiments.
+   */
   void ApplyDebugPlacementRegionScale();
   /** Choose the target density when the user did not provide one. */
   void ResolveTargetDensity();
