@@ -78,6 +78,16 @@ TEST_F(DaliCommandLineTest, ParsesHpwlFilteredLegalizationFeedback) {
                "y_row_hpwl");
 }
 
+TEST_F(DaliCommandLineTest, ParsesTransactionalLegalizationFeedback) {
+  dali::DaliCommandLineOptions options;
+  EXPECT_TRUE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                     "-gridded_legalization_feedback", "y_row_transactional"},
+                    &options));
+
+  EXPECT_STREQ(config_get_string("dali.gridded_legalization_feedback"),
+               "y_row_transactional");
+}
+
 TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   dali::DaliCommandLineOptions options;
   EXPECT_TRUE(Parse({"dali",

@@ -44,6 +44,8 @@ const char* RefinementFeedbackModeName(GlobalRefinementFeedbackMode mode) {
       return "y_row_scale";
     case GlobalRefinementFeedbackMode::kYRowHpwl:
       return "y_row_hpwl";
+    case GlobalRefinementFeedbackMode::kYRowTransactional:
+      return "y_row_transactional";
     case GlobalRefinementFeedbackMode::kNone:
       return "none";
   }
@@ -354,12 +356,19 @@ void GlobalPlacer::ApplyRefinedAnchorFeedback(
       refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kFull ||
       refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYOnly ||
       refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYRowScale ||
-      refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYRowHpwl;
+      refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYRowHpwl ||
+      refinement_feedback_mode_ ==
+          GlobalRefinementFeedbackMode::kYRowTransactional;
   const bool require_row_scale_y =
       refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYRowScale ||
-      refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYRowHpwl;
+      refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYRowHpwl ||
+      refinement_feedback_mode_ ==
+          GlobalRefinementFeedbackMode::kYRowTransactional;
   const bool require_non_worsening_hpwl =
       refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYRowHpwl;
+  const bool use_transactional_y =
+      refinement_feedback_mode_ ==
+      GlobalRefinementFeedbackMode::kYRowTransactional;
 
   // Classify every candidate against the same complete refined placement.
   // Applying restorations in a second pass keeps this filter independent of
@@ -383,6 +392,10 @@ void GlobalPlacer::ApplyRefinedAnchorFeedback(
                                        placement_before_refinement[i].ly)) {
       keep_component_y[i] = false;
     }
+  }
+  if (use_transactional_y) {
+    keep_component_y = SelectTransactionalYFeedback(
+        keep_component_y, placement_before_refinement);
   }
 
   for (size_t i = 0; i < ckt_ptr_->Components().size(); ++i) {
@@ -425,6 +438,70 @@ bool GlobalPlacer::IsRefinedYLocallyNonWorsening(Component& component,
   const double analytical_hpwl = ConnectedNetWeightedHpwlY(component);
   component.SetLLY(refined_y);
   return refined_hpwl <= analytical_hpwl;
+}
+
+std::vector<bool> GlobalPlacer::SelectTransactionalYFeedback(
+    const std::vector<bool>& candidates,
+    const std::vector<ComponentLocation>& analytical_placement) const {
+  DaliExpects(candidates.size() == ckt_ptr_->Components().size(),
+              "Y feedback candidate count does not match component count");
+  DaliExpects(analytical_placement.size() == ckt_ptr_->Components().size(),
+              "Analytical placement count does not match component count");
+
+  struct Candidate {
+    size_t component_index = 0;
+    double refined_y = 0.0;
+    double estimated_gain = 0.0;
+  };
+
+  std::vector<double> refined_y(ckt_ptr_->Components().size(), 0.0);
+  for (size_t i = 0; i < ckt_ptr_->Components().size(); ++i) {
+    Component& component = ckt_ptr_->Components()[i];
+    refined_y[i] = component.LLY();
+    component.SetLLY(analytical_placement[i].ly);
+  }
+
+  const size_t candidate_count = static_cast<size_t>(
+      std::count(candidates.begin(), candidates.end(), true));
+  std::vector<Candidate> ordered_candidates;
+  ordered_candidates.reserve(candidate_count);
+  for (size_t i = 0; i < ckt_ptr_->Components().size(); ++i) {
+    if (!candidates[i]) continue;
+    Component& component = ckt_ptr_->Components()[i];
+    const double hpwl_before = ConnectedNetWeightedHpwlY(component);
+    component.SetLLY(refined_y[i]);
+    const double hpwl_after = ConnectedNetWeightedHpwlY(component);
+    component.SetLLY(analytical_placement[i].ly);
+    ordered_candidates.push_back({i, refined_y[i], hpwl_before - hpwl_after});
+  }
+  std::sort(ordered_candidates.begin(), ordered_candidates.end(),
+            [](const Candidate& lhs, const Candidate& rhs) {
+              if (lhs.estimated_gain != rhs.estimated_gain) {
+                return lhs.estimated_gain > rhs.estimated_gain;
+              }
+              return lhs.component_index < rhs.component_index;
+            });
+
+  std::vector<bool> accepted(candidates.size(), false);
+  double hpwl_improvement = 0.0;
+  for (const Candidate& candidate : ordered_candidates) {
+    Component& component = ckt_ptr_->Components()[candidate.component_index];
+    const double hpwl_before = ConnectedNetWeightedHpwlY(component);
+    component.SetLLY(candidate.refined_y);
+    const double hpwl_after = ConnectedNetWeightedHpwlY(component);
+    if (hpwl_after <= hpwl_before) {
+      accepted[candidate.component_index] = true;
+      hpwl_improvement += hpwl_before - hpwl_after;
+    } else {
+      component.SetLLY(analytical_placement[candidate.component_index].ly);
+    }
+  }
+  LOG(info) << "    transactional Y feedback: " << candidate_count
+            << " candidates, "
+            << std::count(accepted.begin(), accepted.end(), true)
+            << " accepted, modeled HPWL improvement " << hpwl_improvement
+            << "um\n";
+  return accepted;
 }
 
 void GlobalPlacer::UpdateBestUpperBoundPlacement(double upper_bound_hpwl) {

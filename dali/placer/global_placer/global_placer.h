@@ -167,6 +167,16 @@ class GlobalPlacer : public Placer {
   /** Return whether refined Y is no worse than the analytical Y locally. */
   bool IsRefinedYLocallyNonWorsening(Component& component,
                                      double analytical_y) const;
+  /**
+   * Build a combined row-scale Y target with non-increasing modeled HPWL.
+   *
+   * Candidates are ranked by gain from the analytical placement, then
+   * rechecked as they are committed so interacting assignments cannot make
+   * the aggregate feedback target worse.
+   */
+  std::vector<bool> SelectTransactionalYFeedback(
+      const std::vector<bool>& candidates,
+      const std::vector<ComponentLocation>& analytical_placement) const;
   /** Update LAL demand from physical pressure observed by the refiner. */
   void UpdateLegalizationPressure(const GlobalUpperBoundRefinement& refinement);
   /** Log displacement introduced by physical upper-bound refinement. */

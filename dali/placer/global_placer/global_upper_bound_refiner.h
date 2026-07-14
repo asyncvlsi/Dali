@@ -20,6 +20,8 @@ enum class GlobalRefinementFeedbackMode {
   kYRowScale,
   /** Keep row-scale Y moves that do not worsen local weighted HPWL. */
   kYRowHpwl,
+  /** Greedily build a non-worsening set of row-scale Y assignments. */
+  kYRowTransactional,
   /** Restore both analytical coordinates after scoring the refinement. */
   kNone,
 };

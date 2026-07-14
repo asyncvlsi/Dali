@@ -178,4 +178,32 @@ TEST(GlobalUpperBoundRefinerTest, HpwlFilterKeepsOnlyNonWorseningYMoves) {
   EXPECT_DOUBLE_EQ(circuit.Components()[2].LLY(), 10);
 }
 
+TEST(GlobalUpperBoundRefinerTest,
+     TransactionalFeedbackRejectsConflictingRowMove) {
+  Circuit circuit;
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.SetDieArea(0, 0, 100, 100);
+  circuit.ReserveSpaceForDesignImp(2, 0, 1);
+  circuit.AddMacro("cell", 2, 2);
+  Macro* macro = circuit.GetMacroPtr("cell");
+  circuit.AddMacroPin(macro, "p", true)->SetOffset(0, 0);
+  circuit.AddComponent("first", "cell", 10, 9, PLACED);
+  circuit.AddComponent("second", "cell", 20, 1, PLACED);
+  circuit.AddNet("shared", 2);
+  circuit.AddComponentPinToNet("first", "p", "shared");
+  circuit.AddComponentPinToNet("second", "p", "shared");
+
+  TestableGlobalPlacer placer;
+  placer.SetCircuit(&circuit);
+  placer.SetRefinementFeedbackMode(
+      GlobalRefinementFeedbackMode::kYRowTransactional);
+  placer.ApplyFeedbackForTest({{10, 0}, {20, 10}});
+
+  EXPECT_DOUBLE_EQ(circuit.Components()[0].LLY(), 9);
+  EXPECT_DOUBLE_EQ(circuit.Components()[1].LLY(), 10);
+  EXPECT_DOUBLE_EQ(circuit.WeightedHPWLY(), 1);
+}
+
 }  // namespace dali
