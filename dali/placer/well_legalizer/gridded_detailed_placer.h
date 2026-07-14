@@ -83,7 +83,16 @@ class GriddedDetailedPlacer : public Placer {
 
   struct MoveStats {
     int candidates = 0;
+    int source_singleton = 0;
+    int width_blocked = 0;
+    int p_well_blocked = 0;
+    int n_well_blocked = 0;
+    int evaluated = 0;
+    int no_hpwl_improvement = 0;
     int accepted = 0;
+
+    /** Accumulate counters from another relocation traversal. */
+    void Add(const MoveStats& other);
   };
 
   struct OptimalRegion {
@@ -127,9 +136,6 @@ class GriddedDetailedPlacer : public Placer {
                                  Component* first_component,
                                  GriddedRow* second_row,
                                  Component* second_component) const;
-  /** Return true when a component fits without increasing target-row wells. */
-  bool IsNonHeightIncreasingMove(GriddedRow* target_row,
-                                 Component* component) const;
   /** Collect the unchanged union of nets affected by repacking two rows. */
   std::vector<int> CollectRowPairNetIds(GriddedRow* first_row,
                                         GriddedRow* second_row) const;
@@ -164,13 +170,15 @@ class GriddedDetailedPlacer : public Placer {
   /** Trial-move one component and commit only a legal exact-HPWL improvement.
    */
   bool TryMove(GriddedRow* source_row, Component* component,
-               GriddedRow* target_row, double target_lx);
+               GriddedRow* target_row, double target_lx, MoveStats* stats);
   SwapStats TryClosestComponentSwaps(GriddedRow* first_row,
                                      GriddedRow* second_row,
                                      int max_candidates);
   SwapStats TryOptimalRegionSwaps(GriddedRow* source_row, int source_index);
   MoveStats TryOptimalRegionMove(GriddedRow* source_row, Component* component);
   MoveStats RunRelocationStage();
+  /** Log relocation acceptance and overlapping feasibility blockers. */
+  void LogMoveStage(const MoveStats& stats, double hpwl_before);
   SwapStats RunVerticalSwapStage();
   SwapStats RunGlobalSwapStage();
   void LogSwapStage(const std::string& stage_name, const SwapStats& stats,

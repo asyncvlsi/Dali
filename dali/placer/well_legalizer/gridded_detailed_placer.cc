@@ -23,6 +23,17 @@
 
 namespace dali {
 
+void GriddedDetailedPlacer::MoveStats::Add(const MoveStats& other) {
+  candidates += other.candidates;
+  source_singleton += other.source_singleton;
+  width_blocked += other.width_blocked;
+  p_well_blocked += other.p_well_blocked;
+  n_well_blocked += other.n_well_blocked;
+  evaluated += other.evaluated;
+  no_hpwl_improvement += other.no_hpwl_improvement;
+  accepted += other.accepted;
+}
+
 struct GriddedRowSnapshot {
   GriddedRow* row = nullptr;
   std::vector<Component*> component_order;
@@ -308,15 +319,6 @@ bool GriddedDetailedPlacer::IsNonHeightIncreasingSwap(
          second_requirements.n_well_height <= second_row->NHeight();
 }
 
-bool GriddedDetailedPlacer::IsNonHeightIncreasingMove(
-    GriddedRow* target_row, Component* component) const {
-  RowRequirements requirements =
-      ComputeRowRequirementsAfterAssignment(target_row, nullptr, component);
-  return requirements.used_width <= target_row->UsableWidth() &&
-         requirements.p_well_height <= target_row->PHeight() &&
-         requirements.n_well_height <= target_row->NHeight();
-}
-
 std::vector<int> GriddedDetailedPlacer::CollectRowPairNetIds(
     GriddedRow* first_row, GriddedRow* second_row) const {
   std::vector<int> net_ids;
@@ -597,18 +599,43 @@ bool GriddedDetailedPlacer::TrySwap(GriddedRow* first_row, int first_index,
 
 bool GriddedDetailedPlacer::TryMove(GriddedRow* source_row,
                                     Component* component,
-                                    GriddedRow* target_row, double target_lx) {
-  if (source_row == target_row || source_row->Components().size() <= 1 ||
-      !IsSwapCandidate(component) ||
-      !IsNonHeightIncreasingMove(target_row, component)) {
+                                    GriddedRow* target_row, double target_lx,
+                                    MoveStats* stats) {
+  DaliExpects(stats != nullptr, "Relocation statistics cannot be null");
+  if (source_row == target_row || !IsSwapCandidate(component)) {
     return false;
   }
+  if (source_row->Components().size() <= 1) {
+    ++stats->source_singleton;
+    return false;
+  }
+
+  RowRequirements requirements =
+      ComputeRowRequirementsAfterAssignment(target_row, nullptr, component);
+  bool is_blocked = false;
+  if (requirements.used_width > target_row->UsableWidth()) {
+    ++stats->width_blocked;
+    is_blocked = true;
+  }
+  if (requirements.p_well_height > target_row->PHeight()) {
+    ++stats->p_well_blocked;
+    is_blocked = true;
+  }
+  if (requirements.n_well_height > target_row->NHeight()) {
+    ++stats->n_well_blocked;
+    is_blocked = true;
+  }
+  if (is_blocked) {
+    return false;
+  }
+
   auto source_component = std::find(source_row->Components().begin(),
                                     source_row->Components().end(), component);
   if (source_component == source_row->Components().end()) {
     return false;
   }
 
+  ++stats->evaluated;
   std::vector<int> affected_net_ids =
       CollectRowPairNetIds(source_row, target_row);
   double row_pair_cost_before = NetWireLengthCost(affected_net_ids);
@@ -622,11 +649,13 @@ bool GriddedDetailedPlacer::TryMove(GriddedRow* source_row,
   if (row_pair_cost_after + kMinSignificantHpwlImprovement >=
       row_pair_cost_before) {
     RestoreRowState(row_state_before_move);
+    ++stats->no_hpwl_improvement;
     return false;
   }
   TransferInitialLocation(source_row, target_row, component);
   SynchronizeRowUsedSize(source_row);
   SynchronizeRowUsedSize(target_row);
+  ++stats->accepted;
   return true;
 }
 
@@ -759,8 +788,7 @@ GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::TryOptimalRegionMove(
        FindCandidateRows(source_row, component, region)) {
     ++stats.candidates;
     double target_lx = ComputeMoveTargetX(candidate_row.row, component, region);
-    if (TryMove(source_row, component, candidate_row.row, target_lx)) {
-      ++stats.accepted;
+    if (TryMove(source_row, component, candidate_row.row, target_lx, &stats)) {
       break;
     }
   }
@@ -777,11 +805,24 @@ GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::RunRelocationStage() {
 
   MoveStats total_stats;
   for (const auto& [source_row, component] : components) {
-    MoveStats component_stats = TryOptimalRegionMove(source_row, component);
-    total_stats.candidates += component_stats.candidates;
-    total_stats.accepted += component_stats.accepted;
+    total_stats.Add(TryOptimalRegionMove(source_row, component));
   }
   return total_stats;
+}
+
+void GriddedDetailedPlacer::LogMoveStage(const MoveStats& stats,
+                                         double hpwl_before) {
+  double hpwl_after = WeightedHPWL();
+  LOG(info) << "  row relocation: candidates=" << stats.candidates
+            << ", evaluated=" << stats.evaluated
+            << ", accepted=" << stats.accepted
+            << ", blockers(source=" << stats.source_singleton
+            << ", width=" << stats.width_blocked
+            << ", p-well=" << stats.p_well_blocked
+            << ", n-well=" << stats.n_well_blocked
+            << "), no-HPWL-gain=" << stats.no_hpwl_improvement
+            << ", HPWL=" << hpwl_after
+            << "um, improvement=" << hpwl_before - hpwl_after << "um\n";
 }
 
 GriddedDetailedPlacer::SwapStats GriddedDetailedPlacer::RunVerticalSwapStage() {
@@ -889,17 +930,11 @@ bool GriddedDetailedPlacer::StartPlacement() {
     if (enable_relocation_) {
       stage_timer.RecordStartTime();
       MoveStats relocation_stats = RunRelocationStage();
-      total_relocation_stats.candidates += relocation_stats.candidates;
-      total_relocation_stats.accepted += relocation_stats.accepted;
+      total_relocation_stats.Add(relocation_stats);
       stage_timer.RecordEndTime();
       relocation_wall_time += stage_timer.GetWallTime();
       relocation_cpu_time += stage_timer.GetCpuTime();
-      LOG(info) << "  row relocation: candidates="
-                << relocation_stats.candidates
-                << ", accepted=" << relocation_stats.accepted
-                << ", HPWL=" << WeightedHPWL()
-                << "um, improvement=" << hpwl_before_stage - WeightedHPWL()
-                << "um\n";
+      LogMoveStage(relocation_stats, hpwl_before_stage);
       RecordPlacementHpwlMetrics("gridded_detailed.relocation", *ckt_ptr_);
       EmitSnapshot("gridded.iter_" + std::to_string(iteration) + ".relocation",
                    "Gridded Detailed Iteration " + std::to_string(iteration) +
@@ -999,6 +1034,18 @@ bool GriddedDetailedPlacer::StartPlacement() {
   RecordPlacementMetric("gridded_detailed.iterations", iteration_count);
   RecordPlacementMetric("gridded_detailed.relocation.candidates",
                         total_relocation_stats.candidates);
+  RecordPlacementMetric("gridded_detailed.relocation.source_singleton",
+                        total_relocation_stats.source_singleton);
+  RecordPlacementMetric("gridded_detailed.relocation.width_blocked",
+                        total_relocation_stats.width_blocked);
+  RecordPlacementMetric("gridded_detailed.relocation.p_well_blocked",
+                        total_relocation_stats.p_well_blocked);
+  RecordPlacementMetric("gridded_detailed.relocation.n_well_blocked",
+                        total_relocation_stats.n_well_blocked);
+  RecordPlacementMetric("gridded_detailed.relocation.evaluated",
+                        total_relocation_stats.evaluated);
+  RecordPlacementMetric("gridded_detailed.relocation.no_hpwl_improvement",
+                        total_relocation_stats.no_hpwl_improvement);
   RecordPlacementMetric("gridded_detailed.relocation.accepted",
                         total_relocation_stats.accepted);
   RecordPlacementMetric("gridded_detailed.global_swap.candidates",
