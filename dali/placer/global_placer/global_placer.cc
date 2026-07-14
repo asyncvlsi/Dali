@@ -183,6 +183,8 @@ void GlobalPlacer::InitializePlacementEngines() {
         std::vector<double>(ckt_ptr_->Components().size(), 1.0));
   }
   accepted_upper_bound_hpwl_.clear();
+  accepted_upper_bound_hpwl_x_.clear();
+  accepted_upper_bound_hpwl_y_.clear();
   best_upper_bound_placement_.clear();
   best_upper_bound_hpwl_ = std::numeric_limits<double>::max();
   current_upper_bound_is_physical_ = upper_bound_refiner_ == nullptr;
@@ -268,6 +270,8 @@ void GlobalPlacer::RunPlacementIterations() {
     spreader_->SetIteration(cur_iter_);
     spreader_->Spread();
     double accepted_hpwl = spreader_->Hpwls().back();
+    double accepted_hpwl_x = spreader_->HpwlsX().back();
+    double accepted_hpwl_y = spreader_->HpwlsY().back();
     bool accepted_physical_refinement = false;
     std::vector<int> selective_anchor_component_ids;
     std::vector<std::vector<int>> refined_component_rows;
@@ -280,6 +284,8 @@ void GlobalPlacer::RunPlacementIterations() {
       UpdateLegalizationPressure(refinement);
       if (refinement.feasible) {
         accepted_hpwl = refinement.hpwl;
+        accepted_hpwl_x = ckt_ptr_->WeightedHPWLX();
+        accepted_hpwl_y = ckt_ptr_->WeightedHPWLY();
         accepted_physical_refinement = true;
         selective_anchor_component_ids =
             std::move(refinement.anchor_component_ids);
@@ -289,6 +295,8 @@ void GlobalPlacer::RunPlacementIterations() {
       }
     }
     accepted_upper_bound_hpwl_.push_back(accepted_hpwl);
+    accepted_upper_bound_hpwl_x_.push_back(accepted_hpwl_x);
+    accepted_upper_bound_hpwl_y_.push_back(accepted_hpwl_y);
     if (accepted_physical_refinement) {
       UpdateBestUpperBoundPlacement(accepted_hpwl);
     }
@@ -824,7 +832,10 @@ bool GlobalPlacer::IsPlacementConverged() {
  * @brief A helper function to format and print HPWL in each iteration.
  */
 void GlobalPlacer::PrintHpwl() const {
-  if (optimizer_->GetHpwls().empty() || accepted_upper_bound_hpwl_.empty()) {
+  if (optimizer_->GetHpwls().empty() || optimizer_->GetHpwlsX().empty() ||
+      optimizer_->GetHpwlsY().empty() || accepted_upper_bound_hpwl_.empty() ||
+      accepted_upper_bound_hpwl_x_.empty() ||
+      accepted_upper_bound_hpwl_y_.empty()) {
     return;
   }
   double lo_hpwl = optimizer_->GetHpwls().back();
@@ -839,6 +850,10 @@ void GlobalPlacer::PrintHpwl() const {
                cur_iter_, lo_hpwl, hi_hpwl, hpwl_gap, hpwl_gap_percent);
   buffer.resize(written_length);
   LOG(info) << buffer;
+  LOG(info) << "            lower X/Y " << optimizer_->GetHpwlsX().back()
+            << " / " << optimizer_->GetHpwlsY().back() << ", upper X/Y "
+            << accepted_upper_bound_hpwl_x_.back() << " / "
+            << accepted_upper_bound_hpwl_y_.back() << "\n";
   LOG(debug) << cur_iter_ << "-th iteration completed\n";
 }
 
@@ -850,7 +865,11 @@ void GlobalPlacer::PrintEndStatement(std::string const& name_of_process,
   LOG(debug) << "  Iterative look-ahead legalization complete\n";
   LOG(debug) << "  Total number of iteration: " << cur_iter_ + 1 << "\n";
   LOG(debug) << "  Lower bound: " << optimizer_->GetHpwls() << "\n";
+  LOG(debug) << "  Lower bound X: " << optimizer_->GetHpwlsX() << "\n";
+  LOG(debug) << "  Lower bound Y: " << optimizer_->GetHpwlsY() << "\n";
   LOG(debug) << "  Upper bound: " << accepted_upper_bound_hpwl_ << "\n";
+  LOG(debug) << "  Upper bound X: " << accepted_upper_bound_hpwl_x_ << "\n";
+  LOG(debug) << "  Upper bound Y: " << accepted_upper_bound_hpwl_y_ << "\n";
   LOG(debug) << "cg time: " << optimizer_->GetTime()
              << "s, lal time: " << spreader_->GetTime() << "s";
   if (upper_bound_refiner_) {

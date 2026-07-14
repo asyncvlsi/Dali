@@ -221,6 +221,10 @@ class GlobalPlacer : public Placer {
   std::unique_ptr<GlobalSpreader> spreader_;
   std::unique_ptr<GlobalUpperBoundRefiner> upper_bound_refiner_;
   std::vector<double> accepted_upper_bound_hpwl_;
+  /** Accepted physical upper-bound X HPWL for each global iteration. */
+  std::vector<double> accepted_upper_bound_hpwl_x_;
+  /** Accepted physical upper-bound Y HPWL for each global iteration. */
+  std::vector<double> accepted_upper_bound_hpwl_y_;
   struct ComponentLocation {
     double lx = 0.0;
     double ly = 0.0;
