@@ -15,6 +15,7 @@
 #include <functional>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "dali/placer/placer.h"
@@ -200,6 +201,9 @@ class GriddedDetailedPlacer : public Placer {
   /** Return the nearest legal target X inside a row and optimal region. */
   double ComputeMoveTargetX(GriddedRow* target_row, Component* component,
                             const OptimalRegion& region) const;
+  /** Return the minimizer interval for weighted absolute-distance bounds. */
+  static std::pair<double, double> ComputeWeightedMedianInterval(
+      std::vector<std::pair<double, double>> weighted_bounds);
   OptimalRegion ComputeOptimalRegion(Component* component) const;
   void PlaceComponentInRow(GriddedRow* row, Component* component) const;
   /** Recompute component Y/orientation and legalize X in two changed rows. */

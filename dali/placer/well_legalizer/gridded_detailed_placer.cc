@@ -567,10 +567,42 @@ double GriddedDetailedPlacer::ComputeMoveTargetX(
   return std::clamp(component->LLX(), overlap_lx, overlap_ux);
 }
 
+std::pair<double, double> GriddedDetailedPlacer::ComputeWeightedMedianInterval(
+    std::vector<std::pair<double, double>> weighted_bounds) {
+  DaliExpects(!weighted_bounds.empty(),
+              "Cannot compute a weighted median without bounds");
+  std::sort(weighted_bounds.begin(), weighted_bounds.end());
+
+  double total_weight = 0;
+  for (const auto& bound : weighted_bounds) {
+    double weight = bound.second;
+    DaliExpects(weight > 0, "Weighted-median bounds must have positive weight");
+    total_weight += weight;
+  }
+
+  double half_weight = total_weight / 2.0;
+  double cumulative_weight = 0;
+  double lower = weighted_bounds.back().first;
+  double upper = lower;
+  bool lower_found = false;
+  for (const auto& [value, weight] : weighted_bounds) {
+    cumulative_weight += weight;
+    if (!lower_found && cumulative_weight >= half_weight) {
+      lower = value;
+      lower_found = true;
+    }
+    if (cumulative_weight > half_weight) {
+      upper = value;
+      break;
+    }
+  }
+  return {lower, upper};
+}
+
 GriddedDetailedPlacer::OptimalRegion
 GriddedDetailedPlacer::ComputeOptimalRegion(Component* component) const {
-  std::vector<double> x_bounds;
-  std::vector<double> y_bounds;
+  std::vector<std::pair<double, double>> x_bounds;
+  std::vector<std::pair<double, double>> y_bounds;
   auto& nets = ckt_ptr_->Nets();
   for (int net_id : component->NetList()) {
     Net& net = nets[net_id];
@@ -601,31 +633,23 @@ GriddedDetailedPlacer::ComputeOptimalRegion(Component* component) const {
     if (!found_component_pin || min_x == DBL_MAX) {
       continue;
     }
-    x_bounds.push_back(min_x - offset_x);
-    x_bounds.push_back(max_x - offset_x);
-    y_bounds.push_back(min_y - offset_y);
-    y_bounds.push_back(max_y - offset_y);
+    double weight = net.Weight();
+    if (weight <= 0) {
+      continue;
+    }
+    x_bounds.emplace_back(min_x - offset_x, weight);
+    x_bounds.emplace_back(max_x - offset_x, weight);
+    y_bounds.emplace_back(min_y - offset_y, weight);
+    y_bounds.emplace_back(max_y - offset_y, weight);
   }
 
   if (x_bounds.empty() || y_bounds.empty()) {
     return {};
   }
 
-  std::sort(x_bounds.begin(), x_bounds.end());
-  std::sort(y_bounds.begin(), y_bounds.end());
-  int lx_index = static_cast<int>(x_bounds.size() - 1) / 2;
-  int ux_index = lx_index;
-  if (x_bounds.size() % 2 == 0) {
-    ++ux_index;
-  }
-  int ly_index = static_cast<int>(y_bounds.size() - 1) / 2;
-  int uy_index = ly_index;
-  if (y_bounds.size() % 2 == 0) {
-    ++uy_index;
-  }
-
-  return {true, x_bounds[lx_index], y_bounds[ly_index], x_bounds[ux_index],
-          y_bounds[uy_index]};
+  auto [lx, ux] = ComputeWeightedMedianInterval(std::move(x_bounds));
+  auto [ly, uy] = ComputeWeightedMedianInterval(std::move(y_bounds));
+  return {true, lx, ly, ux, uy};
 }
 
 void GriddedDetailedPlacer::PlaceComponentInRow(GriddedRow* row,
