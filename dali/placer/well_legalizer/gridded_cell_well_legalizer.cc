@@ -308,6 +308,8 @@ GriddedCellWellLegalizer::RunProvisionalPlacement(
   result.feasible = run_clustering();
   result.overflow = ProvisionalOverflowArea();
   result.violations = last_clustering_violations_;
+  result.initial_overflow = result.overflow;
+  result.initial_violations = result.violations;
   result.feasible = result.feasible && result.overflow == 0.0;
 
   if (!result.feasible && enable_overflow_balancing) {

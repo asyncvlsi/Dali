@@ -27,8 +27,15 @@ struct GlobalUpperBoundViolation {
 struct GlobalUpperBoundRefinement {
   bool feasible = false;
   double hpwl = 0.0;
+  /** Overflow observed before the refiner applies any repair. */
+  double initial_overflow = 0.0;
+  /** Violations observed before the refiner applies any repair. */
+  std::vector<GlobalUpperBoundViolation> initial_violations;
+  /** Overflow remaining after refinement. */
   double overflow = 0.0;
+  /** Violations remaining after refinement. */
   std::vector<GlobalUpperBoundViolation> violations;
+  /** Components whose refined coordinates may anchor the next iteration. */
   std::vector<int> anchor_component_ids;
 };
 

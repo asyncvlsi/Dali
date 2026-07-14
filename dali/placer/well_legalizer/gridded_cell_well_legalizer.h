@@ -55,10 +55,12 @@ struct ProvisionalGriddedPlacementViolation {
 struct ProvisionalGriddedPlacementResult {
   bool feasible = false;
   double hpwl = 0.0;
+  double initial_overflow = 0.0;
   double overflow = 0.0;
   bool used_scavenge = false;
   int balanced_component_count = 0;
   std::vector<int> balanced_component_ids;
+  std::vector<ProvisionalGriddedPlacementViolation> initial_violations;
   std::vector<ProvisionalGriddedPlacementViolation> violations;
 };
 

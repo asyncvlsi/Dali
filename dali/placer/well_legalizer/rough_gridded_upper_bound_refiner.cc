@@ -11,6 +11,36 @@
 
 namespace dali {
 
+/** Convert well-legalizer diagnostics to the global-refiner interface. */
+std::vector<GlobalUpperBoundViolation> ConvertProvisionalViolations(
+    const std::vector<ProvisionalGriddedPlacementViolation>&
+        provisional_violations) {
+  std::vector<GlobalUpperBoundViolation> violations;
+  violations.reserve(provisional_violations.size());
+  for (const ProvisionalGriddedPlacementViolation& provisional_violation :
+       provisional_violations) {
+    GlobalUpperBoundViolation violation;
+    violation.lx = provisional_violation.lx;
+    violation.ly = provisional_violation.ly;
+    violation.ux = provisional_violation.ux;
+    violation.uy = provisional_violation.uy;
+    violation.overflow = provisional_violation.overflow_height;
+    violation.component_ids = provisional_violation.component_ids;
+    violations.push_back(std::move(violation));
+  }
+  return violations;
+}
+
+/** Count component references across a collection of violation regions. */
+size_t CountAffectedComponents(
+    const std::vector<GlobalUpperBoundViolation>& violations) {
+  size_t affected_component_count = 0;
+  for (const GlobalUpperBoundViolation& violation : violations) {
+    affected_component_count += violation.component_ids.size();
+  }
+  return affected_component_count;
+}
+
 RoughGriddedUpperBoundRefiner::RoughGriddedUpperBoundRefiner(
     GriddedCellWellLegalizer* well_legalizer, bool enable_overflow_balancing)
     : well_legalizer_(well_legalizer),
@@ -33,37 +63,38 @@ GlobalUpperBoundRefinement RoughGriddedUpperBoundRefiner::Refine(
   timer.RecordEndTime();
   total_wall_time_ += timer.GetWallTime();
 
-  std::vector<GlobalUpperBoundViolation> violations;
-  violations.reserve(provisional.violations.size());
-  size_t affected_component_count = 0;
-  for (const ProvisionalGriddedPlacementViolation& provisional_violation :
-       provisional.violations) {
-    GlobalUpperBoundViolation violation;
-    violation.lx = provisional_violation.lx;
-    violation.ly = provisional_violation.ly;
-    violation.ux = provisional_violation.ux;
-    violation.uy = provisional_violation.uy;
-    violation.overflow = provisional_violation.overflow_height;
-    violation.component_ids = provisional_violation.component_ids;
-    affected_component_count += violation.component_ids.size();
-    violations.push_back(std::move(violation));
-  }
+  std::vector<GlobalUpperBoundViolation> initial_violations =
+      ConvertProvisionalViolations(provisional.initial_violations);
+  std::vector<GlobalUpperBoundViolation> violations =
+      ConvertProvisionalViolations(provisional.violations);
 
   LOG(info) << "  Rough gridded upper bound, iteration " << iteration << ":\n"
             << "    feasible : " << provisional.feasible << "\n"
             << "    mode     : "
             << (provisional.used_scavenge ? "scavenge" : "configured") << "\n"
             << "    HPWL     : " << provisional.hpwl << "\n"
+            << "    initial overflow: " << provisional.initial_overflow << "\n"
+            << "    initial violations: " << initial_violations.size() << "\n"
+            << "    initially affected components: "
+            << CountAffectedComponents(initial_violations) << "\n"
             << "    overflow : " << provisional.overflow << "\n"
             << "    violations: " << violations.size() << "\n"
-            << "    affected components: " << affected_component_count << "\n"
+            << "    affected components: "
+            << CountAffectedComponents(violations) << "\n"
             << "    balanced components: "
             << provisional.balanced_component_count << "\n"
             << "    wall time: " << timer.GetWallTime() << "s\n";
 
-  return {provisional.feasible, provisional.hpwl, provisional.overflow,
-          std::move(violations),
-          std::move(provisional.balanced_component_ids)};
+  GlobalUpperBoundRefinement refinement;
+  refinement.feasible = provisional.feasible;
+  refinement.hpwl = provisional.hpwl;
+  refinement.initial_overflow = provisional.initial_overflow;
+  refinement.initial_violations = std::move(initial_violations);
+  refinement.overflow = provisional.overflow;
+  refinement.violations = std::move(violations);
+  refinement.anchor_component_ids =
+      std::move(provisional.balanced_component_ids);
+  return refinement;
 }
 
 double RoughGriddedUpperBoundRefiner::GetTime() const {

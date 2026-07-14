@@ -1,9 +1,9 @@
 /*******************************************************************************
  * Copyright (c) 2026 Yihang Yang
  *******************************************************************************/
-#include "dali/placer/global_placer/global_placer.h"
-
 #include <gtest/gtest.h>
+
+#include "dali/placer/global_placer/global_placer.h"
 
 namespace dali {
 
@@ -13,7 +13,10 @@ class RecordingUpperBoundRefiner : public GlobalUpperBoundRefiner {
     (void)placement_density;
   }
   GlobalUpperBoundRefinement Refine(int iteration) override {
-    return {true, static_cast<double>(iteration), 0.0, {}, {}};
+    GlobalUpperBoundRefinement refinement;
+    refinement.feasible = true;
+    refinement.hpwl = static_cast<double>(iteration);
+    return refinement;
   }
   double GetTime() const override { return 0.0; }
   void Close() override {}
@@ -21,8 +24,8 @@ class RecordingUpperBoundRefiner : public GlobalUpperBoundRefiner {
 
 class TestableGlobalPlacer : public GlobalPlacer {
  public:
-  using GlobalPlacer::ShouldRefineUpperBound;
   using GlobalPlacer::HasCurrentConvergenceUpperBound;
+  using GlobalPlacer::ShouldRefineUpperBound;
 
   void SetIterationForTest(int iteration) { cur_iter_ = iteration; }
   void SetCurrentUpperBoundPhysicalForTest(bool is_physical) {
@@ -35,8 +38,8 @@ class TestableGlobalPlacer : public GlobalPlacer {
 
 TEST(GlobalUpperBoundRefinerTest, HonorsWarmupAndInterval) {
   TestableGlobalPlacer placer;
-  placer.SetUpperBoundRefiner(std::make_unique<RecordingUpperBoundRefiner>(),
-                              2, 3);
+  placer.SetUpperBoundRefiner(std::make_unique<RecordingUpperBoundRefiner>(), 2,
+                              3);
 
   for (int iteration = 0; iteration < 8; ++iteration) {
     placer.SetIterationForTest(iteration);
