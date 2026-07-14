@@ -32,6 +32,10 @@ void GriddedDetailedPlacer::MoveStats::Add(const MoveStats& other) {
   evaluated += other.evaluated;
   no_hpwl_improvement += other.no_hpwl_improvement;
   accepted += other.accepted;
+  ejection_attempts += other.ejection_attempts;
+  ejection_evaluated += other.ejection_evaluated;
+  ejection_no_hpwl_improvement += other.ejection_no_hpwl_improvement;
+  ejection_accepted += other.ejection_accepted;
 }
 
 struct GriddedRowSnapshot {
@@ -321,6 +325,11 @@ bool GriddedDetailedPlacer::IsNonHeightIncreasingSwap(
 
 std::vector<int> GriddedDetailedPlacer::CollectRowPairNetIds(
     GriddedRow* first_row, GriddedRow* second_row) const {
+  return CollectRowNetIds({first_row, second_row});
+}
+
+std::vector<int> GriddedDetailedPlacer::CollectRowNetIds(
+    const std::vector<GriddedRow*>& rows) const {
   std::vector<int> net_ids;
   auto collect_row_net_ids = [&net_ids](GriddedRow* row) {
     for (Component* component : row->Components()) {
@@ -329,8 +338,9 @@ std::vector<int> GriddedDetailedPlacer::CollectRowPairNetIds(
       }
     }
   };
-  collect_row_net_ids(first_row);
-  collect_row_net_ids(second_row);
+  for (GriddedRow* row : rows) {
+    collect_row_net_ids(row);
+  }
   std::sort(net_ids.begin(), net_ids.end());
   net_ids.erase(std::unique(net_ids.begin(), net_ids.end()), net_ids.end());
   return net_ids;
@@ -438,6 +448,48 @@ GriddedDetailedPlacer::FindCandidateRows(GriddedRow* source_row,
             });
   if (candidate_rows.size() > static_cast<size_t>(max_candidate_rows_)) {
     candidate_rows.resize(max_candidate_rows_);
+  }
+  return candidate_rows;
+}
+
+std::vector<GriddedDetailedPlacer::CandidateRow>
+GriddedDetailedPlacer::FindEjectionDestinationRows(
+    GriddedRow* source_row, GriddedRow* target_row, Component* component,
+    const OptimalRegion& region) const {
+  std::vector<CandidateRow> candidate_rows;
+  double target_y = (region.ly + region.uy) / 2.0;
+  for (const RowStripe& stripe : row_stripes_) {
+    auto nearest = std::lower_bound(
+        stripe.rows.begin(), stripe.rows.end(), target_y,
+        [](const GriddedRow* row, double y) { return row->CenterY() < y; });
+    int nearest_index = static_cast<int>(nearest - stripe.rows.begin());
+    int first_index = std::max(0, nearest_index - 2);
+    int end_index =
+        std::min(static_cast<int>(stripe.rows.size()), nearest_index + 2);
+    for (int i = first_index; i < end_index; ++i) {
+      GriddedRow* row = stripe.rows[i];
+      if (row == source_row || row == target_row) {
+        continue;
+      }
+      RowRequirements requirements =
+          ComputeRowRequirementsAfterAssignment(row, nullptr, component);
+      if (requirements.used_width > row->UsableWidth() ||
+          requirements.p_well_height > row->PHeight() ||
+          requirements.n_well_height > row->NHeight()) {
+        continue;
+      }
+      double distance =
+          DistanceFromRowToOptimalRegionX(row, component, region) +
+          DistanceToOptimalRegionY(row, component, region);
+      candidate_rows.push_back({row, distance});
+    }
+  }
+  std::sort(candidate_rows.begin(), candidate_rows.end(),
+            [](const CandidateRow& lhs, const CandidateRow& rhs) {
+              return lhs.distance < rhs.distance;
+            });
+  if (candidate_rows.size() > kMaxEjectionDestinationRows) {
+    candidate_rows.resize(kMaxEjectionDestinationRows);
   }
   return candidate_rows;
 }
@@ -655,8 +707,110 @@ bool GriddedDetailedPlacer::TryMove(GriddedRow* source_row,
   TransferInitialLocation(source_row, target_row, component);
   SynchronizeRowUsedSize(source_row);
   SynchronizeRowUsedSize(target_row);
+  component_rows_[component] = target_row;
   ++stats->accepted;
   return true;
+}
+
+bool GriddedDetailedPlacer::TryEjectionChain(GriddedRow* source_row,
+                                             Component* component,
+                                             GriddedRow* target_row,
+                                             const OptimalRegion& source_region,
+                                             MoveStats* stats) {
+  DaliExpects(stats != nullptr, "Relocation statistics cannot be null");
+  ++stats->ejection_attempts;
+  if (source_row->Components().size() <= 1) {
+    return false;
+  }
+
+  struct EjectionComponent {
+    Component* component = nullptr;
+    OptimalRegion region;
+    double current_distance = 0;
+  };
+  std::vector<EjectionComponent> ejection_components;
+  for (Component* displaced : target_row->Components()) {
+    if (!IsSwapCandidate(displaced)) {
+      continue;
+    }
+    RowRequirements target_requirements =
+        ComputeRowRequirementsAfterAssignment(target_row, displaced, component);
+    if (target_requirements.used_width > target_row->UsableWidth() ||
+        target_requirements.p_well_height > target_row->PHeight() ||
+        target_requirements.n_well_height > target_row->NHeight()) {
+      continue;
+    }
+    OptimalRegion displaced_region = ComputeOptimalRegion(displaced);
+    if (!displaced_region.valid) {
+      continue;
+    }
+    double current_distance =
+        DistanceToOptimalRegionX(displaced, displaced_region) +
+        DistanceToOptimalRegionY(target_row, displaced, displaced_region);
+    ejection_components.push_back(
+        {displaced, displaced_region, current_distance});
+  }
+  std::sort(ejection_components.begin(), ejection_components.end(),
+            [](const EjectionComponent& lhs, const EjectionComponent& rhs) {
+              return lhs.current_distance > rhs.current_distance;
+            });
+  if (ejection_components.size() > kMaxEjectionComponentsPerTarget) {
+    ejection_components.resize(kMaxEjectionComponentsPerTarget);
+  }
+
+  for (const EjectionComponent& ejection : ejection_components) {
+    for (const CandidateRow& receiver : FindEjectionDestinationRows(
+             source_row, target_row, ejection.component, ejection.region)) {
+      ++stats->ejection_evaluated;
+      std::vector<int> affected_net_ids =
+          CollectRowNetIds({source_row, target_row, receiver.row});
+      double cost_before = NetWireLengthCost(affected_net_ids);
+      auto row_state_before_move =
+          SaveRowState({source_row, target_row, receiver.row});
+
+      auto source_component =
+          std::find(source_row->Components().begin(),
+                    source_row->Components().end(), component);
+      auto displaced_component =
+          std::find(target_row->Components().begin(),
+                    target_row->Components().end(), ejection.component);
+      if (source_component == source_row->Components().end() ||
+          displaced_component == target_row->Components().end()) {
+        return false;
+      }
+      source_row->Components().erase(source_component);
+      target_row->Components().erase(displaced_component);
+      target_row->Components().push_back(component);
+      receiver.row->Components().push_back(ejection.component);
+      component->SetLLX(
+          ComputeMoveTargetX(target_row, component, source_region));
+      ejection.component->SetLLX(ComputeMoveTargetX(
+          receiver.row, ejection.component, ejection.region));
+      LegalizeRowsAfterAssignment(source_row, target_row);
+      for (Component* receiver_component : receiver.row->Components()) {
+        PlaceComponentInRow(receiver.row, receiver_component);
+      }
+      receiver.row->LegalizeLooseX();
+
+      double cost_after = NetWireLengthCost(affected_net_ids);
+      if (cost_after + kMinSignificantHpwlImprovement >= cost_before) {
+        RestoreRowState(row_state_before_move);
+        ++stats->ejection_no_hpwl_improvement;
+        continue;
+      }
+
+      TransferInitialLocation(source_row, target_row, component);
+      TransferInitialLocation(target_row, receiver.row, ejection.component);
+      SynchronizeRowUsedSize(source_row);
+      SynchronizeRowUsedSize(target_row);
+      SynchronizeRowUsedSize(receiver.row);
+      component_rows_[component] = target_row;
+      component_rows_[ejection.component] = receiver.row;
+      ++stats->ejection_accepted;
+      return true;
+    }
+  }
+  return false;
 }
 
 GriddedDetailedPlacer::SwapStats
@@ -774,7 +928,7 @@ GriddedDetailedPlacer::SwapStats GriddedDetailedPlacer::TryOptimalRegionSwaps(
 }
 
 GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::TryOptimalRegionMove(
-    GriddedRow* source_row, Component* component) {
+    GriddedRow* source_row, Component* component, bool enable_ejection) {
   if (!IsSwapCandidate(component)) {
     return {};
   }
@@ -784,29 +938,43 @@ GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::TryOptimalRegionMove(
   }
 
   MoveStats stats;
+  GriddedRow* ejection_target = nullptr;
   for (const CandidateRow& candidate_row :
        FindCandidateRows(source_row, component, region)) {
     ++stats.candidates;
     double target_lx = ComputeMoveTargetX(candidate_row.row, component, region);
+    int width_blocked_before = stats.width_blocked;
     if (TryMove(source_row, component, candidate_row.row, target_lx, &stats)) {
-      break;
+      return stats;
     }
+    if (ejection_target == nullptr &&
+        stats.width_blocked > width_blocked_before) {
+      ejection_target = candidate_row.row;
+    }
+  }
+  if (enable_ejection && ejection_target != nullptr) {
+    TryEjectionChain(source_row, component, ejection_target, region, &stats);
   }
   return stats;
 }
 
-GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::RunRelocationStage() {
-  std::vector<std::pair<GriddedRow*, Component*>> components;
+GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::RunRelocationStage(
+    bool enable_ejection) {
+  std::vector<Component*> components;
+  component_rows_.clear();
   for (GriddedRow* row : rows_) {
     for (Component* component : row->Components()) {
-      components.emplace_back(row, component);
+      components.push_back(component);
+      component_rows_[component] = row;
     }
   }
 
   MoveStats total_stats;
-  for (const auto& [source_row, component] : components) {
-    total_stats.Add(TryOptimalRegionMove(source_row, component));
+  for (Component* component : components) {
+    total_stats.Add(TryOptimalRegionMove(component_rows_.at(component),
+                                         component, enable_ejection));
   }
+  component_rows_.clear();
   return total_stats;
 }
 
@@ -821,6 +989,10 @@ void GriddedDetailedPlacer::LogMoveStage(const MoveStats& stats,
             << ", p-well=" << stats.p_well_blocked
             << ", n-well=" << stats.n_well_blocked
             << "), no-HPWL-gain=" << stats.no_hpwl_improvement
+            << ", ejection(attempted=" << stats.ejection_attempts
+            << ", evaluated=" << stats.ejection_evaluated
+            << ", accepted=" << stats.ejection_accepted
+            << ", no-HPWL-gain=" << stats.ejection_no_hpwl_improvement << ")"
             << ", HPWL=" << hpwl_after
             << "um, improvement=" << hpwl_before - hpwl_after << "um\n";
 }
@@ -929,7 +1101,9 @@ bool GriddedDetailedPlacer::StartPlacement() {
     ElapsedTime stage_timer;
     if (enable_relocation_) {
       stage_timer.RecordStartTime();
-      MoveStats relocation_stats = RunRelocationStage();
+      // Ejection chains provide their useful occupancy change up front. Later
+      // rounds retain ordinary relocation without repeating the costly search.
+      MoveStats relocation_stats = RunRelocationStage(iteration == 0);
       total_relocation_stats.Add(relocation_stats);
       stage_timer.RecordEndTime();
       relocation_wall_time += stage_timer.GetWallTime();
@@ -1048,6 +1222,14 @@ bool GriddedDetailedPlacer::StartPlacement() {
                         total_relocation_stats.no_hpwl_improvement);
   RecordPlacementMetric("gridded_detailed.relocation.accepted",
                         total_relocation_stats.accepted);
+  RecordPlacementMetric("gridded_detailed.ejection.attempts",
+                        total_relocation_stats.ejection_attempts);
+  RecordPlacementMetric("gridded_detailed.ejection.evaluated",
+                        total_relocation_stats.ejection_evaluated);
+  RecordPlacementMetric("gridded_detailed.ejection.no_hpwl_improvement",
+                        total_relocation_stats.ejection_no_hpwl_improvement);
+  RecordPlacementMetric("gridded_detailed.ejection.accepted",
+                        total_relocation_stats.ejection_accepted);
   RecordPlacementMetric("gridded_detailed.global_swap.candidates",
                         total_global_swap_stats.candidates);
   RecordPlacementMetric("gridded_detailed.global_swap.accepted",

@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <functional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "dali/placer/placer.h"
@@ -74,6 +75,8 @@ class GriddedDetailedPlacer : public Placer {
   static constexpr int kMaxOptimalRegionRowsPerComponent = 4;
   static constexpr int kMaxOptimalRegionRowsPerStripe = 2;
   static constexpr int kMaxOptimalRegionCandidatesPerRow = 2;
+  static constexpr int kMaxEjectionComponentsPerTarget = 2;
+  static constexpr int kMaxEjectionDestinationRows = 1;
   static constexpr double kMinSignificantHpwlImprovement = 1e-9;
 
   struct SwapStats {
@@ -90,6 +93,10 @@ class GriddedDetailedPlacer : public Placer {
     int evaluated = 0;
     int no_hpwl_improvement = 0;
     int accepted = 0;
+    int ejection_attempts = 0;
+    int ejection_evaluated = 0;
+    int ejection_no_hpwl_improvement = 0;
+    int ejection_accepted = 0;
 
     /** Accumulate counters from another relocation traversal. */
     void Add(const MoveStats& other);
@@ -139,6 +146,8 @@ class GriddedDetailedPlacer : public Placer {
   /** Collect the unchanged union of nets affected by repacking two rows. */
   std::vector<int> CollectRowPairNetIds(GriddedRow* first_row,
                                         GriddedRow* second_row) const;
+  /** Collect the sorted union of nets incident to the supplied rows. */
+  std::vector<int> CollectRowNetIds(const std::vector<GriddedRow*>& rows) const;
   /** Compute weighted HPWL for sorted unique net identifiers. */
   double NetWireLengthCost(const std::vector<int>& net_ids) const;
   double DistanceToOptimalRegionX(Component* component,
@@ -151,6 +160,10 @@ class GriddedDetailedPlacer : public Placer {
   /** Return candidate rows closer to a component's optimal region. */
   std::vector<CandidateRow> FindCandidateRows(
       GriddedRow* source_row, Component* component,
+      const OptimalRegion& region) const;
+  /** Find legal receiving rows for a component displaced by an ejection. */
+  std::vector<CandidateRow> FindEjectionDestinationRows(
+      GriddedRow* source_row, GriddedRow* target_row, Component* component,
       const OptimalRegion& region) const;
   /** Return the nearest legal target X inside a row and optimal region. */
   double ComputeMoveTargetX(GriddedRow* target_row, Component* component,
@@ -171,12 +184,26 @@ class GriddedDetailedPlacer : public Placer {
    */
   bool TryMove(GriddedRow* source_row, Component* component,
                GriddedRow* target_row, double target_lx, MoveStats* stats);
+  /**
+   * Trial a three-row move that frees target-row width by displacing one cell.
+   *
+   * The source component enters its desired target row while one target-row
+   * component moves to a legal receiver. The complete transaction is accepted
+   * only when fixed row heights remain sufficient and exact affected-net HPWL
+   * decreases.
+   */
+  bool TryEjectionChain(GriddedRow* source_row, Component* component,
+                        GriddedRow* target_row,
+                        const OptimalRegion& source_region, MoveStats* stats);
   SwapStats TryClosestComponentSwaps(GriddedRow* first_row,
                                      GriddedRow* second_row,
                                      int max_candidates);
   SwapStats TryOptimalRegionSwaps(GriddedRow* source_row, int source_index);
-  MoveStats TryOptimalRegionMove(GriddedRow* source_row, Component* component);
-  MoveStats RunRelocationStage();
+  MoveStats TryOptimalRegionMove(GriddedRow* source_row, Component* component,
+                                 bool enable_ejection);
+  /** Run relocation, optionally including the more expensive ejection search.
+   */
+  MoveStats RunRelocationStage(bool enable_ejection);
   /** Log relocation acceptance and overlapping feasibility blockers. */
   void LogMoveStage(const MoveStats& stats, double hpwl_before);
   SwapStats RunVerticalSwapStage();
@@ -190,6 +217,7 @@ class GriddedDetailedPlacer : public Placer {
 
   std::vector<GriddedRow*> rows_;
   std::vector<RowStripe> row_stripes_;
+  std::unordered_map<Component*, GriddedRow*> component_rows_;
   SnapshotCallback snapshot_callback_;
   int max_rounds_ = 6;
   double min_relative_improvement_ = 0.005;
