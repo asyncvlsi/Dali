@@ -64,6 +64,9 @@ class HpwlOptimizer {
     anchor_schedule_ = schedule;
   }
 
+  /** Ignore nets at or above this pin count in the quadratic wire model. */
+  void SetNetIgnoreThreshold(int net_ignore_threshold);
+
   /** Optimize component locations and return the resulting HPWL estimate. */
   virtual double OptimizeHpwl() = 0;
 
@@ -100,6 +103,7 @@ class HpwlOptimizer {
   // Save intermediate result for debugging and/or visualization.
   bool should_save_intermediate_result_ = false;
   GlobalAnchorSchedule anchor_schedule_ = GlobalAnchorSchedule::kDali;
+  size_t net_ignore_threshold_ = 100;
 };
 
 /** Bound-to-bound quadratic HPWL optimizer. */
@@ -179,7 +183,6 @@ class BoundToBoundHpwlOptimizer : public HpwlOptimizer {
       cg_y_;
 
   int b2b_update_max_iteration_ = 50;
-  size_t net_ignore_threshold_ = 100;
 
   double tot_triplets_time_x = 0;
   double tot_triplets_time_y = 0;

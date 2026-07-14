@@ -69,6 +69,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -gui_pause <every_snapshot/off>            GUI pause policy, default every_snapshot\n"
       << "  -g/-grid <grid_value_x> <grid_value_y>     (optional, default metal1 and metal2 pitch values)\n"
       << "  -d/-target_density <density>               (optional, value interval (0,1], default max(space_utility, 0.7))\n"
+      << "  -net_ignore_threshold <100..1000>          ignore nets at or above this pin count in placement models, default 100\n"
       << "  -net_hpwl_file <file.tsv>                  write final per-net weighted HPWL metrics\n"
       << "  -disable_legalization                      optional, if this flag is present, then legalization is skipped\n"
       << "  -disable_detailed_place                    optional, skip post-legalization detailed placement\n"
@@ -381,6 +382,15 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.enable_filler_cell");
     } else if (arg == "-enable_end_cap_cell") {
       EnableConfigFlag("dali.enable_end_cap_cell");
+    } else if (arg == "-net_ignore_threshold") {
+      int net_ignore_threshold = 0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseInt(value, &net_ignore_threshold) ||
+          net_ignore_threshold < 100 || net_ignore_threshold > 1000) {
+        error_output << "Invalid net ignore threshold!\n";
+        return false;
+      }
+      config_set_int("dali.net_ignore_threshold", net_ignore_threshold);
     } else if (arg == "-enable_gridded_global_capacity") {
       EnableConfigFlag("dali.enable_gridded_global_capacity");
     } else if (arg == "-enable_gridded_upper_bound_refiner") {

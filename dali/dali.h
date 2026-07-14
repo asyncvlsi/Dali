@@ -53,6 +53,7 @@ class Dali {
     bool disable_detailed_place = false;
     bool disable_io_place = false;
     double target_density = -1;
+    int net_ignore_threshold = 100;
     int io_metal_layer = 0;
     bool export_well_cluster_matlab = false;
     bool disable_welltap = false;
@@ -186,6 +187,7 @@ class Dali {
   bool disable_detailed_place_ = false;
   bool disable_io_place_ = false;
   double target_density_ = -1;
+  int net_ignore_threshold_ = 100;
   int io_metal_layer_ = 0;
   bool export_well_cluster_matlab_ = false;
   bool disable_welltap_ = false;

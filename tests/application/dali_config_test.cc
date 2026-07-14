@@ -38,6 +38,7 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_FALSE(options.disable_detailed_place);
   EXPECT_FALSE(options.disable_io_place);
   EXPECT_DOUBLE_EQ(options.target_density, -1);
+  EXPECT_EQ(options.net_ignore_threshold, 100);
   EXPECT_EQ(options.io_metal_layer, 0);
   EXPECT_FALSE(options.export_well_cluster_matlab);
   EXPECT_FALSE(options.disable_welltap);
@@ -85,6 +86,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_int("dali.disable_detailed_place", 1);
   config_set_int("dali.disable_io_place", 1);
   config_set_real("dali.target_density", 0.71);
+  config_set_int("dali.net_ignore_threshold", 300);
   config_set_int("dali.io_metal_layer", 2);
   config_set_int("dali.export_well_cluster_matlab", 1);
   config_set_int("dali.disable_welltap", 1);
@@ -132,6 +134,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_TRUE(options.disable_detailed_place);
   EXPECT_TRUE(options.disable_io_place);
   EXPECT_DOUBLE_EQ(options.target_density, 0.71);
+  EXPECT_EQ(options.net_ignore_threshold, 300);
   EXPECT_EQ(options.io_metal_layer, 2);
   EXPECT_TRUE(options.export_well_cluster_matlab);
   EXPECT_TRUE(options.disable_welltap);

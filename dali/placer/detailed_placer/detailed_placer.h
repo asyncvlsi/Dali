@@ -11,6 +11,7 @@
 #ifndef DALI_PLACER_DETAILED_PLACER_DETAILED_PLACER_H_
 #define DALI_PLACER_DETAILED_PLACER_DETAILED_PLACER_H_
 
+#include <cstddef>
 #include <functional>
 #include <set>
 #include <string>
@@ -45,6 +46,10 @@ class DetailedPlacer : public Placer {
 
   /** Set how many optimal-region move candidates are evaluated per round. */
   void SetMaxMoveCandidatesPerRound(int max_move_candidates_per_round);
+
+  /** Set the pin-count cutoff for nets omitted from move proposals and costs.
+   */
+  void SetNetIgnoreThreshold(int net_ignore_threshold);
 
   bool StartPlacement() override;
 
@@ -167,6 +172,7 @@ class DetailedPlacer : public Placer {
   SnapshotCallback snapshot_callback_;
   int max_move_candidates_per_round_ = kDefaultMaxMoveCandidatesPerRound;
   int max_optimization_rounds_ = kDefaultMaxOptimizationRounds;
+  size_t net_ignore_threshold_ = 100;
 };
 
 }  // namespace dali

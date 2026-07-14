@@ -91,6 +91,12 @@ void GriddedDetailedPlacer::SetEnableVerticalSwap(bool enable) {
   enable_vertical_swap_ = enable;
 }
 
+void GriddedDetailedPlacer::SetNetIgnoreThreshold(int net_ignore_threshold) {
+  DaliExpects(net_ignore_threshold > 1,
+              "Net ignore threshold must be greater than one");
+  net_ignore_threshold_ = static_cast<size_t>(net_ignore_threshold);
+}
+
 double GriddedDetailedPlacer::WireLengthCost(GriddedRow* row, int left_index,
                                              int right_index) const {
   auto& net_list = ckt_ptr_->Nets();
@@ -98,7 +104,7 @@ double GriddedDetailedPlacer::WireLengthCost(GriddedRow* row, int left_index,
   for (int i = left_index; i <= right_index; ++i) {
     Component* component = row->Components()[i];
     for (int net_id : component->NetList()) {
-      if (net_list[net_id].PinCnt() < 100) {
+      if (net_list[net_id].PinCnt() < net_ignore_threshold_) {
         involved_nets.insert(&net_list[net_id]);
       }
     }
@@ -359,7 +365,7 @@ GriddedDetailedPlacer::ComputeOptimalRegion(Component* component) const {
   auto& nets = ckt_ptr_->Nets();
   for (int net_id : component->NetList()) {
     Net& net = nets[net_id];
-    if (net.PinCnt() <= 1 || net.PinCnt() >= 100) {
+    if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) {
       continue;
     }
 

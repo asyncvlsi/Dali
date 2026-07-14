@@ -40,12 +40,18 @@ void DetailedPlacer::SetMaxMoveCandidatesPerRound(
   max_move_candidates_per_round_ = max_move_candidates_per_round;
 }
 
+void DetailedPlacer::SetNetIgnoreThreshold(int net_ignore_threshold) {
+  DaliExpects(net_ignore_threshold > 1,
+              "Net ignore threshold must be greater than one");
+  net_ignore_threshold_ = static_cast<size_t>(net_ignore_threshold);
+}
+
 double DetailedPlacer::WindowWireLengthCost(
     const std::vector<Component*>& components, int start, int window_size) {
   std::unordered_set<int> net_ids;
   for (int i = 0; i < window_size; ++i) {
     for (int net_id : components[start + i]->NetList()) {
-      if (ckt_ptr_->Nets()[net_id].PinCnt() < 100) {
+      if (ckt_ptr_->Nets()[net_id].PinCnt() < net_ignore_threshold_) {
         net_ids.insert(net_id);
       }
     }
@@ -180,7 +186,7 @@ DetailedPlacer::OptimalRegion DetailedPlacer::ComputeOptimalRegion(
   std::vector<double> y_bounds;
   for (int net_id : component->NetList()) {
     Net& net = ckt_ptr_->Nets()[net_id];
-    if (net.PinCnt() <= 1 || net.PinCnt() >= 100) {
+    if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) {
       continue;
     }
 

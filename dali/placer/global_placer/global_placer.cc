@@ -71,6 +71,12 @@ void GlobalPlacer::SetAnchorSchedule(GlobalAnchorSchedule schedule) {
   anchor_schedule_ = schedule;
 }
 
+void GlobalPlacer::SetNetIgnoreThreshold(int net_ignore_threshold) {
+  DaliExpects(net_ignore_threshold > 1,
+              "Net ignore threshold must be greater than one");
+  net_ignore_threshold_ = net_ignore_threshold;
+}
+
 void GlobalPlacer::SetGridSchedule(GlobalGridSchedule schedule) {
   grid_schedule_ = schedule;
 }
@@ -127,6 +133,7 @@ void GlobalPlacer::InitializePlacementEngines() {
   optimizer_ =
       std::make_unique<BoundToBoundHpwlOptimizer>(ckt_ptr_, num_threads_);
   optimizer_->SetAnchorSchedule(anchor_schedule_);
+  optimizer_->SetNetIgnoreThreshold(net_ignore_threshold_);
   optimizer_->SetShouldSaveIntermediateResult(should_save_intermediate_result_);
   optimizer_->Initialize();
 

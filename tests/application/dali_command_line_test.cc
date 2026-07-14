@@ -77,6 +77,8 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "dali_snapshots",
                      "-num_threads",
                      "8",
+                     "-net_ignore_threshold",
+                     "300",
                      "-io_metal_layer",
                      "3",
                      "-well_legalization_mode",
@@ -126,6 +128,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_DOUBLE_EQ(config_get_real("dali.target_density"), 0.72);
   EXPECT_STREQ(config_get_string("dali.visualization_dir"), "dali_snapshots");
   EXPECT_EQ(config_get_int("dali.num_threads"), 8);
+  EXPECT_EQ(config_get_int("dali.net_ignore_threshold"), 300);
   EXPECT_EQ(config_get_int("dali.io_metal_layer"), 2);
   EXPECT_STREQ(config_get_string("dali.well_legalization_mode"), "scavenge");
   EXPECT_STREQ(config_get_string("dali.global_initializer"), "keep");
@@ -145,8 +148,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_EQ(config_get_int("dali.enable_gridded_detailed_placement"), 1);
   EXPECT_EQ(config_get_int("dali.gridded_detailed_max_rounds"), 5);
   EXPECT_DOUBLE_EQ(
-      config_get_real("dali.gridded_detailed_min_relative_improvement"),
-      0.002);
+      config_get_real("dali.gridded_detailed_min_relative_improvement"), 0.002);
   EXPECT_EQ(config_get_int("dali.disable_gridded_vertical_swap"), 1);
   EXPECT_EQ(config_get_int("dali.enable_gridded_row_y_optimization"), 1);
   EXPECT_DOUBLE_EQ(config_get_real("dali.debug_placement_region_scale"), 1.1);
@@ -194,6 +196,12 @@ TEST_F(DaliCommandLineTest, RejectsOutOfRangeOptions) {
       {"dali", "-lef", "input.lef", "-def", "input.def", "-num_threads", "0"},
       &options));
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                      "-net_ignore_threshold", "99"},
+                     &options));
+  EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                      "-net_ignore_threshold", "1001"},
+                     &options));
+  EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
                       "-io_metal_layer", "0"},
                      &options));
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
@@ -223,10 +231,9 @@ TEST_F(DaliCommandLineTest, RejectsOutOfRangeOptions) {
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
                       "-gridded_detailed_max_rounds", "-1"},
                      &options));
-  EXPECT_FALSE(Parse(
-      {"dali", "-lef", "input.lef", "-def", "input.def",
-       "-gridded_detailed_min_relative_improvement", "1.1"},
-      &options));
+  EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                      "-gridded_detailed_min_relative_improvement", "1.1"},
+                     &options));
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
                       "-gui_pause", "sometimes"},
                      &options));

@@ -125,6 +125,11 @@ class GriddedCellWellLegalizer : public Placer {
     gridded_detailed_placer_.SetEnableVerticalSwap(enable);
   }
 
+  /** Set the high-fanout cutoff used by gridded detailed placement. */
+  void SetDetailedPlacementNetIgnoreThreshold(int net_ignore_threshold) {
+    gridded_detailed_placer_.SetNetIgnoreThreshold(net_ignore_threshold);
+  }
+
   /** Enable HPWL-aware vertical movement of legal gridded row groups. */
   void SetEnableRowLocationOptimization(bool enable) {
     enable_row_location_optimization_ = enable;
@@ -325,8 +330,7 @@ class GriddedCellWellLegalizer : public Placer {
   GriddedDetailedPlacer gridded_detailed_placer_;
   SnapshotCallback snapshot_callback_;
   int snapshot_attempt_ = 0;
-  std::vector<ProvisionalGriddedPlacementViolation>
-      last_clustering_violations_;
+  std::vector<ProvisionalGriddedPlacementViolation> last_clustering_violations_;
 
   /**** cached well tap cell parameters ****/
   Macro* well_tap_macro_ = nullptr;

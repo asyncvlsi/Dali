@@ -11,6 +11,7 @@
 #ifndef DALI_PLACER_WELL_LEGALIZER_GRIDDED_DETAILED_PLACER_H_
 #define DALI_PLACER_WELL_LEGALIZER_GRIDDED_DETAILED_PLACER_H_
 
+#include <cstddef>
 #include <functional>
 #include <string>
 #include <vector>
@@ -49,6 +50,10 @@ class GriddedDetailedPlacer : public Placer {
 
   /** Enable or disable the within-stripe vertical-swap stage. */
   void SetEnableVerticalSwap(bool enable);
+
+  /** Set the pin-count cutoff for nets omitted from move proposals and costs.
+   */
+  void SetNetIgnoreThreshold(int net_ignore_threshold);
 
   /** Run gridded detailed placement on the attached rows. */
   bool StartPlacement() override;
@@ -99,8 +104,9 @@ class GriddedDetailedPlacer : public Placer {
 
   bool IsSwapCandidate(Component* component) const;
   /** Compute row width and well-height demand after replacing one component. */
-  RowRequirements ComputeRowRequirementsAfterSwap(
-      GriddedRow* row, Component* removed, Component* added) const;
+  RowRequirements ComputeRowRequirementsAfterSwap(GriddedRow* row,
+                                                  Component* removed,
+                                                  Component* added) const;
   bool IsNonHeightIncreasingSwap(GriddedRow* first_row,
                                  Component* first_component,
                                  GriddedRow* second_row,
@@ -115,9 +121,8 @@ class GriddedDetailedPlacer : public Placer {
   double DistanceToOptimalRegionY(GriddedRow* row, Component* component,
                                   const OptimalRegion& region) const;
   /** Estimate the closest legal X distance from a row to an optimal region. */
-  double DistanceFromRowToOptimalRegionX(
-      GriddedRow* row, Component* component,
-      const OptimalRegion& region) const;
+  double DistanceFromRowToOptimalRegionX(GriddedRow* row, Component* component,
+                                         const OptimalRegion& region) const;
   OptimalRegion ComputeOptimalRegion(Component* component) const;
   void PlaceComponentInRow(GriddedRow* row, Component* component) const;
   void LegalizeRowsAfterSwap(GriddedRow* first_row, GriddedRow* second_row);
@@ -142,6 +147,7 @@ class GriddedDetailedPlacer : public Placer {
   int max_rounds_ = 6;
   double min_relative_improvement_ = 0.005;
   bool enable_vertical_swap_ = true;
+  size_t net_ignore_threshold_ = 100;
 };
 
 }  // namespace dali

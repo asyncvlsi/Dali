@@ -27,9 +27,9 @@
 #include <string>
 #include <vector>
 
-#include "dali/placer/global_placer/hpwl_optimizer.h"
 #include "dali/placer/global_placer/global_spreader.h"
 #include "dali/placer/global_placer/global_upper_bound_refiner.h"
+#include "dali/placer/global_placer/hpwl_optimizer.h"
 #include "dali/placer/global_placer/look_ahead_spreader.h"
 #include "dali/placer/global_placer/placement_initializer.h"
 #include "dali/placer/placer.h"
@@ -65,6 +65,9 @@ class GlobalPlacer : public Placer {
 
   /** Select how anchor pseudo-net strength changes across iterations. */
   void SetAnchorSchedule(GlobalAnchorSchedule schedule);
+
+  /** Set the pin-count cutoff for nets omitted from the quadratic model. */
+  void SetNetIgnoreThreshold(int net_ignore_threshold);
 
   /** Select how look-ahead legalization grid dimensions are refined. */
   void SetGridSchedule(GlobalGridSchedule schedule);
@@ -172,6 +175,7 @@ class GlobalPlacer : public Placer {
   PlacementInitializerType initializer_type_ =
       PlacementInitializerType::kUniform;
   GlobalAnchorSchedule anchor_schedule_ = GlobalAnchorSchedule::kDali;
+  int net_ignore_threshold_ = 100;
   GlobalGridSchedule grid_schedule_ = GlobalGridSchedule::kDali;
   GlobalLalExpansionMode lal_expansion_mode_ =
       GlobalLalExpansionMode::kSymmetric;

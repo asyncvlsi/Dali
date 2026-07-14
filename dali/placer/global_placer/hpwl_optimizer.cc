@@ -41,6 +41,12 @@ void HpwlOptimizer::SetShouldSaveIntermediateResult(
   should_save_intermediate_result_ = should_save_intermediate_result;
 }
 
+void HpwlOptimizer::SetNetIgnoreThreshold(int net_ignore_threshold) {
+  DaliExpects(net_ignore_threshold > 1,
+              "Net ignore threshold must be greater than one");
+  net_ignore_threshold_ = static_cast<size_t>(net_ignore_threshold);
+}
+
 /****
  * @brief During quadratic placement, net weights are computed by dividing the
  * distance between two pins. To improve numerical stability, a small number is

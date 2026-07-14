@@ -208,6 +208,7 @@ void Dali::ShowParamsList() {
       << "  disable_detailed_place: " << disable_detailed_place_ << "\n"
       << "  disable_io_place: " << disable_io_place_ << "\n"
       << "  target_density: " << target_density_ << "\n"
+      << "  net_ignore_threshold: " << net_ignore_threshold_ << "\n"
       << "  io_metal_layer: " << io_metal_layer_ << "\n"
       << "  export_well_cluster_matlab: " << export_well_cluster_matlab_ << "\n"
       << "  disable_welltap: " << disable_welltap_ << "\n"
@@ -305,6 +306,10 @@ void Dali::LoadParamsFromConfig() {
                  &disable_detailed_place_);
   LoadBoolConfig(ConfigName(prefix_, "disable_io_place"), &disable_io_place_);
   LoadRealConfig(ConfigName(prefix_, "target_density"), &target_density_);
+  LoadIntConfig(ConfigName(prefix_, "net_ignore_threshold"),
+                &net_ignore_threshold_);
+  DaliExpects(net_ignore_threshold_ >= 100 && net_ignore_threshold_ <= 1000,
+              "net_ignore_threshold must be in [100, 1000]");
   LoadIntConfig(ConfigName(prefix_, "io_metal_layer"), &io_metal_layer_);
   LoadBoolConfig(ConfigName(prefix_, "export_well_cluster_matlab"),
                  &export_well_cluster_matlab_);
@@ -441,6 +446,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       disable_detailed_place_,
       disable_io_place_,
       target_density_,
+      net_ignore_threshold_,
       io_metal_layer_,
       export_well_cluster_matlab_,
       disable_welltap_,
@@ -712,6 +718,7 @@ bool Dali::RunGlobalPlacementStage() {
     LOG(info) << "Skip global placement: no nets to optimize\n";
   } else if (ShouldRunGlobalPlacement()) {
     gb_placer_.SetPlacementDensity(target_density_);
+    gb_placer_.SetNetIgnoreThreshold(net_ignore_threshold_);
     gb_placer_.SetInitializerType(global_initializer_);
     gb_placer_.SetAnchorSchedule(global_anchor_schedule_);
     gb_placer_.SetGridSchedule(global_grid_schedule_);
@@ -824,6 +831,7 @@ bool Dali::RunDetailedPlacement() {
       });
   detailed_placer_.SetMaxOptimizationRounds(detailed_max_rounds_);
   detailed_placer_.SetMaxMoveCandidatesPerRound(detailed_max_move_candidates_);
+  detailed_placer_.SetNetIgnoreThreshold(net_ignore_threshold_);
   WriteVisualizationSnapshot("detailed_placement.start",
                              "Before Detailed Placement", "detailed_placement");
   FlushVisualizationEvents();
@@ -862,6 +870,7 @@ void Dali::ConfigureWellLegalizer() {
       gridded_detailed_max_rounds_, gridded_detailed_min_relative_improvement_);
   well_legalizer_.SetEnableDetailedVerticalSwap(
       !disable_gridded_vertical_swap_);
+  well_legalizer_.SetDetailedPlacementNetIgnoreThreshold(net_ignore_threshold_);
   well_legalizer_.SetEnableRowLocationOptimization(
       enable_gridded_row_y_optimization_);
   well_legalizer_.SetSnapshotCallback(
