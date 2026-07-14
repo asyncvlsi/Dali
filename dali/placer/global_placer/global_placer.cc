@@ -100,7 +100,7 @@ void GlobalPlacer::SetLalMacroBoundaryMode(GlobalLalMacroBoundaryMode mode) {
 }
 
 void GlobalPlacer::SetCapacityModel(
-    std::shared_ptr<const PlacementCapacityModel> capacity_model) {
+    std::shared_ptr<PlacementCapacityModel> capacity_model) {
   DaliExpects(capacity_model != nullptr,
               "Global placer capacity model cannot be null");
   capacity_model_ = std::move(capacity_model);
@@ -148,6 +148,13 @@ void GlobalPlacer::InitializePlacementEngines() {
       should_save_intermediate_result_);
   look_ahead_spreader->Initialize(PlacementDensity());
   spreader_ = std::move(look_ahead_spreader);
+  auto pressure_model =
+      std::dynamic_pointer_cast<LegalizationPressureCapacityModel>(
+          capacity_model_);
+  if (pressure_model != nullptr) {
+    pressure_model->SetDemandMultipliers(
+        std::vector<double>(ckt_ptr_->Components().size(), 1.0));
+  }
   accepted_upper_bound_hpwl_.clear();
   best_upper_bound_placement_.clear();
   best_upper_bound_hpwl_ = std::numeric_limits<double>::max();
@@ -242,6 +249,7 @@ void GlobalPlacer::RunPlacementIterations() {
       placement_before_refinement = SaveCurrentPlacement();
       GlobalUpperBoundRefinement refinement =
           upper_bound_refiner_->Refine(cur_iter_);
+      UpdateLegalizationPressure(refinement);
       if (refinement.feasible) {
         accepted_hpwl = refinement.hpwl;
         accepted_physical_refinement = true;
@@ -268,6 +276,44 @@ void GlobalPlacer::RunPlacementIterations() {
     PrintHpwl();
     if (IsPlacementConverged()) break;
   }
+}
+
+void GlobalPlacer::UpdateLegalizationPressure(
+    const GlobalUpperBoundRefinement& refinement) {
+  auto pressure_model =
+      std::dynamic_pointer_cast<LegalizationPressureCapacityModel>(
+          capacity_model_);
+  if (pressure_model == nullptr) return;
+
+  std::vector<double> demand_multipliers(ckt_ptr_->Components().size(), 1.0);
+  int pressured_component_count = 0;
+  double maximum_multiplier = 1.0;
+  for (const GlobalUpperBoundViolation& violation :
+       refinement.initial_violations) {
+    double region_height = violation.uy - violation.ly;
+    if (region_height <= 0.0 || violation.overflow <= 0.0) continue;
+    double multiplier = 1.0 + violation.overflow / region_height;
+    maximum_multiplier = std::max(maximum_multiplier, multiplier);
+    for (int component_id : violation.component_ids) {
+      DaliExpects(
+          component_id >= 0 &&
+              component_id < static_cast<int>(demand_multipliers.size()),
+          "Legalization pressure contains an invalid component id");
+      if (demand_multipliers[component_id] == 1.0) {
+        ++pressured_component_count;
+      }
+      demand_multipliers[component_id] =
+          std::max(demand_multipliers[component_id], multiplier);
+    }
+  }
+  pressure_model->SetDemandMultipliers(std::move(demand_multipliers));
+  LOG(info) << "    legalization capacity pressure: "
+            << pressured_component_count << " components, max multiplier "
+            << maximum_multiplier << "\n";
+  RecordPlacementMetric("global_placement.pressure.last_component_count",
+                        pressured_component_count);
+  RecordPlacementMetric("global_placement.pressure.last_max_multiplier",
+                        maximum_multiplier);
 }
 
 void GlobalPlacer::ApplySelectiveRefinedAnchor(

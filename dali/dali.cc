@@ -225,6 +225,8 @@ void Dali::ShowParamsList() {
       << enable_gridded_upper_bound_refiner_ << "\n"
       << "  enable_gridded_upper_bound_balancing: "
       << enable_gridded_upper_bound_balancing_ << "\n"
+      << "  enable_gridded_legalization_pressure: "
+      << enable_gridded_legalization_pressure_ << "\n"
       << "  disable_gridded_legalization_feedback: "
       << disable_gridded_legalization_feedback_ << "\n"
       << "  enable_gridded_stripe_balancing: "
@@ -333,6 +335,8 @@ void Dali::LoadParamsFromConfig() {
                  &enable_gridded_upper_bound_refiner_);
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_upper_bound_balancing"),
                  &enable_gridded_upper_bound_balancing_);
+  LoadBoolConfig(ConfigName(prefix_, "enable_gridded_legalization_pressure"),
+                 &enable_gridded_legalization_pressure_);
   LoadBoolConfig(ConfigName(prefix_, "disable_gridded_legalization_feedback"),
                  &disable_gridded_legalization_feedback_);
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_stripe_balancing"),
@@ -470,6 +474,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       enable_gridded_global_capacity_,
       enable_gridded_upper_bound_refiner_,
       enable_gridded_upper_bound_balancing_,
+      enable_gridded_legalization_pressure_,
       disable_gridded_legalization_feedback_,
       enable_gridded_stripe_balancing_,
       enable_gridded_local_reorder_,
@@ -747,18 +752,32 @@ bool Dali::RunGlobalPlacementStage() {
     if (needs_gridded_legalizer) {
       ConfigureWellLegalizer();
     }
+    std::shared_ptr<PlacementCapacityModel> capacity_model;
     if (is_standard_cell_ || !enable_gridded_global_capacity_) {
-      gb_placer_.SetCapacityModel(std::make_shared<AreaCapacityModel>());
+      capacity_model = std::make_shared<AreaCapacityModel>();
     } else {
       LOG(info) << "  Enable experimental gridded global capacity model\n";
       GriddedCapacityConfig capacity_config =
           well_legalizer_.BuildGriddedCapacityConfig(target_density_);
       double demand_normalization =
           well_legalizer_.EstimateGriddedDemandNormalization(capacity_config);
-      gb_placer_.SetCapacityModel(
-          std::make_shared<GriddedPlacementCapacityModel>(
-              capacity_config, demand_normalization));
+      capacity_model = std::make_shared<GriddedPlacementCapacityModel>(
+          capacity_config, demand_normalization);
     }
+    if (enable_gridded_legalization_pressure_) {
+      if (is_standard_cell_) {
+        LOG(warning) << "Ignore gridded legalization pressure for "
+                        "standard-cell placement\n";
+      } else if (!enable_gridded_upper_bound_refiner_) {
+        LOG(warning) << "Ignore gridded legalization pressure without the "
+                        "upper-bound refiner\n";
+      } else {
+        LOG(info) << "  Enable gridded legalization pressure in LAL capacity\n";
+        capacity_model =
+            std::make_shared<LegalizationPressureCapacityModel>(capacity_model);
+      }
+    }
+    gb_placer_.SetCapacityModel(std::move(capacity_model));
     if (enable_gridded_upper_bound_refiner_) {
       if (is_standard_cell_) {
         LOG(warning) << "Ignore gridded upper-bound refiner for standard-cell "

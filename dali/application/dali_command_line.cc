@@ -87,6 +87,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -enable_gridded_global_capacity            use experimental well-aware LAL capacity\n"
       << "  -enable_gridded_upper_bound_refiner        roughly legalize every gridded global-placement iteration\n"
       << "  -enable_gridded_upper_bound_balancing      minimally rebalance failed rough-legal stripes\n"
+      << "  -enable_gridded_legalization_pressure      feed rough-legal capacity pressure into the next LAL pass\n"
       << "  -enable_adaptive_stripe_boundaries         optimize nonuniform gridded stripe widths\n"
       << "  -disable_gridded_legalization_feedback     do not anchor the next solve to rough-legal coordinates\n"
       << "  -enable_gridded_stripe_balancing           rebalance final neighboring gridded stripes\n"
@@ -399,6 +400,8 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.enable_gridded_upper_bound_refiner");
     } else if (arg == "-enable_gridded_upper_bound_balancing") {
       EnableConfigFlag("dali.enable_gridded_upper_bound_balancing");
+    } else if (arg == "-enable_gridded_legalization_pressure") {
+      EnableConfigFlag("dali.enable_gridded_legalization_pressure");
     } else if (arg == "-disable_gridded_legalization_feedback") {
       EnableConfigFlag("dali.disable_gridded_legalization_feedback");
     } else if (arg == "-enable_gridded_stripe_balancing") {

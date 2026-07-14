@@ -85,8 +85,7 @@ class GlobalPlacer : public Placer {
   void SetLalMacroBoundaryMode(GlobalLalMacroBoundaryMode mode);
 
   /** Set the regional capacity policy used by the global spreader. */
-  void SetCapacityModel(
-      std::shared_ptr<const PlacementCapacityModel> capacity_model);
+  void SetCapacityModel(std::shared_ptr<PlacementCapacityModel> capacity_model);
 
   /** Install an optional periodic physical upper-bound refiner. */
   void SetUpperBoundRefiner(
@@ -157,6 +156,8 @@ class GlobalPlacer : public Placer {
   void ApplySelectiveRefinedAnchor(
       const std::vector<ComponentLocation>& placement_before_refinement,
       const std::vector<int>& component_ids);
+  /** Update LAL demand from physical pressure observed by the refiner. */
+  void UpdateLegalizationPressure(const GlobalUpperBoundRefinement& refinement);
   /** Log displacement introduced by physical upper-bound refinement. */
   void LogRefinementDisplacement(
       const std::vector<ComponentLocation>& placement_before_refinement);
@@ -184,7 +185,7 @@ class GlobalPlacer : public Placer {
   GlobalLalMacroBoundaryMode lal_macro_boundary_mode_ =
       GlobalLalMacroBoundaryMode::kOff;
   SnapshotCallback snapshot_callback_;
-  std::shared_ptr<const PlacementCapacityModel> capacity_model_ =
+  std::shared_ptr<PlacementCapacityModel> capacity_model_ =
       std::make_shared<AreaCapacityModel>();
   std::unique_ptr<HpwlOptimizer> optimizer_;
   std::unique_ptr<GlobalSpreader> spreader_;
