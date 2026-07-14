@@ -22,6 +22,8 @@ enum class GlobalRefinementFeedbackMode {
   kYRowHpwl,
   /** Greedily build a non-worsening set of row-scale Y assignments. */
   kYRowTransactional,
+  /** Keep only transactional assignments with strictly positive Y gain. */
+  kYRowTransactionalPositive,
   /** Restore both analytical coordinates after scoring the refinement. */
   kNone,
 };

@@ -88,7 +88,7 @@ TEST(GlobalUpperBoundRefinerTest, RequiresFreshPhysicalConvergenceBound) {
 TEST(GlobalUpperBoundRefinerTest, RefinedAnchorFeedbackCanBeDisabled) {
   TestableGlobalPlacer placer;
   EXPECT_EQ(placer.RefinementFeedbackMode(),
-            GlobalRefinementFeedbackMode::kFull);
+            GlobalRefinementFeedbackMode::kYRowTransactionalPositive);
 
   placer.SetUseRefinedUpperBoundAsAnchor(false);
 
@@ -204,6 +204,39 @@ TEST(GlobalUpperBoundRefinerTest,
   EXPECT_DOUBLE_EQ(circuit.Components()[0].LLY(), 9);
   EXPECT_DOUBLE_EQ(circuit.Components()[1].LLY(), 10);
   EXPECT_DOUBLE_EQ(circuit.WeightedHPWLY(), 1);
+}
+
+TEST(GlobalUpperBoundRefinerTest,
+     PositiveTransactionalFeedbackRejectsNeutralMove) {
+  Circuit circuit;
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.SetDieArea(0, 0, 100, 100);
+  circuit.ReserveSpaceForDesignImp(3, 0, 1);
+  circuit.AddMacro("cell", 2, 1);
+  Macro* macro = circuit.GetMacroPtr("cell");
+  circuit.AddMacroPin(macro, "p", true)->SetOffset(0, 0);
+  circuit.AddComponent("movable", "cell", 10, 6, PLACED);
+  circuit.AddComponent("low_anchor", "cell", 20, 0, FIXED);
+  circuit.AddComponent("high_anchor", "cell", 30, 10, FIXED);
+  circuit.AddNet("spanning_net", 3);
+  circuit.AddComponentPinToNet("movable", "p", "spanning_net");
+  circuit.AddComponentPinToNet("low_anchor", "p", "spanning_net");
+  circuit.AddComponentPinToNet("high_anchor", "p", "spanning_net");
+
+  TestableGlobalPlacer placer;
+  placer.SetCircuit(&circuit);
+  placer.SetRefinementFeedbackMode(
+      GlobalRefinementFeedbackMode::kYRowTransactional);
+  placer.ApplyFeedbackForTest({{10, 5}, {20, 0}, {30, 10}});
+  EXPECT_DOUBLE_EQ(circuit.Components()[0].LLY(), 6);
+
+  circuit.Components()[0].SetLLY(6);
+  placer.SetRefinementFeedbackMode(
+      GlobalRefinementFeedbackMode::kYRowTransactionalPositive);
+  placer.ApplyFeedbackForTest({{10, 5}, {20, 0}, {30, 10}});
+  EXPECT_DOUBLE_EQ(circuit.Components()[0].LLY(), 5);
 }
 
 }  // namespace dali

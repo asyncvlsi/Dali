@@ -46,6 +46,8 @@ const char* RefinementFeedbackModeName(GlobalRefinementFeedbackMode mode) {
       return "y_row_hpwl";
     case GlobalRefinementFeedbackMode::kYRowTransactional:
       return "y_row_transactional";
+    case GlobalRefinementFeedbackMode::kYRowTransactionalPositive:
+      return "y_row_transactional_positive";
     case GlobalRefinementFeedbackMode::kNone:
       return "none";
   }
@@ -358,17 +360,26 @@ void GlobalPlacer::ApplyRefinedAnchorFeedback(
       refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYRowScale ||
       refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYRowHpwl ||
       refinement_feedback_mode_ ==
-          GlobalRefinementFeedbackMode::kYRowTransactional;
+          GlobalRefinementFeedbackMode::kYRowTransactional ||
+      refinement_feedback_mode_ ==
+          GlobalRefinementFeedbackMode::kYRowTransactionalPositive;
   const bool require_row_scale_y =
       refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYRowScale ||
       refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYRowHpwl ||
       refinement_feedback_mode_ ==
-          GlobalRefinementFeedbackMode::kYRowTransactional;
+          GlobalRefinementFeedbackMode::kYRowTransactional ||
+      refinement_feedback_mode_ ==
+          GlobalRefinementFeedbackMode::kYRowTransactionalPositive;
   const bool require_non_worsening_hpwl =
       refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYRowHpwl;
   const bool use_transactional_y =
       refinement_feedback_mode_ ==
-      GlobalRefinementFeedbackMode::kYRowTransactional;
+          GlobalRefinementFeedbackMode::kYRowTransactional ||
+      refinement_feedback_mode_ ==
+          GlobalRefinementFeedbackMode::kYRowTransactionalPositive;
+  const bool require_positive_transactional_gain =
+      refinement_feedback_mode_ ==
+      GlobalRefinementFeedbackMode::kYRowTransactionalPositive;
 
   // Classify every candidate against the same complete refined placement.
   // Applying restorations in a second pass keeps this filter independent of
@@ -395,7 +406,8 @@ void GlobalPlacer::ApplyRefinedAnchorFeedback(
   }
   if (use_transactional_y) {
     keep_component_y = SelectTransactionalYFeedback(
-        keep_component_y, placement_before_refinement);
+        keep_component_y, placement_before_refinement,
+        require_positive_transactional_gain);
   }
 
   for (size_t i = 0; i < ckt_ptr_->Components().size(); ++i) {
@@ -442,7 +454,8 @@ bool GlobalPlacer::IsRefinedYLocallyNonWorsening(Component& component,
 
 std::vector<bool> GlobalPlacer::SelectTransactionalYFeedback(
     const std::vector<bool>& candidates,
-    const std::vector<ComponentLocation>& analytical_placement) const {
+    const std::vector<ComponentLocation>& analytical_placement,
+    bool require_positive_gain) const {
   DaliExpects(candidates.size() == ckt_ptr_->Components().size(),
               "Y feedback candidate count does not match component count");
   DaliExpects(analytical_placement.size() == ckt_ptr_->Components().size(),
@@ -484,23 +497,31 @@ std::vector<bool> GlobalPlacer::SelectTransactionalYFeedback(
 
   std::vector<bool> accepted(candidates.size(), false);
   double hpwl_improvement = 0.0;
+  size_t neutral_rejection_count = 0;
   for (const Candidate& candidate : ordered_candidates) {
     Component& component = ckt_ptr_->Components()[candidate.component_index];
     const double hpwl_before = ConnectedNetWeightedHpwlY(component);
     component.SetLLY(candidate.refined_y);
     const double hpwl_after = ConnectedNetWeightedHpwlY(component);
-    if (hpwl_after <= hpwl_before) {
+    const bool has_acceptable_gain = require_positive_gain
+                                         ? hpwl_after < hpwl_before
+                                         : hpwl_after <= hpwl_before;
+    if (has_acceptable_gain) {
       accepted[candidate.component_index] = true;
       hpwl_improvement += hpwl_before - hpwl_after;
     } else {
+      if (require_positive_gain && hpwl_after == hpwl_before) {
+        ++neutral_rejection_count;
+      }
       component.SetLLY(analytical_placement[candidate.component_index].ly);
     }
   }
   LOG(info) << "    transactional Y feedback: " << candidate_count
             << " candidates, "
             << std::count(accepted.begin(), accepted.end(), true)
-            << " accepted, modeled HPWL improvement " << hpwl_improvement
-            << "um\n";
+            << " accepted, " << neutral_rejection_count
+            << " neutral moves rejected, modeled HPWL improvement "
+            << hpwl_improvement << "um\n";
   return accepted;
 }
 

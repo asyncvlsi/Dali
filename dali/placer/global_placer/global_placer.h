@@ -172,11 +172,13 @@ class GlobalPlacer : public Placer {
    *
    * Candidates are ranked by gain from the analytical placement, then
    * rechecked as they are committed so interacting assignments cannot make
-   * the aggregate feedback target worse.
+   * the aggregate feedback target worse. When positive gain is required,
+   * neutral transactions are restored instead of becoming future anchors.
    */
   std::vector<bool> SelectTransactionalYFeedback(
       const std::vector<bool>& candidates,
-      const std::vector<ComponentLocation>& analytical_placement) const;
+      const std::vector<ComponentLocation>& analytical_placement,
+      bool require_positive_gain) const;
   /** Update LAL demand from physical pressure observed by the refiner. */
   void UpdateLegalizationPressure(const GlobalUpperBoundRefinement& refinement);
   /** Log displacement introduced by physical upper-bound refinement. */
@@ -221,7 +223,7 @@ class GlobalPlacer : public Placer {
   int upper_bound_refiner_warmup_ = 0;
   int upper_bound_refiner_interval_ = 1;
   GlobalRefinementFeedbackMode refinement_feedback_mode_ =
-      GlobalRefinementFeedbackMode::kFull;
+      GlobalRefinementFeedbackMode::kYRowTransactionalPositive;
   bool current_upper_bound_is_physical_ = false;
 };
 

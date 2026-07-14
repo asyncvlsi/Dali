@@ -129,6 +129,9 @@ static GlobalRefinementFeedbackMode ParseGlobalRefinementFeedbackMode(
   if (name == "y_row_transactional") {
     return GlobalRefinementFeedbackMode::kYRowTransactional;
   }
+  if (name == "y_row_transactional_positive") {
+    return GlobalRefinementFeedbackMode::kYRowTransactionalPositive;
+  }
   if (name == "none") {
     return GlobalRefinementFeedbackMode::kNone;
   }
