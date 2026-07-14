@@ -177,9 +177,15 @@ class GriddedDetailedPlacer : public Placer {
                                   const OptimalRegion& region) const;
   double DistanceToOptimalRegionY(GriddedRow* row, Component* component,
                                   const OptimalRegion& region) const;
+  /** Return current Manhattan distance to an optimal region in microns. */
+  double PhysicalDistanceToOptimalRegion(GriddedRow* row, Component* component,
+                                         const OptimalRegion& region) const;
   /** Estimate the closest legal X distance from a row to an optimal region. */
   double DistanceFromRowToOptimalRegionX(GriddedRow* row, Component* component,
                                          const OptimalRegion& region) const;
+  /** Return closest row-to-optimal-region distance in physical units. */
+  double PhysicalDistanceFromRowToOptimalRegion(
+      GriddedRow* row, Component* component, const OptimalRegion& region) const;
   /** Return candidate rows closer to a component's optimal region. */
   std::vector<CandidateRow> FindCandidateRows(
       GriddedRow* source_row, Component* component,

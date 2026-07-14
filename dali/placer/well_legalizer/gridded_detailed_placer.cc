@@ -394,6 +394,13 @@ double GriddedDetailedPlacer::DistanceToOptimalRegionY(
   return 0;
 }
 
+double GriddedDetailedPlacer::PhysicalDistanceToOptimalRegion(
+    GriddedRow* row, Component* component, const OptimalRegion& region) const {
+  return DistanceToOptimalRegionX(component, region) * ckt_ptr_->GridValueX() +
+         DistanceToOptimalRegionY(row, component, region) *
+             ckt_ptr_->GridValueY();
+}
+
 double GriddedDetailedPlacer::DistanceFromRowToOptimalRegionX(
     GriddedRow* row, Component* component, const OptimalRegion& region) const {
   double min_lx = row->LLX() + row->LeftBoundaryMargin();
@@ -407,13 +414,20 @@ double GriddedDetailedPlacer::DistanceFromRowToOptimalRegionX(
   return 0;
 }
 
+double GriddedDetailedPlacer::PhysicalDistanceFromRowToOptimalRegion(
+    GriddedRow* row, Component* component, const OptimalRegion& region) const {
+  return DistanceFromRowToOptimalRegionX(row, component, region) *
+             ckt_ptr_->GridValueX() +
+         DistanceToOptimalRegionY(row, component, region) *
+             ckt_ptr_->GridValueY();
+}
+
 std::vector<GriddedDetailedPlacer::CandidateRow>
 GriddedDetailedPlacer::FindCandidateRows(GriddedRow* source_row,
                                          Component* component,
                                          const OptimalRegion& region) const {
   double current_distance =
-      DistanceToOptimalRegionX(component, region) +
-      DistanceToOptimalRegionY(source_row, component, region);
+      PhysicalDistanceToOptimalRegion(source_row, component, region);
   if (current_distance <= kMinSignificantHpwlImprovement) {
     return {};
   }
@@ -437,8 +451,7 @@ GriddedDetailedPlacer::FindCandidateRows(GriddedRow* source_row,
         continue;
       }
       double row_distance =
-          DistanceFromRowToOptimalRegionX(row, component, region) +
-          DistanceToOptimalRegionY(row, component, region);
+          PhysicalDistanceFromRowToOptimalRegion(row, component, region);
       if (row_distance < current_distance) {
         stripe_candidates.push_back({row, row_distance});
       }
@@ -489,8 +502,7 @@ GriddedDetailedPlacer::FindEjectionDestinationRows(
         continue;
       }
       double distance =
-          DistanceFromRowToOptimalRegionX(row, component, region) +
-          DistanceToOptimalRegionY(row, component, region);
+          PhysicalDistanceFromRowToOptimalRegion(row, component, region);
       candidate_rows.push_back({row, distance});
     }
   }
@@ -524,8 +536,7 @@ GriddedDetailedPlacer::FindDisplacementCandidates(GriddedRow* target_row,
       continue;
     }
     double current_distance =
-        DistanceToOptimalRegionX(displaced, region) +
-        DistanceToOptimalRegionY(target_row, displaced, region);
+        PhysicalDistanceToOptimalRegion(target_row, displaced, region);
     candidates.push_back({displaced, region, current_distance});
   }
   std::sort(
@@ -873,13 +884,13 @@ bool GriddedDetailedPlacer::TryClosedAssignmentCycle(
 
         OptimalRegion returning_region = ComputeOptimalRegion(returning);
         double return_distance =
-            std::fabs(returning->CenterX() - source_row->CenterX()) +
-            std::fabs(returning->CenterY() - source_row->CenterY());
+            std::fabs(returning->CenterX() - source_row->CenterX()) *
+                ckt_ptr_->GridValueX() +
+            std::fabs(returning->CenterY() - source_row->CenterY()) *
+                ckt_ptr_->GridValueY();
         if (returning_region.valid) {
-          return_distance =
-              DistanceFromRowToOptimalRegionX(source_row, returning,
-                                              returning_region) +
-              DistanceToOptimalRegionY(source_row, returning, returning_region);
+          return_distance = PhysicalDistanceFromRowToOptimalRegion(
+              source_row, returning, returning_region);
         }
         return_candidates.push_back(
             {returning, returning_region, receiver.distance + return_distance});

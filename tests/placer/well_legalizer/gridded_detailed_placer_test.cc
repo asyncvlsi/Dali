@@ -147,6 +147,61 @@ TEST(GriddedDetailedPlacerTest, RelocationUsesLegalWhitespaceToImproveHpwl) {
   }
 }
 
+TEST(GriddedDetailedPlacerTest, RelocationRanksRowsInPhysicalUnits) {
+  Circuit circuit;
+  circuit.SetDatabaseMicrons(1000);
+  circuit.SetManufacturingGrid(0.1);
+  circuit.SetUnitsDistanceMicrons(10);
+  circuit.SetGridValue(0.6, 0.3);
+  circuit.SetDieArea(0, 0, 120, 110);
+  circuit.ReserveSpaceForDesignImp(5, 0, 2);
+
+  Macro* cell = circuit.AddMacro("cell", 6, 3);
+  ASSERT_NE(cell, nullptr);
+  cell->AddWellRect(false, 0, 0, 10, 4);
+  cell->AddWellRect(true, 0, 4, 10, 10);
+  circuit.AddMacroPin(cell, "p", true)->SetOffset(5, 5);
+
+  circuit.AddComponent("move", "cell", 100, 100, PLACED);
+  circuit.AddComponent("source_stay", "cell", 110, 100, PLACED);
+  circuit.AddComponent("x_stay", "cell", 30, 0, PLACED);
+  circuit.AddComponent("y_stay", "cell", 10, 30, PLACED);
+  circuit.AddComponent("anchor", "cell", 0, 0, FIXED);
+  circuit.AddNet("move_net", 2);
+  circuit.AddComponentPinToNet("move", "p", "move_net");
+  circuit.AddComponentPinToNet("anchor", "p", "move_net");
+
+  std::vector<GriddedRow> rows(3);
+  rows[0].SetLLX(100);
+  rows[0].SetLLY(100);
+  rows[1].SetLLX(20);
+  rows[1].SetLLY(0);
+  rows[2].SetLLX(0);
+  rows[2].SetLLY(30);
+  for (GriddedRow& row : rows) {
+    row.SetWidth(20);
+    row.UpdateWellHeightUpward(4, 6);
+    row.SetOrient(true);
+  }
+  rows[0].AddComponent(circuit.GetComponentPtr("move"));
+  rows[0].AddComponent(circuit.GetComponentPtr("source_stay"));
+  rows[1].AddComponent(circuit.GetComponentPtr("x_stay"));
+  rows[2].AddComponent(circuit.GetComponentPtr("y_stay"));
+
+  GriddedDetailedPlacer placer;
+  placer.SetCircuit(&circuit);
+  placer.SetRows({&rows[0], &rows[1], &rows[2]});
+  placer.SetEnableRelocation(true);
+  placer.SetEnableVerticalSwap(false);
+  placer.SetMaxRounds(1);
+  ASSERT_TRUE(placer.StartPlacement());
+
+  EXPECT_NE(std::find(rows[2].Components().begin(), rows[2].Components().end(),
+                      circuit.GetComponentPtr("move")),
+            rows[2].Components().end());
+  EXPECT_DOUBLE_EQ(circuit.WeightedHPWL(), 9);
+}
+
 TEST(GriddedDetailedPlacerTest, EjectionChainCreatesRowWhitespace) {
   Circuit circuit;
   circuit.SetDatabaseMicrons(1000);
