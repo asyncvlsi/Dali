@@ -40,6 +40,8 @@ const char* RefinementFeedbackModeName(GlobalRefinementFeedbackMode mode) {
       return "x_only";
     case GlobalRefinementFeedbackMode::kYOnly:
       return "y_only";
+    case GlobalRefinementFeedbackMode::kYRowScale:
+      return "y_row_scale";
     case GlobalRefinementFeedbackMode::kNone:
       return "none";
   }
@@ -348,16 +350,30 @@ void GlobalPlacer::ApplyRefinedAnchorFeedback(
       refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kXOnly;
   bool keep_y =
       refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kFull ||
-      refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYOnly;
+      refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYOnly ||
+      refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYRowScale;
+  bool require_row_scale_y =
+      refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYRowScale;
   int selected_movable_count = 0;
   for (size_t i = 0; i < ckt_ptr_->Components().size(); ++i) {
     Component& component = ckt_ptr_->Components()[i];
     bool selected = selected_components[i];
-    if (selected && component.IsMovable()) ++selected_movable_count;
+    bool keep_component_y = selected && keep_y;
+    // A move shorter than the component height is treated as local packing
+    // noise rather than evidence that the analytical placement chose a bad
+    // row. This preserves only the discrete part of rough legalization.
+    if (keep_component_y && require_row_scale_y &&
+        std::fabs(component.LLY() - placement_before_refinement[i].ly) <
+            component.Height()) {
+      keep_component_y = false;
+    }
+    if (component.IsMovable() && ((selected && keep_x) || keep_component_y)) {
+      ++selected_movable_count;
+    }
     double lx = selected && keep_x ? component.LLX()
                                    : placement_before_refinement[i].lx;
-    double ly = selected && keep_y ? component.LLY()
-                                   : placement_before_refinement[i].ly;
+    double ly =
+        keep_component_y ? component.LLY() : placement_before_refinement[i].ly;
     component.SetLowerLeft(lx, ly);
   }
   LOG(info) << "    legalization feedback: "

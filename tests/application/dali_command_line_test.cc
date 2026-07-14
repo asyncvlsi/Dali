@@ -58,6 +58,16 @@ TEST_F(DaliCommandLineTest, ParsesRequiredInputsAndKeepsDefaults) {
   EXPECT_EQ(options.verbose_level, dali::severity::info);
 }
 
+TEST_F(DaliCommandLineTest, ParsesRowScaleLegalizationFeedback) {
+  dali::DaliCommandLineOptions options;
+  EXPECT_TRUE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                     "-gridded_legalization_feedback", "y_row_scale"},
+                    &options));
+
+  EXPECT_STREQ(config_get_string("dali.gridded_legalization_feedback"),
+               "y_row_scale");
+}
+
 TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   dali::DaliCommandLineOptions options;
   EXPECT_TRUE(Parse({"dali",

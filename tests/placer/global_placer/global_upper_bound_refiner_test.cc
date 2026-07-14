@@ -124,4 +124,28 @@ TEST(GlobalUpperBoundRefinerTest, YOnlyFeedbackPreservesAnalyticalX) {
   EXPECT_DOUBLE_EQ(component.LLY(), 20);
 }
 
+TEST(GlobalUpperBoundRefinerTest, RowScaleFeedbackKeepsOnlyLargeYMoves) {
+  Circuit circuit;
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.SetDieArea(0, 0, 100, 100);
+  circuit.ReserveSpaceForDesignImp(2, 0, 0);
+  circuit.AddMacro("cell", 2, 2);
+  circuit.AddComponent("small_move", "cell", 10, 20, PLACED);
+  circuit.AddComponent("large_move", "cell", 12, 24, PLACED);
+
+  TestableGlobalPlacer placer;
+  placer.SetCircuit(&circuit);
+  placer.SetRefinementFeedbackMode(GlobalRefinementFeedbackMode::kYRowScale);
+  placer.ApplyFeedbackForTest({{1, 19}, {3, 20}});
+
+  const Component& small_move = circuit.Components()[0];
+  EXPECT_DOUBLE_EQ(small_move.LLX(), 1);
+  EXPECT_DOUBLE_EQ(small_move.LLY(), 19);
+  const Component& large_move = circuit.Components()[1];
+  EXPECT_DOUBLE_EQ(large_move.LLX(), 3);
+  EXPECT_DOUBLE_EQ(large_move.LLY(), 24);
+}
+
 }  // namespace dali

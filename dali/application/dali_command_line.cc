@@ -89,7 +89,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -enable_gridded_upper_bound_balancing      minimally rebalance failed rough-legal stripes\n"
       << "  -enable_gridded_legalization_pressure      feed rough-legal capacity pressure into the next LAL pass\n"
       << "  -enable_adaptive_stripe_boundaries         optimize nonuniform gridded stripe widths\n"
-      << "  -gridded_legalization_feedback <full/x_only/y_only/none>\n"
+      << "  -gridded_legalization_feedback <full/x_only/y_only/y_row_scale/none>\n"
       << "  -disable_gridded_legalization_feedback     do not anchor the next solve to rough-legal coordinates\n"
       << "  -enable_gridded_stripe_balancing           rebalance final neighboring gridded stripes\n"
       << "  -enable_gridded_local_reorder              reorder cells within finalized gridded rows\n"
@@ -407,7 +407,7 @@ bool ParseDaliCommandLine(int argc, char* argv[],
     } else if (arg == "-gridded_legalization_feedback") {
       if (!TryGetValue(argc, argv, &i, &value) ||
           (value != "full" && value != "x_only" && value != "y_only" &&
-           value != "none")) {
+           value != "y_row_scale" && value != "none")) {
         error_output << "Invalid gridded legalization feedback mode!\n";
         return false;
       }

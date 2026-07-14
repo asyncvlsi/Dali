@@ -10,9 +10,15 @@ namespace dali {
 
 /** Coordinates from a physical refinement used to anchor the next solve. */
 enum class GlobalRefinementFeedbackMode {
+  /** Keep both refined coordinates. */
   kFull,
+  /** Keep only the refined X coordinate. */
   kXOnly,
+  /** Keep the refined Y coordinate for every selected component. */
   kYOnly,
+  /** Keep Y only when refinement moves a component by at least its height. */
+  kYRowScale,
+  /** Restore both analytical coordinates after scoring the refinement. */
   kNone,
 };
 

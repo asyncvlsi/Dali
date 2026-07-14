@@ -201,6 +201,18 @@ TEST_F(DaliConfigTest, SupportsLegacyDisabledLegalizationFeedback) {
   placer.Close();
 }
 
+TEST_F(DaliConfigTest, LoadsRowScaleLegalizationFeedback) {
+  config_set_string("dali.gridded_legalization_feedback", "y_row_scale");
+
+  dali::Dali placer(nullptr, dali::severity::info);
+  const dali::Dali::RuntimeOptions options = placer.GetRuntimeOptions();
+
+  EXPECT_EQ(options.gridded_legalization_feedback_mode,
+            dali::GlobalRefinementFeedbackMode::kYRowScale);
+
+  placer.Close();
+}
+
 TEST_F(DaliConfigTest, IgnoresUnknownWellLegalizationMode) {
   config_set_string("dali.well_legalization_mode", "unknown");
 
