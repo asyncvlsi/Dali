@@ -71,6 +71,7 @@ class Dali {
     bool enable_gridded_local_reorder = false;
     bool enable_gridded_detailed_placement = false;
     bool enable_gridded_detailed_relocation = false;
+    int gridded_detailed_max_candidate_rows = 4;
     int gridded_detailed_max_rounds = 6;
     double gridded_detailed_min_relative_improvement = 0.005;
     bool disable_gridded_vertical_swap = false;
@@ -206,6 +207,7 @@ class Dali {
   bool enable_gridded_local_reorder_ = false;
   bool enable_gridded_detailed_placement_ = false;
   bool enable_gridded_detailed_relocation_ = false;
+  int gridded_detailed_max_candidate_rows_ = 4;
   int gridded_detailed_max_rounds_ = 6;
   double gridded_detailed_min_relative_improvement_ = 0.005;
   bool disable_gridded_vertical_swap_ = false;

@@ -54,6 +54,9 @@ class GriddedDetailedPlacer : public Placer {
   /** Enable or disable exact cross-row moves into existing row whitespace. */
   void SetEnableRelocation(bool enable);
 
+  /** Set the maximum optimal-region rows considered for one component. */
+  void SetMaxCandidateRows(int max_candidate_rows);
+
   /** Set the pin-count cutoff for nets omitted from move proposals and costs.
    */
   void SetNetIgnoreThreshold(int net_ignore_threshold);
@@ -184,6 +187,7 @@ class GriddedDetailedPlacer : public Placer {
   double min_relative_improvement_ = 0.005;
   bool enable_vertical_swap_ = true;
   bool enable_relocation_ = false;
+  int max_candidate_rows_ = kMaxOptimalRegionRowsPerComponent;
   size_t net_ignore_threshold_ = 100;
 };
 

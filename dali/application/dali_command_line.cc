@@ -93,6 +93,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -enable_gridded_local_reorder              reorder cells within finalized gridded rows\n"
       << "  -enable_gridded_detailed_placement         run gridded global swap, vertical swap, and local reorder\n"
       << "  -enable_gridded_detailed_relocation        move cells into legal row whitespace before swaps\n"
+      << "  -gridded_detailed_max_candidate_rows <1..32>  candidate rows per component, default 4\n"
       << "  -gridded_detailed_max_rounds <n>           maximum gridded detailed rounds, default 6\n"
       << "  -gridded_detailed_min_relative_improvement <0..1>  convergence threshold, default 0.005\n"
       << "  -disable_gridded_vertical_swap            skip vertical swaps in gridded detailed placement\n"
@@ -408,6 +409,16 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.enable_gridded_detailed_placement");
     } else if (arg == "-enable_gridded_detailed_relocation") {
       EnableConfigFlag("dali.enable_gridded_detailed_relocation");
+    } else if (arg == "-gridded_detailed_max_candidate_rows") {
+      int max_candidate_rows = 0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseInt(value, &max_candidate_rows) || max_candidate_rows < 1 ||
+          max_candidate_rows > 32) {
+        error_output << "Invalid gridded detailed candidate-row cap!\n";
+        return false;
+      }
+      config_set_int("dali.gridded_detailed_max_candidate_rows",
+                     max_candidate_rows);
     } else if (arg == "-gridded_detailed_max_rounds") {
       int max_rounds = 0;
       if (!TryGetValue(argc, argv, &i, &value) ||

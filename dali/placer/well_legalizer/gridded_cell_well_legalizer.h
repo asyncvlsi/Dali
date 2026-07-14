@@ -117,6 +117,11 @@ class GriddedCellWellLegalizer : public Placer {
     gridded_detailed_placer_.SetEnableRelocation(enable);
   }
 
+  /** Set the per-component candidate-row cap in gridded detailed placement. */
+  void SetDetailedPlacementMaxCandidateRows(int max_candidate_rows) {
+    gridded_detailed_placer_.SetMaxCandidateRows(max_candidate_rows);
+  }
+
   /** Configure gridded detailed-placement convergence. */
   void SetDetailedPlacementConvergence(int max_rounds,
                                        double min_relative_improvement) {

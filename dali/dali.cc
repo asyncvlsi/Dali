@@ -235,6 +235,8 @@ void Dali::ShowParamsList() {
       << enable_gridded_detailed_placement_ << "\n"
       << "  enable_gridded_detailed_relocation: "
       << enable_gridded_detailed_relocation_ << "\n"
+      << "  gridded_detailed_max_candidate_rows: "
+      << gridded_detailed_max_candidate_rows_ << "\n"
       << "  gridded_detailed_max_rounds: " << gridded_detailed_max_rounds_
       << "\n"
       << "  gridded_detailed_min_relative_improvement: "
@@ -341,6 +343,11 @@ void Dali::LoadParamsFromConfig() {
                  &enable_gridded_detailed_placement_);
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_detailed_relocation"),
                  &enable_gridded_detailed_relocation_);
+  LoadIntConfig(ConfigName(prefix_, "gridded_detailed_max_candidate_rows"),
+                &gridded_detailed_max_candidate_rows_);
+  DaliExpects(gridded_detailed_max_candidate_rows_ >= 1 &&
+                  gridded_detailed_max_candidate_rows_ <= 32,
+              "gridded_detailed_max_candidate_rows must be in [1, 32]");
   LoadIntConfig(ConfigName(prefix_, "gridded_detailed_max_rounds"),
                 &gridded_detailed_max_rounds_);
   DaliExpects(gridded_detailed_max_rounds_ >= 0,
@@ -468,6 +475,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       enable_gridded_local_reorder_,
       enable_gridded_detailed_placement_,
       enable_gridded_detailed_relocation_,
+      gridded_detailed_max_candidate_rows_,
       gridded_detailed_max_rounds_,
       gridded_detailed_min_relative_improvement_,
       disable_gridded_vertical_swap_,
@@ -873,6 +881,8 @@ void Dali::ConfigureWellLegalizer() {
       enable_gridded_detailed_placement_);
   well_legalizer_.SetEnableDetailedRelocation(
       enable_gridded_detailed_relocation_);
+  well_legalizer_.SetDetailedPlacementMaxCandidateRows(
+      gridded_detailed_max_candidate_rows_);
   well_legalizer_.SetDetailedPlacementConvergence(
       gridded_detailed_max_rounds_, gridded_detailed_min_relative_improvement_);
   well_legalizer_.SetEnableDetailedVerticalSwap(

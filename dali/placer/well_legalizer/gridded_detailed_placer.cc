@@ -95,6 +95,12 @@ void GriddedDetailedPlacer::SetEnableRelocation(bool enable) {
   enable_relocation_ = enable;
 }
 
+void GriddedDetailedPlacer::SetMaxCandidateRows(int max_candidate_rows) {
+  DaliExpects(max_candidate_rows >= 1,
+              "Gridded detailed candidate-row cap must be positive");
+  max_candidate_rows_ = max_candidate_rows;
+}
+
 void GriddedDetailedPlacer::SetNetIgnoreThreshold(int net_ignore_threshold) {
   DaliExpects(net_ignore_threshold > 1,
               "Net ignore threshold must be greater than one");
@@ -428,8 +434,8 @@ GriddedDetailedPlacer::FindCandidateRows(GriddedRow* source_row,
             [](const CandidateRow& lhs, const CandidateRow& rhs) {
               return lhs.distance < rhs.distance;
             });
-  if (candidate_rows.size() > kMaxOptimalRegionRowsPerComponent) {
-    candidate_rows.resize(kMaxOptimalRegionRowsPerComponent);
+  if (candidate_rows.size() > static_cast<size_t>(max_candidate_rows_)) {
+    candidate_rows.resize(max_candidate_rows_);
   }
   return candidate_rows;
 }
@@ -866,6 +872,7 @@ bool GriddedDetailedPlacer::StartPlacement() {
             << "\n"
             << "  row relocation: "
             << (enable_relocation_ ? "enabled" : "disabled") << "\n"
+            << "  maximum candidate rows: " << max_candidate_rows_ << "\n"
             << "  vertical swap: "
             << (enable_vertical_swap_ ? "enabled" : "disabled") << "\n"
             << "  HPWL before : " << WeightedHPWL() << "um\n";
