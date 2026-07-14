@@ -85,3 +85,12 @@ target_link_libraries(gridded_detailed_placer_test
 add_test(NAME gridded_detailed_placer_test COMMAND gridded_detailed_placer_test)
 set_tests_properties(gridded_detailed_placer_test
                      PROPERTIES LABELS "unit;placer;well_legalizer")
+
+add_executable(gridded_row_assignment_transaction_test
+               gridded_row_assignment_transaction_test.cc)
+target_link_libraries(gridded_row_assignment_transaction_test
+                      PRIVATE dalilib ${DALI_GTEST_MAIN})
+add_test(NAME gridded_row_assignment_transaction_test
+         COMMAND gridded_row_assignment_transaction_test)
+set_tests_properties(gridded_row_assignment_transaction_test
+                     PROPERTIES LABELS "unit;placer;well_legalizer")

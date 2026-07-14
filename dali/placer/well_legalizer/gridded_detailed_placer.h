@@ -167,9 +167,6 @@ class GriddedDetailedPlacer : public Placer {
                                  Component* first_component,
                                  GriddedRow* second_row,
                                  Component* second_component) const;
-  /** Collect the unchanged union of nets affected by repacking two rows. */
-  std::vector<int> CollectRowPairNetIds(GriddedRow* first_row,
-                                        GriddedRow* second_row) const;
   /** Collect the sorted union of nets incident to the supplied rows. */
   std::vector<int> CollectRowNetIds(const std::vector<GriddedRow*>& rows) const;
   /** Compute weighted HPWL for sorted unique net identifiers. */

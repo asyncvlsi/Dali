@@ -20,6 +20,7 @@
 #include "dali/common/elapsed_time.h"
 #include "dali/common/logging.h"
 #include "dali/common/placement_metrics.h"
+#include "dali/placer/well_legalizer/gridded_row_assignment_transaction.h"
 
 namespace dali {
 
@@ -331,11 +332,6 @@ bool GriddedDetailedPlacer::IsNonHeightIncreasingSwap(
          first_requirements.n_well_height <= first_row->NHeight() &&
          second_requirements.p_well_height <= second_row->PHeight() &&
          second_requirements.n_well_height <= second_row->NHeight();
-}
-
-std::vector<int> GriddedDetailedPlacer::CollectRowPairNetIds(
-    GriddedRow* first_row, GriddedRow* second_row) const {
-  return CollectRowNetIds({first_row, second_row});
 }
 
 std::vector<int> GriddedDetailedPlacer::CollectRowNetIds(
@@ -708,18 +704,14 @@ bool GriddedDetailedPlacer::TrySwap(GriddedRow* first_row, int first_index,
     return false;
   }
 
-  std::vector<int> affected_net_ids =
-      CollectRowPairNetIds(first_row, second_row);
-  double row_pair_cost_before = NetWireLengthCost(affected_net_ids);
-  auto row_state_before_swap = SaveRowState({first_row, second_row});
+  GriddedRowAssignmentTransaction transaction(ckt_ptr_,
+                                              {first_row, second_row});
   std::swap(first_row->Components()[first_index],
             second_row->Components()[second_index]);
   LegalizeRowsAfterAssignment(first_row, second_row);
 
-  double row_pair_cost_after = NetWireLengthCost(affected_net_ids);
-  if (row_pair_cost_after + kMinSignificantHpwlImprovement >=
-      row_pair_cost_before) {
-    RestoreRowState(row_state_before_swap);
+  if (!transaction.ImprovesHpwl(kMinSignificantHpwlImprovement)) {
+    transaction.Restore();
     return false;
   }
   TransferInitialLocation(first_row, second_row, first_component);
@@ -768,19 +760,15 @@ bool GriddedDetailedPlacer::TryMove(GriddedRow* source_row,
   }
 
   ++stats->evaluated;
-  std::vector<int> affected_net_ids =
-      CollectRowPairNetIds(source_row, target_row);
-  double row_pair_cost_before = NetWireLengthCost(affected_net_ids);
-  auto row_state_before_move = SaveRowState({source_row, target_row});
+  GriddedRowAssignmentTransaction transaction(ckt_ptr_,
+                                              {source_row, target_row});
   source_row->Components().erase(source_component);
   target_row->Components().push_back(component);
   component->SetLLX(target_lx);
   LegalizeRowsAfterAssignment(source_row, target_row);
 
-  double row_pair_cost_after = NetWireLengthCost(affected_net_ids);
-  if (row_pair_cost_after + kMinSignificantHpwlImprovement >=
-      row_pair_cost_before) {
-    RestoreRowState(row_state_before_move);
+  if (!transaction.ImprovesHpwl(kMinSignificantHpwlImprovement)) {
+    transaction.Restore();
     ++stats->no_hpwl_improvement;
     return false;
   }
@@ -808,11 +796,8 @@ bool GriddedDetailedPlacer::TryEjectionChain(GriddedRow* source_row,
     for (const CandidateRow& receiver : FindEjectionDestinationRows(
              source_row, target_row, ejection.component, ejection.region)) {
       ++stats->ejection_evaluated;
-      std::vector<int> affected_net_ids =
-          CollectRowNetIds({source_row, target_row, receiver.row});
-      double cost_before = NetWireLengthCost(affected_net_ids);
-      auto row_state_before_move =
-          SaveRowState({source_row, target_row, receiver.row});
+      GriddedRowAssignmentTransaction transaction(
+          ckt_ptr_, {source_row, target_row, receiver.row});
 
       auto source_component =
           std::find(source_row->Components().begin(),
@@ -838,9 +823,8 @@ bool GriddedDetailedPlacer::TryEjectionChain(GriddedRow* source_row,
       }
       receiver.row->LegalizeLooseX();
 
-      double cost_after = NetWireLengthCost(affected_net_ids);
-      if (cost_after + kMinSignificantHpwlImprovement >= cost_before) {
-        RestoreRowState(row_state_before_move);
+      if (!transaction.ImprovesHpwl(kMinSignificantHpwlImprovement)) {
+        transaction.Restore();
         ++stats->ejection_no_hpwl_improvement;
         continue;
       }
@@ -944,11 +928,8 @@ bool GriddedDetailedPlacer::TryClosedAssignmentCycle(
         }
 
         ++stats->cycle_evaluated;
-        std::vector<int> affected_net_ids =
-            CollectRowNetIds({source_row, target_row, receiver.row});
-        double cost_before = NetWireLengthCost(affected_net_ids);
-        auto row_state_before_cycle =
-            SaveRowState({source_row, target_row, receiver.row});
+        GriddedRowAssignmentTransaction transaction(
+            ckt_ptr_, {source_row, target_row, receiver.row});
 
         source_row->Components().erase(source_component);
         target_row->Components().erase(target_component);
@@ -971,9 +952,8 @@ bool GriddedDetailedPlacer::TryClosedAssignmentCycle(
           row->LegalizeLooseX();
         }
 
-        double cost_after = NetWireLengthCost(affected_net_ids);
-        if (cost_after + kMinSignificantHpwlImprovement >= cost_before) {
-          RestoreRowState(row_state_before_cycle);
+        if (!transaction.ImprovesHpwl(kMinSignificantHpwlImprovement)) {
+          transaction.Restore();
           ++stats->cycle_no_hpwl_improvement;
           continue;
         }
