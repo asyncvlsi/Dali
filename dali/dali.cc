@@ -109,6 +109,24 @@ static GlobalAnchorSchedule ParseGlobalAnchorSchedule(const std::string& name) {
   return GlobalAnchorSchedule::kDali;
 }
 
+static GlobalRefinementFeedbackMode ParseGlobalRefinementFeedbackMode(
+    const std::string& name) {
+  if (name == "full") {
+    return GlobalRefinementFeedbackMode::kFull;
+  }
+  if (name == "x_only") {
+    return GlobalRefinementFeedbackMode::kXOnly;
+  }
+  if (name == "y_only") {
+    return GlobalRefinementFeedbackMode::kYOnly;
+  }
+  if (name == "none") {
+    return GlobalRefinementFeedbackMode::kNone;
+  }
+  std::cout << "Ignore unknown gridded_legalization_feedback: " << name << "\n";
+  return GlobalRefinementFeedbackMode::kFull;
+}
+
 static GlobalGridSchedule ParseGlobalGridSchedule(const std::string& name) {
   if (name == "dali") {
     return GlobalGridSchedule::kDali;
@@ -227,8 +245,8 @@ void Dali::ShowParamsList() {
       << enable_gridded_upper_bound_balancing_ << "\n"
       << "  enable_gridded_legalization_pressure: "
       << enable_gridded_legalization_pressure_ << "\n"
-      << "  disable_gridded_legalization_feedback: "
-      << disable_gridded_legalization_feedback_ << "\n"
+      << "  gridded_legalization_feedback_mode: "
+      << static_cast<int>(gridded_legalization_feedback_mode_) << "\n"
       << "  enable_gridded_stripe_balancing: "
       << enable_gridded_stripe_balancing_ << "\n"
       << "  enable_gridded_local_reorder: " << enable_gridded_local_reorder_
@@ -339,8 +357,17 @@ void Dali::LoadParamsFromConfig() {
                  &enable_gridded_upper_bound_balancing_);
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_legalization_pressure"),
                  &enable_gridded_legalization_pressure_);
+  bool disable_gridded_legalization_feedback = false;
   LoadBoolConfig(ConfigName(prefix_, "disable_gridded_legalization_feedback"),
-                 &disable_gridded_legalization_feedback_);
+                 &disable_gridded_legalization_feedback);
+  if (disable_gridded_legalization_feedback) {
+    gridded_legalization_feedback_mode_ = GlobalRefinementFeedbackMode::kNone;
+  }
+  param_name = ConfigName(prefix_, "gridded_legalization_feedback");
+  if (ConfigExists(param_name)) {
+    gridded_legalization_feedback_mode_ = ParseGlobalRefinementFeedbackMode(
+        config_get_string(param_name.c_str()));
+  }
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_stripe_balancing"),
                  &enable_gridded_stripe_balancing_);
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_local_reorder"),
@@ -479,7 +506,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       enable_gridded_upper_bound_refiner_,
       enable_gridded_upper_bound_balancing_,
       enable_gridded_legalization_pressure_,
-      disable_gridded_legalization_feedback_,
+      gridded_legalization_feedback_mode_,
       enable_gridded_stripe_balancing_,
       enable_gridded_local_reorder_,
       enable_gridded_detailed_placement_,
@@ -794,8 +821,8 @@ bool Dali::RunGlobalPlacementStage() {
             std::make_unique<RoughGriddedUpperBoundRefiner>(
                 &well_legalizer_, enable_gridded_upper_bound_balancing_),
             0, 1);
-        gb_placer_.SetUseRefinedUpperBoundAsAnchor(
-            !disable_gridded_legalization_feedback_);
+        gb_placer_.SetRefinementFeedbackMode(
+            gridded_legalization_feedback_mode_);
       }
     }
     if (!gb_placer_.StartPlacement()) {

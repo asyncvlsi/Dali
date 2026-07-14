@@ -3,6 +3,10 @@
  *******************************************************************************/
 #include <gtest/gtest.h>
 
+#include <utility>
+#include <vector>
+
+#include "dali/circuit/circuit.h"
 #include "dali/placer/global_placer/global_placer.h"
 
 namespace dali {
@@ -31,8 +35,18 @@ class TestableGlobalPlacer : public GlobalPlacer {
   void SetCurrentUpperBoundPhysicalForTest(bool is_physical) {
     current_upper_bound_is_physical_ = is_physical;
   }
-  bool UsesRefinedUpperBoundAsAnchor() const {
-    return use_refined_upper_bound_as_anchor_;
+  GlobalRefinementFeedbackMode RefinementFeedbackMode() const {
+    return refinement_feedback_mode_;
+  }
+  void ApplyFeedbackForTest(
+      const std::vector<std::pair<double, double>>& original_locations,
+      const std::vector<int>& component_ids = {}) {
+    std::vector<ComponentLocation> placement;
+    placement.reserve(original_locations.size());
+    for (const auto& location : original_locations) {
+      placement.push_back({location.first, location.second});
+    }
+    ApplyRefinedAnchorFeedback(placement, component_ids);
   }
 };
 
@@ -73,11 +87,41 @@ TEST(GlobalUpperBoundRefinerTest, RequiresFreshPhysicalConvergenceBound) {
 
 TEST(GlobalUpperBoundRefinerTest, RefinedAnchorFeedbackCanBeDisabled) {
   TestableGlobalPlacer placer;
-  EXPECT_TRUE(placer.UsesRefinedUpperBoundAsAnchor());
+  EXPECT_EQ(placer.RefinementFeedbackMode(),
+            GlobalRefinementFeedbackMode::kFull);
 
   placer.SetUseRefinedUpperBoundAsAnchor(false);
 
-  EXPECT_FALSE(placer.UsesRefinedUpperBoundAsAnchor());
+  EXPECT_EQ(placer.RefinementFeedbackMode(),
+            GlobalRefinementFeedbackMode::kNone);
+}
+
+TEST(GlobalUpperBoundRefinerTest, SelectsOneFeedbackAxis) {
+  TestableGlobalPlacer placer;
+  placer.SetRefinementFeedbackMode(GlobalRefinementFeedbackMode::kYOnly);
+
+  EXPECT_EQ(placer.RefinementFeedbackMode(),
+            GlobalRefinementFeedbackMode::kYOnly);
+}
+
+TEST(GlobalUpperBoundRefinerTest, YOnlyFeedbackPreservesAnalyticalX) {
+  Circuit circuit;
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.SetDieArea(0, 0, 100, 100);
+  circuit.ReserveSpaceForDesignImp(1, 0, 0);
+  circuit.AddMacro("cell", 2, 2);
+  circuit.AddComponent("movable", "cell", 10, 20, PLACED);
+
+  TestableGlobalPlacer placer;
+  placer.SetCircuit(&circuit);
+  placer.SetRefinementFeedbackMode(GlobalRefinementFeedbackMode::kYOnly);
+  placer.ApplyFeedbackForTest({{1, 2}});
+
+  const Component& component = circuit.Components().front();
+  EXPECT_DOUBLE_EQ(component.LLX(), 1);
+  EXPECT_DOUBLE_EQ(component.LLY(), 20);
 }
 
 }  // namespace dali

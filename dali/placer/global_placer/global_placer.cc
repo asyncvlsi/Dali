@@ -31,6 +31,21 @@
 
 namespace dali {
 
+/** Return a concise log name for a physical-refinement feedback policy. */
+const char* RefinementFeedbackModeName(GlobalRefinementFeedbackMode mode) {
+  switch (mode) {
+    case GlobalRefinementFeedbackMode::kFull:
+      return "full";
+    case GlobalRefinementFeedbackMode::kXOnly:
+      return "x_only";
+    case GlobalRefinementFeedbackMode::kYOnly:
+      return "y_only";
+    case GlobalRefinementFeedbackMode::kNone:
+      return "none";
+  }
+  return "unknown";
+}
+
 /****
  * @brief Set the maximum number of iterations.
  *
@@ -264,14 +279,9 @@ void GlobalPlacer::RunPlacementIterations() {
       UpdateBestUpperBoundPlacement(accepted_hpwl);
     }
     EmitIterationSnapshot("upper_bound", "Upper Bound", "upper_bound");
-    if (accepted_physical_refinement && !use_refined_upper_bound_as_anchor_) {
-      RestorePlacement(placement_before_refinement);
-      LOG(info) << "    legalization feedback: disabled; next anchor uses "
-                   "the LAL upper bound\n";
-    } else if (accepted_physical_refinement &&
-               !selective_anchor_component_ids.empty()) {
-      ApplySelectiveRefinedAnchor(placement_before_refinement,
-                                  selective_anchor_component_ids);
+    if (accepted_physical_refinement) {
+      ApplyRefinedAnchorFeedback(placement_before_refinement,
+                                 selective_anchor_component_ids);
     }
     PrintHpwl();
     if (IsPlacementConverged()) break;
@@ -316,26 +326,43 @@ void GlobalPlacer::UpdateLegalizationPressure(
                         maximum_multiplier);
 }
 
-void GlobalPlacer::ApplySelectiveRefinedAnchor(
+void GlobalPlacer::ApplyRefinedAnchorFeedback(
     const std::vector<ComponentLocation>& placement_before_refinement,
     const std::vector<int>& component_ids) {
-  std::vector<ComponentLocation> selected_locations;
-  selected_locations.reserve(component_ids.size());
+  DaliExpects(
+      placement_before_refinement.size() == ckt_ptr_->Components().size(),
+      "Cannot apply refinement feedback: component count changed");
+
+  std::vector<bool> selected_components(ckt_ptr_->Components().size(),
+                                        component_ids.empty());
   for (int component_id : component_ids) {
     DaliExpects(
         component_id >= 0 &&
             component_id < static_cast<int>(ckt_ptr_->Components().size()),
-        "Selective refined anchor contains an invalid component id");
-    const Component& component = ckt_ptr_->Components()[component_id];
-    selected_locations.push_back({component.LLX(), component.LLY()});
+        "Refined anchor contains an invalid component id");
+    selected_components[component_id] = true;
   }
-  RestorePlacement(placement_before_refinement);
-  for (size_t i = 0; i < component_ids.size(); ++i) {
-    ckt_ptr_->Components()[component_ids[i]].SetLowerLeft(
-        selected_locations[i].lx, selected_locations[i].ly);
+
+  bool keep_x =
+      refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kFull ||
+      refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kXOnly;
+  bool keep_y =
+      refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kFull ||
+      refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYOnly;
+  int selected_movable_count = 0;
+  for (size_t i = 0; i < ckt_ptr_->Components().size(); ++i) {
+    Component& component = ckt_ptr_->Components()[i];
+    bool selected = selected_components[i];
+    if (selected && component.IsMovable()) ++selected_movable_count;
+    double lx = selected && keep_x ? component.LLX()
+                                   : placement_before_refinement[i].lx;
+    double ly = selected && keep_y ? component.LLY()
+                                   : placement_before_refinement[i].ly;
+    component.SetLowerLeft(lx, ly);
   }
-  LOG(info) << "    legalization feedback: keep refined anchors for "
-            << component_ids.size() << " evacuated components\n";
+  LOG(info) << "    legalization feedback: "
+            << RefinementFeedbackModeName(refinement_feedback_mode_) << ", "
+            << selected_movable_count << " selected components\n";
 }
 
 void GlobalPlacer::UpdateBestUpperBoundPlacement(double upper_bound_hpwl) {

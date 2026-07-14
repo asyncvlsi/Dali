@@ -94,7 +94,13 @@ class GlobalPlacer : public Placer {
 
   /** Select whether a refined physical upper bound becomes the next anchor. */
   void SetUseRefinedUpperBoundAsAnchor(bool enable) {
-    use_refined_upper_bound_as_anchor_ = enable;
+    refinement_feedback_mode_ = enable ? GlobalRefinementFeedbackMode::kFull
+                                       : GlobalRefinementFeedbackMode::kNone;
+  }
+
+  /** Select which refined coordinate axes anchor the next analytical solve. */
+  void SetRefinementFeedbackMode(GlobalRefinementFeedbackMode mode) {
+    refinement_feedback_mode_ = mode;
   }
 
   /** Load global placer configuration. */
@@ -152,8 +158,8 @@ class GlobalPlacer : public Placer {
   std::vector<ComponentLocation> SaveCurrentPlacement() const;
   /** Restore component coordinates from a complete placement copy. */
   void RestorePlacement(const std::vector<ComponentLocation>& placement);
-  /** Keep refined coordinates only for selected component ids. */
-  void ApplySelectiveRefinedAnchor(
+  /** Apply the configured refined coordinates to the next analytical anchor. */
+  void ApplyRefinedAnchorFeedback(
       const std::vector<ComponentLocation>& placement_before_refinement,
       const std::vector<int>& component_ids);
   /** Update LAL demand from physical pressure observed by the refiner. */
@@ -199,7 +205,8 @@ class GlobalPlacer : public Placer {
   double best_upper_bound_hpwl_ = std::numeric_limits<double>::max();
   int upper_bound_refiner_warmup_ = 0;
   int upper_bound_refiner_interval_ = 1;
-  bool use_refined_upper_bound_as_anchor_ = true;
+  GlobalRefinementFeedbackMode refinement_feedback_mode_ =
+      GlobalRefinementFeedbackMode::kFull;
   bool current_upper_bound_is_physical_ = false;
 };
 

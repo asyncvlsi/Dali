@@ -8,6 +8,14 @@
 
 namespace dali {
 
+/** Coordinates from a physical refinement used to anchor the next solve. */
+enum class GlobalRefinementFeedbackMode {
+  kFull,
+  kXOnly,
+  kYOnly,
+  kNone,
+};
+
 /**
  * A placement region that a physical upper-bound refiner could not legalize.
  *

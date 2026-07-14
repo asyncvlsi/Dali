@@ -102,7 +102,8 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "-enable_gridded_upper_bound_balancing",
                      "-enable_gridded_legalization_pressure",
                      "-enable_adaptive_stripe_boundaries",
-                     "-disable_gridded_legalization_feedback",
+                     "-gridded_legalization_feedback",
+                     "y_only",
                      "-enable_gridded_stripe_balancing",
                      "-enable_gridded_local_reorder",
                      "-enable_gridded_detailed_placement",
@@ -148,7 +149,8 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_EQ(config_get_int("dali.enable_gridded_upper_bound_balancing"), 1);
   EXPECT_EQ(config_get_int("dali.enable_gridded_legalization_pressure"), 1);
   EXPECT_EQ(config_get_int("dali.enable_adaptive_stripe_boundaries"), 1);
-  EXPECT_EQ(config_get_int("dali.disable_gridded_legalization_feedback"), 1);
+  EXPECT_STREQ(config_get_string("dali.gridded_legalization_feedback"),
+               "y_only");
   EXPECT_EQ(config_get_int("dali.enable_gridded_stripe_balancing"), 1);
   EXPECT_EQ(config_get_int("dali.enable_gridded_local_reorder"), 1);
   EXPECT_EQ(config_get_int("dali.enable_gridded_detailed_placement"), 1);
