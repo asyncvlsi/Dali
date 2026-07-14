@@ -38,6 +38,12 @@ void GriddedDetailedPlacer::MoveStats::Add(const MoveStats& other) {
   ejection_accepted += other.ejection_accepted;
 }
 
+void GriddedDetailedPlacer::ClusterStats::Add(const ClusterStats& other) {
+  visited_rows += other.visited_rows;
+  changed_rows += other.changed_rows;
+  accepted_rows += other.accepted_rows;
+}
+
 struct GriddedRowSnapshot {
   GriddedRow* row = nullptr;
   std::vector<Component*> component_order;
@@ -978,6 +984,123 @@ GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::RunRelocationStage(
   return total_stats;
 }
 
+bool GriddedDetailedPlacer::ClusterRowX(GriddedRow* row, bool* changed) {
+  DaliExpects(changed != nullptr,
+              "Gridded row clustering requires a changed-row output");
+  *changed = false;
+  auto& components = row->Components();
+  if (components.empty()) {
+    return false;
+  }
+  std::sort(components.begin(), components.end(),
+            [](const Component* lhs, const Component* rhs) {
+              if (lhs->LLX() == rhs->LLX()) {
+                return lhs->Id() < rhs->Id();
+              }
+              return lhs->LLX() < rhs->LLX();
+            });
+
+  int total_width = 0;
+  std::vector<double> original_lx;
+  std::vector<double> transformed_targets;
+  original_lx.reserve(components.size());
+  transformed_targets.reserve(components.size());
+  for (Component* component : components) {
+    original_lx.push_back(component->LLX());
+    OptimalRegion region = ComputeOptimalRegion(component);
+    double target_lx = component->LLX();
+    if (region.valid) {
+      target_lx = std::clamp(component->LLX(), region.lx, region.ux);
+    }
+    transformed_targets.push_back(target_lx - total_width);
+    total_width += component->Width();
+  }
+
+  int min_transformed_lx = row->LLX() + row->LeftBoundaryMargin();
+  int max_transformed_lx =
+      row->URX() - row->RightBoundaryMargin() - total_width;
+  DaliExpects(min_transformed_lx <= max_transformed_lx,
+              "Cannot cluster an overflowing gridded row");
+
+  struct IsotonicBlock {
+    int begin = 0;
+    int end = 0;
+    double target_sum = 0;
+
+    int Size() const { return end - begin; }
+    double Mean() const { return target_sum / Size(); }
+  };
+  std::vector<IsotonicBlock> blocks;
+  blocks.reserve(components.size());
+  for (int i = 0; i < static_cast<int>(components.size()); ++i) {
+    blocks.push_back({i, i + 1, transformed_targets[i]});
+    while (blocks.size() >= 2 &&
+           blocks[blocks.size() - 2].Mean() > blocks.back().Mean()) {
+      IsotonicBlock right = blocks.back();
+      blocks.pop_back();
+      blocks.back().end = right.end;
+      blocks.back().target_sum += right.target_sum;
+    }
+  }
+
+  std::vector<int> transformed_lx(components.size(), 0);
+  for (const IsotonicBlock& block : blocks) {
+    int legal_lx = static_cast<int>(std::llround(block.Mean()));
+    legal_lx = std::clamp(legal_lx, min_transformed_lx, max_transformed_lx);
+    for (int i = block.begin; i < block.end; ++i) {
+      transformed_lx[i] = legal_lx;
+    }
+  }
+
+  std::vector<int> affected_net_ids = CollectRowNetIds({row});
+  double cost_before = NetWireLengthCost(affected_net_ids);
+  int prefix_width = 0;
+  for (size_t i = 0; i < components.size(); ++i) {
+    double legal_lx = transformed_lx[i] + prefix_width;
+    *changed = *changed || legal_lx != original_lx[i];
+    components[i]->SetLLX(legal_lx);
+    prefix_width += components[i]->Width();
+  }
+  if (!*changed) {
+    return false;
+  }
+
+  if (NetWireLengthCost(affected_net_ids) + kMinSignificantHpwlImprovement <
+      cost_before) {
+    return true;
+  }
+  for (size_t i = 0; i < components.size(); ++i) {
+    components[i]->SetLLX(original_lx[i]);
+  }
+  return false;
+}
+
+GriddedDetailedPlacer::ClusterStats
+GriddedDetailedPlacer::RunSingleSegmentClustering() {
+  ClusterStats stats;
+  for (GriddedRow* row : rows_) {
+    if (row->Components().empty()) {
+      continue;
+    }
+    ++stats.visited_rows;
+    bool changed = false;
+    bool accepted = ClusterRowX(row, &changed);
+    stats.changed_rows += changed;
+    stats.accepted_rows += accepted;
+  }
+  return stats;
+}
+
+void GriddedDetailedPlacer::LogClusteringPass(const std::string& stage_name,
+                                              const ClusterStats& stats,
+                                              double hpwl_before) {
+  double hpwl_after = WeightedHPWL();
+  LOG(info) << "  " << stage_name << ": visited=" << stats.visited_rows
+            << ", changed=" << stats.changed_rows
+            << ", accepted=" << stats.accepted_rows << ", HPWL=" << hpwl_after
+            << "um, improvement=" << hpwl_before - hpwl_after << "um\n";
+}
+
 void GriddedDetailedPlacer::LogMoveStage(const MoveStats& stats,
                                          double hpwl_before) {
   double hpwl_after = WeightedHPWL();
@@ -1074,9 +1197,13 @@ bool GriddedDetailedPlacer::StartPlacement() {
   double vertical_swap_cpu_time = 0;
   double local_reorder_wall_time = 0;
   double local_reorder_cpu_time = 0;
+  double clustering_wall_time = 0;
+  double clustering_cpu_time = 0;
   MoveStats total_relocation_stats;
   SwapStats total_global_swap_stats;
   SwapStats total_vertical_swap_stats;
+  ClusterStats total_clustering_stats;
+  int clustering_pass_count = 0;
 
   LOG(info) << "Gridded detailed placement:\n"
             << "  gridded rows: " << rows_.size() << "\n"
@@ -1089,6 +1216,22 @@ bool GriddedDetailedPlacer::StartPlacement() {
             << "  vertical swap: "
             << (enable_vertical_swap_ ? "enabled" : "disabled") << "\n"
             << "  HPWL before : " << WeightedHPWL() << "um\n";
+
+  ElapsedTime clustering_timer;
+  clustering_timer.RecordStartTime();
+  double hpwl_before_clustering = WeightedHPWL();
+  ClusterStats initial_clustering_stats = RunSingleSegmentClustering();
+  total_clustering_stats.Add(initial_clustering_stats);
+  ++clustering_pass_count;
+  clustering_timer.RecordEndTime();
+  clustering_wall_time += clustering_timer.GetWallTime();
+  clustering_cpu_time += clustering_timer.GetCpuTime();
+  LogClusteringPass("initial X clustering", initial_clustering_stats,
+                    hpwl_before_clustering);
+  RecordPlacementHpwlMetrics("gridded_detailed.initial_clustering", *ckt_ptr_);
+  EmitSnapshot("gridded.initial_clustering",
+               "Gridded Detailed Initial X Clustering", "initial_clustering",
+               0);
 
   double previous_hpwl = WeightedHPWL();
   int iteration_count = 0;
@@ -1190,6 +1333,34 @@ bool GriddedDetailedPlacer::StartPlacement() {
     }
   }
 
+  for (int pass = 0; pass < kMaxFinalClusteringPasses; ++pass) {
+    clustering_timer.RecordStartTime();
+    hpwl_before_clustering = WeightedHPWL();
+    ClusterStats clustering_stats = RunSingleSegmentClustering();
+    double clustering_hpwl = WeightedHPWL();
+    double clustering_improvement = hpwl_before_clustering - clustering_hpwl;
+    double relative_improvement =
+        hpwl_before_clustering > 0
+            ? clustering_improvement / hpwl_before_clustering
+            : 0;
+    total_clustering_stats.Add(clustering_stats);
+    ++clustering_pass_count;
+    clustering_timer.RecordEndTime();
+    clustering_wall_time += clustering_timer.GetWallTime();
+    clustering_cpu_time += clustering_timer.GetCpuTime();
+    LogClusteringPass("final X clustering pass " + std::to_string(pass),
+                      clustering_stats, hpwl_before_clustering);
+    RecordPlacementHpwlMetrics(
+        "gridded_detailed.final_clustering_" + std::to_string(pass), *ckt_ptr_);
+    EmitSnapshot("gridded.final_clustering." + std::to_string(pass),
+                 "Gridded Detailed Final X Clustering " + std::to_string(pass),
+                 "final_clustering", pass);
+    if (clustering_stats.accepted_rows == 0 ||
+        relative_improvement < kMinClusteringRelativeImprovement) {
+      break;
+    }
+  }
+
   total_timer.RecordEndTime();
   LOG(info) << "  accepted detailed iterations: " << iteration_count << "\n"
             << "  HPWL after  : " << WeightedHPWL() << "um\n"
@@ -1202,6 +1373,8 @@ bool GriddedDetailedPlacer::StartPlacement() {
             << "s, cpu=" << vertical_swap_cpu_time << "s\n"
             << "    local reorder : wall=" << local_reorder_wall_time
             << "s, cpu=" << local_reorder_cpu_time << "s\n"
+            << "    X clustering  : wall=" << clustering_wall_time
+            << "s, cpu=" << clustering_cpu_time << "s\n"
             << "    total         : wall=" << total_timer.GetWallTime()
             << "s, cpu=" << total_timer.GetCpuTime() << "s\n";
 
@@ -1238,6 +1411,14 @@ bool GriddedDetailedPlacer::StartPlacement() {
                         total_vertical_swap_stats.candidates);
   RecordPlacementMetric("gridded_detailed.vertical_swap.accepted",
                         total_vertical_swap_stats.accepted);
+  RecordPlacementMetric("gridded_detailed.clustering.passes",
+                        clustering_pass_count);
+  RecordPlacementMetric("gridded_detailed.clustering.visited_rows",
+                        total_clustering_stats.visited_rows);
+  RecordPlacementMetric("gridded_detailed.clustering.changed_rows",
+                        total_clustering_stats.changed_rows);
+  RecordPlacementMetric("gridded_detailed.clustering.accepted_rows",
+                        total_clustering_stats.accepted_rows);
   RecordPlacementMetric("time.gridded_detailed.relocation.wall_s",
                         relocation_wall_time);
   RecordPlacementMetric("time.gridded_detailed.relocation.cpu_s",
@@ -1254,6 +1435,10 @@ bool GriddedDetailedPlacer::StartPlacement() {
                         local_reorder_wall_time);
   RecordPlacementMetric("time.gridded_detailed.local_reorder.cpu_s",
                         local_reorder_cpu_time);
+  RecordPlacementMetric("time.gridded_detailed.clustering.wall_s",
+                        clustering_wall_time);
+  RecordPlacementMetric("time.gridded_detailed.clustering.cpu_s",
+                        clustering_cpu_time);
   RecordPlacementMetric("time.gridded_detailed.total.wall_s",
                         total_timer.GetWallTime());
   RecordPlacementMetric("time.gridded_detailed.total.cpu_s",

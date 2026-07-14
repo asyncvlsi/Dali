@@ -77,6 +77,8 @@ class GriddedDetailedPlacer : public Placer {
   static constexpr int kMaxOptimalRegionCandidatesPerRow = 2;
   static constexpr int kMaxEjectionComponentsPerTarget = 2;
   static constexpr int kMaxEjectionDestinationRows = 1;
+  static constexpr int kMaxFinalClusteringPasses = 6;
+  static constexpr double kMinClusteringRelativeImprovement = 0.0001;
   static constexpr double kMinSignificantHpwlImprovement = 1e-9;
 
   struct SwapStats {
@@ -123,6 +125,15 @@ class GriddedDetailedPlacer : public Placer {
     int used_width = 0;
     int p_well_height = 0;
     int n_well_height = 0;
+  };
+
+  struct ClusterStats {
+    int visited_rows = 0;
+    int changed_rows = 0;
+    int accepted_rows = 0;
+
+    /** Accumulate counters from another row-clustering pass. */
+    void Add(const ClusterStats& other);
   };
 
   double WireLengthCost(GriddedRow* row, int left_index, int right_index) const;
@@ -204,6 +215,20 @@ class GriddedDetailedPlacer : public Placer {
   /** Run relocation, optionally including the more expensive ejection search.
    */
   MoveStats RunRelocationStage(bool enable_ejection);
+  /**
+   * Project one row toward per-component optimal X regions without reordering.
+   *
+   * The projection uses isotonic regression after subtracting cumulative cell
+   * widths, which guarantees legal non-overlap inside the row's reserved
+   * ordinary-cell interval. The proposed row is retained only when exact HPWL
+   * over all incident nets decreases.
+   */
+  bool ClusterRowX(GriddedRow* row, bool* changed);
+  /** Apply one order-preserving X-clustering pass to every nonempty row. */
+  ClusterStats RunSingleSegmentClustering();
+  /** Log one exact single-segment clustering pass. */
+  void LogClusteringPass(const std::string& stage_name,
+                         const ClusterStats& stats, double hpwl_before);
   /** Log relocation acceptance and overlapping feasibility blockers. */
   void LogMoveStage(const MoveStats& stats, double hpwl_before);
   SwapStats RunVerticalSwapStage();

@@ -215,4 +215,59 @@ TEST(GriddedDetailedPlacerTest, EjectionChainCreatesRowWhitespace) {
             rows[2].Components().end());
 }
 
+TEST(GriddedDetailedPlacerTest, SingleSegmentClusteringPreservesOrder) {
+  Circuit circuit;
+  circuit.SetDatabaseMicrons(1000);
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.SetDieArea(0, 0, 60, 10);
+  circuit.ReserveSpaceForDesignImp(6, 0, 3);
+
+  Macro* cell = circuit.AddMacro("cell", 10, 10);
+  ASSERT_NE(cell, nullptr);
+  cell->AddWellRect(false, 0, 0, 10, 4);
+  cell->AddWellRect(true, 0, 4, 10, 10);
+  circuit.AddMacroPin(cell, "p", true)->SetOffset(5, 5);
+
+  const std::vector<std::string> names = {"a", "b", "c"};
+  const std::vector<int> initial_x = {0, 20, 40};
+  const std::vector<int> anchor_x = {40, 20, 0};
+  for (size_t i = 0; i < names.size(); ++i) {
+    circuit.AddComponent(names[i], "cell", initial_x[i], 0, PLACED);
+    circuit.AddComponent(names[i] + "_anchor", "cell", anchor_x[i], 0, FIXED);
+  }
+  for (const std::string& name : names) {
+    const std::string net_name = name + "_net";
+    circuit.AddNet(net_name, 2);
+    circuit.AddComponentPinToNet(name, "p", net_name);
+    circuit.AddComponentPinToNet(name + "_anchor", "p", net_name);
+  }
+
+  GriddedRow row;
+  row.SetLLX(0);
+  row.SetWidth(60);
+  row.SetLLY(0);
+  row.UpdateWellHeightUpward(4, 6);
+  row.SetOrient(true);
+  for (const std::string& name : names) {
+    row.AddComponent(circuit.GetComponentPtr(name));
+  }
+
+  GriddedDetailedPlacer placer;
+  placer.SetCircuit(&circuit);
+  placer.SetRows({&row});
+  placer.SetMaxRounds(0);
+  ASSERT_TRUE(placer.StartPlacement());
+
+  ASSERT_EQ(row.Components().size(), 3);
+  EXPECT_EQ(row.Components()[0], circuit.GetComponentPtr("a"));
+  EXPECT_EQ(row.Components()[1], circuit.GetComponentPtr("b"));
+  EXPECT_EQ(row.Components()[2], circuit.GetComponentPtr("c"));
+  EXPECT_DOUBLE_EQ(circuit.GetComponentPtr("a")->LLX(), 10);
+  EXPECT_DOUBLE_EQ(circuit.GetComponentPtr("b")->LLX(), 20);
+  EXPECT_DOUBLE_EQ(circuit.GetComponentPtr("c")->LLX(), 30);
+  EXPECT_DOUBLE_EQ(circuit.WeightedHPWL(), 60);
+}
+
 }  // namespace dali
