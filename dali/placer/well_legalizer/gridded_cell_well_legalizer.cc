@@ -1194,8 +1194,14 @@ void GriddedCellWellLegalizer::ApplyColumnOrientationPhase(
 double GriddedCellWellLegalizer::OptimizeColumnOrientationPhases() {
   constexpr int kMaxOrientationSweeps = 4;
   constexpr double kMinHpwlImprovement = 1e-9;
-  std::vector<bool> first_row_orient_n(col_list_.size(),
-                                       is_first_row_orient_N_);
+  std::vector<bool> first_row_orient_n;
+  first_row_orient_n.reserve(col_list_.size());
+  for (const StripeColumn& column : col_list_) {
+    first_row_orient_n.push_back(
+        column.stripe_list_.empty()
+            ? is_first_row_orient_N_
+            : column.stripe_list_.front().is_first_row_orient_N_);
+  }
   double best_hpwl = WeightedHPWL();
   int flipped_column_count = 0;
   int completed_sweeps = 0;
@@ -1438,11 +1444,61 @@ void GriddedCellWellLegalizer::RunRowLocationOptimizationStage() {
                "legalization", "row_location");
 }
 
+void GriddedCellWellLegalizer::RunJointOrientationAndRowLocationOptimization() {
+  constexpr int kMaximumRounds = 4;
+  constexpr double kMinimumRelativeImprovement = 1e-5;
+
+  ElapsedTime timer;
+  timer.RecordStartTime();
+  const double initial_hpwl = WeightedHPWL();
+  double current_hpwl = initial_hpwl;
+  int completed_rounds = 0;
+  for (int round = 0; round < kMaximumRounds; ++round) {
+    const double hpwl_before = current_hpwl;
+    const double hpwl_after_orientation = OptimizeColumnOrientationPhases();
+    RunRowLocationOptimizationStage();
+    current_hpwl = WeightedHPWL();
+    ++completed_rounds;
+
+    LOG(info) << "  Joint orientation/row-location round " << round + 1 << ":\n"
+              << "    HPWL before        : " << hpwl_before << "um\n"
+              << "    after orientation  : " << hpwl_after_orientation << "um\n"
+              << "    after row movement : " << current_hpwl << "um\n"
+              << "    improvement        : " << hpwl_before - current_hpwl
+              << "um\n";
+    EmitSnapshot("orientation_row_location",
+                 "After Joint Orientation and Row Location", "legalization",
+                 "orientation_row_location", round);
+    const double relative_improvement =
+        (hpwl_before - current_hpwl) / std::max(1.0, hpwl_before);
+    if (relative_improvement <= kMinimumRelativeImprovement) {
+      break;
+    }
+  }
+  timer.RecordEndTime();
+
+  LOG(info) << "  Joint orientation/row-location summary:\n"
+            << "    completed rounds : " << completed_rounds << "\n"
+            << "    initial HPWL      : " << initial_hpwl << "um\n"
+            << "    final HPWL        : " << current_hpwl << "um\n"
+            << "    improvement       : " << initial_hpwl - current_hpwl
+            << "um\n"
+            << "    wall time         : " << timer.GetWallTime() << "s\n";
+  RecordPlacementHpwlMetrics("well_legalization.orientation_row_location",
+                             *ckt_ptr_);
+  RecordPlacementMetric(
+      "time.well_legalization.orientation_row_location.wall_s",
+      timer.GetWallTime());
+  RecordPlacementMetric(
+      "time.well_legalization.orientation_row_location.cpu_s",
+      timer.GetCpuTime());
+}
+
 void GriddedCellWellLegalizer::RunPostClusteringStages(
     bool clustering_succeeded) {
   RunClusterOrientationStage();
   if (clustering_succeeded && enable_row_location_optimization_) {
-    RunRowLocationOptimizationStage();
+    RunJointOrientationAndRowLocationOptimization();
   }
   if (clustering_succeeded &&
       (enable_local_reorder_ || enable_detailed_placement_)) {

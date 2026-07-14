@@ -265,6 +265,15 @@ class GriddedCellWellLegalizer : public Placer {
   double OptimizeColumnOrientationPhases();
   void RunClusterOrientationStage();
   void RunRowLocationOptimizationStage();
+  /**
+   * Alternate column orientation phases and row Y locations to convergence.
+   *
+   * Row movement changes the HPWL preference between the two legal
+   * orientation phases of a column. Rechecking orientation after each row
+   * optimization exposes improvements that the previous one-pass schedule
+   * could not see. Both substeps accept exact HPWL improvements only.
+   */
+  void RunJointOrientationAndRowLocationOptimization();
   std::vector<GriddedRow*> CollectGriddedRows();
   void RunGriddedDetailedPlacementStage();
   /** Run all configured stages after component clustering. */
