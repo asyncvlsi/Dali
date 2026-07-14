@@ -1290,7 +1290,13 @@ bool GriddedCellWellLegalizer::RunBestBoundaryClusteringStage() {
   stripe_boundaries_override_.clear();
   RestoreInitialComponentLocation();
   InitializeWellLegalizer();
-  std::vector<int> initial_boundaries = CollectColumnBoundaries();
+  const std::vector<int> uniform_boundaries = CollectColumnBoundaries();
+
+  enable_adaptive_stripe_boundaries_ = true;
+  RestoreInitialComponentLocation();
+  InitializeWellLegalizer();
+  const std::vector<int> adaptive_boundaries = CollectColumnBoundaries();
+  enable_adaptive_stripe_boundaries_ = false;
 
   int max_component_width = 0;
   for (const Component& component : ckt_ptr_->Components()) {
@@ -1298,8 +1304,9 @@ bool GriddedCellWellLegalizer::RunBestBoundaryClusteringStage() {
       max_component_width = std::max(max_component_width, component.Width());
     }
   }
-  int average_pitch = (initial_boundaries.back() - initial_boundaries.front()) /
-                      static_cast<int>(initial_boundaries.size() - 1);
+  int average_pitch =
+      (uniform_boundaries.back() - uniform_boundaries.front()) /
+      static_cast<int>(uniform_boundaries.size() - 1);
   StripeBoundaryCoordinateConfig search_config;
   // A one-grid move changes ownership only for components immediately beside
   // the cutline. Cell-width moves were too disruptive on test_case_3 and had
@@ -1317,6 +1324,20 @@ bool GriddedCellWellLegalizer::RunBestBoundaryClusteringStage() {
     bool feasible = ComponentClusteringLoose();
     return StripeBoundaryEvaluation{feasible, feasible ? WeightedHPWL() : 0.0};
   };
+
+  const StripeBoundaryEvaluation uniform_evaluation =
+      evaluator(uniform_boundaries);
+  StripeBoundaryEvaluation adaptive_evaluation = uniform_evaluation;
+  if (adaptive_boundaries != uniform_boundaries) {
+    adaptive_evaluation = evaluator(adaptive_boundaries);
+  }
+  const bool use_adaptive_seed =
+      adaptive_evaluation.feasible &&
+      (!uniform_evaluation.feasible ||
+       adaptive_evaluation.cost < uniform_evaluation.cost);
+  const std::vector<int>& initial_boundaries =
+      use_adaptive_seed ? adaptive_boundaries : uniform_boundaries;
+
   StripeBoundaryCoordinateResult search_result =
       StripeBoundaryCoordinateOptimizer(search_config)
           .Optimize(initial_boundaries, evaluator);
@@ -1336,6 +1357,18 @@ bool GriddedCellWellLegalizer::RunBestBoundaryClusteringStage() {
             << search_result.evaluated_candidates << "\n"
             << "    accepted moves       : " << search_result.accepted_moves
             << "\n"
+            << "    uniform seed         : "
+            << (uniform_evaluation.feasible
+                    ? std::to_string(uniform_evaluation.cost) + "um"
+                    : "infeasible")
+            << "\n"
+            << "    adaptive seed        : "
+            << (adaptive_evaluation.feasible
+                    ? std::to_string(adaptive_evaluation.cost) + "um"
+                    : "infeasible")
+            << "\n"
+            << "    selected seed        : "
+            << (use_adaptive_seed ? "adaptive" : "uniform") << "\n"
             << "    initial feasible     : " << search_result.feasible << "\n";
   if (search_result.feasible) {
     LOG(info) << "    initial HPWL         : " << search_result.initial_cost
