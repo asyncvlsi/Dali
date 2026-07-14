@@ -107,6 +107,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "-enable_gridded_local_reorder",
                      "-enable_gridded_detailed_placement",
                      "-enable_gridded_detailed_relocation",
+                     "-enable_gridded_assignment_batch",
                      "-gridded_detailed_max_candidate_rows",
                      "8",
                      "-gridded_detailed_max_rounds",
@@ -152,6 +153,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_EQ(config_get_int("dali.enable_gridded_local_reorder"), 1);
   EXPECT_EQ(config_get_int("dali.enable_gridded_detailed_placement"), 1);
   EXPECT_EQ(config_get_int("dali.enable_gridded_detailed_relocation"), 1);
+  EXPECT_EQ(config_get_int("dali.enable_gridded_assignment_batch"), 1);
   EXPECT_EQ(config_get_int("dali.gridded_detailed_max_candidate_rows"), 8);
   EXPECT_EQ(config_get_int("dali.gridded_detailed_max_rounds"), 5);
   EXPECT_DOUBLE_EQ(

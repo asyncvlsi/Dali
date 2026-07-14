@@ -307,6 +307,7 @@ TEST(GriddedDetailedPlacerTest, EjectionChainCreatesRowWhitespace) {
   placer.SetCircuit(&circuit);
   placer.SetRows({&rows[0], &rows[1], &rows[2]});
   placer.SetEnableRelocation(true);
+  placer.SetEnableBatchedAssignmentCycles(true);
   placer.SetEnableVerticalSwap(false);
   placer.SetMaxRounds(1);
   const double hpwl_before = circuit.WeightedHPWL();

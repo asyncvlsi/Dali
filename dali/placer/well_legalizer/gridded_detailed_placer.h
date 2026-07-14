@@ -56,6 +56,9 @@ class GriddedDetailedPlacer : public Placer {
   /** Enable or disable exact cross-row moves into existing row whitespace. */
   void SetEnableRelocation(bool enable);
 
+  /** Defer closed assignment cycles and commit them in exact-gain order. */
+  void SetEnableBatchedAssignmentCycles(bool enable);
+
   /** Set the maximum optimal-region rows considered for one component. */
   void SetMaxCandidateRows(int max_candidate_rows);
 
@@ -106,6 +109,7 @@ class GriddedDetailedPlacer : public Placer {
     int cycle_evaluated = 0;
     int cycle_no_hpwl_improvement = 0;
     int cycle_accepted = 0;
+    int cycle_invalidated = 0;
 
     /** Accumulate counters from another relocation traversal. */
     void Add(const MoveStats& other);
@@ -147,6 +151,15 @@ class GriddedDetailedPlacer : public Placer {
     Component* returning_component = nullptr;
     OptimalRegion returning_region;
     double hpwl_improvement = 0;
+  };
+
+  /** One closed cycle together with the source assignment it was built for. */
+  struct ClosedCyclePlan {
+    GriddedRow* source_row = nullptr;
+    Component* component = nullptr;
+    GriddedRow* target_row = nullptr;
+    OptimalRegion source_region;
+    ClosedCycleCandidate candidate;
   };
 
   struct ClusterStats {
@@ -269,8 +282,12 @@ class GriddedDetailedPlacer : public Placer {
                                      GriddedRow* second_row,
                                      int max_candidates);
   SwapStats TryOptimalRegionSwaps(GriddedRow* source_row, int source_index);
-  MoveStats TryOptimalRegionMove(GriddedRow* source_row, Component* component,
-                                 bool enable_ejection);
+  MoveStats TryOptimalRegionMove(
+      GriddedRow* source_row, Component* component, bool enable_ejection,
+      std::vector<Component*>* deferred_cycle_components);
+  /** Evaluate and commit deferred assignment cycles in exact-gain order. */
+  MoveStats RunBatchedAssignmentCycles(
+      const std::vector<Component*>& deferred_components);
   /** Run relocation, optionally including the more expensive ejection search.
    */
   MoveStats RunRelocationStage(bool enable_ejection);
@@ -307,6 +324,7 @@ class GriddedDetailedPlacer : public Placer {
   double min_relative_improvement_ = 0.005;
   bool enable_vertical_swap_ = true;
   bool enable_relocation_ = false;
+  bool enable_batched_assignment_cycles_ = false;
   int max_candidate_rows_ = kMaxOptimalRegionRowsPerComponent;
   size_t net_ignore_threshold_ = 100;
 };

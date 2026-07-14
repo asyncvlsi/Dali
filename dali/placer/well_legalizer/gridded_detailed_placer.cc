@@ -41,6 +41,7 @@ void GriddedDetailedPlacer::MoveStats::Add(const MoveStats& other) {
   cycle_evaluated += other.cycle_evaluated;
   cycle_no_hpwl_improvement += other.cycle_no_hpwl_improvement;
   cycle_accepted += other.cycle_accepted;
+  cycle_invalidated += other.cycle_invalidated;
 }
 
 void GriddedDetailedPlacer::ClusterStats::Add(const ClusterStats& other) {
@@ -119,6 +120,10 @@ void GriddedDetailedPlacer::SetEnableVerticalSwap(bool enable) {
 
 void GriddedDetailedPlacer::SetEnableRelocation(bool enable) {
   enable_relocation_ = enable;
+}
+
+void GriddedDetailedPlacer::SetEnableBatchedAssignmentCycles(bool enable) {
+  enable_batched_assignment_cycles_ = enable;
 }
 
 void GriddedDetailedPlacer::SetMaxCandidateRows(int max_candidate_rows) {
@@ -1157,7 +1162,8 @@ GriddedDetailedPlacer::SwapStats GriddedDetailedPlacer::TryOptimalRegionSwaps(
 }
 
 GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::TryOptimalRegionMove(
-    GriddedRow* source_row, Component* component, bool enable_ejection) {
+    GriddedRow* source_row, Component* component, bool enable_ejection,
+    std::vector<Component*>* deferred_cycle_components) {
   if (!IsSwapCandidate(component)) {
     return {};
   }
@@ -1184,8 +1190,69 @@ GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::TryOptimalRegionMove(
   if (enable_ejection && ejection_target != nullptr) {
     if (!TryEjectionChain(source_row, component, ejection_target, region,
                           &stats)) {
-      TryClosedAssignmentCycle(source_row, component, ejection_target, region,
-                               &stats);
+      if (deferred_cycle_components == nullptr) {
+        TryClosedAssignmentCycle(source_row, component, ejection_target, region,
+                                 &stats);
+      } else {
+        deferred_cycle_components->push_back(component);
+      }
+    }
+  }
+  return stats;
+}
+
+GriddedDetailedPlacer::MoveStats
+GriddedDetailedPlacer::RunBatchedAssignmentCycles(
+    const std::vector<Component*>& deferred_components) {
+  MoveStats stats;
+  std::vector<ClosedCyclePlan> plans;
+  plans.reserve(deferred_components.size());
+  for (Component* component : deferred_components) {
+    auto source = component_rows_.find(component);
+    if (source == component_rows_.end()) continue;
+    GriddedRow* source_row = source->second;
+    if (std::find(source_row->Components().begin(),
+                  source_row->Components().end(),
+                  component) == source_row->Components().end()) {
+      continue;
+    }
+
+    OptimalRegion source_region = ComputeOptimalRegion(component);
+    if (!source_region.valid) continue;
+    GriddedRow* target_row = nullptr;
+    for (const CandidateRow& candidate_row :
+         FindCandidateRows(source_row, component, source_region)) {
+      RowRequirements requirements = ComputeRowRequirementsAfterAssignment(
+          candidate_row.row, nullptr, component);
+      if (requirements.used_width > candidate_row.row->UsableWidth()) {
+        target_row = candidate_row.row;
+        break;
+      }
+    }
+    if (target_row == nullptr) continue;
+
+    ClosedCycleCandidate candidate = FindBestClosedAssignmentCycle(
+        source_row, component, target_row, source_region, &stats);
+    if (candidate.displaced_component != nullptr) {
+      plans.push_back(
+          {source_row, component, target_row, source_region, candidate});
+    }
+  }
+
+  std::sort(
+      plans.begin(), plans.end(),
+      [](const ClosedCyclePlan& lhs, const ClosedCyclePlan& rhs) {
+        if (lhs.candidate.hpwl_improvement != rhs.candidate.hpwl_improvement) {
+          return lhs.candidate.hpwl_improvement >
+                 rhs.candidate.hpwl_improvement;
+        }
+        return lhs.component->Id() < rhs.component->Id();
+      });
+  for (const ClosedCyclePlan& plan : plans) {
+    if (!CommitClosedAssignmentCycle(plan.source_row, plan.component,
+                                     plan.target_row, plan.source_region,
+                                     plan.candidate, &stats)) {
+      ++stats.cycle_invalidated;
     }
   }
   return stats;
@@ -1203,9 +1270,18 @@ GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::RunRelocationStage(
   }
 
   MoveStats total_stats;
+  std::vector<Component*> deferred_cycle_components;
+  std::vector<Component*>* deferred_cycles =
+      enable_ejection && enable_batched_assignment_cycles_
+          ? &deferred_cycle_components
+          : nullptr;
   for (Component* component : components) {
     total_stats.Add(TryOptimalRegionMove(component_rows_.at(component),
-                                         component, enable_ejection));
+                                         component, enable_ejection,
+                                         deferred_cycles));
+  }
+  if (!deferred_cycle_components.empty()) {
+    total_stats.Add(RunBatchedAssignmentCycles(deferred_cycle_components));
   }
   component_rows_.clear();
   return total_stats;
@@ -1346,6 +1422,7 @@ void GriddedDetailedPlacer::LogMoveStage(const MoveStats& stats,
             << ", cycle(attempted=" << stats.cycle_attempts
             << ", evaluated=" << stats.cycle_evaluated
             << ", accepted=" << stats.cycle_accepted
+            << ", invalidated=" << stats.cycle_invalidated
             << ", no-HPWL-gain=" << stats.cycle_no_hpwl_improvement << ")"
             << ", HPWL=" << hpwl_after
             << "um, improvement=" << hpwl_before - hpwl_after << "um\n";
@@ -1443,6 +1520,10 @@ bool GriddedDetailedPlacer::StartPlacement() {
             << "\n"
             << "  row relocation: "
             << (enable_relocation_ ? "enabled" : "disabled") << "\n"
+            << "  assignment cycles: "
+            << (enable_batched_assignment_cycles_ ? "exact-gain batch"
+                                                  : "sequential")
+            << "\n"
             << "  maximum candidate rows: " << max_candidate_rows_ << "\n"
             << "  vertical swap: "
             << (enable_vertical_swap_ ? "enabled" : "disabled") << "\n"
@@ -1642,6 +1723,8 @@ bool GriddedDetailedPlacer::StartPlacement() {
                         total_relocation_stats.cycle_no_hpwl_improvement);
   RecordPlacementMetric("gridded_detailed.assignment_cycle.accepted",
                         total_relocation_stats.cycle_accepted);
+  RecordPlacementMetric("gridded_detailed.assignment_cycle.invalidated",
+                        total_relocation_stats.cycle_invalidated);
   RecordPlacementMetric("gridded_detailed.global_swap.candidates",
                         total_global_swap_stats.candidates);
   RecordPlacementMetric("gridded_detailed.global_swap.accepted",
