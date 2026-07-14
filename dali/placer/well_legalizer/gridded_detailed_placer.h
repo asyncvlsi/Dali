@@ -140,6 +140,15 @@ class GriddedDetailedPlacer : public Placer {
     double current_distance = 0;
   };
 
+  struct ClosedCycleCandidate {
+    Component* displaced_component = nullptr;
+    OptimalRegion displaced_region;
+    GriddedRow* receiver_row = nullptr;
+    Component* returning_component = nullptr;
+    OptimalRegion returning_region;
+    double hpwl_improvement = 0;
+  };
+
   struct ClusterStats {
     int visited_rows = 0;
     int changed_rows = 0;
@@ -240,6 +249,11 @@ class GriddedDetailedPlacer : public Placer {
                                 GriddedRow* target_row,
                                 const OptimalRegion& source_region,
                                 MoveStats* stats);
+  /** Apply one previously validated closed three-row cycle candidate. */
+  bool ApplyClosedAssignmentCycle(GriddedRow* source_row, Component* component,
+                                  GriddedRow* target_row,
+                                  const OptimalRegion& source_region,
+                                  const ClosedCycleCandidate& candidate);
   SwapStats TryClosestComponentSwaps(GriddedRow* first_row,
                                      GriddedRow* second_row,
                                      int max_candidates);

@@ -37,6 +37,10 @@ class GriddedRowAssignmentTransaction {
   /** Return true when the trial reduces affected-net HPWL by the threshold. */
   bool ImprovesHpwl(double minimum_improvement) const;
 
+  /** Return exact affected-net HPWL before the trial minus its current value.
+   */
+  double HpwlImprovement() const;
+
   /** Restore component membership, order, location, and orientation. */
   void Restore() const;
 

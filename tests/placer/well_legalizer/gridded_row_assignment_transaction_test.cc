@@ -55,6 +55,7 @@ TEST(GriddedRowAssignmentTransactionTest, MeasuresAndRestoresTrialAssignment) {
   movable->SetLLX(100);
   movable->SetLLY(10);
   movable->SetOrient(FS);
+  EXPECT_GT(improving_transaction.HpwlImprovement(), 0);
   EXPECT_TRUE(improving_transaction.ImprovesHpwl(1e-9));
   improving_transaction.Restore();
 
@@ -72,6 +73,7 @@ TEST(GriddedRowAssignmentTransactionTest, MeasuresAndRestoresTrialAssignment) {
   movable->SetLLX(-100);
   movable->SetLLY(10);
   movable->SetOrient(FS);
+  EXPECT_LT(worsening_transaction.HpwlImprovement(), 0);
   EXPECT_FALSE(worsening_transaction.ImprovesHpwl(1e-9));
   worsening_transaction.Restore();
 

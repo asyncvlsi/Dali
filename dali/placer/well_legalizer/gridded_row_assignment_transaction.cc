@@ -55,7 +55,11 @@ bool GriddedRowAssignmentTransaction::ImprovesHpwl(
     double minimum_improvement) const {
   DaliExpects(minimum_improvement >= 0,
               "Minimum HPWL improvement cannot be negative");
-  return AffectedNetHpwl() + minimum_improvement < hpwl_before_;
+  return HpwlImprovement() > minimum_improvement;
+}
+
+double GriddedRowAssignmentTransaction::HpwlImprovement() const {
+  return hpwl_before_ - AffectedNetHpwl();
 }
 
 void GriddedRowAssignmentTransaction::Restore() const {

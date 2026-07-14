@@ -858,6 +858,7 @@ bool GriddedDetailedPlacer::TryClosedAssignmentCycle(
     double score = 0;
   };
 
+  ClosedCycleCandidate best_candidate;
   for (const DisplacementCandidate& displacement :
        FindDisplacementCandidates(target_row, component)) {
     int receiver_count = 0;
@@ -912,69 +913,91 @@ bool GriddedDetailedPlacer::TryClosedAssignmentCycle(
       }
 
       for (const ReturnCandidate& return_candidate : return_candidates) {
-        auto source_component =
-            std::find(source_row->Components().begin(),
-                      source_row->Components().end(), component);
-        auto target_component =
-            std::find(target_row->Components().begin(),
-                      target_row->Components().end(), displacement.component);
-        auto receiver_component = std::find(receiver.row->Components().begin(),
-                                            receiver.row->Components().end(),
-                                            return_candidate.component);
-        if (source_component == source_row->Components().end() ||
-            target_component == target_row->Components().end() ||
-            receiver_component == receiver.row->Components().end()) {
-          continue;
-        }
-
         ++stats->cycle_evaluated;
         GriddedRowAssignmentTransaction transaction(
             ckt_ptr_, {source_row, target_row, receiver.row});
-
-        source_row->Components().erase(source_component);
-        target_row->Components().erase(target_component);
-        receiver.row->Components().erase(receiver_component);
-        target_row->Components().push_back(component);
-        receiver.row->Components().push_back(displacement.component);
-        source_row->Components().push_back(return_candidate.component);
-        component->SetLLX(
-            ComputeMoveTargetX(target_row, component, source_region));
-        displacement.component->SetLLX(ComputeMoveTargetX(
-            receiver.row, displacement.component, displacement.region));
-        if (return_candidate.region.valid) {
-          return_candidate.component->SetLLX(ComputeMoveTargetX(
-              source_row, return_candidate.component, return_candidate.region));
-        }
-        for (GriddedRow* row : {source_row, target_row, receiver.row}) {
-          for (Component* row_component : row->Components()) {
-            PlaceComponentInRow(row, row_component);
-          }
-          row->LegalizeLooseX();
-        }
-
-        if (!transaction.ImprovesHpwl(kMinSignificantHpwlImprovement)) {
+        ClosedCycleCandidate candidate{
+            displacement.component,     displacement.region,     receiver.row,
+            return_candidate.component, return_candidate.region, 0};
+        if (!ApplyClosedAssignmentCycle(source_row, component, target_row,
+                                        source_region, candidate)) {
           transaction.Restore();
+          continue;
+        }
+        candidate.hpwl_improvement = transaction.HpwlImprovement();
+        transaction.Restore();
+        if (candidate.hpwl_improvement <= kMinSignificantHpwlImprovement) {
           ++stats->cycle_no_hpwl_improvement;
           continue;
         }
-
-        TransferInitialLocation(source_row, target_row, component);
-        TransferInitialLocation(target_row, receiver.row,
-                                displacement.component);
-        TransferInitialLocation(receiver.row, source_row,
-                                return_candidate.component);
-        SynchronizeRowUsedSize(source_row);
-        SynchronizeRowUsedSize(target_row);
-        SynchronizeRowUsedSize(receiver.row);
-        component_rows_[component] = target_row;
-        component_rows_[displacement.component] = receiver.row;
-        component_rows_[return_candidate.component] = source_row;
-        ++stats->cycle_accepted;
-        return true;
+        if (candidate.hpwl_improvement > best_candidate.hpwl_improvement) {
+          best_candidate = candidate;
+        }
       }
     }
   }
-  return false;
+
+  if (best_candidate.displaced_component == nullptr) {
+    return false;
+  }
+  DaliExpects(ApplyClosedAssignmentCycle(source_row, component, target_row,
+                                         source_region, best_candidate),
+              "Selected gridded assignment cycle is no longer applicable");
+  TransferInitialLocation(source_row, target_row, component);
+  TransferInitialLocation(target_row, best_candidate.receiver_row,
+                          best_candidate.displaced_component);
+  TransferInitialLocation(best_candidate.receiver_row, source_row,
+                          best_candidate.returning_component);
+  SynchronizeRowUsedSize(source_row);
+  SynchronizeRowUsedSize(target_row);
+  SynchronizeRowUsedSize(best_candidate.receiver_row);
+  component_rows_[component] = target_row;
+  component_rows_[best_candidate.displaced_component] =
+      best_candidate.receiver_row;
+  component_rows_[best_candidate.returning_component] = source_row;
+  ++stats->cycle_accepted;
+  return true;
+}
+
+bool GriddedDetailedPlacer::ApplyClosedAssignmentCycle(
+    GriddedRow* source_row, Component* component, GriddedRow* target_row,
+    const OptimalRegion& source_region, const ClosedCycleCandidate& candidate) {
+  auto source_component = std::find(source_row->Components().begin(),
+                                    source_row->Components().end(), component);
+  auto target_component =
+      std::find(target_row->Components().begin(),
+                target_row->Components().end(), candidate.displaced_component);
+  auto receiver_component =
+      std::find(candidate.receiver_row->Components().begin(),
+                candidate.receiver_row->Components().end(),
+                candidate.returning_component);
+  if (source_component == source_row->Components().end() ||
+      target_component == target_row->Components().end() ||
+      receiver_component == candidate.receiver_row->Components().end()) {
+    return false;
+  }
+
+  source_row->Components().erase(source_component);
+  target_row->Components().erase(target_component);
+  candidate.receiver_row->Components().erase(receiver_component);
+  target_row->Components().push_back(component);
+  candidate.receiver_row->Components().push_back(candidate.displaced_component);
+  source_row->Components().push_back(candidate.returning_component);
+  component->SetLLX(ComputeMoveTargetX(target_row, component, source_region));
+  candidate.displaced_component->SetLLX(
+      ComputeMoveTargetX(candidate.receiver_row, candidate.displaced_component,
+                         candidate.displaced_region));
+  if (candidate.returning_region.valid) {
+    candidate.returning_component->SetLLX(ComputeMoveTargetX(
+        source_row, candidate.returning_component, candidate.returning_region));
+  }
+  for (GriddedRow* row : {source_row, target_row, candidate.receiver_row}) {
+    for (Component* row_component : row->Components()) {
+      PlaceComponentInRow(row, row_component);
+    }
+    row->LegalizeLooseX();
+  }
+  return true;
 }
 
 GriddedDetailedPlacer::SwapStats
