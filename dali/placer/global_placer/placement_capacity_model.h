@@ -4,6 +4,7 @@
 #ifndef DALI_PLACER_GLOBAL_PLACER_PLACEMENT_CAPACITY_MODEL_H_
 #define DALI_PLACER_GLOBAL_PLACER_PLACEMENT_CAPACITY_MODEL_H_
 
+#include <memory>
 #include <vector>
 
 #include "dali/circuit/component.h"
@@ -66,6 +67,32 @@ class GriddedPlacementCapacityModel : public PlacementCapacityModel {
  private:
   GriddedCapacityConfig config_;
   double demand_normalization_ = 1.0;
+};
+
+/**
+ * Decorates a capacity model with component-specific legalization pressure.
+ *
+ * A multiplier represents the extra physical capacity that a component's
+ * provisional gridded row required. Regional demand is scaled by the
+ * area-weighted mean multiplier of the movable components in that region.
+ */
+class LegalizationPressureCapacityModel : public PlacementCapacityModel {
+ public:
+  explicit LegalizationPressureCapacityModel(
+      std::shared_ptr<const PlacementCapacityModel> base_model);
+
+  /** Replace the per-component demand multipliers used by future queries. */
+  void SetDemandMultipliers(std::vector<double> demand_multipliers);
+
+  PlacementCapacity Evaluate(const std::vector<Component*>& components,
+                             int region_width, int region_height,
+                             unsigned long long whitespace_area,
+                             double target_density,
+                             CapacityEvaluationPurpose purpose) const override;
+
+ private:
+  std::shared_ptr<const PlacementCapacityModel> base_model_;
+  std::vector<double> demand_multipliers_;
 };
 
 }  // namespace dali

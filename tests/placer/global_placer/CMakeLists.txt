@@ -23,3 +23,10 @@ add_test(NAME global_upper_bound_refiner_test
          COMMAND global_upper_bound_refiner_test)
 set_tests_properties(global_upper_bound_refiner_test
                      PROPERTIES LABELS "unit;placer;global_placer")
+
+add_executable(placement_capacity_model_test placement_capacity_model_test.cc)
+target_link_libraries(placement_capacity_model_test
+                      PRIVATE dalilib ${DALI_GTEST_MAIN})
+add_test(NAME placement_capacity_model_test COMMAND placement_capacity_model_test)
+set_tests_properties(placement_capacity_model_test
+                     PROPERTIES LABELS "unit;placer;global_placer")
