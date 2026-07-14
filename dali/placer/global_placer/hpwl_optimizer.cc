@@ -667,8 +667,36 @@ void BoundToBoundHpwlOptimizer::BuildProblemWithAnchorY() {
     by[i] += pin_loc1 * weight;
     coefficients_y_.emplace_back(SparseTriplet(i, i, weight));
   }
+  AddRelativeYConstraints();
   elapsed_time.RecordEndTime();
   tot_triplets_time_y += elapsed_time.GetWallTime();
+}
+
+void BoundToBoundHpwlOptimizer::AddRelativeYConstraints() {
+  std::vector<Component>& components = ckt_ptr_->Components();
+  for (const RelativeYConstraint& constraint : relative_y_constraints_) {
+    const int first = constraint.first_component_id;
+    const int second = constraint.second_component_id;
+    DaliExpects(first >= 0 && first < static_cast<int>(components.size()) &&
+                    second >= 0 && second < static_cast<int>(components.size()),
+                "Relative Y constraint contains an invalid component id");
+    DaliExpects(first != second,
+                "Relative Y constraint cannot reference one component twice");
+    DaliExpects(components[first].IsMovable() && components[second].IsMovable(),
+                "Relative Y constraint requires movable components");
+
+    const double current_offset =
+        components[first].LLY() - components[second].LLY();
+    const double weight =
+        alpha /
+        (std::fabs(current_offset - constraint.offset) + height_epsilon_);
+    coefficients_y_.emplace_back(first, first, weight);
+    coefficients_y_.emplace_back(second, second, weight);
+    coefficients_y_.emplace_back(first, second, -weight);
+    coefficients_y_.emplace_back(second, first, -weight);
+    by[first] += constraint.offset * weight;
+    by[second] -= constraint.offset * weight;
+  }
 }
 
 void BoundToBoundHpwlOptimizer::BackUpComponentLocation() {
@@ -815,6 +843,7 @@ double BoundToBoundHpwlOptimizer::OptimizeHpwl() {
     ckt_ptr_->GenMATLABTable("cg_result_" + std::to_string(cur_iter_) + ".txt");
   }
   BackUpComponentLocation();
+  relative_y_constraints_.clear();
   lower_bound_hpwl_.push_back(lower_bound_hpwl_x_.back() +
                               lower_bound_hpwl_y_.back());
   return lower_bound_hpwl_.back();

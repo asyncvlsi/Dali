@@ -161,7 +161,8 @@ class GlobalPlacer : public Placer {
   /** Apply the configured refined coordinates to the next analytical anchor. */
   void ApplyRefinedAnchorFeedback(
       const std::vector<ComponentLocation>& placement_before_refinement,
-      const std::vector<int>& component_ids);
+      const std::vector<int>& component_ids,
+      const std::vector<std::vector<int>>& component_rows);
   /** Return weighted Y HPWL for modeled nets incident to a component. */
   double ConnectedNetWeightedHpwlY(const Component& component) const;
   /** Return whether refined Y is no worse than the analytical Y locally. */
@@ -181,6 +182,10 @@ class GlobalPlacer : public Placer {
       const std::vector<bool>& candidates,
       const std::vector<ComponentLocation>& analytical_placement,
       bool require_positive_gain, bool require_positive_baseline_gain) const;
+  /** Build a linear-size chain of accepted physical row relationships. */
+  std::vector<RelativeYConstraint> BuildRelativeYConstraints(
+      const std::vector<std::vector<int>>& component_rows,
+      const std::vector<bool>& accepted_components) const;
   /** Update LAL demand from physical pressure observed by the refiner. */
   void UpdateLegalizationPressure(const GlobalUpperBoundRefinement& refinement);
   /** Log displacement introduced by physical upper-bound refinement. */

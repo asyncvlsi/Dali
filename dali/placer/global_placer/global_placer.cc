@@ -50,6 +50,8 @@ const char* RefinementFeedbackModeName(GlobalRefinementFeedbackMode mode) {
       return "y_row_transactional_positive";
     case GlobalRefinementFeedbackMode::kYRowTransactionalConsistent:
       return "y_row_transactional_consistent";
+    case GlobalRefinementFeedbackMode::kYRowTransactionalCoherent:
+      return "y_row_transactional_coherent";
     case GlobalRefinementFeedbackMode::kNone:
       return "none";
   }
@@ -268,6 +270,7 @@ void GlobalPlacer::RunPlacementIterations() {
     double accepted_hpwl = spreader_->Hpwls().back();
     bool accepted_physical_refinement = false;
     std::vector<int> selective_anchor_component_ids;
+    std::vector<std::vector<int>> refined_component_rows;
     current_upper_bound_is_physical_ = upper_bound_refiner_ == nullptr;
     std::vector<ComponentLocation> placement_before_refinement;
     if (ShouldRefineUpperBound()) {
@@ -280,6 +283,7 @@ void GlobalPlacer::RunPlacementIterations() {
         accepted_physical_refinement = true;
         selective_anchor_component_ids =
             std::move(refinement.anchor_component_ids);
+        refined_component_rows = std::move(refinement.component_rows);
         current_upper_bound_is_physical_ = true;
         LogRefinementDisplacement(placement_before_refinement);
       }
@@ -291,7 +295,8 @@ void GlobalPlacer::RunPlacementIterations() {
     EmitIterationSnapshot("upper_bound", "Upper Bound", "upper_bound");
     if (accepted_physical_refinement) {
       ApplyRefinedAnchorFeedback(placement_before_refinement,
-                                 selective_anchor_component_ids);
+                                 selective_anchor_component_ids,
+                                 refined_component_rows);
     }
     PrintHpwl();
     if (IsPlacementConverged()) break;
@@ -338,7 +343,8 @@ void GlobalPlacer::UpdateLegalizationPressure(
 
 void GlobalPlacer::ApplyRefinedAnchorFeedback(
     const std::vector<ComponentLocation>& placement_before_refinement,
-    const std::vector<int>& component_ids) {
+    const std::vector<int>& component_ids,
+    const std::vector<std::vector<int>>& component_rows) {
   DaliExpects(
       placement_before_refinement.size() == ckt_ptr_->Components().size(),
       "Cannot apply refinement feedback: component count changed");
@@ -366,7 +372,9 @@ void GlobalPlacer::ApplyRefinedAnchorFeedback(
       refinement_feedback_mode_ ==
           GlobalRefinementFeedbackMode::kYRowTransactionalPositive ||
       refinement_feedback_mode_ ==
-          GlobalRefinementFeedbackMode::kYRowTransactionalConsistent;
+          GlobalRefinementFeedbackMode::kYRowTransactionalConsistent ||
+      refinement_feedback_mode_ ==
+          GlobalRefinementFeedbackMode::kYRowTransactionalCoherent;
   const bool require_row_scale_y =
       refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYRowScale ||
       refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYRowHpwl ||
@@ -375,7 +383,9 @@ void GlobalPlacer::ApplyRefinedAnchorFeedback(
       refinement_feedback_mode_ ==
           GlobalRefinementFeedbackMode::kYRowTransactionalPositive ||
       refinement_feedback_mode_ ==
-          GlobalRefinementFeedbackMode::kYRowTransactionalConsistent;
+          GlobalRefinementFeedbackMode::kYRowTransactionalConsistent ||
+      refinement_feedback_mode_ ==
+          GlobalRefinementFeedbackMode::kYRowTransactionalCoherent;
   const bool require_non_worsening_hpwl =
       refinement_feedback_mode_ == GlobalRefinementFeedbackMode::kYRowHpwl;
   const bool use_transactional_y =
@@ -384,15 +394,24 @@ void GlobalPlacer::ApplyRefinedAnchorFeedback(
       refinement_feedback_mode_ ==
           GlobalRefinementFeedbackMode::kYRowTransactionalPositive ||
       refinement_feedback_mode_ ==
-          GlobalRefinementFeedbackMode::kYRowTransactionalConsistent;
+          GlobalRefinementFeedbackMode::kYRowTransactionalConsistent ||
+      refinement_feedback_mode_ ==
+          GlobalRefinementFeedbackMode::kYRowTransactionalCoherent;
   const bool require_positive_transactional_gain =
       refinement_feedback_mode_ ==
           GlobalRefinementFeedbackMode::kYRowTransactionalPositive ||
       refinement_feedback_mode_ ==
-          GlobalRefinementFeedbackMode::kYRowTransactionalConsistent;
+          GlobalRefinementFeedbackMode::kYRowTransactionalConsistent ||
+      refinement_feedback_mode_ ==
+          GlobalRefinementFeedbackMode::kYRowTransactionalCoherent;
   const bool require_positive_baseline_gain =
       refinement_feedback_mode_ ==
-      GlobalRefinementFeedbackMode::kYRowTransactionalConsistent;
+          GlobalRefinementFeedbackMode::kYRowTransactionalConsistent ||
+      refinement_feedback_mode_ ==
+          GlobalRefinementFeedbackMode::kYRowTransactionalCoherent;
+  const bool use_relative_y_constraints =
+      refinement_feedback_mode_ ==
+      GlobalRefinementFeedbackMode::kYRowTransactionalCoherent;
 
   // Classify every candidate against the same complete refined placement.
   // Applying restorations in a second pass keeps this filter independent of
@@ -423,6 +442,16 @@ void GlobalPlacer::ApplyRefinedAnchorFeedback(
         require_positive_transactional_gain, require_positive_baseline_gain);
   }
 
+  if (use_relative_y_constraints) {
+    std::vector<RelativeYConstraint> constraints =
+        BuildRelativeYConstraints(component_rows, keep_component_y);
+    LOG(info) << "    relative Y feedback: " << constraints.size()
+              << " adjacent component pairs\n";
+    if (optimizer_ != nullptr) {
+      optimizer_->SetRelativeYConstraints(std::move(constraints));
+    }
+  }
+
   for (size_t i = 0; i < ckt_ptr_->Components().size(); ++i) {
     Component& component = ckt_ptr_->Components()[i];
     const bool selected = selected_components[i];
@@ -439,6 +468,32 @@ void GlobalPlacer::ApplyRefinedAnchorFeedback(
   LOG(info) << "    legalization feedback: "
             << RefinementFeedbackModeName(refinement_feedback_mode_) << ", "
             << selected_movable_count << " selected components\n";
+}
+
+std::vector<RelativeYConstraint> GlobalPlacer::BuildRelativeYConstraints(
+    const std::vector<std::vector<int>>& component_rows,
+    const std::vector<bool>& accepted_components) const {
+  DaliExpects(accepted_components.size() == ckt_ptr_->Components().size(),
+              "Relative Y feedback count does not match component count");
+  std::vector<RelativeYConstraint> constraints;
+  for (const std::vector<int>& component_row : component_rows) {
+    for (size_t i = 1; i < component_row.size(); ++i) {
+      const int first = component_row[i - 1];
+      const int second = component_row[i];
+      DaliExpects(first >= 0 &&
+                      first < static_cast<int>(accepted_components.size()) &&
+                      second >= 0 &&
+                      second < static_cast<int>(accepted_components.size()),
+                  "Physical row contains an invalid component id");
+      if (!accepted_components[first] || !accepted_components[second]) {
+        continue;
+      }
+      constraints.push_back({first, second,
+                             ckt_ptr_->Components()[first].LLY() -
+                                 ckt_ptr_->Components()[second].LLY()});
+    }
+  }
+  return constraints;
 }
 
 double GlobalPlacer::ConnectedNetWeightedHpwlY(

@@ -60,6 +60,7 @@ struct ProvisionalGriddedPlacementResult {
   bool used_scavenge = false;
   int balanced_component_count = 0;
   std::vector<int> balanced_component_ids;
+  std::vector<std::vector<int>> component_rows;
   std::vector<ProvisionalGriddedPlacementViolation> initial_violations;
   std::vector<ProvisionalGriddedPlacementViolation> violations;
 };
@@ -310,6 +311,9 @@ class GriddedCellWellLegalizer : public Placer {
 
   /** Return total gridded-row overflow area in grid units. */
   double ProvisionalOverflowArea() const;
+
+  /** Return component ids in physical X order for provisional gridded rows. */
+  std::vector<std::vector<int>> CollectProvisionalComponentRows() const;
 
   /** Move a minimal HPWL-ranked set out of overflowing provisional stripes. */
   bool TryBalanceProvisionalPlacement(

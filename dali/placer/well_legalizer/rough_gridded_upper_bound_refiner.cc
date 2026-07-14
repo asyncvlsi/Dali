@@ -94,6 +94,7 @@ GlobalUpperBoundRefinement RoughGriddedUpperBoundRefiner::Refine(
   refinement.violations = std::move(violations);
   refinement.anchor_component_ids =
       std::move(provisional.balanced_component_ids);
+  refinement.component_rows = std::move(provisional.component_rows);
   return refinement;
 }
 

@@ -3,6 +3,7 @@
  *******************************************************************************/
 #include <gtest/gtest.h>
 
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -28,6 +29,7 @@ class RecordingUpperBoundRefiner : public GlobalUpperBoundRefiner {
 
 class TestableGlobalPlacer : public GlobalPlacer {
  public:
+  using GlobalPlacer::BuildRelativeYConstraints;
   using GlobalPlacer::HasCurrentConvergenceUpperBound;
   using GlobalPlacer::ShouldRefineUpperBound;
 
@@ -40,14 +42,45 @@ class TestableGlobalPlacer : public GlobalPlacer {
   }
   void ApplyFeedbackForTest(
       const std::vector<std::pair<double, double>>& original_locations,
-      const std::vector<int>& component_ids = {}) {
+      const std::vector<int>& component_ids = {},
+      const std::vector<std::vector<int>>& component_rows = {}) {
     std::vector<ComponentLocation> placement;
     placement.reserve(original_locations.size());
     for (const auto& location : original_locations) {
       placement.push_back({location.first, location.second});
     }
-    ApplyRefinedAnchorFeedback(placement, component_ids);
+    ApplyRefinedAnchorFeedback(placement, component_ids, component_rows);
   }
+};
+
+class TestableHpwlOptimizer : public BoundToBoundHpwlOptimizer {
+ public:
+  explicit TestableHpwlOptimizer(Circuit* circuit)
+      : BoundToBoundHpwlOptimizer(circuit, 1) {}
+
+  void AddRelativeYConstraintsForTest(
+      std::vector<RelativeYConstraint> constraints, double anchor_alpha,
+      double height_epsilon) {
+    Initialize();
+    relative_y_constraints_ = std::move(constraints);
+    alpha = anchor_alpha;
+    height_epsilon_ = height_epsilon;
+    coefficients_y_.clear();
+    by.setZero();
+    AddRelativeYConstraints();
+  }
+
+  double Coefficient(int row, int column) const {
+    double value = 0.0;
+    for (const SparseTriplet& coefficient : coefficients_y_) {
+      if (coefficient.row() == row && coefficient.col() == column) {
+        value += coefficient.value();
+      }
+    }
+    return value;
+  }
+
+  double RightHandSide(int row) const { return by[row]; }
 };
 
 TEST(GlobalUpperBoundRefinerTest, HonorsWarmupAndInterval) {
@@ -102,6 +135,56 @@ TEST(GlobalUpperBoundRefinerTest, SelectsOneFeedbackAxis) {
 
   EXPECT_EQ(placer.RefinementFeedbackMode(),
             GlobalRefinementFeedbackMode::kYOnly);
+}
+
+TEST(GlobalUpperBoundRefinerTest,
+     BuildsConstraintsOnlyForAdjacentAcceptedComponents) {
+  Circuit circuit;
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.SetDieArea(0, 0, 100, 100);
+  circuit.ReserveSpaceForDesignImp(4, 0, 0);
+  circuit.AddMacro("cell", 1, 1);
+  for (int i = 0; i < 4; ++i) {
+    circuit.AddComponent("component_" + std::to_string(i), "cell", i, 10 + i,
+                         PLACED);
+  }
+
+  TestableGlobalPlacer placer;
+  placer.SetCircuit(&circuit);
+  std::vector<RelativeYConstraint> constraints =
+      placer.BuildRelativeYConstraints({{0, 1, 2, 3}},
+                                       {true, true, false, true});
+
+  ASSERT_EQ(constraints.size(), 1);
+  EXPECT_EQ(constraints[0].first_component_id, 0);
+  EXPECT_EQ(constraints[0].second_component_id, 1);
+  EXPECT_DOUBLE_EQ(constraints[0].offset, -1.0);
+}
+
+TEST(GlobalUpperBoundRefinerTest,
+     RelativeYConstraintAddsTranslationInvariantQuadraticTerm) {
+  Circuit circuit;
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.SetDieArea(0, 0, 100, 100);
+  circuit.ReserveSpaceForDesignImp(2, 0, 0);
+  circuit.AddMacro("cell", 1, 1);
+  circuit.AddComponent("first", "cell", 0, 5, PLACED);
+  circuit.AddComponent("second", "cell", 0, 2, PLACED);
+
+  TestableHpwlOptimizer optimizer(&circuit);
+  optimizer.AddRelativeYConstraintsForTest({{0, 1, 1.0}}, 2.0, 1.0);
+
+  const double expected_weight = 2.0 / 3.0;
+  EXPECT_NEAR(optimizer.Coefficient(0, 0), expected_weight, 1e-12);
+  EXPECT_NEAR(optimizer.Coefficient(1, 1), expected_weight, 1e-12);
+  EXPECT_NEAR(optimizer.Coefficient(0, 1), -expected_weight, 1e-12);
+  EXPECT_NEAR(optimizer.Coefficient(1, 0), -expected_weight, 1e-12);
+  EXPECT_NEAR(optimizer.RightHandSide(0), expected_weight, 1e-12);
+  EXPECT_NEAR(optimizer.RightHandSide(1), -expected_weight, 1e-12);
 }
 
 TEST(GlobalUpperBoundRefinerTest, YOnlyFeedbackPreservesAnalyticalX) {

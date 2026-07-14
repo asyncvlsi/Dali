@@ -135,6 +135,9 @@ static GlobalRefinementFeedbackMode ParseGlobalRefinementFeedbackMode(
   if (name == "y_row_transactional_consistent") {
     return GlobalRefinementFeedbackMode::kYRowTransactionalConsistent;
   }
+  if (name == "y_row_transactional_coherent") {
+    return GlobalRefinementFeedbackMode::kYRowTransactionalCoherent;
+  }
   if (name == "none") {
     return GlobalRefinementFeedbackMode::kNone;
   }

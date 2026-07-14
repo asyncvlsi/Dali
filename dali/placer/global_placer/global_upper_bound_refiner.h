@@ -26,6 +26,8 @@ enum class GlobalRefinementFeedbackMode {
   kYRowTransactionalPositive,
   /** Require positive Y gain in both baseline and transactional contexts. */
   kYRowTransactionalConsistent,
+  /** Also preserve relative Y offsets of adjacent accepted row components. */
+  kYRowTransactionalCoherent,
   /** Restore both analytical coordinates after scoring the refinement. */
   kNone,
 };
@@ -59,6 +61,8 @@ struct GlobalUpperBoundRefinement {
   std::vector<GlobalUpperBoundViolation> violations;
   /** Components whose refined coordinates may anchor the next iteration. */
   std::vector<int> anchor_component_ids;
+  /** Ordered component ids for every multi-component provisional row. */
+  std::vector<std::vector<int>> component_rows;
 };
 
 /** Optional periodic physical refinement of global-placement upper bounds. */

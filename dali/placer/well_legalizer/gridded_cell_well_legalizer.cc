@@ -286,6 +286,34 @@ double GriddedCellWellLegalizer::ProvisionalOverflowArea() const {
   return overflow_area;
 }
 
+std::vector<std::vector<int>>
+GriddedCellWellLegalizer::CollectProvisionalComponentRows() const {
+  std::vector<std::vector<int>> component_rows;
+  for (const StripeColumn& column : col_list_) {
+    for (const Stripe& stripe : column.stripe_list_) {
+      for (const GriddedRow& row : stripe.gridded_rows_) {
+        if (row.Components().size() < 2) continue;
+        std::vector<const Component*> ordered_components(
+            row.Components().begin(), row.Components().end());
+        std::sort(ordered_components.begin(), ordered_components.end(),
+                  [](const Component* first, const Component* second) {
+                    if (first->LLX() != second->LLX()) {
+                      return first->LLX() < second->LLX();
+                    }
+                    return first->Id() < second->Id();
+                  });
+        std::vector<int> component_ids;
+        component_ids.reserve(ordered_components.size());
+        for (const Component* component : ordered_components) {
+          component_ids.push_back(component->Id());
+        }
+        component_rows.push_back(std::move(component_ids));
+      }
+    }
+  }
+  return component_rows;
+}
+
 ProvisionalGriddedPlacementResult
 GriddedCellWellLegalizer::RunProvisionalPlacement(
     bool enable_overflow_balancing) {
@@ -332,6 +360,7 @@ GriddedCellWellLegalizer::RunProvisionalPlacement(
   enable_adaptive_stripe_boundaries_ = configured_adaptive_boundaries;
   if (result.feasible) {
     result.hpwl = WeightedHPWL();
+    result.component_rows = CollectProvisionalComponentRows();
   } else {
     RestoreComponentPlacement(incoming_placement);
   }

@@ -89,7 +89,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -enable_gridded_upper_bound_balancing      minimally rebalance failed rough-legal stripes\n"
       << "  -enable_gridded_legalization_pressure      feed rough-legal capacity pressure into the next LAL pass\n"
       << "  -enable_adaptive_stripe_boundaries         optimize nonuniform gridded stripe widths\n"
-      << "  -gridded_legalization_feedback <full/x_only/y_only/y_row_scale/y_row_hpwl/y_row_transactional/y_row_transactional_positive/y_row_transactional_consistent/none>\n"
+      << "  -gridded_legalization_feedback <full/x_only/y_only/y_row_scale/y_row_hpwl/y_row_transactional/y_row_transactional_positive/y_row_transactional_consistent/y_row_transactional_coherent/none>\n"
       << "  -disable_gridded_legalization_feedback     do not anchor the next solve to rough-legal coordinates\n"
       << "  -enable_gridded_stripe_balancing           rebalance final neighboring gridded stripes\n"
       << "  -enable_gridded_local_reorder              reorder cells within finalized gridded rows\n"
@@ -410,7 +410,8 @@ bool ParseDaliCommandLine(int argc, char* argv[],
            value != "y_row_scale" && value != "y_row_hpwl" &&
            value != "y_row_transactional" &&
            value != "y_row_transactional_positive" &&
-           value != "y_row_transactional_consistent" && value != "none")) {
+           value != "y_row_transactional_consistent" &&
+           value != "y_row_transactional_coherent" && value != "none")) {
         error_output << "Invalid gridded legalization feedback mode!\n";
         return false;
       }

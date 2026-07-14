@@ -23,6 +23,7 @@
 #include <Eigen/IterativeLinearSolvers>
 #include <Eigen/Sparse>
 #include <cstddef>
+#include <utility>
 #include <vector>
 
 #include "dali/circuit/circuit.h"
@@ -33,6 +34,13 @@ namespace dali {
 enum class GlobalAnchorSchedule {
   kDali,
   kSimpl,
+};
+
+/** Translation-invariant Y offset requested between two movable components. */
+struct RelativeYConstraint {
+  int first_component_id = -1;
+  int second_component_id = -1;
+  double offset = 0.0;
 };
 
 /** Index type used by Eigen sparse matrices. */
@@ -58,6 +66,12 @@ class HpwlOptimizer {
 
   /** Set current global-placement iteration. */
   void SetIteration(int cur_iter) { cur_iter_ = cur_iter; }
+
+  /** Replace the relative-Y constraints consumed by the next optimization. */
+  void SetRelativeYConstraints(
+      std::vector<RelativeYConstraint> relative_y_constraints) {
+    relative_y_constraints_ = std::move(relative_y_constraints);
+  }
 
   /** Select how anchor pseudo-net strength is updated across iterations. */
   void SetAnchorSchedule(GlobalAnchorSchedule schedule) {
@@ -104,6 +118,7 @@ class HpwlOptimizer {
   bool should_save_intermediate_result_ = false;
   GlobalAnchorSchedule anchor_schedule_ = GlobalAnchorSchedule::kDali;
   size_t net_ignore_threshold_ = 100;
+  std::vector<RelativeYConstraint> relative_y_constraints_;
 };
 
 /** Bound-to-bound quadratic HPWL optimizer. */
@@ -131,6 +146,8 @@ class BoundToBoundHpwlOptimizer : public HpwlOptimizer {
   void UpdateMaxMinY();
   virtual void BuildProblemWithAnchorX();
   virtual void BuildProblemWithAnchorY();
+  /** Add translation-invariant physical row relationships to the Y problem. */
+  void AddRelativeYConstraints();
   void BackUpComponentLocation();
   void OptimizeHpwlXWithAnchor(int num_threads);
   void OptimizeHpwlYWithAnchor(int num_threads);
