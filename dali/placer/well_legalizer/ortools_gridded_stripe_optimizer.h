@@ -11,6 +11,7 @@
 #ifndef DALI_PLACER_WELL_LEGALIZER_ORTOOLS_GRIDDED_STRIPE_OPTIMIZER_H_
 #define DALI_PLACER_WELL_LEGALIZER_ORTOOLS_GRIDDED_STRIPE_OPTIMIZER_H_
 
+#include <utility>
 #include <vector>
 
 #include "dali/circuit/circuit.h"
@@ -29,6 +30,9 @@ struct OrToolsGriddedStripeOptimizerConfig {
   int net_ignore_threshold = 100;
   int minimum_p_well_height = 0;
   int minimum_n_well_height = 0;
+  // Zero solves complete stripes. Positive values create overlapping bands.
+  int target_components_per_model = 0;
+  int maximum_components_per_model = 96;
   bool use_solution_hint = true;
 };
 
@@ -37,6 +41,8 @@ struct OrToolsGriddedStripeSolveResult {
   int sweep = -1;
   int column_index = -1;
   int stripe_index = -1;
+  int first_row_index = -1;
+  int last_row_index = -1;
   int component_count = 0;
   int net_count = 0;
   int64_t model_variable_count = 0;
@@ -58,9 +64,9 @@ struct OrToolsGriddedStripeOptimizerResult {
   bool available = false;
   bool time_budget_exhausted = false;
   int completed_sweeps = 0;
-  int attempted_stripes = 0;
-  int solved_stripes = 0;
-  int accepted_stripes = 0;
+  int attempted_models = 0;
+  int solved_models = 0;
+  int accepted_models = 0;
   double hpwl_before = 0.0;
   double hpwl_after = 0.0;
   double solver_wall_time_seconds = 0.0;
@@ -87,6 +93,9 @@ class OrToolsGriddedStripeOptimizer {
       std::vector<StripeColumn>* columns) const;
 
  private:
+  /** Partition a stripe into overlapping, multi-region-safe row bands. */
+  std::vector<std::pair<int, int>> BuildRowBands(const Stripe& stripe) const;
+
   /** Return HPWL over affected nets, optionally applying the fanout cutoff. */
   double AffectedNetHpwl(const std::vector<int>& net_ids,
                          bool apply_fanout_cutoff) const;

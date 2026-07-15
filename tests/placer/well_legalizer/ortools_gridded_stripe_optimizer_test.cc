@@ -5,6 +5,8 @@
 
 #include <gtest/gtest.h>
 
+#include <string>
+
 #include "dali/placer/well_legalizer/ortools_compact_gridded_legalizer.h"
 
 namespace dali {
@@ -59,13 +61,69 @@ TEST(OrToolsGriddedStripeOptimizerTest,
       OrToolsGriddedStripeOptimizer(&circuit, config).Optimize(&columns);
 
   EXPECT_TRUE(result.available);
-  EXPECT_EQ(result.attempted_stripes, 1);
-  EXPECT_EQ(result.solved_stripes, 1);
-  EXPECT_EQ(result.accepted_stripes, 1);
+  EXPECT_EQ(result.attempted_models, 1);
+  EXPECT_EQ(result.solved_models, 1);
+  EXPECT_EQ(result.accepted_models, 1);
   EXPECT_LT(result.hpwl_after, result.hpwl_before);
   EXPECT_DOUBLE_EQ(circuit.GetComponentPtr("move_left")->LLX(), 0.0);
   EXPECT_DOUBLE_EQ(circuit.GetComponentPtr("move_right")->LLX(), 2.0);
   EXPECT_TRUE(row.HasLegalComponentPlacement());
+}
+
+TEST(OrToolsGriddedStripeOptimizerTest,
+     BuildsOverlappingBandsWithoutRepeatingTheStripeTail) {
+  if (!OrToolsCompactGriddedLegalizer::IsAvailable()) {
+    GTEST_SKIP() << "Dali was built without OR-Tools 9.15.x";
+  }
+
+  Circuit circuit;
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.ReserveSpaceForDesignImp(4, 0, 0);
+  Macro* macro = circuit.AddMacro("cell", 2, 2);
+  macro->AddWellRect(false, 0, 0, 2, 1);
+  macro->AddWellRect(true, 0, 1, 2, 2);
+  for (int row_index = 0; row_index < 4; ++row_index) {
+    circuit.AddComponent("cell_" + std::to_string(row_index), "cell", 0,
+                         2 * row_index, PLACED, row_index % 2 == 0 ? N : FS);
+  }
+
+  std::vector<StripeColumn> columns(1);
+  Stripe& stripe = columns[0].stripe_list_.emplace_back();
+  stripe.lx_ = 0;
+  stripe.ly_ = 0;
+  stripe.width_ = 2;
+  stripe.height_ = 8;
+  for (int row_index = 0; row_index < 4; ++row_index) {
+    GriddedRow& row = stripe.gridded_rows_.emplace_back();
+    row.SetLLX(0);
+    row.SetLLY(2 * row_index);
+    row.SetWidth(2);
+    row.UpdateWellHeightUpward(1, 1);
+    row.AddComponent(
+        circuit.GetComponentPtr("cell_" + std::to_string(row_index)));
+  }
+
+  OrToolsGriddedStripeOptimizerConfig config;
+  config.maximum_time_seconds_per_stripe = 10.0;
+  config.maximum_total_time_seconds = 40.0;
+  config.maximum_sweeps = 1;
+  config.minimum_p_well_height = 1;
+  config.minimum_n_well_height = 1;
+  config.target_components_per_model = 2;
+  config.maximum_components_per_model = 4;
+  const OrToolsGriddedStripeOptimizerResult result =
+      OrToolsGriddedStripeOptimizer(&circuit, config).Optimize(&columns);
+
+  ASSERT_EQ(result.stripes.size(), 3U);
+  EXPECT_EQ(result.attempted_models, 3);
+  EXPECT_EQ(result.stripes[0].first_row_index, 0);
+  EXPECT_EQ(result.stripes[0].last_row_index, 1);
+  EXPECT_EQ(result.stripes[1].first_row_index, 1);
+  EXPECT_EQ(result.stripes[1].last_row_index, 2);
+  EXPECT_EQ(result.stripes[2].first_row_index, 2);
+  EXPECT_EQ(result.stripes[2].last_row_index, 3);
 }
 
 }  // namespace dali

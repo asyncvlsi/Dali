@@ -212,8 +212,9 @@ class GriddedCellWellLegalizer : public Placer {
   void SetExactStripeOptimization(bool enable,
                                   double maximum_time_seconds_per_stripe,
                                   double maximum_total_time_seconds,
-                                  int maximum_sweeps, int number_of_workers,
-                                  bool use_solution_hint,
+                                  int maximum_sweeps,
+                                  int target_components_per_model,
+                                  int number_of_workers, bool use_solution_hint,
                                   int net_ignore_threshold) {
     enable_exact_stripe_optimization_ = enable;
     exact_stripe_optimizer_config_.maximum_time_seconds_per_stripe =
@@ -221,6 +222,12 @@ class GriddedCellWellLegalizer : public Placer {
     exact_stripe_optimizer_config_.maximum_total_time_seconds =
         maximum_total_time_seconds;
     exact_stripe_optimizer_config_.maximum_sweeps = maximum_sweeps;
+    exact_stripe_optimizer_config_.target_components_per_model =
+        target_components_per_model;
+    if (target_components_per_model > 0) {
+      exact_stripe_optimizer_config_.maximum_components_per_model =
+          2 * target_components_per_model;
+    }
     exact_stripe_optimizer_config_.number_of_workers = number_of_workers;
     exact_stripe_optimizer_config_.use_solution_hint = use_solution_hint;
     exact_stripe_optimizer_config_.net_ignore_threshold = net_ignore_threshold;

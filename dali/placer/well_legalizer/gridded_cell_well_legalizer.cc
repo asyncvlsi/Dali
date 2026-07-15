@@ -1811,9 +1811,9 @@ void GriddedCellWellLegalizer::RunExactStripeOptimizationStage() {
   LOG(info) << "Exact gridded stripe optimization:\n"
             << "  available              : " << result.available << "\n"
             << "  completed sweeps       : " << result.completed_sweeps << "\n"
-            << "  attempted stripes      : " << result.attempted_stripes << "\n"
-            << "  solved stripes         : " << result.solved_stripes << "\n"
-            << "  accepted stripes       : " << result.accepted_stripes << "\n"
+            << "  attempted models       : " << result.attempted_models << "\n"
+            << "  solved models          : " << result.solved_models << "\n"
+            << "  accepted models        : " << result.accepted_models << "\n"
             << "  HPWL before            : " << result.hpwl_before << "um\n"
             << "  HPWL after             : " << result.hpwl_after << "um\n"
             << "  improvement            : "
@@ -1826,7 +1826,8 @@ void GriddedCellWellLegalizer::RunExactStripeOptimizationStage() {
   for (const OrToolsGriddedStripeSolveResult& stripe : result.stripes) {
     LOG(info) << "  sweep " << stripe.sweep << ", column "
               << stripe.column_index << ", stripe " << stripe.stripe_index
-              << ": status="
+              << ", rows " << stripe.first_row_index << "-"
+              << stripe.last_row_index << ": status="
               << ExactGriddedLegalizationStatusName(stripe.status)
               << ", cells=" << stripe.component_count
               << ", nets=" << stripe.net_count
@@ -1839,15 +1840,15 @@ void GriddedCellWellLegalizer::RunExactStripeOptimizationStage() {
               << ", wall=" << stripe.solver_wall_time_seconds << "s\n";
   }
 
-  RecordPlacementMetric("exact_stripe.attempted", result.attempted_stripes);
-  RecordPlacementMetric("exact_stripe.solved", result.solved_stripes);
-  RecordPlacementMetric("exact_stripe.accepted", result.accepted_stripes);
+  RecordPlacementMetric("exact_stripe.attempted", result.attempted_models);
+  RecordPlacementMetric("exact_stripe.solved", result.solved_models);
+  RecordPlacementMetric("exact_stripe.accepted", result.accepted_models);
   RecordPlacementMetric("exact_stripe.hpwl.before", result.hpwl_before);
   RecordPlacementMetric("exact_stripe.hpwl.after", result.hpwl_after);
   RecordPlacementMetric("time.exact_stripe.solver_wall_s",
                         result.solver_wall_time_seconds);
   RecordPlacementMetric("time.exact_stripe.wall_s", timer.GetWallTime());
-  if (result.accepted_stripes > 0) {
+  if (result.accepted_models > 0) {
     EmitSnapshot("exact_stripe", "After Exact Stripe Optimization",
                  "legalization", "exact_stripe", 0);
   }

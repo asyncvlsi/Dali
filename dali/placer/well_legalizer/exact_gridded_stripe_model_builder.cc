@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <unordered_map>
+#include <utility>
 
 #include "dali/common/helper.h"
 #include "dali/placer/well_legalizer/exact_gridded_legalization_model_builder.h"
@@ -35,21 +36,70 @@ ExactGriddedStripeBuildResult ExactGriddedStripeModelBuilder::Build(
   DaliExpects(stripe != nullptr, "Cannot build a model from a null stripe");
   DaliExpects(stripe_id >= 0, "Exact stripe id must be non-negative");
 
-  ExactGriddedStripeBuildResult result;
-  result.rows.reserve(stripe->gridded_rows_.size());
-  for (GriddedRow& row : stripe->gridded_rows_) result.rows.push_back(&row);
-  std::sort(result.rows.begin(), result.rows.end(),
+  std::vector<GriddedRow*> rows;
+  rows.reserve(stripe->gridded_rows_.size());
+  for (GriddedRow& row : stripe->gridded_rows_) rows.push_back(&row);
+  std::sort(rows.begin(), rows.end(),
             [](const GriddedRow* lhs, const GriddedRow* rhs) {
               return lhs->LLY() < rhs->LLY();
             });
+  return BuildRows(stripe, stripe_id, std::move(rows));
+}
+
+ExactGriddedStripeBuildResult ExactGriddedStripeModelBuilder::BuildRowBand(
+    Stripe* stripe, int stripe_id, int first_row, int last_row) const {
+  DaliExpects(stripe != nullptr, "Cannot build a model from a null stripe");
+  DaliExpects(stripe_id >= 0, "Exact stripe id must be non-negative");
+
+  std::vector<GriddedRow*> rows;
+  rows.reserve(stripe->gridded_rows_.size());
+  for (GriddedRow& row : stripe->gridded_rows_) rows.push_back(&row);
+  std::sort(rows.begin(), rows.end(),
+            [](const GriddedRow* lhs, const GriddedRow* rhs) {
+              return lhs->LLY() < rhs->LLY();
+            });
+  DaliExpects(first_row >= 0 && first_row <= last_row &&
+                  last_row < static_cast<int>(rows.size()),
+              "Exact stripe row-band range is invalid");
+
+  std::unordered_map<int, std::pair<int, int>> component_extents;
+  for (int row_index = 0; row_index < static_cast<int>(rows.size());
+       ++row_index) {
+    for (const Component* component : rows[row_index]->Components()) {
+      auto [extent, inserted] = component_extents.emplace(
+          component->Id(), std::make_pair(row_index, row_index));
+      if (!inserted) {
+        extent->second.first = std::min(extent->second.first, row_index);
+        extent->second.second = std::max(extent->second.second, row_index);
+      }
+    }
+  }
+  for (int row_index = first_row; row_index <= last_row; ++row_index) {
+    for (const Component* component : rows[row_index]->Components()) {
+      const auto extent = component_extents.at(component->Id());
+      DaliExpects(extent.first >= first_row && extent.second <= last_row,
+                  "Exact row band splits a multi-region component");
+    }
+  }
+
+  std::vector<GriddedRow*> selected_rows(rows.begin() + first_row,
+                                         rows.begin() + last_row + 1);
+  return BuildRows(stripe, stripe_id, std::move(selected_rows));
+}
+
+ExactGriddedStripeBuildResult ExactGriddedStripeModelBuilder::BuildRows(
+    Stripe* stripe, int stripe_id,
+    std::vector<GriddedRow*> selected_rows) const {
+  ExactGriddedStripeBuildResult result;
+  result.rows = std::move(selected_rows);
   if (result.rows.empty()) return result;
 
   ExactGriddedStripe model_stripe;
   model_stripe.stripe_id = stripe_id;
   model_stripe.lx = stripe->LLX();
-  model_stripe.ly = stripe->LLY();
+  model_stripe.ly = result.rows.front()->LLY();
   model_stripe.ux = stripe->URX();
-  model_stripe.uy = stripe->URY();
+  model_stripe.uy = result.rows.back()->URY();
   model_stripe.maximum_rows = static_cast<int>(result.rows.size());
   model_stripe.minimum_p_well_height = config_.minimum_p_well_height;
   model_stripe.minimum_n_well_height = config_.minimum_n_well_height;

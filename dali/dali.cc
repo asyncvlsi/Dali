@@ -307,6 +307,8 @@ void Dali::ShowParamsList() {
       << exact_gridded_stripe_total_time_ << "\n"
       << "  exact_gridded_stripe_sweeps: " << exact_gridded_stripe_sweeps_
       << "\n"
+      << "  exact_gridded_stripe_components: "
+      << exact_gridded_stripe_components_ << "\n"
       << "  enable_shrink_off_grid_die_area: "
       << enable_shrink_off_grid_die_area_ << "\n"
       << "  global_initializer: " << static_cast<int>(global_initializer_)
@@ -482,6 +484,10 @@ void Dali::LoadParamsFromConfig() {
                 &exact_gridded_stripe_sweeps_);
   DaliExpects(exact_gridded_stripe_sweeps_ > 0,
               "exact_gridded_stripe_sweeps must be positive");
+  LoadIntConfig(ConfigName(prefix_, "exact_gridded_stripe_components"),
+                &exact_gridded_stripe_components_);
+  DaliExpects(exact_gridded_stripe_components_ >= 0,
+              "exact_gridded_stripe_components must be non-negative");
   LoadBoolConfig(ConfigName(prefix_, "enable_shrink_off_grid_die_area"),
                  &enable_shrink_off_grid_die_area_);
   param_name = ConfigName(prefix_, "global_initializer");
@@ -616,6 +622,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       exact_gridded_stripe_time_,
       exact_gridded_stripe_total_time_,
       exact_gridded_stripe_sweeps_,
+      exact_gridded_stripe_components_,
       enable_shrink_off_grid_die_area_,
       global_initializer_,
       global_anchor_schedule_,
@@ -1055,7 +1062,8 @@ void Dali::ConfigureWellLegalizer() {
   well_legalizer_.SetExactStripeOptimization(
       enable_exact_gridded_stripe_optimization_, exact_gridded_stripe_time_,
       exact_gridded_stripe_total_time_, exact_gridded_stripe_sweeps_,
-      num_threads_, exact_gridded_use_solution_hint_, net_ignore_threshold_);
+      exact_gridded_stripe_components_, num_threads_,
+      exact_gridded_use_solution_hint_, net_ignore_threshold_);
   well_legalizer_.SetSnapshotCallback(
       [this](const std::string& id, const std::string& label,
              const std::string& group, const std::string& subgroup,

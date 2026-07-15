@@ -52,7 +52,21 @@ class ExactGriddedStripeModelBuilder {
   /** Build and validate the subproblem for `stripe`. */
   ExactGriddedStripeBuildResult Build(Stripe* stripe, int stripe_id) const;
 
+  /**
+   * Build a closed subproblem over sorted row indices `[first_row, last_row]`.
+   *
+   * The range must contain every row occupied by each selected multi-region
+   * component; splitting a component across the boundary is rejected.
+   */
+  ExactGriddedStripeBuildResult BuildRowBand(Stripe* stripe, int stripe_id,
+                                             int first_row, int last_row) const;
+
  private:
+  /** Build a model from an already sorted, closed row set. */
+  ExactGriddedStripeBuildResult BuildRows(
+      Stripe* stripe, int stripe_id,
+      std::vector<GriddedRow*> selected_rows) const;
+
   Circuit* circuit_ = nullptr;
   ExactGriddedStripeModelBuilderConfig config_;
 };

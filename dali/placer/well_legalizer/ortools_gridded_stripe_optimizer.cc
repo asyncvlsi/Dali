@@ -14,6 +14,7 @@
 #include <chrono>
 #include <cmath>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "dali/common/helper.h"
 #include "dali/placer/well_legalizer/exact_gridded_stripe_model_builder.h"
@@ -41,6 +42,101 @@ OrToolsGriddedStripeOptimizer::OrToolsGriddedStripeOptimizer(
   DaliExpects(
       config_.minimum_p_well_height >= 0 && config_.minimum_n_well_height >= 0,
       "Stripe minimum well heights must be non-negative");
+  DaliExpects(config_.target_components_per_model >= 0,
+              "Stripe model component target must be non-negative");
+  DaliExpects(config_.maximum_components_per_model > 0,
+              "Stripe model component limit must be positive");
+  DaliExpects(config_.target_components_per_model == 0 ||
+                  config_.maximum_components_per_model >=
+                      config_.target_components_per_model,
+              "Stripe model component limit must cover its target");
+}
+
+std::vector<std::pair<int, int>> OrToolsGriddedStripeOptimizer::BuildRowBands(
+    const Stripe& stripe) const {
+  std::vector<const GriddedRow*> rows;
+  rows.reserve(stripe.gridded_rows_.size());
+  for (const GriddedRow& row : stripe.gridded_rows_) rows.push_back(&row);
+  std::sort(rows.begin(), rows.end(),
+            [](const GriddedRow* lhs, const GriddedRow* rhs) {
+              return lhs->LLY() < rhs->LLY();
+            });
+  if (rows.empty()) return {};
+  if (config_.target_components_per_model == 0) {
+    return {{0, static_cast<int>(rows.size()) - 1}};
+  }
+
+  struct ComponentExtent {
+    int first_row = -1;
+    int last_row = -1;
+  };
+  std::unordered_map<int, ComponentExtent> extents;
+  for (int row_index = 0; row_index < static_cast<int>(rows.size());
+       ++row_index) {
+    for (const Component* component : rows[row_index]->Components()) {
+      auto [extent, inserted] = extents.emplace(
+          component->Id(), ComponentExtent{row_index, row_index});
+      if (!inserted) {
+        extent->second.first_row =
+            std::min(extent->second.first_row, row_index);
+        extent->second.last_row = std::max(extent->second.last_row, row_index);
+      }
+    }
+  }
+
+  std::vector<bool> safe_boundary(rows.size() + 1, true);
+  for (const auto& entry : extents) {
+    const ComponentExtent& extent = entry.second;
+    for (int boundary = extent.first_row + 1; boundary <= extent.last_row;
+         ++boundary) {
+      safe_boundary[boundary] = false;
+    }
+  }
+
+  auto component_count = [&](int first_row, int end_row) {
+    std::unordered_set<int> component_ids;
+    for (int row_index = first_row; row_index < end_row; ++row_index) {
+      for (const Component* component : rows[row_index]->Components()) {
+        component_ids.insert(component->Id());
+      }
+    }
+    return static_cast<int>(component_ids.size());
+  };
+
+  std::vector<std::pair<int, int>> bands;
+  int first_boundary = 0;
+  const int final_boundary = static_cast<int>(rows.size());
+  while (first_boundary < final_boundary) {
+    int end_boundary = final_boundary;
+    for (int candidate = first_boundary + 1; candidate <= final_boundary;
+         ++candidate) {
+      if (!safe_boundary[candidate]) continue;
+      end_boundary = candidate;
+      if (component_count(first_boundary, candidate) >=
+          config_.target_components_per_model) {
+        break;
+      }
+    }
+
+    const int count = component_count(first_boundary, end_boundary);
+    if (count > 0 && count <= config_.maximum_components_per_model) {
+      bands.emplace_back(first_boundary, end_boundary - 1);
+    }
+    if (end_boundary == final_boundary) break;
+
+    const int desired_boundary =
+        first_boundary + std::max(1, (end_boundary - first_boundary) / 2);
+    int next_boundary = end_boundary;
+    for (int candidate = desired_boundary; candidate < end_boundary;
+         ++candidate) {
+      if (safe_boundary[candidate]) {
+        next_boundary = candidate;
+        break;
+      }
+    }
+    first_boundary = next_boundary;
+  }
+  return bands;
 }
 
 double OrToolsGriddedStripeOptimizer::AffectedNetHpwl(
@@ -75,6 +171,8 @@ OrToolsGriddedStripeOptimizerResult OrToolsGriddedStripeOptimizer::Optimize(
     int column_index = -1;
     int stripe_index = -1;
     int model_stripe_id = -1;
+    int first_row_index = -1;
+    int last_row_index = -1;
     Stripe* stripe = nullptr;
   };
   std::vector<StripeTarget> targets;
@@ -85,8 +183,12 @@ OrToolsGriddedStripeOptimizerResult OrToolsGriddedStripeOptimizer::Optimize(
     for (int stripe_index = 0;
          stripe_index < static_cast<int>(column.stripe_list_.size());
          ++stripe_index) {
-      targets.push_back({column_index, stripe_index, next_stripe_id++,
-                         &column.stripe_list_[stripe_index]});
+      Stripe& stripe = column.stripe_list_[stripe_index];
+      const int model_stripe_id = next_stripe_id++;
+      for (const auto& [first_row, last_row] : BuildRowBands(stripe)) {
+        targets.push_back({column_index, stripe_index, model_stripe_id,
+                           first_row, last_row, &stripe});
+      }
     }
   }
 
@@ -108,13 +210,16 @@ OrToolsGriddedStripeOptimizerResult OrToolsGriddedStripeOptimizer::Optimize(
                          : static_cast<int>(targets.size()) - 1 - target_offset;
       const StripeTarget& target = targets[target_index];
       ExactGriddedStripeBuildResult build =
-          builder.Build(target.stripe, target.model_stripe_id);
+          builder.BuildRowBand(target.stripe, target.model_stripe_id,
+                               target.first_row_index, target.last_row_index);
       if (build.model.cells.empty()) continue;
 
       OrToolsGriddedStripeSolveResult stripe_result;
       stripe_result.sweep = sweep;
       stripe_result.column_index = target.column_index;
       stripe_result.stripe_index = target.stripe_index;
+      stripe_result.first_row_index = target.first_row_index;
+      stripe_result.last_row_index = target.last_row_index;
       stripe_result.component_count =
           static_cast<int>(build.model.cells.size());
       stripe_result.net_count = static_cast<int>(build.model.nets.size());
@@ -124,7 +229,7 @@ OrToolsGriddedStripeOptimizerResult OrToolsGriddedStripeOptimizer::Optimize(
           AffectedNetHpwl(build.affected_net_ids, false);
       stripe_result.modeled_hpwl_after = stripe_result.modeled_hpwl_before;
       stripe_result.affected_hpwl_after = stripe_result.affected_hpwl_before;
-      ++aggregate.attempted_stripes;
+      ++aggregate.attempted_models;
 
       ExactGriddedLegalizationConfig solver_config;
       solver_config.maximum_time_seconds =
@@ -146,7 +251,7 @@ OrToolsGriddedStripeOptimizerResult OrToolsGriddedStripeOptimizer::Optimize(
       aggregate.solver_wall_time_seconds += solution.wall_time_seconds;
 
       if (solution.HasSolution()) {
-        ++aggregate.solved_stripes;
+        ++aggregate.solved_models;
         std::unordered_map<int, Component*> components_by_id;
         for (Component* component : build.components) {
           components_by_id.emplace(component->Id(), component);
@@ -210,7 +315,7 @@ OrToolsGriddedStripeOptimizerResult OrToolsGriddedStripeOptimizer::Optimize(
             stripe_result.affected_hpwl_before + affected_tolerance;
         if (rows_are_legal && improves_modeled_hpwl && preserves_full_hpwl) {
           stripe_result.accepted = true;
-          ++aggregate.accepted_stripes;
+          ++aggregate.accepted_models;
           ++accepted_in_sweep;
           for (GriddedRow* row : build.rows) {
             std::sort(

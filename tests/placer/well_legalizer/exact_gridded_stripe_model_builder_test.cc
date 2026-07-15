@@ -68,4 +68,54 @@ TEST(ExactGriddedStripeModelBuilderTest,
   EXPECT_EQ(result.affected_net_ids.size(), 2U);
 }
 
+TEST(ExactGriddedStripeModelBuilderTest,
+     BuildsAClosedRowBandWithSameStripeExternalAnchors) {
+  Circuit circuit;
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.ReserveSpaceForDesignImp(2, 0, 1);
+  Macro* macro = circuit.AddMacro("cell", 2, 2);
+  macro->AddWellRect(false, 0, 0, 2, 1);
+  macro->AddWellRect(true, 0, 1, 2, 2);
+  circuit.AddMacroPin(macro, "pin", true)->SetOffset(1, 1);
+  circuit.AddComponent("lower", "cell", 0, 0, PLACED);
+  circuit.AddComponent("upper", "cell", 0, 2, PLACED, FS);
+  circuit.AddNet("cross_band", 2);
+  circuit.AddComponentPinToNet("lower", "pin", "cross_band");
+  circuit.AddComponentPinToNet("upper", "pin", "cross_band");
+
+  Stripe stripe;
+  stripe.lx_ = 0;
+  stripe.ly_ = 0;
+  stripe.width_ = 4;
+  stripe.height_ = 4;
+  for (int row_index = 0; row_index < 2; ++row_index) {
+    GriddedRow& row = stripe.gridded_rows_.emplace_back();
+    row.SetLLX(0);
+    row.SetLLY(2 * row_index);
+    row.SetWidth(4);
+    row.UpdateWellHeightUpward(1, 1);
+  }
+  stripe.gridded_rows_[0].AddComponent(circuit.GetComponentPtr("lower"));
+  stripe.gridded_rows_[1].AddComponent(circuit.GetComponentPtr("upper"));
+
+  ExactGriddedStripeModelBuilderConfig config;
+  config.minimum_p_well_height = 1;
+  config.minimum_n_well_height = 1;
+  ExactGriddedStripeBuildResult result =
+      ExactGriddedStripeModelBuilder(&circuit, config)
+          .BuildRowBand(&stripe, 3, 0, 0);
+
+  ASSERT_EQ(result.model.cells.size(), 1U);
+  ASSERT_EQ(result.model.stripes.size(), 1U);
+  EXPECT_EQ(result.model.stripes[0].ly, 0);
+  EXPECT_EQ(result.model.stripes[0].uy, 2);
+  ASSERT_EQ(result.model.nets.size(), 1U);
+  ASSERT_EQ(result.model.nets[0].pins.size(), 2U);
+  EXPECT_EQ(result.model.nets[0].pins[0].component_id,
+            circuit.GetComponentPtr("lower")->Id());
+  EXPECT_EQ(result.model.nets[0].pins[1].component_id, -1);
+}
+
 }  // namespace dali
