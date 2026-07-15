@@ -420,6 +420,13 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
         cp_model.AddHint(row.y, hint.y);
         cp_model.AddHint(row.p_well_height, hint.p_well_height);
         cp_model.AddHint(row.n_well_height, hint.n_well_height);
+        if (config.fix_row_geometry) {
+          cp_model.AddEquality(row.active, hint.active);
+          cp_model.AddEquality(row.preserve_initial_well_heights, hint.active);
+          cp_model.AddEquality(row.y, hint.y);
+          cp_model.AddEquality(row.p_well_height, hint.p_well_height);
+          cp_model.AddEquality(row.n_well_height, hint.n_well_height);
+        }
       }
       stripe_rows.push_back(std::move(row));
     }
@@ -594,8 +601,13 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
   for (size_t stripe_index = 0; stripe_index < stripe_phase_hints.size();
        ++stripe_index) {
     if (stripe_phase_hints[stripe_index] >= 0) {
+      const bool first_row_orient_n = stripe_phase_hints[stripe_index] != 0;
       cp_model.AddHint(first_row_orient_n_variables[stripe_index],
-                       stripe_phase_hints[stripe_index] != 0);
+                       first_row_orient_n);
+      if (config.fix_row_geometry) {
+        cp_model.AddEquality(first_row_orient_n_variables[stripe_index],
+                             first_row_orient_n);
+      }
     }
   }
 

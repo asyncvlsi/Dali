@@ -43,6 +43,8 @@ struct ExactGriddedLegalizationConfig {
   bool log_search_progress = false;
   // Negative values allow every row. Zero fixes the current row assignment.
   int maximum_row_displacement = -1;
+  // Keep active rows, Y coordinates, and well heights at their supplied hints.
+  bool fix_row_geometry = false;
   // Retain the production placement as a warm start for the main solve.
   bool use_solution_hint = true;
   // Check whether the supplied hints form a feasible solution before search.
