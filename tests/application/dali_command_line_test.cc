@@ -178,6 +178,13 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "-disable_gridded_vertical_swap",
                      "-enable_gridded_row_y_optimization",
                      "-enable_ortools_row_optimization",
+                     "-analyze_exact_gridded_legalization",
+                     "-exact_gridded_window_components",
+                     "64",
+                     "-exact_gridded_max_windows",
+                     "12",
+                     "-exact_gridded_window_time",
+                     "0.5",
                      "-debug_placement_region_scale",
                      "1.1",
                      "-save_intermediate_result",
@@ -224,6 +231,10 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_EQ(config_get_int("dali.disable_gridded_vertical_swap"), 1);
   EXPECT_EQ(config_get_int("dali.enable_gridded_row_y_optimization"), 1);
   EXPECT_EQ(config_get_int("dali.enable_ortools_row_optimization"), 1);
+  EXPECT_EQ(config_get_int("dali.analyze_exact_gridded_legalization"), 1);
+  EXPECT_EQ(config_get_int("dali.exact_gridded_window_components"), 64);
+  EXPECT_EQ(config_get_int("dali.exact_gridded_max_windows"), 12);
+  EXPECT_DOUBLE_EQ(config_get_real("dali.exact_gridded_window_time"), 0.5);
   EXPECT_DOUBLE_EQ(config_get_real("dali.debug_placement_region_scale"), 1.1);
   EXPECT_EQ(config_get_int("dali.save_intermediate_result"), 1);
   EXPECT_EQ(config_get_int("dali.disable_detailed_place"), 1);
@@ -312,6 +323,15 @@ TEST_F(DaliCommandLineTest, RejectsOutOfRangeOptions) {
                      &options));
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
                       "-gridded_detailed_min_relative_improvement", "1.1"},
+                     &options));
+  EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                      "-exact_gridded_window_components", "0"},
+                     &options));
+  EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                      "-exact_gridded_max_windows", "0"},
+                     &options));
+  EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                      "-exact_gridded_window_time", "0"},
                      &options));
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
                       "-gui_pause", "sometimes"},

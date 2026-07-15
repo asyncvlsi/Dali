@@ -17,6 +17,27 @@ ExactGriddedNet MakeAnchoredNet(int component_id, double fixed_x,
   return net;
 }
 
+TEST(OrToolsExactGriddedLegalizerTest, NamesSolverStatuses) {
+  EXPECT_STREQ(ExactGriddedLegalizationStatusName(
+                   ExactGriddedLegalizationStatus::kUnavailable),
+               "unavailable");
+  EXPECT_STREQ(ExactGriddedLegalizationStatusName(
+                   ExactGriddedLegalizationStatus::kInvalidModel),
+               "invalid_model");
+  EXPECT_STREQ(ExactGriddedLegalizationStatusName(
+                   ExactGriddedLegalizationStatus::kUnknown),
+               "unknown");
+  EXPECT_STREQ(ExactGriddedLegalizationStatusName(
+                   ExactGriddedLegalizationStatus::kInfeasible),
+               "infeasible");
+  EXPECT_STREQ(ExactGriddedLegalizationStatusName(
+                   ExactGriddedLegalizationStatus::kFeasible),
+               "feasible");
+  EXPECT_STREQ(ExactGriddedLegalizationStatusName(
+                   ExactGriddedLegalizationStatus::kOptimal),
+               "optimal");
+}
+
 TEST(OrToolsExactGriddedLegalizerTest,
      FindsOptimalAssignmentOrientationAndOrdering) {
   if (!OrToolsExactGriddedLegalizer::IsAvailable()) {

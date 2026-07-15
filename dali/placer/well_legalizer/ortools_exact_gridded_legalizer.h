@@ -29,6 +29,10 @@ enum class ExactGriddedLegalizationStatus {
   kOptimal,
 };
 
+/** Return a stable text representation of an exact legalization status. */
+const char* ExactGriddedLegalizationStatusName(
+    ExactGriddedLegalizationStatus status);
+
 /** Runtime and objective controls for one exact legalization solve. */
 struct ExactGriddedLegalizationConfig {
   double maximum_time_seconds = 300.0;

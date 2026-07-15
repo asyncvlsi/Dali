@@ -1359,9 +1359,8 @@ bool GriddedCellWellLegalizer::RunBestBoundaryClusteringStage() {
       max_component_width = std::max(max_component_width, component.Width());
     }
   }
-  int average_pitch =
-      (uniform_boundaries.back() - uniform_boundaries.front()) /
-      static_cast<int>(uniform_boundaries.size() - 1);
+  int average_pitch = (uniform_boundaries.back() - uniform_boundaries.front()) /
+                      static_cast<int>(uniform_boundaries.size() - 1);
   StripeBoundaryCoordinateConfig search_config;
   // A one-grid move changes ownership only for components immediately beside
   // the cutline. Cell-width moves were too disruptive on test_case_3 and had
@@ -1575,6 +1574,79 @@ void GriddedCellWellLegalizer::RunOrToolsRowOptimizationStage() {
                "ortools_row");
 }
 
+void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
+  LOG(info) << "Analyze bounded exact gridded legalization windows\n";
+  ElapsedTime timer;
+  timer.RecordStartTime();
+
+  ExactGriddedWindowAnalyzerConfig config = exact_legalization_analysis_config_;
+  const GriddedCapacityConfig capacity = BuildGriddedCapacityConfig(1.0);
+  config.minimum_p_well_height = capacity.minimum_p_well_height;
+  config.minimum_n_well_height = capacity.minimum_n_well_height;
+  ExactGriddedWindowAnalysis analysis =
+      ExactGriddedLegalizationWindowAnalyzer(ckt_ptr_, config)
+          .Analyze(&col_list_);
+  timer.RecordEndTime();
+
+  if (!analysis.available) {
+    LOG(warning) << "  OR-Tools support is unavailable; skip exact "
+                    "legalization analysis\n";
+    return;
+  }
+
+  LOG(info)
+      << "  exact legalization analysis:\n"
+      << "    candidate windows       : " << analysis.candidate_windows << "\n"
+      << "    oversized windows       : " << analysis.oversized_windows << "\n"
+      << "    attempted windows       : " << analysis.attempted_windows << "\n"
+      << "    solved windows          : " << analysis.solved_windows << "\n"
+      << "    optimal windows         : " << analysis.optimal_windows << "\n"
+      << "    diagnostic current HPWL : "
+      << analysis.diagnostic_current_hpwl_sum << "um\n"
+      << "    diagnostic solved HPWL  : " << analysis.diagnostic_solved_hpwl_sum
+      << "um\n"
+      << "    diagnostic lower bound  : " << analysis.diagnostic_lower_bound_sum
+      << "um\n"
+      << "    solver wall time        : " << analysis.solver_wall_time_seconds
+      << "s\n"
+      << "    stage wall time         : " << timer.GetWallTime() << "s\n";
+  for (size_t index = 0; index < analysis.windows.size(); ++index) {
+    const ExactGriddedWindowResult& window = analysis.windows[index];
+    LOG(info) << "    window " << index + 1 << ": column "
+              << window.column_index << ", stripe " << window.stripe_index
+              << ", rows " << window.first_row_index << "-"
+              << window.last_row_index << ", " << window.component_count
+              << " components, " << window.net_count << " nets, status "
+              << ExactGriddedLegalizationStatusName(window.status) << ", HPWL "
+              << window.current_weighted_hpwl << " -> "
+              << window.solved_weighted_hpwl << "um, bound "
+              << window.best_objective_bound << "um, gap "
+              << window.relative_gap << ", time " << window.wall_time_seconds
+              << "s\n";
+  }
+
+  RecordPlacementMetric("exact_legalization.candidate_windows",
+                        analysis.candidate_windows);
+  RecordPlacementMetric("exact_legalization.oversized_windows",
+                        analysis.oversized_windows);
+  RecordPlacementMetric("exact_legalization.attempted_windows",
+                        analysis.attempted_windows);
+  RecordPlacementMetric("exact_legalization.solved_windows",
+                        analysis.solved_windows);
+  RecordPlacementMetric("exact_legalization.optimal_windows",
+                        analysis.optimal_windows);
+  RecordPlacementMetric("exact_legalization.diagnostic_current_hpwl",
+                        analysis.diagnostic_current_hpwl_sum);
+  RecordPlacementMetric("exact_legalization.diagnostic_solved_hpwl",
+                        analysis.diagnostic_solved_hpwl_sum);
+  RecordPlacementMetric("exact_legalization.diagnostic_lower_bound",
+                        analysis.diagnostic_lower_bound_sum);
+  RecordPlacementMetric("time.exact_legalization.solver_wall_s",
+                        analysis.solver_wall_time_seconds);
+  RecordPlacementMetric("time.exact_legalization.wall_s", timer.GetWallTime());
+  RecordPlacementMetric("time.exact_legalization.cpu_s", timer.GetCpuTime());
+}
+
 void GriddedCellWellLegalizer::RunJointOrientationAndRowLocationOptimization() {
   constexpr int kMaximumRounds = 4;
   constexpr double kMinimumRelativeImprovement = 1e-5;
@@ -1620,9 +1692,8 @@ void GriddedCellWellLegalizer::RunJointOrientationAndRowLocationOptimization() {
   RecordPlacementMetric(
       "time.well_legalization.orientation_row_location.wall_s",
       timer.GetWallTime());
-  RecordPlacementMetric(
-      "time.well_legalization.orientation_row_location.cpu_s",
-      timer.GetCpuTime());
+  RecordPlacementMetric("time.well_legalization.orientation_row_location.cpu_s",
+                        timer.GetCpuTime());
 }
 
 void GriddedCellWellLegalizer::RunPostClusteringStages(
@@ -1637,6 +1708,9 @@ void GriddedCellWellLegalizer::RunPostClusteringStages(
   if (clustering_succeeded &&
       (enable_local_reorder_ || enable_detailed_placement_)) {
     RunGriddedDetailedPlacementStage();
+  }
+  if (clustering_succeeded && enable_exact_legalization_analysis_) {
+    RunExactLegalizationAnalysisStage();
   }
 }
 

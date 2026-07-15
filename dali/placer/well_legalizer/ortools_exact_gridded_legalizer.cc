@@ -24,6 +24,25 @@
 
 namespace dali {
 
+const char* ExactGriddedLegalizationStatusName(
+    ExactGriddedLegalizationStatus status) {
+  switch (status) {
+    case ExactGriddedLegalizationStatus::kUnavailable:
+      return "unavailable";
+    case ExactGriddedLegalizationStatus::kInvalidModel:
+      return "invalid_model";
+    case ExactGriddedLegalizationStatus::kUnknown:
+      return "unknown";
+    case ExactGriddedLegalizationStatus::kInfeasible:
+      return "infeasible";
+    case ExactGriddedLegalizationStatus::kFeasible:
+      return "feasible";
+    case ExactGriddedLegalizationStatus::kOptimal:
+      return "optimal";
+  }
+  return "unknown";
+}
+
 bool ExactGriddedLegalizationResult::HasSolution() const {
   return status == ExactGriddedLegalizationStatus::kFeasible ||
          status == ExactGriddedLegalizationStatus::kOptimal;

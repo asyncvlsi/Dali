@@ -31,6 +31,7 @@
 #include "dali/common/placement_snapshot_sink.h"
 #include "dali/placer/legalizer/extended_tetris_legalizer.h"
 #include "dali/placer/placer.h"
+#include "exact_gridded_legalization_window_analyzer.h"
 #include "gridded_capacity_estimator.h"
 #include "gridded_detailed_placer.h"
 #include "gridded_row.h"
@@ -159,6 +160,24 @@ class GriddedCellWellLegalizer : public Placer {
     ortools_net_ignore_threshold_ = net_ignore_threshold;
   }
 
+  /** Configure read-only exact analysis of bounded legal row windows. */
+  void SetExactLegalizationAnalysis(bool enable,
+                                    int target_components_per_window,
+                                    int maximum_windows,
+                                    double maximum_time_seconds_per_window,
+                                    int net_ignore_threshold) {
+    enable_exact_legalization_analysis_ = enable;
+    exact_legalization_analysis_config_.target_components_per_window =
+        target_components_per_window;
+    exact_legalization_analysis_config_.maximum_components_per_window =
+        2 * target_components_per_window;
+    exact_legalization_analysis_config_.maximum_windows = maximum_windows;
+    exact_legalization_analysis_config_.maximum_time_seconds_per_window =
+        maximum_time_seconds_per_window;
+    exact_legalization_analysis_config_.net_ignore_threshold =
+        net_ignore_threshold;
+  }
+
   /** Set maximum legalized row width in microns. */
   void SetMaxRowWidth(double max_row_width_microns);
 
@@ -282,6 +301,8 @@ class GriddedCellWellLegalizer : public Placer {
   void RunRowLocationOptimizationStage();
   /** Refine legal row X coordinates through the optional CP-SAT backend. */
   void RunOrToolsRowOptimizationStage();
+  /** Measure bounded exact-legalization headroom without changing placement. */
+  void RunExactLegalizationAnalysisStage();
   /**
    * Alternate column orientation phases and row Y locations to convergence.
    *
@@ -370,6 +391,8 @@ class GriddedCellWellLegalizer : public Placer {
   bool enable_row_location_optimization_ = false;
   bool enable_ortools_row_optimization_ = false;
   int ortools_net_ignore_threshold_ = 100;
+  bool enable_exact_legalization_analysis_ = false;
+  ExactGriddedWindowAnalyzerConfig exact_legalization_analysis_config_;
   WellSpacePartitioner space_partitioner_;
   GriddedDetailedPlacer gridded_detailed_placer_;
   SnapshotCallback snapshot_callback_;

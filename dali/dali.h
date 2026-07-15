@@ -80,6 +80,10 @@ class Dali {
     bool disable_gridded_vertical_swap = false;
     bool enable_gridded_row_y_optimization = false;
     bool enable_ortools_row_optimization = false;
+    bool analyze_exact_gridded_legalization = false;
+    int exact_gridded_window_components = 48;
+    int exact_gridded_max_windows = 24;
+    double exact_gridded_window_time = 0.25;
     bool enable_shrink_off_grid_die_area = false;
     PlacementInitializerType global_initializer =
         PlacementInitializerType::kUniform;
@@ -220,6 +224,10 @@ class Dali {
   bool disable_gridded_vertical_swap_ = false;
   bool enable_gridded_row_y_optimization_ = false;
   bool enable_ortools_row_optimization_ = false;
+  bool analyze_exact_gridded_legalization_ = false;
+  int exact_gridded_window_components_ = 48;
+  int exact_gridded_max_windows_ = 24;
+  double exact_gridded_window_time_ = 0.25;
   bool enable_shrink_off_grid_die_area_ = false;
   PlacementInitializerType global_initializer_ =
       PlacementInitializerType::kUniform;

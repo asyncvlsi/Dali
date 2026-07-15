@@ -98,6 +98,10 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -disable_gridded_vertical_swap            skip vertical swaps in gridded detailed placement\n"
       << "  -enable_gridded_row_y_optimization         shift legal row groups toward net-optimal Y regions\n"
       << "  -enable_ortools_row_optimization           refine legal gridded-row X locations with optional CP-SAT\n"
+      << "  -analyze_exact_gridded_legalization        measure bounded exact legal-placement headroom\n"
+      << "  -exact_gridded_window_components <n>       target components per exact window, default 48\n"
+      << "  -exact_gridded_max_windows <n>             maximum exact windows to solve, default 24\n"
+      << "  -exact_gridded_window_time <seconds>       solve limit per exact window, default 0.25\n"
       << "  -debug_placement_region_scale <factor>      enlarge the placement boundary for debugging, default 1\n"
       << "  -standard_cell_legalizer_cost <displacement/hpwl>  default displacement\n"
       << "  -detailed_max_rounds <n>                   detailed-placement optimization rounds, default 1\n"
@@ -459,6 +463,32 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.enable_gridded_row_y_optimization");
     } else if (arg == "-enable_ortools_row_optimization") {
       EnableConfigFlag("dali.enable_ortools_row_optimization");
+    } else if (arg == "-analyze_exact_gridded_legalization") {
+      EnableConfigFlag("dali.analyze_exact_gridded_legalization");
+    } else if (arg == "-exact_gridded_window_components") {
+      int component_count = 0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseInt(value, &component_count) || component_count <= 0) {
+        error_output << "Invalid exact gridded window component count!\n";
+        return false;
+      }
+      config_set_int("dali.exact_gridded_window_components", component_count);
+    } else if (arg == "-exact_gridded_max_windows") {
+      int window_count = 0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseInt(value, &window_count) || window_count <= 0) {
+        error_output << "Invalid exact gridded maximum window count!\n";
+        return false;
+      }
+      config_set_int("dali.exact_gridded_max_windows", window_count);
+    } else if (arg == "-exact_gridded_window_time") {
+      double window_time = 0.0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseDouble(value, &window_time) || window_time <= 0.0) {
+        error_output << "Invalid exact gridded window solve time!\n";
+        return false;
+      }
+      config_set_real("dali.exact_gridded_window_time", window_time);
     } else if (arg == "-debug_placement_region_scale") {
       double scale = 0;
       if (!TryGetValue(argc, argv, &i, &value) ||

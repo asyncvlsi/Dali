@@ -286,6 +286,12 @@ void Dali::ShowParamsList() {
       << enable_gridded_row_y_optimization_ << "\n"
       << "  enable_ortools_row_optimization: "
       << enable_ortools_row_optimization_ << "\n"
+      << "  analyze_exact_gridded_legalization: "
+      << analyze_exact_gridded_legalization_ << "\n"
+      << "  exact_gridded_window_components: "
+      << exact_gridded_window_components_ << "\n"
+      << "  exact_gridded_max_windows: " << exact_gridded_max_windows_ << "\n"
+      << "  exact_gridded_window_time: " << exact_gridded_window_time_ << "\n"
       << "  enable_shrink_off_grid_die_area: "
       << enable_shrink_off_grid_die_area_ << "\n"
       << "  global_initializer: " << static_cast<int>(global_initializer_)
@@ -418,6 +424,20 @@ void Dali::LoadParamsFromConfig() {
                  &enable_gridded_row_y_optimization_);
   LoadBoolConfig(ConfigName(prefix_, "enable_ortools_row_optimization"),
                  &enable_ortools_row_optimization_);
+  LoadBoolConfig(ConfigName(prefix_, "analyze_exact_gridded_legalization"),
+                 &analyze_exact_gridded_legalization_);
+  LoadIntConfig(ConfigName(prefix_, "exact_gridded_window_components"),
+                &exact_gridded_window_components_);
+  DaliExpects(exact_gridded_window_components_ > 0,
+              "exact_gridded_window_components must be positive");
+  LoadIntConfig(ConfigName(prefix_, "exact_gridded_max_windows"),
+                &exact_gridded_max_windows_);
+  DaliExpects(exact_gridded_max_windows_ > 0,
+              "exact_gridded_max_windows must be positive");
+  LoadRealConfig(ConfigName(prefix_, "exact_gridded_window_time"),
+                 &exact_gridded_window_time_);
+  DaliExpects(exact_gridded_window_time_ > 0.0,
+              "exact_gridded_window_time must be positive");
   LoadBoolConfig(ConfigName(prefix_, "enable_shrink_off_grid_die_area"),
                  &enable_shrink_off_grid_die_area_);
   param_name = ConfigName(prefix_, "global_initializer");
@@ -539,6 +559,10 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       disable_gridded_vertical_swap_,
       enable_gridded_row_y_optimization_,
       enable_ortools_row_optimization_,
+      analyze_exact_gridded_legalization_,
+      exact_gridded_window_components_,
+      exact_gridded_max_windows_,
+      exact_gridded_window_time_,
       enable_shrink_off_grid_die_area_,
       global_initializer_,
       global_anchor_schedule_,
@@ -967,6 +991,10 @@ void Dali::ConfigureWellLegalizer() {
       enable_gridded_row_y_optimization_);
   well_legalizer_.SetEnableOrToolsRowOptimization(
       enable_ortools_row_optimization_, net_ignore_threshold_);
+  well_legalizer_.SetExactLegalizationAnalysis(
+      analyze_exact_gridded_legalization_, exact_gridded_window_components_,
+      exact_gridded_max_windows_, exact_gridded_window_time_,
+      net_ignore_threshold_);
   well_legalizer_.SetSnapshotCallback(
       [this](const std::string& id, const std::string& label,
              const std::string& group, const std::string& subgroup,
