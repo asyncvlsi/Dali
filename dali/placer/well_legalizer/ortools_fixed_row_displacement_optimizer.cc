@@ -60,6 +60,22 @@ FixedRowDisplacementResult OrToolsFixedRowDisplacementOptimizer::Solve(
     result.message = "number of workers must be positive";
     return result;
   }
+  if (!std::isfinite(config.displacement_weight) ||
+      config.displacement_weight < 0.0 ||
+      !std::isfinite(config.weighted_hpwl_x_weight) ||
+      config.weighted_hpwl_x_weight < 0.0 ||
+      (config.displacement_weight == 0.0 &&
+       config.weighted_hpwl_x_weight == 0.0)) {
+    result.status = FixedRowDisplacementStatus::kInvalidModel;
+    result.message =
+        "at least one finite, non-negative objective weight must be positive";
+    return result;
+  }
+  if (config.pin_coordinate_scale <= 0) {
+    result.status = FixedRowDisplacementStatus::kInvalidModel;
+    result.message = "pin coordinate scale must be positive";
+    return result;
+  }
 
   std::unordered_map<int, size_t> component_indices;
   component_indices.reserve(model.components.size());
@@ -109,6 +125,27 @@ FixedRowDisplacementResult OrToolsFixedRowDisplacementOptimizer::Solve(
     }
   }
 
+  for (const FixedRowNet& net : model.nets) {
+    if (!std::isfinite(net.weight) || net.weight < 0.0) {
+      result.status = FixedRowDisplacementStatus::kInvalidModel;
+      result.message = "net weights must be finite and non-negative";
+      return result;
+    }
+    for (const FixedRowNetPin& pin : net.pins) {
+      if (!std::isfinite(pin.offset_x) || !std::isfinite(pin.fixed_x)) {
+        result.status = FixedRowDisplacementStatus::kInvalidModel;
+        result.message = "net pin coordinates must be finite";
+        return result;
+      }
+      if (pin.component_id >= 0 &&
+          component_indices.count(pin.component_id) == 0) {
+        result.status = FixedRowDisplacementStatus::kInvalidModel;
+        result.message = "net pin refers to an unknown component";
+        return result;
+      }
+    }
+  }
+
   if (model.components.empty()) {
     result.status = FixedRowDisplacementStatus::kOptimal;
     result.message = "empty model";
@@ -119,6 +156,7 @@ FixedRowDisplacementResult OrToolsFixedRowDisplacementOptimizer::Solve(
   using operations_research::sat::CpModelBuilder;
   using operations_research::sat::CpSolverResponse;
   using operations_research::sat::CpSolverStatus;
+  using operations_research::sat::DoubleLinearExpr;
   using operations_research::sat::IntVar;
   using operations_research::sat::LinearExpr;
   using operations_research::sat::SatParameters;
@@ -126,7 +164,7 @@ FixedRowDisplacementResult OrToolsFixedRowDisplacementOptimizer::Solve(
   CpModelBuilder cp_model;
   std::vector<IntVar> x_variables;
   x_variables.reserve(model.components.size());
-  LinearExpr displacement_objective;
+  DoubleLinearExpr objective;
 
   for (const FixedRowComponentVariable& component : model.components) {
     IntVar x =
@@ -147,7 +185,7 @@ FixedRowDisplacementResult OrToolsFixedRowDisplacementOptimizer::Solve(
             .WithName("x_displacement_" +
                       std::to_string(component.component_id));
     cp_model.AddAbsEquality(absolute_displacement, x - component.initial_x);
-    displacement_objective += absolute_displacement;
+    objective.AddTerm(absolute_displacement, config.displacement_weight);
   }
 
   for (const FixedRowComponentSequence& row : model.rows) {
@@ -160,7 +198,57 @@ FixedRowDisplacementResult OrToolsFixedRowDisplacementOptimizer::Solve(
           x_variables[left_index] + left.width + row.minimum_spacing);
     }
   }
-  cp_model.Minimize(displacement_objective);
+
+  const int64_t pin_scale = config.pin_coordinate_scale;
+  for (size_t net_index = 0; net_index < model.nets.size(); ++net_index) {
+    const FixedRowNet& net = model.nets[net_index];
+    if (net.pins.size() < 2 || net.weight == 0.0 ||
+        config.weighted_hpwl_x_weight == 0.0) {
+      continue;
+    }
+
+    std::vector<LinearExpr> pin_locations;
+    pin_locations.reserve(net.pins.size());
+    int64_t minimum_pin_x = std::numeric_limits<int64_t>::max();
+    int64_t maximum_pin_x = std::numeric_limits<int64_t>::min();
+    for (const FixedRowNetPin& pin : net.pins) {
+      if (pin.component_id < 0) {
+        int64_t fixed_x = static_cast<int64_t>(
+            std::llround(pin.fixed_x * static_cast<double>(pin_scale)));
+        pin_locations.emplace_back(fixed_x);
+        minimum_pin_x = std::min(minimum_pin_x, fixed_x);
+        maximum_pin_x = std::max(maximum_pin_x, fixed_x);
+        continue;
+      }
+
+      size_t component_index = component_indices.at(pin.component_id);
+      const FixedRowComponentVariable& component =
+          model.components[component_index];
+      int64_t offset_x = static_cast<int64_t>(
+          std::llround(pin.offset_x * static_cast<double>(pin_scale)));
+      LinearExpr pin_location =
+          LinearExpr::Term(x_variables[component_index], pin_scale);
+      pin_location += offset_x;
+      pin_locations.push_back(pin_location);
+      minimum_pin_x = std::min(
+          minimum_pin_x,
+          static_cast<int64_t>(component.minimum_x) * pin_scale + offset_x);
+      maximum_pin_x = std::max(
+          maximum_pin_x,
+          static_cast<int64_t>(component.maximum_x) * pin_scale + offset_x);
+    }
+
+    IntVar minimum_x = cp_model.NewIntVar(Domain(minimum_pin_x, maximum_pin_x))
+                           .WithName("net_min_x_" + std::to_string(net_index));
+    IntVar maximum_x = cp_model.NewIntVar(Domain(minimum_pin_x, maximum_pin_x))
+                           .WithName("net_max_x_" + std::to_string(net_index));
+    cp_model.AddMinEquality(minimum_x, pin_locations);
+    cp_model.AddMaxEquality(maximum_x, pin_locations);
+    objective.AddExpression(maximum_x - minimum_x,
+                            config.weighted_hpwl_x_weight * net.weight /
+                                static_cast<double>(pin_scale));
+  }
+  cp_model.Minimize(objective);
 
   SatParameters parameters;
   parameters.set_max_time_in_seconds(config.maximum_time_seconds);
@@ -199,17 +287,19 @@ FixedRowDisplacementResult OrToolsFixedRowDisplacementOptimizer::Solve(
       return result;
   }
 
-  result.total_displacement =
-      static_cast<int64_t>(std::llround(response.objective_value()));
+  result.objective_value = response.objective_value();
   result.relative_gap = std::max(0.0, response.objective_value() -
                                           response.best_objective_bound()) /
                         std::max(1.0, std::abs(response.objective_value()));
   result.locations.reserve(model.components.size());
   for (size_t index = 0; index < model.components.size(); ++index) {
+    int solution_x =
+        static_cast<int>(operations_research::sat::SolutionIntegerValue(
+            response, x_variables[index]));
     result.locations.push_back(
-        {model.components[index].component_id,
-         static_cast<int>(operations_research::sat::SolutionIntegerValue(
-             response, x_variables[index]))});
+        {model.components[index].component_id, solution_x});
+    result.total_displacement += std::abs(static_cast<int64_t>(solution_x) -
+                                          model.components[index].initial_x);
   }
   result.message = response.status() == CpSolverStatus::OPTIMAL
                        ? "optimal solution"

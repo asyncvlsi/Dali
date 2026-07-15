@@ -80,6 +80,36 @@ TEST(OrToolsFixedRowDisplacementOptimizerTest, ReportsInfeasibleModel) {
   EXPECT_FALSE(result.HasSolution());
 }
 
+TEST(OrToolsFixedRowDisplacementOptimizerTest,
+     MinimizesWeightedHpwlWithFixedExternalPin) {
+  if (!OrToolsFixedRowDisplacementOptimizer::IsAvailable()) {
+    GTEST_SKIP() << "Dali was built without OR-Tools 9.15.x";
+  }
+
+  FixedRowDisplacementModel model;
+  model.components = {
+      {0, 2, 0, 0, 18},
+      {1, 2, 2, 0, 18},
+  };
+  model.rows = {{{0, 1}, 0}};
+  model.nets = {
+      {{{0, 1.0, 0.0}, {-1, 0.0, 17.0}}, 1.0},
+      {{{1, 1.0, 0.0}, {-1, 0.0, 19.0}}, 2.0},
+  };
+
+  FixedRowDisplacementSolverConfig config;
+  config.displacement_weight = 0.0;
+  config.weighted_hpwl_x_weight = 1.0;
+  FixedRowDisplacementResult result =
+      OrToolsFixedRowDisplacementOptimizer().Solve(model, config);
+
+  ASSERT_TRUE(result.HasSolution()) << result.message;
+  ASSERT_EQ(result.locations.size(), 2U);
+  EXPECT_EQ(result.locations[0].x, 16);
+  EXPECT_EQ(result.locations[1].x, 18);
+  EXPECT_EQ(result.total_displacement, 32);
+}
+
 TEST(OrToolsFixedRowDisplacementOptimizerTest, RejectsUnknownComponent) {
   FixedRowDisplacementModel model;
   model.components = {{0, 2, 0, 0, 10}};

@@ -37,16 +37,35 @@ struct FixedRowComponentSequence {
   int minimum_spacing = 0;
 };
 
+/** One pin participating in the fixed-row X-HPWL objective. */
+struct FixedRowNetPin {
+  // A negative id represents a fixed pin at fixed_x. Otherwise, the absolute
+  // pin coordinate is the component's lower-left X plus offset_x.
+  int component_id = -1;
+  double offset_x = 0.0;
+  double fixed_x = 0.0;
+};
+
+/** Weighted net represented by its X coordinates in Dali grid units. */
+struct FixedRowNet {
+  std::vector<FixedRowNetPin> pins;
+  double weight = 1.0;
+};
+
 /** Complete fixed-row model passed to the optional OR-Tools backend. */
 struct FixedRowDisplacementModel {
   std::vector<FixedRowComponentVariable> components;
   std::vector<FixedRowComponentSequence> rows;
+  std::vector<FixedRowNet> nets;
 };
 
 /** Runtime limits for one CP-SAT solve. */
 struct FixedRowDisplacementSolverConfig {
   double maximum_time_seconds = 10.0;
   int number_of_workers = 1;
+  double displacement_weight = 1.0;
+  double weighted_hpwl_x_weight = 0.0;
+  int pin_coordinate_scale = 1000;
 };
 
 /** Solver termination state independent of the OR-Tools API. */
@@ -71,6 +90,7 @@ struct FixedRowDisplacementResult {
   std::vector<FixedRowComponentLocation> locations;
   std::string message;
   int64_t total_displacement = 0;
+  double objective_value = 0.0;
   double best_objective_bound = 0.0;
   double relative_gap = 0.0;
   int64_t conflict_count = 0;
@@ -94,10 +114,12 @@ class OrToolsFixedRowDisplacementOptimizer {
   static bool IsAvailable();
 
   /**
-   * Minimize total absolute X displacement while preserving every row order.
+   * Minimize configured displacement and weighted X-HPWL costs while
+   * preserving every row order.
    *
    * Component bounds are bounds on the lower-left X coordinate. Locations and
-   * widths are integer Dali grid units.
+   * widths are integer Dali grid units. Pin offsets may be fractional and are
+   * discretized according to pin_coordinate_scale.
    */
   FixedRowDisplacementResult Solve(
       const FixedRowDisplacementModel& model,
