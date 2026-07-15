@@ -185,6 +185,12 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "12",
                      "-exact_gridded_window_time",
                      "0.5",
+                     "-solve_exact_gridded_legalization",
+                     "-exact_gridded_solve_time",
+                     "7200",
+                     "-exact_gridded_row_radius",
+                     "3",
+                     "-exact_gridded_log_search_progress",
                      "-debug_placement_region_scale",
                      "1.1",
                      "-save_intermediate_result",
@@ -235,6 +241,10 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_EQ(config_get_int("dali.exact_gridded_window_components"), 64);
   EXPECT_EQ(config_get_int("dali.exact_gridded_max_windows"), 12);
   EXPECT_DOUBLE_EQ(config_get_real("dali.exact_gridded_window_time"), 0.5);
+  EXPECT_EQ(config_get_int("dali.solve_exact_gridded_legalization"), 1);
+  EXPECT_DOUBLE_EQ(config_get_real("dali.exact_gridded_solve_time"), 7200.0);
+  EXPECT_EQ(config_get_int("dali.exact_gridded_row_radius"), 3);
+  EXPECT_EQ(config_get_int("dali.exact_gridded_log_search_progress"), 1);
   EXPECT_DOUBLE_EQ(config_get_real("dali.debug_placement_region_scale"), 1.1);
   EXPECT_EQ(config_get_int("dali.save_intermediate_result"), 1);
   EXPECT_EQ(config_get_int("dali.disable_detailed_place"), 1);

@@ -102,6 +102,10 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -exact_gridded_window_components <n>       target components per exact window, default 48\n"
       << "  -exact_gridded_max_windows <n>             maximum exact windows to solve, default 24\n"
       << "  -exact_gridded_window_time <seconds>       solve limit per exact window, default 0.25\n"
+      << "  -solve_exact_gridded_legalization          analyze one compact whole-design CP-SAT model\n"
+      << "  -exact_gridded_solve_time <seconds>        whole-design solve limit, default 3600\n"
+      << "  -exact_gridded_row_radius <n>              allowed row movement around the current row, default 0\n"
+      << "  -exact_gridded_log_search_progress         print detailed CP-SAT search progress\n"
       << "  -debug_placement_region_scale <factor>      enlarge the placement boundary for debugging, default 1\n"
       << "  -standard_cell_legalizer_cost <displacement/hpwl>  default displacement\n"
       << "  -detailed_max_rounds <n>                   detailed-placement optimization rounds, default 1\n"
@@ -489,6 +493,26 @@ bool ParseDaliCommandLine(int argc, char* argv[],
         return false;
       }
       config_set_real("dali.exact_gridded_window_time", window_time);
+    } else if (arg == "-solve_exact_gridded_legalization") {
+      EnableConfigFlag("dali.solve_exact_gridded_legalization");
+    } else if (arg == "-exact_gridded_solve_time") {
+      double solve_time = 0.0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseDouble(value, &solve_time) || solve_time <= 0.0) {
+        error_output << "Invalid exact gridded whole-design solve time!\n";
+        return false;
+      }
+      config_set_real("dali.exact_gridded_solve_time", solve_time);
+    } else if (arg == "-exact_gridded_row_radius") {
+      int row_radius = 0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseInt(value, &row_radius) || row_radius < 0) {
+        error_output << "Invalid exact gridded row radius!\n";
+        return false;
+      }
+      config_set_int("dali.exact_gridded_row_radius", row_radius);
+    } else if (arg == "-exact_gridded_log_search_progress") {
+      EnableConfigFlag("dali.exact_gridded_log_search_progress");
     } else if (arg == "-debug_placement_region_scale") {
       double scale = 0;
       if (!TryGetValue(argc, argv, &i, &value) ||

@@ -1688,6 +1688,110 @@ void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
   RecordPlacementMetric("time.exact_legalization.cpu_s", timer.GetCpuTime());
 }
 
+void GriddedCellWellLegalizer::RunWholeDesignExactLegalizationStage() {
+  ElapsedTime timer;
+  timer.RecordStartTime();
+  const GriddedCapacityConfig capacity = BuildGriddedCapacityConfig(1.0);
+  ExactGriddedWholeDesignBuilderConfig builder_config;
+  builder_config.net_ignore_threshold =
+      whole_design_exact_net_ignore_threshold_;
+  builder_config.minimum_p_well_height = capacity.minimum_p_well_height;
+  builder_config.minimum_n_well_height = capacity.minimum_n_well_height;
+  // Start the 16k-cell experiment with fixed stripe membership and the
+  // current row count. Both restrictions are explicit in the report below;
+  // broader domains can be enabled after measuring this model's scaling.
+  builder_config.allow_cross_stripe_moves = false;
+  builder_config.use_full_row_slot_capacity = false;
+  ExactGriddedWholeDesignBuildResult build =
+      ExactGriddedWholeDesignModelBuilder(ckt_ptr_, builder_config)
+          .Build(&col_list_);
+
+  LOG(info)
+      << "Solve whole-design exact gridded legalization\n"
+      << "  domain                             : current stripe and row count\n"
+      << "  maximum row displacement           : "
+      << whole_design_exact_legalization_config_.maximum_row_displacement
+      << "\n"
+      << "  components                         : "
+      << build.stats.component_count << "\n"
+      << "  nets                               : " << build.stats.net_count
+      << "\n"
+      << "  ignored net fanout threshold       : "
+      << whole_design_exact_net_ignore_threshold_ << "\n"
+      << "  stripes                            : " << build.stats.stripe_count
+      << "\n"
+      << "  current rows                       : "
+      << build.stats.active_row_count << "\n"
+      << "  physical row slots                 : " << build.stats.row_slot_count
+      << "\n"
+      << "  row/orientation choice upper bound : "
+      << build.stats.enumerated_placement_choice_upper_bound << "\n";
+
+  ExactGriddedLegalizationResult solution =
+      OrToolsCompactGriddedLegalizer().Solve(
+          build.model, whole_design_exact_legalization_config_);
+  timer.RecordEndTime();
+  LOG(info)
+      << "  compact variables                  : "
+      << solution.model_variable_count << "\n"
+      << "  compact constraints                : "
+      << solution.model_constraint_count << "\n"
+      << "  compact row choices                : "
+      << solution.row_assignment_choice_count << "\n"
+      << "  current hint status                : "
+      << ExactGriddedLegalizationStatusName(solution.hint_validation_status)
+      << "\n"
+      << "  current hinted HPWL                : "
+      << solution.hinted_weighted_hpwl << "um\n"
+      << "  hint validation wall time          : "
+      << solution.hint_validation_wall_time_seconds << "s\n"
+      << "  solve status                       : "
+      << ExactGriddedLegalizationStatusName(solution.status) << "\n"
+      << "  incumbent HPWL                     : " << solution.weighted_hpwl
+      << "um\n"
+      << "  best objective bound               : "
+      << solution.best_objective_bound << "\n"
+      << "  relative gap                       : " << solution.relative_gap
+      << "\n"
+      << "  solver wall time                   : " << solution.wall_time_seconds
+      << "s\n"
+      << "  total stage wall time              : " << timer.GetWallTime()
+      << "s\n";
+  if (!solution.hint_validation_message.empty()) {
+    LOG(warning) << "  hint validation detail: "
+                 << solution.hint_validation_message << "\n";
+  }
+  if (!solution.message.empty()) {
+    LOG(info) << "  solver detail: " << solution.message << "\n";
+  }
+
+  RecordPlacementMetric("exact_legalization.whole_design.components",
+                        build.stats.component_count);
+  RecordPlacementMetric("exact_legalization.whole_design.row_slots",
+                        build.stats.row_slot_count);
+  RecordPlacementMetric("exact_legalization.whole_design.variables",
+                        solution.model_variable_count);
+  RecordPlacementMetric("exact_legalization.whole_design.constraints",
+                        solution.model_constraint_count);
+  RecordPlacementMetric("exact_legalization.whole_design.row_choices",
+                        solution.row_assignment_choice_count);
+  RecordPlacementMetric("exact_legalization.whole_design.hinted_hpwl",
+                        solution.hinted_weighted_hpwl);
+  RecordPlacementMetric("exact_legalization.whole_design.incumbent_hpwl",
+                        solution.weighted_hpwl);
+  RecordPlacementMetric("exact_legalization.whole_design.best_bound",
+                        solution.best_objective_bound);
+  RecordPlacementMetric("exact_legalization.whole_design.relative_gap",
+                        solution.relative_gap);
+  RecordPlacementMetric("time.exact_legalization.whole_design.solver_wall_s",
+                        solution.wall_time_seconds);
+  RecordPlacementMetric(
+      "time.exact_legalization.whole_design.hint_validation_wall_s",
+      solution.hint_validation_wall_time_seconds);
+  RecordPlacementMetric("time.exact_legalization.whole_design.wall_s",
+                        timer.GetWallTime());
+}
+
 void GriddedCellWellLegalizer::RunJointOrientationAndRowLocationOptimization() {
   constexpr int kMaximumRounds = 4;
   constexpr double kMinimumRelativeImprovement = 1e-5;
@@ -1752,6 +1856,9 @@ void GriddedCellWellLegalizer::RunPostClusteringStages(
   }
   if (clustering_succeeded && enable_exact_legalization_analysis_) {
     RunExactLegalizationAnalysisStage();
+  }
+  if (clustering_succeeded && enable_whole_design_exact_legalization_) {
+    RunWholeDesignExactLegalizationStage();
   }
 }
 

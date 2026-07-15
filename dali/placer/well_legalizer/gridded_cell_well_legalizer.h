@@ -32,10 +32,12 @@
 #include "dali/placer/legalizer/extended_tetris_legalizer.h"
 #include "dali/placer/placer.h"
 #include "exact_gridded_legalization_window_analyzer.h"
+#include "exact_gridded_whole_design_model_builder.h"
 #include "gridded_capacity_estimator.h"
 #include "gridded_detailed_placer.h"
 #include "gridded_row.h"
 #include "gridded_row_location_optimizer.h"
+#include "ortools_compact_gridded_legalizer.h"
 #include "space_partitioner.h"
 #include "stripe.h"
 #include "well_row_completer.h"
@@ -178,6 +180,27 @@ class GriddedCellWellLegalizer : public Placer {
         net_ignore_threshold;
   }
 
+  /**
+   * Configure read-only compact CP-SAT analysis over every movable component.
+   */
+  void SetWholeDesignExactLegalization(bool enable, double maximum_time_seconds,
+                                       int number_of_workers,
+                                       int maximum_row_displacement,
+                                       bool log_search_progress,
+                                       int net_ignore_threshold) {
+    enable_whole_design_exact_legalization_ = enable;
+    whole_design_exact_legalization_config_.maximum_time_seconds =
+        maximum_time_seconds;
+    whole_design_exact_legalization_config_.number_of_workers =
+        number_of_workers;
+    whole_design_exact_legalization_config_.maximum_row_displacement =
+        maximum_row_displacement;
+    whole_design_exact_legalization_config_.log_search_progress =
+        log_search_progress;
+    whole_design_exact_legalization_config_.validate_solution_hint = true;
+    whole_design_exact_net_ignore_threshold_ = net_ignore_threshold;
+  }
+
   /** Set maximum legalized row width in microns. */
   void SetMaxRowWidth(double max_row_width_microns);
 
@@ -304,6 +327,14 @@ class GriddedCellWellLegalizer : public Placer {
   /** Measure bounded exact-legalization headroom without changing placement. */
   void RunExactLegalizationAnalysisStage();
   /**
+   * Measure whole-design CP-SAT headroom without changing the placement.
+   *
+   * The configured row radius controls movement around each component's
+   * current row. Stripe membership and the number of active rows remain fixed
+   * so this experimental model can be evaluated on complete designs.
+   */
+  void RunWholeDesignExactLegalizationStage();
+  /**
    * Alternate column orientation phases and row Y locations to convergence.
    *
    * Row movement changes the HPWL preference between the two legal
@@ -393,6 +424,9 @@ class GriddedCellWellLegalizer : public Placer {
   int ortools_net_ignore_threshold_ = 100;
   bool enable_exact_legalization_analysis_ = false;
   ExactGriddedWindowAnalyzerConfig exact_legalization_analysis_config_;
+  bool enable_whole_design_exact_legalization_ = false;
+  ExactGriddedLegalizationConfig whole_design_exact_legalization_config_;
+  int whole_design_exact_net_ignore_threshold_ = 100;
   WellSpacePartitioner space_partitioner_;
   GriddedDetailedPlacer gridded_detailed_placer_;
   SnapshotCallback snapshot_callback_;

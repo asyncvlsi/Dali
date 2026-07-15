@@ -292,6 +292,12 @@ void Dali::ShowParamsList() {
       << exact_gridded_window_components_ << "\n"
       << "  exact_gridded_max_windows: " << exact_gridded_max_windows_ << "\n"
       << "  exact_gridded_window_time: " << exact_gridded_window_time_ << "\n"
+      << "  solve_exact_gridded_legalization: "
+      << solve_exact_gridded_legalization_ << "\n"
+      << "  exact_gridded_solve_time: " << exact_gridded_solve_time_ << "\n"
+      << "  exact_gridded_row_radius: " << exact_gridded_row_radius_ << "\n"
+      << "  exact_gridded_log_search_progress: "
+      << exact_gridded_log_search_progress_ << "\n"
       << "  enable_shrink_off_grid_die_area: "
       << enable_shrink_off_grid_die_area_ << "\n"
       << "  global_initializer: " << static_cast<int>(global_initializer_)
@@ -438,6 +444,18 @@ void Dali::LoadParamsFromConfig() {
                  &exact_gridded_window_time_);
   DaliExpects(exact_gridded_window_time_ > 0.0,
               "exact_gridded_window_time must be positive");
+  LoadBoolConfig(ConfigName(prefix_, "solve_exact_gridded_legalization"),
+                 &solve_exact_gridded_legalization_);
+  LoadRealConfig(ConfigName(prefix_, "exact_gridded_solve_time"),
+                 &exact_gridded_solve_time_);
+  DaliExpects(exact_gridded_solve_time_ > 0.0,
+              "exact_gridded_solve_time must be positive");
+  LoadIntConfig(ConfigName(prefix_, "exact_gridded_row_radius"),
+                &exact_gridded_row_radius_);
+  DaliExpects(exact_gridded_row_radius_ >= 0,
+              "exact_gridded_row_radius must be non-negative");
+  LoadBoolConfig(ConfigName(prefix_, "exact_gridded_log_search_progress"),
+                 &exact_gridded_log_search_progress_);
   LoadBoolConfig(ConfigName(prefix_, "enable_shrink_off_grid_die_area"),
                  &enable_shrink_off_grid_die_area_);
   param_name = ConfigName(prefix_, "global_initializer");
@@ -563,6 +581,10 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       exact_gridded_window_components_,
       exact_gridded_max_windows_,
       exact_gridded_window_time_,
+      solve_exact_gridded_legalization_,
+      exact_gridded_solve_time_,
+      exact_gridded_row_radius_,
+      exact_gridded_log_search_progress_,
       enable_shrink_off_grid_die_area_,
       global_initializer_,
       global_anchor_schedule_,
@@ -995,6 +1017,10 @@ void Dali::ConfigureWellLegalizer() {
       analyze_exact_gridded_legalization_, exact_gridded_window_components_,
       exact_gridded_max_windows_, exact_gridded_window_time_,
       net_ignore_threshold_);
+  well_legalizer_.SetWholeDesignExactLegalization(
+      solve_exact_gridded_legalization_, exact_gridded_solve_time_,
+      num_threads_, exact_gridded_row_radius_,
+      exact_gridded_log_search_progress_, net_ignore_threshold_);
   well_legalizer_.SetSnapshotCallback(
       [this](const std::string& id, const std::string& label,
              const std::string& group, const std::string& subgroup,

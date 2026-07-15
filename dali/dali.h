@@ -84,6 +84,10 @@ class Dali {
     int exact_gridded_window_components = 48;
     int exact_gridded_max_windows = 24;
     double exact_gridded_window_time = 0.25;
+    bool solve_exact_gridded_legalization = false;
+    double exact_gridded_solve_time = 3600.0;
+    int exact_gridded_row_radius = 0;
+    bool exact_gridded_log_search_progress = false;
     bool enable_shrink_off_grid_die_area = false;
     PlacementInitializerType global_initializer =
         PlacementInitializerType::kUniform;
@@ -228,6 +232,10 @@ class Dali {
   int exact_gridded_window_components_ = 48;
   int exact_gridded_max_windows_ = 24;
   double exact_gridded_window_time_ = 0.25;
+  bool solve_exact_gridded_legalization_ = false;
+  double exact_gridded_solve_time_ = 3600.0;
+  int exact_gridded_row_radius_ = 0;
+  bool exact_gridded_log_search_progress_ = false;
   bool enable_shrink_off_grid_die_area_ = false;
   PlacementInitializerType global_initializer_ =
       PlacementInitializerType::kUniform;
