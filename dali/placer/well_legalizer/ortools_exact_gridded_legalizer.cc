@@ -809,14 +809,14 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
   parameters.set_max_time_in_seconds(config.maximum_time_seconds);
   parameters.set_num_search_workers(config.number_of_workers);
   parameters.set_log_search_progress(config.log_search_progress);
-  const auto& cp_model_proto = cp_model.Build();
-  result.model_variable_count = cp_model_proto.variables_size();
-  result.model_constraint_count = cp_model_proto.constraints_size();
+  const auto& hinted_model_proto = cp_model.Build();
+  result.model_variable_count = hinted_model_proto.variables_size();
+  result.model_constraint_count = hinted_model_proto.constraints_size();
   if (config.validate_solution_hint) {
     operations_research::sat::SatParameters hint_parameters = parameters;
     hint_parameters.set_fix_variables_to_their_hinted_value(true);
     CpSolverResponse hint_response =
-        operations_research::sat::SolveWithParameters(cp_model_proto,
+        operations_research::sat::SolveWithParameters(hinted_model_proto,
                                                       hint_parameters);
     result.hint_validation_wall_time_seconds = hint_response.wall_time();
     switch (hint_response.status()) {
@@ -859,8 +859,12 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
       result.hint_validation_message = hint_response.solution_info();
     }
   }
-  CpSolverResponse response =
-      operations_research::sat::SolveWithParameters(cp_model_proto, parameters);
+  auto solve_model_proto = hinted_model_proto;
+  if (!config.use_solution_hint) {
+    solve_model_proto.clear_solution_hint();
+  }
+  CpSolverResponse response = operations_research::sat::SolveWithParameters(
+      solve_model_proto, parameters);
 
   result.best_objective_bound = response.best_objective_bound();
   result.conflict_count = response.num_conflicts();

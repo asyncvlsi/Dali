@@ -65,6 +65,7 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_FALSE(options.solve_exact_gridded_legalization);
   EXPECT_DOUBLE_EQ(options.exact_gridded_solve_time, 3600.0);
   EXPECT_EQ(options.exact_gridded_row_radius, 0);
+  EXPECT_TRUE(options.exact_gridded_use_solution_hint);
   EXPECT_FALSE(options.exact_gridded_log_search_progress);
   EXPECT_FALSE(options.enable_shrink_off_grid_die_area);
   EXPECT_EQ(options.global_initializer,
@@ -129,6 +130,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_int("dali.solve_exact_gridded_legalization", 1);
   config_set_real("dali.exact_gridded_solve_time", 7200.0);
   config_set_int("dali.exact_gridded_row_radius", 3);
+  config_set_int("dali.exact_gridded_use_solution_hint", 0);
   config_set_int("dali.exact_gridded_log_search_progress", 1);
   config_set_int("dali.enable_shrink_off_grid_die_area", 1);
   config_set_string("dali.global_initializer", "keep");
@@ -191,6 +193,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_TRUE(options.solve_exact_gridded_legalization);
   EXPECT_DOUBLE_EQ(options.exact_gridded_solve_time, 7200.0);
   EXPECT_EQ(options.exact_gridded_row_radius, 3);
+  EXPECT_FALSE(options.exact_gridded_use_solution_hint);
   EXPECT_TRUE(options.exact_gridded_log_search_progress);
   EXPECT_TRUE(options.enable_shrink_off_grid_die_area);
   EXPECT_EQ(options.global_initializer, dali::PlacementInitializerType::kKeep);

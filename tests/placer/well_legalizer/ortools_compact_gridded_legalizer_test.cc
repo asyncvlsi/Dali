@@ -131,4 +131,29 @@ TEST(OrToolsCompactGriddedLegalizerTest,
   EXPECT_EQ(result.row_assignment_choice_count, 2);
 }
 
+TEST(OrToolsCompactGriddedLegalizerTest,
+     CanValidateAHintWithoutUsingItForSearch) {
+  if (!OrToolsCompactGriddedLegalizer::IsAvailable()) {
+    GTEST_SKIP() << "Dali was built without OR-Tools 9.15.x";
+  }
+
+  ExactGriddedLegalizationModel model;
+  model.stripes = {{0, 0, 0, 4, 4, 1, 0, 0, 1, 1, {{true, 0, 2, 2}}}};
+  model.cells = {{0, 2, 2, 0, 1, {{1, 1, true}}, {0}, 0, 0, false}};
+  model.nets = {MakeCompactAnchoredNet(0, 1.0, 2.0)};
+
+  ExactGriddedLegalizationConfig config;
+  config.maximum_time_seconds = 10.0;
+  config.maximum_row_displacement = 0;
+  config.use_solution_hint = false;
+  config.validate_solution_hint = true;
+  ExactGriddedLegalizationResult result =
+      OrToolsCompactGriddedLegalizer().Solve(model, config);
+
+  EXPECT_EQ(result.hint_validation_status,
+            ExactGriddedLegalizationStatus::kOptimal);
+  EXPECT_EQ(result.status, ExactGriddedLegalizationStatus::kOptimal)
+      << result.message;
+}
+
 }  // namespace dali

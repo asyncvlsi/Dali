@@ -1712,6 +1712,8 @@ void GriddedCellWellLegalizer::RunWholeDesignExactLegalizationStage() {
       << "  maximum row displacement           : "
       << whole_design_exact_legalization_config_.maximum_row_displacement
       << "\n"
+      << "  use production solution hint       : "
+      << whole_design_exact_legalization_config_.use_solution_hint << "\n"
       << "  components                         : "
       << build.stats.component_count << "\n"
       << "  nets                               : " << build.stats.net_count

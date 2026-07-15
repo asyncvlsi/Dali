@@ -105,6 +105,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -solve_exact_gridded_legalization          analyze one compact whole-design CP-SAT model\n"
       << "  -exact_gridded_solve_time <seconds>        whole-design solve limit, default 3600\n"
       << "  -exact_gridded_row_radius <n>              allowed row movement around the current row, default 0\n"
+      << "  -exact_gridded_disable_solution_hint       require CP-SAT to find its own feasible placement\n"
       << "  -exact_gridded_log_search_progress         print detailed CP-SAT search progress\n"
       << "  -debug_placement_region_scale <factor>      enlarge the placement boundary for debugging, default 1\n"
       << "  -standard_cell_legalizer_cost <displacement/hpwl>  default displacement\n"
@@ -511,6 +512,8 @@ bool ParseDaliCommandLine(int argc, char* argv[],
         return false;
       }
       config_set_int("dali.exact_gridded_row_radius", row_radius);
+    } else if (arg == "-exact_gridded_disable_solution_hint") {
+      config_set_int("dali.exact_gridded_use_solution_hint", 0);
     } else if (arg == "-exact_gridded_log_search_progress") {
       EnableConfigFlag("dali.exact_gridded_log_search_progress");
     } else if (arg == "-debug_placement_region_scale") {

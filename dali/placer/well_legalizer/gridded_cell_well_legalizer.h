@@ -186,6 +186,7 @@ class GriddedCellWellLegalizer : public Placer {
   void SetWholeDesignExactLegalization(bool enable, double maximum_time_seconds,
                                        int number_of_workers,
                                        int maximum_row_displacement,
+                                       bool use_solution_hint,
                                        bool log_search_progress,
                                        int net_ignore_threshold) {
     enable_whole_design_exact_legalization_ = enable;
@@ -195,6 +196,8 @@ class GriddedCellWellLegalizer : public Placer {
         number_of_workers;
     whole_design_exact_legalization_config_.maximum_row_displacement =
         maximum_row_displacement;
+    whole_design_exact_legalization_config_.use_solution_hint =
+        use_solution_hint;
     whole_design_exact_legalization_config_.log_search_progress =
         log_search_progress;
     whole_design_exact_legalization_config_.validate_solution_hint = true;
