@@ -227,7 +227,8 @@ class GriddedCellWellLegalizer : public Placer {
       double maximum_total_time_seconds, int maximum_sweeps,
       int target_components_per_model, int number_of_workers,
       int maximum_row_displacement, int maximum_row_assignment_changes,
-      bool use_solution_hint, int net_ignore_threshold) {
+      bool run_fixed_row_prepass, bool use_solution_hint,
+      int net_ignore_threshold) {
     enable_exact_stripe_optimization_ = enable;
     exact_stripe_optimizer_config_.maximum_time_seconds_per_stripe =
         maximum_time_seconds_per_stripe;
@@ -245,6 +246,7 @@ class GriddedCellWellLegalizer : public Placer {
         maximum_row_displacement;
     exact_stripe_optimizer_config_.maximum_row_assignment_changes =
         maximum_row_assignment_changes;
+    exact_stripe_fixed_row_prepass_ = run_fixed_row_prepass;
     exact_stripe_optimizer_config_.use_solution_hint = use_solution_hint;
     exact_stripe_optimizer_config_.net_ignore_threshold = net_ignore_threshold;
   }
@@ -384,6 +386,10 @@ class GriddedCellWellLegalizer : public Placer {
   void RunWholeDesignExactLegalizationStage();
   /** Refine finalized stripes with sequential conditional CP-SAT solves. */
   void RunExactStripeOptimizationStage();
+  /** Run, report, and record one exact stripe optimization phase. */
+  OrToolsGriddedStripeOptimizerResult RunExactStripeOptimizationPhase(
+      const std::string& label, const std::string& metric_prefix,
+      const OrToolsGriddedStripeOptimizerConfig& config);
   /**
    * Alternate column orientation phases and row Y locations to convergence.
    *
@@ -478,6 +484,7 @@ class GriddedCellWellLegalizer : public Placer {
   ExactGriddedLegalizationConfig whole_design_exact_legalization_config_;
   int whole_design_exact_net_ignore_threshold_ = 100;
   bool enable_exact_stripe_optimization_ = false;
+  bool exact_stripe_fixed_row_prepass_ = false;
   OrToolsGriddedStripeOptimizerConfig exact_stripe_optimizer_config_;
   WellSpacePartitioner space_partitioner_;
   GriddedDetailedPlacer gridded_detailed_placer_;

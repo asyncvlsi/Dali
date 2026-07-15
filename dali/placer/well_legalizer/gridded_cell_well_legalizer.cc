@@ -1826,27 +1826,23 @@ void GriddedCellWellLegalizer::RunWholeDesignExactLegalizationStage() {
                         timer.GetWallTime());
 }
 
-void GriddedCellWellLegalizer::RunExactStripeOptimizationStage() {
-  const GriddedCapacityConfig capacity = BuildGriddedCapacityConfig(1.0);
-  exact_stripe_optimizer_config_.minimum_p_well_height =
-      capacity.minimum_p_well_height;
-  exact_stripe_optimizer_config_.minimum_n_well_height =
-      capacity.minimum_n_well_height;
-
+OrToolsGriddedStripeOptimizerResult
+GriddedCellWellLegalizer::RunExactStripeOptimizationPhase(
+    const std::string& label, const std::string& metric_prefix,
+    const OrToolsGriddedStripeOptimizerConfig& config) {
   ElapsedTime timer;
   timer.RecordStartTime();
   OrToolsGriddedStripeOptimizerResult result =
-      OrToolsGriddedStripeOptimizer(ckt_ptr_, exact_stripe_optimizer_config_)
-          .Optimize(&col_list_);
+      OrToolsGriddedStripeOptimizer(ckt_ptr_, config).Optimize(&col_list_);
   timer.RecordEndTime();
 
   LOG(info)
-      << "Exact gridded stripe optimization:\n"
+      << label << ":\n"
       << "  available              : " << result.available << "\n"
-      << "  maximum row displacement: "
-      << exact_stripe_optimizer_config_.maximum_row_displacement << "\n"
-      << "  maximum row changes    : "
-      << exact_stripe_optimizer_config_.maximum_row_assignment_changes << "\n"
+      << "  maximum row displacement: " << config.maximum_row_displacement
+      << "\n"
+      << "  maximum row changes    : " << config.maximum_row_assignment_changes
+      << "\n"
       << "  completed sweeps       : " << result.completed_sweeps << "\n"
       << "  attempted models       : " << result.attempted_models << "\n"
       << "  solved models          : " << result.solved_models << "\n"
@@ -1883,23 +1879,53 @@ void GriddedCellWellLegalizer::RunExactStripeOptimizationStage() {
               << ", wall=" << stripe.solver_wall_time_seconds << "s\n";
   }
 
-  RecordPlacementMetric("exact_stripe.attempted", result.attempted_models);
-  RecordPlacementMetric("exact_stripe.solved", result.solved_models);
-  RecordPlacementMetric("exact_stripe.accepted", result.accepted_models);
-  RecordPlacementMetric("exact_stripe.accepted_reassignment_models",
+  RecordPlacementMetric(metric_prefix + ".attempted", result.attempted_models);
+  RecordPlacementMetric(metric_prefix + ".solved", result.solved_models);
+  RecordPlacementMetric(metric_prefix + ".accepted", result.accepted_models);
+  RecordPlacementMetric(metric_prefix + ".accepted_reassignment_models",
                         result.accepted_reassignment_models);
-  RecordPlacementMetric("exact_stripe.accepted_reassigned_components",
+  RecordPlacementMetric(metric_prefix + ".accepted_reassigned_components",
                         result.accepted_reassigned_components);
-  RecordPlacementMetric("exact_stripe.hpwl.before", result.hpwl_before);
-  RecordPlacementMetric("exact_stripe.hpwl.after", result.hpwl_after);
-  RecordPlacementMetric("exact_stripe.hpwl.fixed_row_improvement",
+  RecordPlacementMetric(metric_prefix + ".hpwl.before", result.hpwl_before);
+  RecordPlacementMetric(metric_prefix + ".hpwl.after", result.hpwl_after);
+  RecordPlacementMetric(metric_prefix + ".hpwl.fixed_row_improvement",
                         result.fixed_row_hpwl_improvement);
-  RecordPlacementMetric("exact_stripe.hpwl.reassignment_improvement",
+  RecordPlacementMetric(metric_prefix + ".hpwl.reassignment_improvement",
                         result.reassignment_hpwl_improvement);
-  RecordPlacementMetric("time.exact_stripe.solver_wall_s",
+  RecordPlacementMetric("time." + metric_prefix + ".solver_wall_s",
                         result.solver_wall_time_seconds);
-  RecordPlacementMetric("time.exact_stripe.wall_s", timer.GetWallTime());
-  if (result.accepted_models > 0) {
+  RecordPlacementMetric("time." + metric_prefix + ".wall_s",
+                        timer.GetWallTime());
+  return result;
+}
+
+void GriddedCellWellLegalizer::RunExactStripeOptimizationStage() {
+  const GriddedCapacityConfig capacity = BuildGriddedCapacityConfig(1.0);
+  exact_stripe_optimizer_config_.minimum_p_well_height =
+      capacity.minimum_p_well_height;
+  exact_stripe_optimizer_config_.minimum_n_well_height =
+      capacity.minimum_n_well_height;
+
+  int accepted_models = 0;
+  if (exact_stripe_fixed_row_prepass_ &&
+      exact_stripe_optimizer_config_.maximum_row_displacement > 0) {
+    OrToolsGriddedStripeOptimizerConfig prepass_config =
+        exact_stripe_optimizer_config_;
+    prepass_config.maximum_row_displacement = 0;
+    prepass_config.maximum_row_assignment_changes = -1;
+    const OrToolsGriddedStripeOptimizerResult prepass =
+        RunExactStripeOptimizationPhase(
+            "Exact gridded stripe fixed-row prepass", "exact_stripe.prepass",
+            prepass_config);
+    accepted_models += prepass.accepted_models;
+  }
+
+  const OrToolsGriddedStripeOptimizerResult refinement =
+      RunExactStripeOptimizationPhase("Exact gridded stripe optimization",
+                                      "exact_stripe",
+                                      exact_stripe_optimizer_config_);
+  accepted_models += refinement.accepted_models;
+  if (accepted_models > 0) {
     EmitSnapshot("exact_stripe", "After Exact Stripe Optimization",
                  "legalization", "exact_stripe", 0);
   }
