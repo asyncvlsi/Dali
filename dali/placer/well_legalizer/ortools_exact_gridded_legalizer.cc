@@ -70,6 +70,7 @@ using operations_research::sat::LinearExpr;
 /** CP-SAT variables belonging to one potential gridded row. */
 struct ExactGriddedRowVariables {
   BoolVar active;
+  BoolVar preserve_initial_well_heights;
   IntVar y;
   IntVar p_well_height;
   IntVar n_well_height;
@@ -251,11 +252,11 @@ std::string ValidateExactSolutionHint(
         expected_p_height = std::max(expected_p_height, occupant.p_well_height);
         expected_n_height = std::max(expected_n_height, occupant.n_well_height);
       }
-      if (row.p_well_height != expected_p_height ||
-          row.n_well_height != expected_n_height) {
+      if (row.p_well_height < expected_p_height ||
+          row.n_well_height < expected_n_height) {
         return "stripe " + std::to_string(stripe.stripe_id) + " row " +
                std::to_string(row_index) +
-               " well heights do not equal occupied maxima";
+               " well heights are below occupied maxima";
       }
 
       std::sort(row_occupants.begin(), row_occupants.end(),
@@ -396,7 +397,15 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
           LinearExpr::Term(row.active, stripe.minimum_n_well_height));
       if (!stripe.initial_rows.empty()) {
         const ExactGriddedRowHint& hint = stripe.initial_rows[row_index];
+        row.preserve_initial_well_heights = cp_model.NewBoolVar().WithName(
+            "row_preserve_initial_heights_" + suffix);
+        cp_model.AddImplication(row.preserve_initial_well_heights, row.active);
+        row.p_well_height_candidates.push_back(LinearExpr::Term(
+            row.preserve_initial_well_heights, hint.p_well_height));
+        row.n_well_height_candidates.push_back(LinearExpr::Term(
+            row.preserve_initial_well_heights, hint.n_well_height));
         cp_model.AddHint(row.active, hint.active);
+        cp_model.AddHint(row.preserve_initial_well_heights, hint.active);
         cp_model.AddHint(row.y, hint.y);
         cp_model.AddHint(row.p_well_height, hint.p_well_height);
         cp_model.AddHint(row.n_well_height, hint.n_well_height);

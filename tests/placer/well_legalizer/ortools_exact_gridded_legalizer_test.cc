@@ -140,6 +140,31 @@ TEST(OrToolsExactGriddedLegalizerTest, DetectsAnInfeasibleCompleteHint) {
   EXPECT_NE(result.hint_validation_message.find("overlap"), std::string::npos);
 }
 
+TEST(OrToolsExactGriddedLegalizerTest, AcceptsPreservedLegalWellHeight) {
+  if (!OrToolsExactGriddedLegalizer::IsAvailable()) {
+    GTEST_SKIP() << "Dali was built without OR-Tools 9.15.x";
+  }
+
+  ExactGriddedLegalizationModel model;
+  model.stripes = {{0, 0, 0, 4, 6, 1, 0, 0, 1, 1, {}}};
+  model.stripes[0].initial_rows = {{true, 0, 2, 2}};
+  model.cells = {{0, 2, 0, 1, {{1, 1, true}}, {0}}};
+  model.cells[0].initial_stripe_id = 0;
+  model.cells[0].initial_start_row = 0;
+  model.nets = {MakeAnchoredNet(0, 1.0, 2.0)};
+
+  ExactGriddedLegalizationConfig config;
+  config.maximum_time_seconds = 10.0;
+  config.validate_solution_hint = true;
+  ExactGriddedLegalizationResult result =
+      OrToolsExactGriddedLegalizer().Solve(model, config);
+
+  EXPECT_TRUE(result.HasSolution()) << result.message;
+  EXPECT_EQ(result.hint_validation_status,
+            ExactGriddedLegalizationStatus::kOptimal);
+  EXPECT_DOUBLE_EQ(result.hinted_weighted_hpwl, 0.0);
+}
+
 TEST(OrToolsExactGriddedLegalizerTest, AllowsWhitespaceBetweenLegalRows) {
   if (!OrToolsExactGriddedLegalizer::IsAvailable()) {
     GTEST_SKIP() << "Dali was built without OR-Tools 9.15.x";
