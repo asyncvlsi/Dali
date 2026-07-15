@@ -27,6 +27,7 @@ struct ExactGriddedCellRegion {
 struct ExactGriddedCell {
   int component_id = -1;
   int width = 0;
+  int height = 0;
   int initial_x = 0;
   int initial_y = 0;
   std::vector<ExactGriddedCellRegion> regions;

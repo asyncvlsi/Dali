@@ -11,8 +11,8 @@ ExactGriddedLegalizationModel MakeValidExactModel() {
   ExactGriddedLegalizationModel model;
   model.stripes = {{0, 0, 0, 20, 20, 4, 1, 1, 1, 1, {}}};
   model.cells = {
-      {0, 4, 2, 3, {{1, 2, true}}, {0}},
-      {1, 3, 8, 7, {{2, 1, false}, {1, 2, true}}, {0}},
+      {0, 4, 3, 2, 3, {{1, 2, true}}, {0}},
+      {1, 3, 6, 8, 7, {{2, 1, false}, {1, 2, true}}, {0}},
   };
   model.nets = {
       {{{{0, 1.0, 1.0, 1.0, 2.0, 0.0, 0.0}, {1, 1.5, 1.0, 1.5, 3.0, 0.0, 0.0}}},
@@ -57,6 +57,12 @@ TEST(ExactGriddedLegalizationModelTest, RejectsDuplicateComponentId) {
   ExactGriddedLegalizationModel model = MakeValidExactModel();
   model.cells[1].component_id = model.cells[0].component_id;
   EXPECT_EQ(model.Validate(), "component ids must be unique");
+}
+
+TEST(ExactGriddedLegalizationModelTest, RejectsNonPositiveCellHeight) {
+  ExactGriddedLegalizationModel model = MakeValidExactModel();
+  model.cells[0].height = 0;
+  EXPECT_EQ(model.Validate(), "component dimensions must be positive");
 }
 
 TEST(ExactGriddedLegalizationModelTest, RejectsComponentTallerThanStripe) {

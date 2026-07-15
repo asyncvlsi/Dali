@@ -55,6 +55,8 @@ TEST(ExactGriddedLegalizationModelBuilderTest,
   EXPECT_DOUBLE_EQ(model.distance_scale_y, 3.0);
   ASSERT_EQ(model.cells.size(), 1U);
   EXPECT_EQ(model.cells[0].component_id, component->Id());
+  EXPECT_EQ(model.cells[0].width, component->Width());
+  EXPECT_EQ(model.cells[0].height, component->Height());
   EXPECT_EQ(model.cells[0].candidate_stripe_ids, std::vector<int>({7}));
   EXPECT_EQ(model.cells[0].initial_stripe_id, 7);
   EXPECT_EQ(model.cells[0].initial_start_row, 0);

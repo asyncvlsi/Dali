@@ -55,6 +55,7 @@ ExactGriddedLegalizationModel ExactGriddedLegalizationModelBuilder::Build(
     ExactGriddedCell cell;
     cell.component_id = component->Id();
     cell.width = component->Width();
+    cell.height = component->Height();
     cell.initial_x = static_cast<int>(std::llround(component->LLX()));
     cell.initial_y = static_cast<int>(std::llround(component->LLY()));
     cell.candidate_stripe_ids = domain.candidate_stripe_ids;

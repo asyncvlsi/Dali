@@ -88,7 +88,9 @@ std::string ExactGriddedLegalizationModel::Validate() const {
     if (!component_ids.insert(cell.component_id).second) {
       return "component ids must be unique";
     }
-    if (cell.width <= 0) return "component widths must be positive";
+    if (cell.width <= 0 || cell.height <= 0) {
+      return "component dimensions must be positive";
+    }
     if (cell.regions.empty()) {
       return "every component must contain at least one well region";
     }
