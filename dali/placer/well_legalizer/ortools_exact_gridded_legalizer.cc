@@ -15,6 +15,8 @@
 #include <limits>
 #include <unordered_map>
 
+#include "dali/placer/well_legalizer/exact_gridded_legalization_util.h"
+
 #ifdef DALI_HAS_OR_TOOLS
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -808,6 +810,8 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
   parameters.set_num_search_workers(config.number_of_workers);
   parameters.set_log_search_progress(config.log_search_progress);
   const auto& cp_model_proto = cp_model.Build();
+  result.model_variable_count = cp_model_proto.variables_size();
+  result.model_constraint_count = cp_model_proto.constraints_size();
   if (config.validate_solution_hint) {
     operations_research::sat::SatParameters hint_parameters = parameters;
     hint_parameters.set_fix_variables_to_their_hinted_value(true);

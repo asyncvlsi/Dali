@@ -163,3 +163,12 @@ add_test(NAME ortools_exact_gridded_legalizer_test
          COMMAND ortools_exact_gridded_legalizer_test)
 set_tests_properties(ortools_exact_gridded_legalizer_test
                      PROPERTIES LABELS "unit;placer;well_legalizer")
+
+add_executable(ortools_compact_gridded_legalizer_test
+               ortools_compact_gridded_legalizer_test.cc)
+target_link_libraries(ortools_compact_gridded_legalizer_test
+                      PRIVATE dalilib ${DALI_GTEST_MAIN})
+add_test(NAME ortools_compact_gridded_legalizer_test
+         COMMAND ortools_compact_gridded_legalizer_test)
+set_tests_properties(ortools_compact_gridded_legalizer_test
+                     PROPERTIES LABELS "unit;placer;well_legalizer")

@@ -79,6 +79,8 @@ struct ExactGriddedLegalizationResult {
   double relative_gap = 0.0;
   int64_t conflict_count = 0;
   int64_t branch_count = 0;
+  int64_t model_variable_count = 0;
+  int64_t model_constraint_count = 0;
   double wall_time_seconds = 0.0;
   ExactGriddedLegalizationStatus hint_validation_status =
       ExactGriddedLegalizationStatus::kUnavailable;
