@@ -300,6 +300,13 @@ void Dali::ShowParamsList() {
       << exact_gridded_use_solution_hint_ << "\n"
       << "  exact_gridded_log_search_progress: "
       << exact_gridded_log_search_progress_ << "\n"
+      << "  enable_exact_gridded_stripe_optimization: "
+      << enable_exact_gridded_stripe_optimization_ << "\n"
+      << "  exact_gridded_stripe_time: " << exact_gridded_stripe_time_ << "\n"
+      << "  exact_gridded_stripe_total_time: "
+      << exact_gridded_stripe_total_time_ << "\n"
+      << "  exact_gridded_stripe_sweeps: " << exact_gridded_stripe_sweeps_
+      << "\n"
       << "  enable_shrink_off_grid_die_area: "
       << enable_shrink_off_grid_die_area_ << "\n"
       << "  global_initializer: " << static_cast<int>(global_initializer_)
@@ -460,6 +467,21 @@ void Dali::LoadParamsFromConfig() {
                  &exact_gridded_use_solution_hint_);
   LoadBoolConfig(ConfigName(prefix_, "exact_gridded_log_search_progress"),
                  &exact_gridded_log_search_progress_);
+  LoadBoolConfig(
+      ConfigName(prefix_, "enable_exact_gridded_stripe_optimization"),
+      &enable_exact_gridded_stripe_optimization_);
+  LoadRealConfig(ConfigName(prefix_, "exact_gridded_stripe_time"),
+                 &exact_gridded_stripe_time_);
+  DaliExpects(exact_gridded_stripe_time_ > 0.0,
+              "exact_gridded_stripe_time must be positive");
+  LoadRealConfig(ConfigName(prefix_, "exact_gridded_stripe_total_time"),
+                 &exact_gridded_stripe_total_time_);
+  DaliExpects(exact_gridded_stripe_total_time_ > 0.0,
+              "exact_gridded_stripe_total_time must be positive");
+  LoadIntConfig(ConfigName(prefix_, "exact_gridded_stripe_sweeps"),
+                &exact_gridded_stripe_sweeps_);
+  DaliExpects(exact_gridded_stripe_sweeps_ > 0,
+              "exact_gridded_stripe_sweeps must be positive");
   LoadBoolConfig(ConfigName(prefix_, "enable_shrink_off_grid_die_area"),
                  &enable_shrink_off_grid_die_area_);
   param_name = ConfigName(prefix_, "global_initializer");
@@ -590,6 +612,10 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       exact_gridded_row_radius_,
       exact_gridded_use_solution_hint_,
       exact_gridded_log_search_progress_,
+      enable_exact_gridded_stripe_optimization_,
+      exact_gridded_stripe_time_,
+      exact_gridded_stripe_total_time_,
+      exact_gridded_stripe_sweeps_,
       enable_shrink_off_grid_die_area_,
       global_initializer_,
       global_anchor_schedule_,
@@ -1026,6 +1052,10 @@ void Dali::ConfigureWellLegalizer() {
       solve_exact_gridded_legalization_, exact_gridded_solve_time_,
       num_threads_, exact_gridded_row_radius_, exact_gridded_use_solution_hint_,
       exact_gridded_log_search_progress_, net_ignore_threshold_);
+  well_legalizer_.SetExactStripeOptimization(
+      enable_exact_gridded_stripe_optimization_, exact_gridded_stripe_time_,
+      exact_gridded_stripe_total_time_, exact_gridded_stripe_sweeps_,
+      num_threads_, exact_gridded_use_solution_hint_, net_ignore_threshold_);
   well_legalizer_.SetSnapshotCallback(
       [this](const std::string& id, const std::string& label,
              const std::string& group, const std::string& subgroup,

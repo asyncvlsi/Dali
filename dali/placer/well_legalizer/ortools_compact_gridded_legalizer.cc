@@ -760,13 +760,7 @@ ExactGriddedLegalizationResult OrToolsCompactGriddedLegalizer::Solve(
   parameters.set_num_search_workers(config.number_of_workers);
   parameters.set_log_search_progress(config.log_search_progress);
   parameters.set_repair_hint(config.use_solution_hint);
-  if (use_fixed_row_no_overlap && config.validate_solution_hint &&
-      config.use_solution_hint) {
-    // The complete production hint has already been validated. Presolving a
-    // 16k-cell fixed-row disjunctive model can consume the entire time budget
-    // before CP-SAT records that incumbent, so begin search from the hint.
-    parameters.set_cp_model_presolve(false);
-  }
+  parameters.set_cp_model_presolve(config.use_presolve);
   const auto& hinted_model_proto = cp_model.Build();
   result.model_variable_count = hinted_model_proto.variables_size();
   result.model_constraint_count = hinted_model_proto.constraints_size();

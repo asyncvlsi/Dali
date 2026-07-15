@@ -45,6 +45,8 @@ struct ExactGriddedLegalizationConfig {
   int maximum_row_displacement = -1;
   // Keep active rows, Y coordinates, and well heights at their supplied hints.
   bool fix_row_geometry = false;
+  // Enable CP-SAT model presolve before search.
+  bool use_presolve = true;
   // Retain the production placement as a warm start for the main solve.
   bool use_solution_hint = true;
   // Check whether the supplied hints form a feasible solution before search.

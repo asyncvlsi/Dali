@@ -1,0 +1,260 @@
+/*******************************************************************************
+ *
+ * Copyright (c) 2026 Yihang Yang
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ ******************************************************************************/
+#include "dali/placer/well_legalizer/ortools_gridded_stripe_optimizer.h"
+
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <unordered_map>
+
+#include "dali/common/helper.h"
+#include "dali/placer/well_legalizer/exact_gridded_stripe_model_builder.h"
+#include "dali/placer/well_legalizer/ortools_compact_gridded_legalizer.h"
+
+namespace dali {
+
+OrToolsGriddedStripeOptimizer::OrToolsGriddedStripeOptimizer(
+    Circuit* circuit, const OrToolsGriddedStripeOptimizerConfig& config)
+    : circuit_(circuit), config_(config) {
+  DaliExpects(circuit_ != nullptr,
+              "OR-Tools stripe optimizer requires a circuit");
+  DaliExpects(config_.maximum_time_seconds_per_stripe > 0.0,
+              "Stripe solve time must be positive");
+  DaliExpects(config_.maximum_total_time_seconds > 0.0,
+              "Stripe total time budget must be positive");
+  DaliExpects(config_.minimum_relative_improvement >= 0.0,
+              "Stripe convergence threshold must be non-negative");
+  DaliExpects(config_.maximum_sweeps > 0,
+              "Stripe optimizer must allow at least one sweep");
+  DaliExpects(config_.number_of_workers > 0,
+              "Stripe optimizer worker count must be positive");
+  DaliExpects(config_.net_ignore_threshold >= 2,
+              "Stripe net ignore threshold must be at least two");
+  DaliExpects(
+      config_.minimum_p_well_height >= 0 && config_.minimum_n_well_height >= 0,
+      "Stripe minimum well heights must be non-negative");
+}
+
+double OrToolsGriddedStripeOptimizer::AffectedNetHpwl(
+    const std::vector<int>& net_ids, bool apply_fanout_cutoff) const {
+  double hpwl = 0.0;
+  for (int net_id : net_ids) {
+    DaliExpects(
+        net_id >= 0 && net_id < static_cast<int>(circuit_->Nets().size()),
+        "Stripe component refers to an unknown net");
+    const Net& net = circuit_->Nets()[net_id];
+    if (net.PinCnt() < 2 || net.Weight() <= 0.0) continue;
+    if (apply_fanout_cutoff &&
+        net.PinCnt() >= static_cast<size_t>(config_.net_ignore_threshold)) {
+      continue;
+    }
+    hpwl += circuit_->NetWeightedHPWL(net_id);
+  }
+  return hpwl;
+}
+
+OrToolsGriddedStripeOptimizerResult OrToolsGriddedStripeOptimizer::Optimize(
+    std::vector<StripeColumn>* columns) const {
+  DaliExpects(columns != nullptr, "Stripe-column list must not be null");
+
+  OrToolsGriddedStripeOptimizerResult aggregate;
+  aggregate.available = OrToolsCompactGriddedLegalizer::IsAvailable();
+  aggregate.hpwl_before = circuit_->WeightedHPWL();
+  aggregate.hpwl_after = aggregate.hpwl_before;
+  if (!aggregate.available) return aggregate;
+
+  struct StripeTarget {
+    int column_index = -1;
+    int stripe_index = -1;
+    int model_stripe_id = -1;
+    Stripe* stripe = nullptr;
+  };
+  std::vector<StripeTarget> targets;
+  int next_stripe_id = 0;
+  for (int column_index = 0; column_index < static_cast<int>(columns->size());
+       ++column_index) {
+    StripeColumn& column = (*columns)[column_index];
+    for (int stripe_index = 0;
+         stripe_index < static_cast<int>(column.stripe_list_.size());
+         ++stripe_index) {
+      targets.push_back({column_index, stripe_index, next_stripe_id++,
+                         &column.stripe_list_[stripe_index]});
+    }
+  }
+
+  ExactGriddedStripeModelBuilderConfig builder_config;
+  builder_config.net_ignore_threshold = config_.net_ignore_threshold;
+  builder_config.minimum_p_well_height = config_.minimum_p_well_height;
+  builder_config.minimum_n_well_height = config_.minimum_n_well_height;
+  ExactGriddedStripeModelBuilder builder(circuit_, builder_config);
+  OrToolsCompactGriddedLegalizer solver;
+  const auto start_time = std::chrono::steady_clock::now();
+
+  for (int sweep = 0; sweep < config_.maximum_sweeps; ++sweep) {
+    const double sweep_hpwl_before = circuit_->WeightedHPWL();
+    int accepted_in_sweep = 0;
+    for (int target_offset = 0;
+         target_offset < static_cast<int>(targets.size()); ++target_offset) {
+      const int target_index =
+          sweep % 2 == 0 ? target_offset
+                         : static_cast<int>(targets.size()) - 1 - target_offset;
+      const StripeTarget& target = targets[target_index];
+      ExactGriddedStripeBuildResult build =
+          builder.Build(target.stripe, target.model_stripe_id);
+      if (build.model.cells.empty()) continue;
+
+      OrToolsGriddedStripeSolveResult stripe_result;
+      stripe_result.sweep = sweep;
+      stripe_result.column_index = target.column_index;
+      stripe_result.stripe_index = target.stripe_index;
+      stripe_result.component_count =
+          static_cast<int>(build.model.cells.size());
+      stripe_result.net_count = static_cast<int>(build.model.nets.size());
+      stripe_result.modeled_hpwl_before =
+          AffectedNetHpwl(build.affected_net_ids, true);
+      stripe_result.affected_hpwl_before =
+          AffectedNetHpwl(build.affected_net_ids, false);
+      stripe_result.modeled_hpwl_after = stripe_result.modeled_hpwl_before;
+      stripe_result.affected_hpwl_after = stripe_result.affected_hpwl_before;
+      ++aggregate.attempted_stripes;
+
+      ExactGriddedLegalizationConfig solver_config;
+      solver_config.maximum_time_seconds =
+          config_.maximum_time_seconds_per_stripe;
+      solver_config.number_of_workers = config_.number_of_workers;
+      solver_config.maximum_row_displacement = 0;
+      solver_config.fix_row_geometry = true;
+      solver_config.use_presolve = true;
+      solver_config.use_solution_hint = config_.use_solution_hint;
+      solver_config.validate_solution_hint = true;
+      ExactGriddedLegalizationResult solution =
+          solver.Solve(build.model, solver_config);
+      stripe_result.status = solution.status;
+      stripe_result.solver_wall_time_seconds = solution.wall_time_seconds;
+      stripe_result.best_objective_bound = solution.best_objective_bound;
+      stripe_result.relative_gap = solution.relative_gap;
+      stripe_result.model_variable_count = solution.model_variable_count;
+      stripe_result.model_constraint_count = solution.model_constraint_count;
+      aggregate.solver_wall_time_seconds += solution.wall_time_seconds;
+
+      if (solution.HasSolution()) {
+        ++aggregate.solved_stripes;
+        std::unordered_map<int, Component*> components_by_id;
+        for (Component* component : build.components) {
+          components_by_id.emplace(component->Id(), component);
+        }
+        std::unordered_map<int, const ExactGriddedCell*> model_cells_by_id;
+        for (const ExactGriddedCell& cell : build.model.cells) {
+          model_cells_by_id.emplace(cell.component_id, &cell);
+        }
+
+        bool preserves_fixed_assignment =
+            solution.cells.size() == build.model.cells.size();
+        for (const ExactGriddedCellPlacement& placement : solution.cells) {
+          const auto model_cell =
+              model_cells_by_id.find(placement.component_id);
+          if (model_cell == model_cells_by_id.end()) {
+            preserves_fixed_assignment = false;
+            break;
+          }
+          const ExactGriddedCell& cell = *model_cell->second;
+          if (placement.stripe_id != cell.initial_stripe_id ||
+              placement.row_index != cell.initial_start_row ||
+              placement.y != cell.initial_y ||
+              placement.is_flipped != cell.initial_is_flipped) {
+            preserves_fixed_assignment = false;
+            break;
+          }
+        }
+
+        std::vector<double> original_x;
+        original_x.reserve(build.components.size());
+        for (Component* component : build.components) {
+          original_x.push_back(component->LLX());
+        }
+        if (preserves_fixed_assignment) {
+          for (const ExactGriddedCellPlacement& placement : solution.cells) {
+            components_by_id.at(placement.component_id)->SetLLX(placement.x);
+          }
+        }
+
+        const bool rows_are_legal =
+            preserves_fixed_assignment &&
+            std::all_of(build.rows.begin(), build.rows.end(),
+                        [](const GriddedRow* row) {
+                          return row->HasLegalComponentPlacement();
+                        });
+        if (rows_are_legal) {
+          stripe_result.modeled_hpwl_after =
+              AffectedNetHpwl(build.affected_net_ids, true);
+          stripe_result.affected_hpwl_after =
+              AffectedNetHpwl(build.affected_net_ids, false);
+        }
+        const double modeled_tolerance =
+            1e-9 * std::max(1.0, stripe_result.modeled_hpwl_before);
+        const double affected_tolerance =
+            1e-9 * std::max(1.0, stripe_result.affected_hpwl_before);
+        const bool improves_modeled_hpwl =
+            stripe_result.modeled_hpwl_after + modeled_tolerance <
+            stripe_result.modeled_hpwl_before;
+        const bool preserves_full_hpwl =
+            stripe_result.affected_hpwl_after <=
+            stripe_result.affected_hpwl_before + affected_tolerance;
+        if (rows_are_legal && improves_modeled_hpwl && preserves_full_hpwl) {
+          stripe_result.accepted = true;
+          ++aggregate.accepted_stripes;
+          ++accepted_in_sweep;
+          for (GriddedRow* row : build.rows) {
+            std::sort(
+                row->Components().begin(), row->Components().end(),
+                [](const Component* lhs, const Component* rhs) {
+                  return (lhs->LLX() < rhs->LLX()) ||
+                         (lhs->LLX() == rhs->LLX() && lhs->Id() < rhs->Id());
+                });
+          }
+        } else {
+          for (size_t component_index = 0;
+               component_index < build.components.size(); ++component_index) {
+            build.components[component_index]->SetLLX(
+                original_x[component_index]);
+          }
+          stripe_result.modeled_hpwl_after = stripe_result.modeled_hpwl_before;
+          stripe_result.affected_hpwl_after =
+              stripe_result.affected_hpwl_before;
+        }
+      }
+      aggregate.stripes.push_back(stripe_result);
+
+      const double elapsed_seconds =
+          std::chrono::duration<double>(std::chrono::steady_clock::now() -
+                                        start_time)
+              .count();
+      if (elapsed_seconds >= config_.maximum_total_time_seconds) {
+        aggregate.time_budget_exhausted = true;
+        break;
+      }
+    }
+
+    ++aggregate.completed_sweeps;
+    const double sweep_hpwl_after = circuit_->WeightedHPWL();
+    const double relative_improvement = (sweep_hpwl_before - sweep_hpwl_after) /
+                                        std::max(1.0, sweep_hpwl_before);
+    if (aggregate.time_budget_exhausted || accepted_in_sweep == 0 ||
+        relative_improvement <= config_.minimum_relative_improvement) {
+      break;
+    }
+  }
+
+  aggregate.hpwl_after = circuit_->WeightedHPWL();
+  return aggregate;
+}
+
+}  // namespace dali

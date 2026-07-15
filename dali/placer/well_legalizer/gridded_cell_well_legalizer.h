@@ -38,6 +38,7 @@
 #include "gridded_row.h"
 #include "gridded_row_location_optimizer.h"
 #include "ortools_compact_gridded_legalizer.h"
+#include "ortools_gridded_stripe_optimizer.h"
 #include "space_partitioner.h"
 #include "stripe.h"
 #include "well_row_completer.h"
@@ -198,10 +199,31 @@ class GriddedCellWellLegalizer : public Placer {
         maximum_row_displacement;
     whole_design_exact_legalization_config_.use_solution_hint =
         use_solution_hint;
+    // The monolithic fixed-row model otherwise spends its short diagnostic
+    // budget in presolve before recording the validated production incumbent.
+    whole_design_exact_legalization_config_.use_presolve = !use_solution_hint;
     whole_design_exact_legalization_config_.log_search_progress =
         log_search_progress;
     whole_design_exact_legalization_config_.validate_solution_hint = true;
     whole_design_exact_net_ignore_threshold_ = net_ignore_threshold;
+  }
+
+  /** Configure decomposed exact refinement of finalized gridded stripes. */
+  void SetExactStripeOptimization(bool enable,
+                                  double maximum_time_seconds_per_stripe,
+                                  double maximum_total_time_seconds,
+                                  int maximum_sweeps, int number_of_workers,
+                                  bool use_solution_hint,
+                                  int net_ignore_threshold) {
+    enable_exact_stripe_optimization_ = enable;
+    exact_stripe_optimizer_config_.maximum_time_seconds_per_stripe =
+        maximum_time_seconds_per_stripe;
+    exact_stripe_optimizer_config_.maximum_total_time_seconds =
+        maximum_total_time_seconds;
+    exact_stripe_optimizer_config_.maximum_sweeps = maximum_sweeps;
+    exact_stripe_optimizer_config_.number_of_workers = number_of_workers;
+    exact_stripe_optimizer_config_.use_solution_hint = use_solution_hint;
+    exact_stripe_optimizer_config_.net_ignore_threshold = net_ignore_threshold;
   }
 
   /** Set maximum legalized row width in microns. */
@@ -337,6 +359,8 @@ class GriddedCellWellLegalizer : public Placer {
    * so this experimental model can be evaluated on complete designs.
    */
   void RunWholeDesignExactLegalizationStage();
+  /** Refine finalized stripes with sequential conditional CP-SAT solves. */
+  void RunExactStripeOptimizationStage();
   /**
    * Alternate column orientation phases and row Y locations to convergence.
    *
@@ -430,6 +454,8 @@ class GriddedCellWellLegalizer : public Placer {
   bool enable_whole_design_exact_legalization_ = false;
   ExactGriddedLegalizationConfig whole_design_exact_legalization_config_;
   int whole_design_exact_net_ignore_threshold_ = 100;
+  bool enable_exact_stripe_optimization_ = false;
+  OrToolsGriddedStripeOptimizerConfig exact_stripe_optimizer_config_;
   WellSpacePartitioner space_partitioner_;
   GriddedDetailedPlacer gridded_detailed_placer_;
   SnapshotCallback snapshot_callback_;

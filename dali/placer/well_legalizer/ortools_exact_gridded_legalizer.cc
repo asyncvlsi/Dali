@@ -821,6 +821,7 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
   parameters.set_max_time_in_seconds(config.maximum_time_seconds);
   parameters.set_num_search_workers(config.number_of_workers);
   parameters.set_log_search_progress(config.log_search_progress);
+  parameters.set_cp_model_presolve(config.use_presolve);
   const auto& hinted_model_proto = cp_model.Build();
   result.model_variable_count = hinted_model_proto.variables_size();
   result.model_constraint_count = hinted_model_proto.constraints_size();

@@ -181,3 +181,12 @@ add_test(NAME ortools_compact_gridded_legalizer_test
          COMMAND ortools_compact_gridded_legalizer_test)
 set_tests_properties(ortools_compact_gridded_legalizer_test
                      PROPERTIES LABELS "unit;placer;well_legalizer")
+
+add_executable(ortools_gridded_stripe_optimizer_test
+               ortools_gridded_stripe_optimizer_test.cc)
+target_link_libraries(ortools_gridded_stripe_optimizer_test
+                      PRIVATE dalilib GTest::gtest_main)
+add_test(NAME ortools_gridded_stripe_optimizer_test
+         COMMAND ortools_gridded_stripe_optimizer_test)
+set_tests_properties(ortools_gridded_stripe_optimizer_test
+                     PROPERTIES LABELS "unit;placer;well_legalizer")

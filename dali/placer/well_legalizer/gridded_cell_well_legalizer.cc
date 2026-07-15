@@ -1794,6 +1794,65 @@ void GriddedCellWellLegalizer::RunWholeDesignExactLegalizationStage() {
                         timer.GetWallTime());
 }
 
+void GriddedCellWellLegalizer::RunExactStripeOptimizationStage() {
+  const GriddedCapacityConfig capacity = BuildGriddedCapacityConfig(1.0);
+  exact_stripe_optimizer_config_.minimum_p_well_height =
+      capacity.minimum_p_well_height;
+  exact_stripe_optimizer_config_.minimum_n_well_height =
+      capacity.minimum_n_well_height;
+
+  ElapsedTime timer;
+  timer.RecordStartTime();
+  OrToolsGriddedStripeOptimizerResult result =
+      OrToolsGriddedStripeOptimizer(ckt_ptr_, exact_stripe_optimizer_config_)
+          .Optimize(&col_list_);
+  timer.RecordEndTime();
+
+  LOG(info) << "Exact gridded stripe optimization:\n"
+            << "  available              : " << result.available << "\n"
+            << "  completed sweeps       : " << result.completed_sweeps << "\n"
+            << "  attempted stripes      : " << result.attempted_stripes << "\n"
+            << "  solved stripes         : " << result.solved_stripes << "\n"
+            << "  accepted stripes       : " << result.accepted_stripes << "\n"
+            << "  HPWL before            : " << result.hpwl_before << "um\n"
+            << "  HPWL after             : " << result.hpwl_after << "um\n"
+            << "  improvement            : "
+            << result.hpwl_before - result.hpwl_after << "um\n"
+            << "  solver wall time       : " << result.solver_wall_time_seconds
+            << "s\n"
+            << "  total stage wall time  : " << timer.GetWallTime() << "s\n"
+            << "  time budget exhausted  : " << result.time_budget_exhausted
+            << "\n";
+  for (const OrToolsGriddedStripeSolveResult& stripe : result.stripes) {
+    LOG(info) << "  sweep " << stripe.sweep << ", column "
+              << stripe.column_index << ", stripe " << stripe.stripe_index
+              << ": status="
+              << ExactGriddedLegalizationStatusName(stripe.status)
+              << ", cells=" << stripe.component_count
+              << ", nets=" << stripe.net_count
+              << ", modeled HPWL=" << stripe.modeled_hpwl_before << " -> "
+              << stripe.modeled_hpwl_after << "um"
+              << ", affected HPWL=" << stripe.affected_hpwl_before << " -> "
+              << stripe.affected_hpwl_after << "um"
+              << ", accepted=" << stripe.accepted
+              << ", gap=" << stripe.relative_gap
+              << ", wall=" << stripe.solver_wall_time_seconds << "s\n";
+  }
+
+  RecordPlacementMetric("exact_stripe.attempted", result.attempted_stripes);
+  RecordPlacementMetric("exact_stripe.solved", result.solved_stripes);
+  RecordPlacementMetric("exact_stripe.accepted", result.accepted_stripes);
+  RecordPlacementMetric("exact_stripe.hpwl.before", result.hpwl_before);
+  RecordPlacementMetric("exact_stripe.hpwl.after", result.hpwl_after);
+  RecordPlacementMetric("time.exact_stripe.solver_wall_s",
+                        result.solver_wall_time_seconds);
+  RecordPlacementMetric("time.exact_stripe.wall_s", timer.GetWallTime());
+  if (result.accepted_stripes > 0) {
+    EmitSnapshot("exact_stripe", "After Exact Stripe Optimization",
+                 "legalization", "exact_stripe", 0);
+  }
+}
+
 void GriddedCellWellLegalizer::RunJointOrientationAndRowLocationOptimization() {
   constexpr int kMaximumRounds = 4;
   constexpr double kMinimumRelativeImprovement = 1e-5;
@@ -1855,6 +1914,9 @@ void GriddedCellWellLegalizer::RunPostClusteringStages(
   if (clustering_succeeded &&
       (enable_local_reorder_ || enable_detailed_placement_)) {
     RunGriddedDetailedPlacementStage();
+  }
+  if (clustering_succeeded && enable_exact_stripe_optimization_) {
+    RunExactStripeOptimizationStage();
   }
   if (clustering_succeeded && enable_exact_legalization_analysis_) {
     RunExactLegalizationAnalysisStage();

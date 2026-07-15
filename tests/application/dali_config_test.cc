@@ -67,6 +67,10 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_EQ(options.exact_gridded_row_radius, 0);
   EXPECT_TRUE(options.exact_gridded_use_solution_hint);
   EXPECT_FALSE(options.exact_gridded_log_search_progress);
+  EXPECT_FALSE(options.enable_exact_gridded_stripe_optimization);
+  EXPECT_DOUBLE_EQ(options.exact_gridded_stripe_time, 5.0);
+  EXPECT_DOUBLE_EQ(options.exact_gridded_stripe_total_time, 120.0);
+  EXPECT_EQ(options.exact_gridded_stripe_sweeps, 2);
   EXPECT_FALSE(options.enable_shrink_off_grid_die_area);
   EXPECT_EQ(options.global_initializer,
             dali::PlacementInitializerType::kUniform);
@@ -132,6 +136,10 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_int("dali.exact_gridded_row_radius", 3);
   config_set_int("dali.exact_gridded_use_solution_hint", 0);
   config_set_int("dali.exact_gridded_log_search_progress", 1);
+  config_set_int("dali.enable_exact_gridded_stripe_optimization", 1);
+  config_set_real("dali.exact_gridded_stripe_time", 8.0);
+  config_set_real("dali.exact_gridded_stripe_total_time", 90.0);
+  config_set_int("dali.exact_gridded_stripe_sweeps", 3);
   config_set_int("dali.enable_shrink_off_grid_die_area", 1);
   config_set_string("dali.global_initializer", "keep");
   config_set_string("dali.global_lal_hotspot", "overflow_ratio");
@@ -195,6 +203,10 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_EQ(options.exact_gridded_row_radius, 3);
   EXPECT_FALSE(options.exact_gridded_use_solution_hint);
   EXPECT_TRUE(options.exact_gridded_log_search_progress);
+  EXPECT_TRUE(options.enable_exact_gridded_stripe_optimization);
+  EXPECT_DOUBLE_EQ(options.exact_gridded_stripe_time, 8.0);
+  EXPECT_DOUBLE_EQ(options.exact_gridded_stripe_total_time, 90.0);
+  EXPECT_EQ(options.exact_gridded_stripe_sweeps, 3);
   EXPECT_TRUE(options.enable_shrink_off_grid_die_area);
   EXPECT_EQ(options.global_initializer, dali::PlacementInitializerType::kKeep);
   EXPECT_EQ(options.global_lal_hotspot_mode,

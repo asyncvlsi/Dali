@@ -107,6 +107,10 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -exact_gridded_row_radius <n>              allowed row movement around the current row, default 0\n"
       << "  -exact_gridded_disable_solution_hint       require CP-SAT to find its own feasible placement\n"
       << "  -exact_gridded_log_search_progress         print detailed CP-SAT search progress\n"
+      << "  -enable_exact_gridded_stripe_optimization  refine finalized stripes with conditional CP-SAT\n"
+      << "  -exact_gridded_stripe_time <seconds>       solve limit per stripe, default 5\n"
+      << "  -exact_gridded_stripe_total_time <seconds> total stripe solve budget, default 120\n"
+      << "  -exact_gridded_stripe_sweeps <n>           maximum alternating sweeps, default 2\n"
       << "  -debug_placement_region_scale <factor>      enlarge the placement boundary for debugging, default 1\n"
       << "  -standard_cell_legalizer_cost <displacement/hpwl>  default displacement\n"
       << "  -detailed_max_rounds <n>                   detailed-placement optimization rounds, default 1\n"
@@ -516,6 +520,32 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       config_set_int("dali.exact_gridded_use_solution_hint", 0);
     } else if (arg == "-exact_gridded_log_search_progress") {
       EnableConfigFlag("dali.exact_gridded_log_search_progress");
+    } else if (arg == "-enable_exact_gridded_stripe_optimization") {
+      EnableConfigFlag("dali.enable_exact_gridded_stripe_optimization");
+    } else if (arg == "-exact_gridded_stripe_time") {
+      double stripe_time = 0.0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseDouble(value, &stripe_time) || stripe_time <= 0.0) {
+        error_output << "Invalid exact gridded stripe solve time!\n";
+        return false;
+      }
+      config_set_real("dali.exact_gridded_stripe_time", stripe_time);
+    } else if (arg == "-exact_gridded_stripe_total_time") {
+      double total_time = 0.0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseDouble(value, &total_time) || total_time <= 0.0) {
+        error_output << "Invalid exact gridded stripe total time!\n";
+        return false;
+      }
+      config_set_real("dali.exact_gridded_stripe_total_time", total_time);
+    } else if (arg == "-exact_gridded_stripe_sweeps") {
+      int sweep_count = 0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseInt(value, &sweep_count) || sweep_count <= 0) {
+        error_output << "Invalid exact gridded stripe sweep count!\n";
+        return false;
+      }
+      config_set_int("dali.exact_gridded_stripe_sweeps", sweep_count);
     } else if (arg == "-debug_placement_region_scale") {
       double scale = 0;
       if (!TryGetValue(argc, argv, &i, &value) ||
