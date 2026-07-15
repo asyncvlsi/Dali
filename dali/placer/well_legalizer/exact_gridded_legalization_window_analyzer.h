@@ -96,6 +96,7 @@ class ExactGriddedLegalizationWindowAnalyzer {
     double current_weighted_hpwl = 0.0;
     std::vector<Component*> components;
     std::vector<int> initial_start_rows;
+    std::vector<ExactGriddedRowHint> initial_rows;
   };
 
   /** Partition one stripe into closed windows with no split component. */

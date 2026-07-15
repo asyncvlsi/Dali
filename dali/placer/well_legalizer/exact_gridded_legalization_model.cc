@@ -45,6 +45,40 @@ std::string ExactGriddedLegalizationModel::Validate() const {
     if (stripe.minimum_p_well_height < 0 || stripe.minimum_n_well_height < 0) {
       return "stripe minimum well heights must be non-negative";
     }
+    if (!stripe.initial_rows.empty()) {
+      if (stripe.initial_rows.size() !=
+          static_cast<size_t>(stripe.maximum_rows)) {
+        return "stripe row hint count must match its maximum row count";
+      }
+      bool found_inactive_row = false;
+      int previous_row_end = stripe.ly;
+      for (const ExactGriddedRowHint& row : stripe.initial_rows) {
+        if (row.y < stripe.ly || row.y > stripe.uy) {
+          return "stripe row hint lies outside its vertical bounds";
+        }
+        if (row.p_well_height < 0 || row.n_well_height < 0) {
+          return "stripe row hint well heights must be non-negative";
+        }
+        if (row.active) {
+          if (found_inactive_row) {
+            return "active stripe row hints must form a prefix";
+          }
+          if (row.p_well_height < stripe.minimum_p_well_height ||
+              row.n_well_height < stripe.minimum_n_well_height) {
+            return "active stripe row hint violates minimum well heights";
+          }
+          if (row.y < previous_row_end) {
+            return "stripe row hints overlap vertically";
+          }
+          previous_row_end = row.y + row.p_well_height + row.n_well_height;
+          if (previous_row_end > stripe.uy) {
+            return "stripe row hint extends beyond its vertical bounds";
+          }
+        } else {
+          found_inactive_row = true;
+        }
+      }
+    }
   }
 
   std::unordered_set<int> component_ids;

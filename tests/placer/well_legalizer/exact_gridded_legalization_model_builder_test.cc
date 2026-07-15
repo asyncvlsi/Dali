@@ -41,7 +41,8 @@ TEST(ExactGriddedLegalizationModelBuilderTest,
   Component* component = circuit.GetComponentPtr("first");
   Pin* pin = component->MacroPtr()->GetPinPtr("pin");
   std::vector<ExactGriddedComponentDomain> domains = {{component, {7}, 7, 0}};
-  std::vector<ExactGriddedStripe> stripes = {{7, 0, 0, 20, 20, 10, 1, 2, 1, 1}};
+  std::vector<ExactGriddedStripe> stripes = {
+      {7, 0, 0, 20, 20, 10, 1, 2, 1, 1, {}}};
   ExactGriddedModelBuilderConfig config;
   config.net_ignore_threshold = 3;
 
@@ -81,7 +82,8 @@ TEST(ExactGriddedLegalizationModelBuilderTest,
   Component* outside = circuit.GetComponentPtr("outside");
   std::vector<ExactGriddedComponentDomain> domains = {{first, {0}},
                                                       {outside, {0}}};
-  std::vector<ExactGriddedStripe> stripes = {{0, 0, 0, 20, 20, 10, 0, 0, 1, 1}};
+  std::vector<ExactGriddedStripe> stripes = {
+      {0, 0, 0, 20, 20, 10, 0, 0, 1, 1, {}}};
 
   ExactGriddedLegalizationModel model =
       ExactGriddedLegalizationModelBuilder(&circuit).Build(domains, stripes);
@@ -111,7 +113,7 @@ TEST(ExactGriddedLegalizationModelBuilderTest,
   ExactGriddedLegalizationModel model =
       ExactGriddedLegalizationModelBuilder(&circuit).Build(
           {{circuit.GetComponentPtr("component"), {0}}},
-          {{0, 0, 0, 2, 3, 1, 0, 0, 0, 0}});
+          {{0, 0, 0, 2, 3, 1, 0, 0, 0, 0, {}}});
 
   ASSERT_EQ(model.cells.size(), 1U);
   ASSERT_EQ(model.cells[0].regions.size(), 1U);

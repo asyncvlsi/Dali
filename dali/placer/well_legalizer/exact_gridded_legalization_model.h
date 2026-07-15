@@ -38,6 +38,14 @@ struct ExactGriddedCell {
   bool initial_is_flipped = false;
 };
 
+/** One known legal row used to seed an exact stripe solve. */
+struct ExactGriddedRowHint {
+  bool active = false;
+  int y = 0;
+  int p_well_height = 0;
+  int n_well_height = 0;
+};
+
 /** One fixed stripe into which the solver may pack gridded rows. */
 struct ExactGriddedStripe {
   int stripe_id = -1;
@@ -50,6 +58,7 @@ struct ExactGriddedStripe {
   int right_boundary_margin = 0;
   int minimum_p_well_height = 0;
   int minimum_n_well_height = 0;
+  std::vector<ExactGriddedRowHint> initial_rows;
 };
 
 /** Orientation-aware pin coordinates used by the full HPWL objective. */

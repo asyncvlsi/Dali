@@ -237,6 +237,13 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
           LinearExpr::Term(row.active, stripe.minimum_p_well_height));
       row.n_well_height_candidates.push_back(
           LinearExpr::Term(row.active, stripe.minimum_n_well_height));
+      if (!stripe.initial_rows.empty()) {
+        const ExactGriddedRowHint& hint = stripe.initial_rows[row_index];
+        cp_model.AddHint(row.active, hint.active);
+        cp_model.AddHint(row.y, hint.y);
+        cp_model.AddHint(row.p_well_height, hint.p_well_height);
+        cp_model.AddHint(row.n_well_height, hint.n_well_height);
+      }
       stripe_rows.push_back(std::move(row));
     }
     row_variables.push_back(std::move(stripe_rows));

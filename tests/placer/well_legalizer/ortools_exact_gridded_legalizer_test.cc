@@ -45,7 +45,7 @@ TEST(OrToolsExactGriddedLegalizerTest,
   }
 
   ExactGriddedLegalizationModel model;
-  model.stripes = {{0, 0, 0, 6, 4, 2, 0, 0, 1, 1}};
+  model.stripes = {{0, 0, 0, 6, 4, 2, 0, 0, 1, 1, {}}};
   model.cells = {
       {0, 4, 0, 0, {{1, 1, true}}, {0}},
       {1, 4, 0, 2, {{1, 1, true}}, {0}},
@@ -83,7 +83,7 @@ TEST(OrToolsExactGriddedLegalizerTest,
   }
 
   ExactGriddedLegalizationModel model;
-  model.stripes = {{0, 0, 0, 6, 5, 1, 0, 0, 0, 0}};
+  model.stripes = {{0, 0, 0, 6, 5, 1, 0, 0, 0, 0, {}}};
   model.cells = {
       {0, 3, 3, 0, {{1, 2, true}}, {0}},
       {1, 3, 0, 0, {{2, 1, true}}, {0}},
@@ -116,7 +116,11 @@ TEST(OrToolsExactGriddedLegalizerTest, AllowsWhitespaceBetweenLegalRows) {
   }
 
   ExactGriddedLegalizationModel model;
-  model.stripes = {{0, 0, 0, 4, 10, 2, 0, 0, 1, 1}};
+  model.stripes = {{0, 0, 0, 4, 10, 2, 0, 0, 1, 1, {}}};
+  model.stripes[0].initial_rows = {
+      {true, 0, 1, 1},
+      {true, 8, 1, 1},
+  };
   model.cells = {
       {0, 2, 0, 0, {{1, 1, true}}, {0}},
       {1, 2, 2, 8, {{1, 1, false}}, {0}},

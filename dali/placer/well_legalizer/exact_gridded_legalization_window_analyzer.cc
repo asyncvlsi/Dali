@@ -161,10 +161,13 @@ ExactGriddedLegalizationWindowAnalyzer::BuildStripeWindows(
     window.ux = stripe->URX();
     window.uy = rows[last_row]->URY();
     for (int row_index = first_row; row_index <= last_row; ++row_index) {
-      window.left_boundary_margin = std::max(
-          window.left_boundary_margin, rows[row_index]->LeftBoundaryMargin());
-      window.right_boundary_margin = std::max(
-          window.right_boundary_margin, rows[row_index]->RightBoundaryMargin());
+      const GriddedRow* row = rows[row_index];
+      window.left_boundary_margin =
+          std::max(window.left_boundary_margin, row->LeftBoundaryMargin());
+      window.right_boundary_margin =
+          std::max(window.right_boundary_margin, row->RightBoundaryMargin());
+      window.initial_rows.push_back({!row->Components().empty(), row->LLY(),
+                                     row->PHeight(), row->NHeight()});
     }
     std::vector<int> ordered_component_ids(component_ids.begin(),
                                            component_ids.end());
@@ -249,6 +252,7 @@ ExactGriddedWindowAnalysis ExactGriddedLegalizationWindowAnalyzer::Analyze(
     model_stripe.right_boundary_margin = candidate.right_boundary_margin;
     model_stripe.minimum_p_well_height = config_.minimum_p_well_height;
     model_stripe.minimum_n_well_height = config_.minimum_n_well_height;
+    model_stripe.initial_rows = candidate.initial_rows;
 
     std::vector<ExactGriddedComponentDomain> domains;
     domains.reserve(candidate.components.size());

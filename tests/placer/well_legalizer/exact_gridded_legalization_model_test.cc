@@ -9,7 +9,7 @@ namespace dali {
 
 ExactGriddedLegalizationModel MakeValidExactModel() {
   ExactGriddedLegalizationModel model;
-  model.stripes = {{0, 0, 0, 20, 20, 4, 1, 1, 1, 1}};
+  model.stripes = {{0, 0, 0, 20, 20, 4, 1, 1, 1, 1, {}}};
   model.cells = {
       {0, 4, 2, 3, {{1, 2, true}}, {0}},
       {1, 3, 8, 7, {{2, 1, false}, {1, 2, true}}, {0}},
@@ -22,6 +22,28 @@ ExactGriddedLegalizationModel MakeValidExactModel() {
 
 TEST(ExactGriddedLegalizationModelTest, AcceptsCompleteModel) {
   EXPECT_TRUE(MakeValidExactModel().Validate().empty());
+}
+
+TEST(ExactGriddedLegalizationModelTest, AcceptsLegalRowHints) {
+  ExactGriddedLegalizationModel model = MakeValidExactModel();
+  model.stripes[0].initial_rows = {
+      {true, 0, 2, 2},
+      {true, 6, 1, 2},
+      {false, 10, 0, 0},
+      {false, 10, 0, 0},
+  };
+  EXPECT_TRUE(model.Validate().empty());
+}
+
+TEST(ExactGriddedLegalizationModelTest, RejectsOverlappingRowHints) {
+  ExactGriddedLegalizationModel model = MakeValidExactModel();
+  model.stripes[0].initial_rows = {
+      {true, 0, 2, 2},
+      {true, 3, 1, 2},
+      {false, 10, 0, 0},
+      {false, 10, 0, 0},
+  };
+  EXPECT_EQ(model.Validate(), "stripe row hints overlap vertically");
 }
 
 TEST(ExactGriddedLegalizationModelTest, RejectsUnknownCandidateStripe) {
@@ -53,7 +75,7 @@ TEST(ExactGriddedLegalizationModelTest, RejectsPartialPlacementHint) {
 
 TEST(ExactGriddedLegalizationModelTest, RejectsHintOutsideCandidateStripes) {
   ExactGriddedLegalizationModel model = MakeValidExactModel();
-  model.stripes.push_back({1, 0, 0, 20, 20, 4, 1, 1, 1, 1});
+  model.stripes.push_back({1, 0, 0, 20, 20, 4, 1, 1, 1, 1, {}});
   model.cells[0].initial_stripe_id = 1;
   model.cells[0].initial_start_row = 0;
   EXPECT_EQ(model.Validate(),
