@@ -44,12 +44,11 @@ TEST(ExactGriddedLegalizationWindowAnalyzerTest,
   row.SetLLX(0);
   row.SetLLY(0);
   row.SetWidth(20);
+  row.UpdateWellHeightUpward(1, 1);
   Component* first = circuit.GetComponentPtr("first");
   Component* second = circuit.GetComponentPtr("second");
   row.AddComponent(first);
-  row.AddComponentRegion(first, 0, true);
   row.AddComponent(second);
-  row.AddComponentRegion(second, 0, true);
 
   const double first_x = first->LLX();
   const double second_x = second->LLX();
