@@ -56,9 +56,11 @@ struct ExactGriddedWindowAnalysis {
   int attempted_windows = 0;
   int solved_windows = 0;
   int optimal_windows = 0;
-  double diagnostic_current_hpwl_sum = 0.0;
-  double diagnostic_solved_hpwl_sum = 0.0;
-  double diagnostic_lower_bound_sum = 0.0;
+  int positive_bound_windows = 0;
+  double solved_current_hpwl_sum = 0.0;
+  double solved_incumbent_hpwl_sum = 0.0;
+  double bounded_current_hpwl_sum = 0.0;
+  double positive_lower_bound_sum = 0.0;
   double solver_wall_time_seconds = 0.0;
   std::vector<ExactGriddedWindowResult> windows;
 };

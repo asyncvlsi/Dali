@@ -66,6 +66,7 @@ TEST(ExactGriddedLegalizationWindowAnalyzerTest,
   EXPECT_EQ(result.attempted_windows, 1);
   EXPECT_EQ(result.solved_windows, 1);
   EXPECT_EQ(result.optimal_windows, 1);
+  EXPECT_GT(result.solved_current_hpwl_sum, result.solved_incumbent_hpwl_sum);
   ASSERT_EQ(result.windows.size(), 1U);
   EXPECT_LT(result.windows[0].solved_weighted_hpwl,
             result.windows[0].current_weighted_hpwl);

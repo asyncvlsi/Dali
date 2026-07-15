@@ -274,15 +274,19 @@ ExactGriddedWindowAnalysis ExactGriddedLegalizationWindowAnalyzer::Analyze(
     analysis.windows.push_back(result);
     ++analysis.attempted_windows;
     analysis.solver_wall_time_seconds += solution.wall_time_seconds;
+    if (solution.best_objective_bound > 0.0) {
+      ++analysis.positive_bound_windows;
+      analysis.bounded_current_hpwl_sum += result.current_weighted_hpwl;
+      analysis.positive_lower_bound_sum += result.best_objective_bound;
+    }
     if (!solution.HasSolution()) continue;
 
     ++analysis.solved_windows;
     if (solution.status == ExactGriddedLegalizationStatus::kOptimal) {
       ++analysis.optimal_windows;
     }
-    analysis.diagnostic_current_hpwl_sum += result.current_weighted_hpwl;
-    analysis.diagnostic_solved_hpwl_sum += result.solved_weighted_hpwl;
-    analysis.diagnostic_lower_bound_sum += result.best_objective_bound;
+    analysis.solved_current_hpwl_sum += result.current_weighted_hpwl;
+    analysis.solved_incumbent_hpwl_sum += result.solved_weighted_hpwl;
   }
   return analysis;
 }

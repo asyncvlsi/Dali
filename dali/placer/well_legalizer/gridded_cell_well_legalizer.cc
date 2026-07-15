@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <sstream>
 #include <utility>
 
 #include "dali/common/act_config.h"
@@ -1601,28 +1602,42 @@ void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
       << "    attempted windows       : " << analysis.attempted_windows << "\n"
       << "    solved windows          : " << analysis.solved_windows << "\n"
       << "    optimal windows         : " << analysis.optimal_windows << "\n"
-      << "    diagnostic current HPWL : "
-      << analysis.diagnostic_current_hpwl_sum << "um\n"
-      << "    diagnostic solved HPWL  : " << analysis.diagnostic_solved_hpwl_sum
+      << "    positive-bound windows  : " << analysis.positive_bound_windows
+      << "\n"
+      << "    solved current HPWL     : " << analysis.solved_current_hpwl_sum
       << "um\n"
-      << "    diagnostic lower bound  : " << analysis.diagnostic_lower_bound_sum
+      << "    solved incumbent HPWL   : " << analysis.solved_incumbent_hpwl_sum
+      << "um\n"
+      << "    bounded current HPWL    : " << analysis.bounded_current_hpwl_sum
+      << "um\n"
+      << "    positive lower bound    : " << analysis.positive_lower_bound_sum
       << "um\n"
       << "    solver wall time        : " << analysis.solver_wall_time_seconds
       << "s\n"
       << "    stage wall time         : " << timer.GetWallTime() << "s\n";
   for (size_t index = 0; index < analysis.windows.size(); ++index) {
     const ExactGriddedWindowResult& window = analysis.windows[index];
-    LOG(info) << "    window " << index + 1 << ": column "
-              << window.column_index << ", stripe " << window.stripe_index
-              << ", rows " << window.first_row_index << "-"
-              << window.last_row_index << ", " << window.component_count
-              << " components, " << window.net_count << " nets, status "
-              << ExactGriddedLegalizationStatusName(window.status) << ", HPWL "
-              << window.current_weighted_hpwl << " -> "
-              << window.solved_weighted_hpwl << "um, bound "
+    std::ostringstream message;
+    message << "    window " << index + 1 << ": column " << window.column_index
+            << ", stripe " << window.stripe_index << ", rows "
+            << window.first_row_index << "-" << window.last_row_index << ", "
+            << window.component_count << " components, " << window.net_count
+            << " nets, status "
+            << ExactGriddedLegalizationStatusName(window.status)
+            << ", current HPWL " << window.current_weighted_hpwl << "um";
+    if (window.status == ExactGriddedLegalizationStatus::kFeasible ||
+        window.status == ExactGriddedLegalizationStatus::kOptimal) {
+      message << ", incumbent " << window.solved_weighted_hpwl << "um, bound "
               << window.best_objective_bound << "um, gap "
-              << window.relative_gap << ", time " << window.wall_time_seconds
-              << "s\n";
+              << window.relative_gap;
+    } else if (window.best_objective_bound > 0.0) {
+      message << ", incumbent unavailable, bound "
+              << window.best_objective_bound << "um";
+    } else {
+      message << ", incumbent unavailable, bound unavailable";
+    }
+    message << ", time " << window.wall_time_seconds << "s\n";
+    LOG(info) << message.str();
   }
 
   RecordPlacementMetric("exact_legalization.candidate_windows",
@@ -1635,12 +1650,16 @@ void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
                         analysis.solved_windows);
   RecordPlacementMetric("exact_legalization.optimal_windows",
                         analysis.optimal_windows);
-  RecordPlacementMetric("exact_legalization.diagnostic_current_hpwl",
-                        analysis.diagnostic_current_hpwl_sum);
-  RecordPlacementMetric("exact_legalization.diagnostic_solved_hpwl",
-                        analysis.diagnostic_solved_hpwl_sum);
-  RecordPlacementMetric("exact_legalization.diagnostic_lower_bound",
-                        analysis.diagnostic_lower_bound_sum);
+  RecordPlacementMetric("exact_legalization.positive_bound_windows",
+                        analysis.positive_bound_windows);
+  RecordPlacementMetric("exact_legalization.solved_current_hpwl",
+                        analysis.solved_current_hpwl_sum);
+  RecordPlacementMetric("exact_legalization.solved_incumbent_hpwl",
+                        analysis.solved_incumbent_hpwl_sum);
+  RecordPlacementMetric("exact_legalization.bounded_current_hpwl",
+                        analysis.bounded_current_hpwl_sum);
+  RecordPlacementMetric("exact_legalization.positive_lower_bound",
+                        analysis.positive_lower_bound_sum);
   RecordPlacementMetric("time.exact_legalization.solver_wall_s",
                         analysis.solver_wall_time_seconds);
   RecordPlacementMetric("time.exact_legalization.wall_s", timer.GetWallTime());
