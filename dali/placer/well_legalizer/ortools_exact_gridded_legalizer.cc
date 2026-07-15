@@ -252,7 +252,11 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
   std::vector<ExactGriddedCellVariables> cell_variables;
   std::vector<ExactGriddedCandidateVariables> candidate_variables;
   std::vector<int> stripe_phase_hints(model.stripes.size(), -1);
+  std::vector<int> hinted_cell_x_locations;
+  std::vector<int> hinted_cell_y_locations;
   cell_variables.reserve(model.cells.size());
+  hinted_cell_x_locations.reserve(model.cells.size());
+  hinted_cell_y_locations.reserve(model.cells.size());
 
   for (size_t cell_index = 0; cell_index < model.cells.size(); ++cell_index) {
     const ExactGriddedCell& cell = model.cells[cell_index];
@@ -284,10 +288,12 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
                       .WithName("cell_x_" + std::to_string(cell.component_id));
     variables.y = cp_model.NewIntVar(Domain(minimum_y, maximum_y))
                       .WithName("cell_y_" + std::to_string(cell.component_id));
-    cp_model.AddHint(variables.x,
-                     std::clamp(cell.initial_x, minimum_x, maximum_x));
-    cp_model.AddHint(variables.y,
-                     std::clamp(cell.initial_y, minimum_y, maximum_y));
+    int hinted_x = std::clamp(cell.initial_x, minimum_x, maximum_x);
+    int hinted_y = std::clamp(cell.initial_y, minimum_y, maximum_y);
+    cp_model.AddHint(variables.x, hinted_x);
+    cp_model.AddHint(variables.y, hinted_y);
+    hinted_cell_x_locations.push_back(hinted_x);
+    hinted_cell_y_locations.push_back(hinted_y);
     cell_variables.push_back(std::move(variables));
 
     bool use_discrete_hint = false;
@@ -464,6 +470,10 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
           cp_model.NewIntVar(Domain(0, maximum_y_displacement));
       cp_model.AddAbsEquality(x_displacement, variables.x - cell.initial_x);
       cp_model.AddAbsEquality(y_displacement, variables.y - cell.initial_y);
+      cp_model.AddHint(x_displacement, std::abs(hinted_cell_x_locations[index] -
+                                                cell.initial_x));
+      cp_model.AddHint(y_displacement, std::abs(hinted_cell_y_locations[index] -
+                                                cell.initial_y));
       objective.AddTerm(x_displacement,
                         config.displacement_weight * model.distance_scale_x);
       objective.AddTerm(y_displacement,
@@ -480,6 +490,9 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
 
     std::vector<LinearExpr> pin_x_locations;
     std::vector<LinearExpr> pin_y_locations;
+    std::vector<int64_t> hinted_pin_x_locations;
+    std::vector<int64_t> hinted_pin_y_locations;
+    bool has_complete_net_hint = true;
     int64_t minimum_x = std::numeric_limits<int64_t>::max();
     int64_t maximum_x = std::numeric_limits<int64_t>::min();
     int64_t minimum_y = std::numeric_limits<int64_t>::max();
@@ -493,6 +506,8 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
             std::llround(pin.fixed_y * static_cast<double>(pin_scale)));
         pin_x_locations.emplace_back(fixed_x);
         pin_y_locations.emplace_back(fixed_y);
+        hinted_pin_x_locations.push_back(fixed_x);
+        hinted_pin_y_locations.push_back(fixed_y);
         minimum_x = std::min(minimum_x, fixed_x);
         maximum_x = std::max(maximum_x, fixed_x);
         minimum_y = std::min(minimum_y, fixed_y);
@@ -528,6 +543,29 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
       IntVar pin_y = cp_model.NewIntVar(Domain(pin_minimum_y, pin_maximum_y))
                          .WithName("pin_y_" + std::to_string(net_index) + "_" +
                                    std::to_string(pin_index));
+      const ExactGriddedCell& cell = model.cells[cell_index];
+      if (cell.initial_stripe_id >= 0 && cell.initial_start_row >= 0) {
+        int64_t hinted_offset_x = static_cast<int64_t>(std::llround(
+            (cell.initial_is_flipped ? pin.offset_x_fs : pin.offset_x_n) *
+            pin_scale));
+        int64_t hinted_offset_y = static_cast<int64_t>(std::llround(
+            (cell.initial_is_flipped ? pin.offset_y_fs : pin.offset_y_n) *
+            pin_scale));
+        int64_t hinted_pin_x =
+            static_cast<int64_t>(hinted_cell_x_locations[cell_index]) *
+                pin_scale +
+            hinted_offset_x;
+        int64_t hinted_pin_y =
+            static_cast<int64_t>(hinted_cell_y_locations[cell_index]) *
+                pin_scale +
+            hinted_offset_y;
+        cp_model.AddHint(pin_x, hinted_pin_x);
+        cp_model.AddHint(pin_y, hinted_pin_y);
+        hinted_pin_x_locations.push_back(hinted_pin_x);
+        hinted_pin_y_locations.push_back(hinted_pin_y);
+      } else {
+        has_complete_net_hint = false;
+      }
       for (size_t candidate_index : variables.candidate_indices) {
         const ExactGriddedCandidateVariables& candidate =
             candidate_variables[candidate_index];
@@ -564,6 +602,20 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
     cp_model.AddMaxEquality(variables.maximum_x, pin_x_locations);
     cp_model.AddMinEquality(variables.minimum_y, pin_y_locations);
     cp_model.AddMaxEquality(variables.maximum_y, pin_y_locations);
+    if (has_complete_net_hint) {
+      cp_model.AddHint(variables.minimum_x,
+                       *std::min_element(hinted_pin_x_locations.begin(),
+                                         hinted_pin_x_locations.end()));
+      cp_model.AddHint(variables.maximum_x,
+                       *std::max_element(hinted_pin_x_locations.begin(),
+                                         hinted_pin_x_locations.end()));
+      cp_model.AddHint(variables.minimum_y,
+                       *std::min_element(hinted_pin_y_locations.begin(),
+                                         hinted_pin_y_locations.end()));
+      cp_model.AddHint(variables.maximum_y,
+                       *std::max_element(hinted_pin_y_locations.begin(),
+                                         hinted_pin_y_locations.end()));
+    }
     objective.AddExpression(variables.maximum_x - variables.minimum_x,
                             config.weighted_hpwl_weight * net.weight *
                                 model.distance_scale_x /
