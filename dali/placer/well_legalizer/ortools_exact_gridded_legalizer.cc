@@ -244,6 +244,7 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
 
   std::vector<ExactGriddedCellVariables> cell_variables;
   std::vector<ExactGriddedCandidateVariables> candidate_variables;
+  std::vector<int> stripe_phase_hints(model.stripes.size(), -1);
   cell_variables.reserve(model.cells.size());
 
   for (size_t cell_index = 0; cell_index < model.cells.size(); ++cell_index) {
@@ -282,6 +283,19 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
                      std::clamp(cell.initial_y, minimum_y, maximum_y));
     cell_variables.push_back(std::move(variables));
 
+    bool use_discrete_hint = false;
+    bool hinted_first_row_orient_n = true;
+    if (cell.initial_stripe_id >= 0 && cell.initial_start_row >= 0) {
+      use_discrete_hint = ExactGriddedCandidateMatchesAlternatingRows(
+          cell, cell.initial_start_row, cell.initial_is_flipped,
+          &hinted_first_row_orient_n);
+      if (!use_discrete_hint) {
+        result.status = ExactGriddedLegalizationStatus::kInvalidModel;
+        result.message =
+            "component placement hint violates alternating row orientations";
+        return result;
+      }
+    }
     std::vector<BoolVar> placements;
     for (int stripe_id : cell.candidate_stripe_ids) {
       size_t stripe_index = stripe_indices.at(stripe_id);
@@ -305,6 +319,25 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
                                        (is_flipped ? "_fs" : "_n");
           BoolVar presence = cp_model.NewBoolVar().WithName("cell_placement_" +
                                                             candidate_name);
+          const bool is_hinted_placement =
+              use_discrete_hint && stripe_id == cell.initial_stripe_id &&
+              start_row == cell.initial_start_row &&
+              is_flipped == cell.initial_is_flipped;
+          if (use_discrete_hint) {
+            cp_model.AddHint(presence, is_hinted_placement);
+          }
+          if (is_hinted_placement) {
+            int& stripe_phase_hint = stripe_phase_hints[stripe_index];
+            int required_phase = hinted_first_row_orient_n ? 1 : 0;
+            if (stripe_phase_hint >= 0 && stripe_phase_hint != required_phase) {
+              result.status = ExactGriddedLegalizationStatus::kInvalidModel;
+              result.message =
+                  "component placement hints require inconsistent stripe "
+                  "orientations";
+              return result;
+            }
+            stripe_phase_hint = required_phase;
+          }
           placements.push_back(presence);
           size_t candidate_index = candidate_variables.size();
           candidate_variables.push_back(
@@ -366,6 +399,14 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
       return result;
     }
     cp_model.AddExactlyOne(placements);
+  }
+
+  for (size_t stripe_index = 0; stripe_index < stripe_phase_hints.size();
+       ++stripe_index) {
+    if (stripe_phase_hints[stripe_index] >= 0) {
+      cp_model.AddHint(first_row_orient_n_variables[stripe_index],
+                       stripe_phase_hints[stripe_index] != 0);
+    }
   }
 
   for (size_t stripe_index = 0; stripe_index < model.stripes.size();
@@ -532,6 +573,7 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
   parameters.set_max_time_in_seconds(config.maximum_time_seconds);
   parameters.set_num_search_workers(config.number_of_workers);
   parameters.set_log_search_progress(config.log_search_progress);
+  parameters.set_repair_hint(true);
   CpSolverResponse response = operations_research::sat::SolveWithParameters(
       cp_model.Build(), parameters);
 

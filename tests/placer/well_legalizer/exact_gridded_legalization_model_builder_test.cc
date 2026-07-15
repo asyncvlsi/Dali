@@ -40,7 +40,7 @@ TEST(ExactGriddedLegalizationModelBuilderTest,
   Circuit circuit = MakeExactModelBuilderCircuit();
   Component* component = circuit.GetComponentPtr("first");
   Pin* pin = component->MacroPtr()->GetPinPtr("pin");
-  std::vector<ExactGriddedComponentDomain> domains = {{component, {7}}};
+  std::vector<ExactGriddedComponentDomain> domains = {{component, {7}, 7, 0}};
   std::vector<ExactGriddedStripe> stripes = {{7, 0, 0, 20, 20, 10, 1, 2, 1, 1}};
   ExactGriddedModelBuilderConfig config;
   config.net_ignore_threshold = 3;
@@ -55,6 +55,9 @@ TEST(ExactGriddedLegalizationModelBuilderTest,
   ASSERT_EQ(model.cells.size(), 1U);
   EXPECT_EQ(model.cells[0].component_id, component->Id());
   EXPECT_EQ(model.cells[0].candidate_stripe_ids, std::vector<int>({7}));
+  EXPECT_EQ(model.cells[0].initial_stripe_id, 7);
+  EXPECT_EQ(model.cells[0].initial_start_row, 0);
+  EXPECT_FALSE(model.cells[0].initial_is_flipped);
   ASSERT_EQ(model.cells[0].regions.size(), 1U);
   EXPECT_EQ(model.cells[0].regions[0].p_well_height, 1);
   EXPECT_EQ(model.cells[0].regions[0].n_well_height, 1);

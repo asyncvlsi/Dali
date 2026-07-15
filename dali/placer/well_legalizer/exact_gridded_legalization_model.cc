@@ -80,6 +80,26 @@ std::string ExactGriddedLegalizationModel::Validate() const {
         return "component has more regions than a candidate stripe has rows";
       }
     }
+    const bool has_initial_stripe = cell.initial_stripe_id >= 0;
+    const bool has_initial_row = cell.initial_start_row >= 0;
+    if (has_initial_stripe != has_initial_row) {
+      return "component placement hints require both stripe and row ids";
+    }
+    if (has_initial_stripe) {
+      if (candidate_ids.count(cell.initial_stripe_id) == 0) {
+        return "component placement hint refers to a non-candidate stripe";
+      }
+      const ExactGriddedStripe* stripe =
+          stripes_by_id.at(cell.initial_stripe_id);
+      if (cell.width > stripe->ux - stripe->lx - stripe->left_boundary_margin -
+                           stripe->right_boundary_margin) {
+        return "component placement hint does not fit its stripe width";
+      }
+      if (cell.initial_start_row + static_cast<int>(cell.regions.size()) >
+          stripe->maximum_rows) {
+        return "component placement hint extends beyond its stripe rows";
+      }
+    }
   }
 
   for (const ExactGriddedNet& net : nets) {

@@ -31,6 +31,11 @@ struct ExactGriddedCell {
   int initial_y = 0;
   std::vector<ExactGriddedCellRegion> regions;
   std::vector<int> candidate_stripe_ids;
+  // Negative ids omit the discrete placement hint. The initial X/Y values
+  // remain useful independently for displacement and coordinate hints.
+  int initial_stripe_id = -1;
+  int initial_start_row = -1;
+  bool initial_is_flipped = false;
 };
 
 /** One fixed stripe into which the solver may pack gridded rows. */

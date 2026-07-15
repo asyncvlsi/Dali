@@ -166,14 +166,16 @@ ExactGriddedLegalizationWindowAnalyzer::BuildStripeWindows(
       window.right_boundary_margin = std::max(
           window.right_boundary_margin, rows[row_index]->RightBoundaryMargin());
     }
-    window.components.reserve(component_ids.size());
-    for (int component_id : component_ids) {
-      window.components.push_back(extents.at(component_id).component);
+    std::vector<int> ordered_component_ids(component_ids.begin(),
+                                           component_ids.end());
+    std::sort(ordered_component_ids.begin(), ordered_component_ids.end());
+    window.components.reserve(ordered_component_ids.size());
+    window.initial_start_rows.reserve(ordered_component_ids.size());
+    for (int component_id : ordered_component_ids) {
+      const ComponentExtent& extent = extents.at(component_id);
+      window.components.push_back(extent.component);
+      window.initial_start_rows.push_back(extent.first_row - first_row);
     }
-    std::sort(window.components.begin(), window.components.end(),
-              [](const Component* first, const Component* second) {
-                return first->Id() < second->Id();
-              });
     window.current_weighted_hpwl = CurrentWindowHpwl(window.components);
     windows.push_back(std::move(window));
     first_row = last_row + 1;
@@ -250,8 +252,12 @@ ExactGriddedWindowAnalysis ExactGriddedLegalizationWindowAnalyzer::Analyze(
 
     std::vector<ExactGriddedComponentDomain> domains;
     domains.reserve(candidate.components.size());
-    for (Component* component : candidate.components) {
-      domains.push_back({component, {model_stripe.stripe_id}});
+    for (size_t component_index = 0;
+         component_index < candidate.components.size(); ++component_index) {
+      domains.push_back({candidate.components[component_index],
+                         {model_stripe.stripe_id},
+                         model_stripe.stripe_id,
+                         candidate.initial_start_rows[component_index]});
     }
     ExactGriddedLegalizationModel model =
         builder.Build(domains, {model_stripe});

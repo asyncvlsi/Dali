@@ -44,6 +44,22 @@ TEST(ExactGriddedLegalizationModelTest, RejectsComponentTallerThanStripe) {
             "component has more regions than a candidate stripe has rows");
 }
 
+TEST(ExactGriddedLegalizationModelTest, RejectsPartialPlacementHint) {
+  ExactGriddedLegalizationModel model = MakeValidExactModel();
+  model.cells[0].initial_stripe_id = 0;
+  EXPECT_EQ(model.Validate(),
+            "component placement hints require both stripe and row ids");
+}
+
+TEST(ExactGriddedLegalizationModelTest, RejectsHintOutsideCandidateStripes) {
+  ExactGriddedLegalizationModel model = MakeValidExactModel();
+  model.stripes.push_back({1, 0, 0, 20, 20, 4, 1, 1, 1, 1});
+  model.cells[0].initial_stripe_id = 1;
+  model.cells[0].initial_start_row = 0;
+  EXPECT_EQ(model.Validate(),
+            "component placement hint refers to a non-candidate stripe");
+}
+
 TEST(ExactGriddedLegalizationModelTest, RejectsUnknownNetComponent) {
   ExactGriddedLegalizationModel model = MakeValidExactModel();
   model.nets[0].pins[0].component_id = 99;

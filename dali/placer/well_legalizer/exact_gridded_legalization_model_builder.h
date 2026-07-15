@@ -22,6 +22,9 @@ namespace dali {
 struct ExactGriddedComponentDomain {
   Component* component = nullptr;
   std::vector<int> candidate_stripe_ids;
+  // Set both fields to copy a known legal row assignment into the model.
+  int initial_stripe_id = -1;
+  int initial_start_row = -1;
 };
 
 /** Controls which production nets are copied into an exact local model. */

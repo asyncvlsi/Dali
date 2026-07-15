@@ -121,6 +121,10 @@ TEST(OrToolsExactGriddedLegalizerTest, AllowsWhitespaceBetweenLegalRows) {
       {0, 2, 0, 0, {{1, 1, true}}, {0}},
       {1, 2, 2, 8, {{1, 1, false}}, {0}},
   };
+  model.cells[0].initial_stripe_id = 0;
+  model.cells[0].initial_start_row = 0;
+  model.cells[1].initial_stripe_id = 0;
+  model.cells[1].initial_start_row = 1;
   model.nets = {MakeAnchoredNet(0, 1.0, 1.0), MakeAnchoredNet(1, 3.0, 9.0)};
 
   ExactGriddedLegalizationConfig config;

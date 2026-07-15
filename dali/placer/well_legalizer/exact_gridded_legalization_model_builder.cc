@@ -58,6 +58,9 @@ ExactGriddedLegalizationModel ExactGriddedLegalizationModelBuilder::Build(
     cell.initial_x = static_cast<int>(std::llround(component->LLX()));
     cell.initial_y = static_cast<int>(std::llround(component->LLY()));
     cell.candidate_stripe_ids = domain.candidate_stripe_ids;
+    cell.initial_stripe_id = domain.initial_stripe_id;
+    cell.initial_start_row = domain.initial_start_row;
+    cell.initial_is_flipped = component->IsFlipped();
     if (macro->HasCompleteWellRegions()) {
       cell.regions.reserve(macro->RegionCount());
       for (int region_id = 0; region_id < macro->RegionCount(); ++region_id) {
