@@ -13,7 +13,6 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <limits>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -158,62 +157,6 @@ double OrToolsGriddedStripeOptimizer::AffectedNetHpwl(
   return hpwl;
 }
 
-double OrToolsGriddedStripeOptimizer::EstimateIndependentPinXHpwlHeadroom(
-    const ExactGriddedLegalizationModel& model) const {
-  std::unordered_map<int, const ExactGriddedCell*> cells_by_id;
-  for (const ExactGriddedCell& cell : model.cells) {
-    cells_by_id.emplace(cell.component_id, &cell);
-  }
-  std::unordered_map<int, const ExactGriddedStripe*> stripes_by_id;
-  for (const ExactGriddedStripe& stripe : model.stripes) {
-    stripes_by_id.emplace(stripe.stripe_id, &stripe);
-  }
-
-  double headroom = 0.0;
-  for (const ExactGriddedNet& net : model.nets) {
-    if (net.pins.size() < 2 || net.weight <= 0.0) continue;
-
-    double current_minimum = std::numeric_limits<double>::infinity();
-    double current_maximum = -std::numeric_limits<double>::infinity();
-    double maximum_lower_bound = -std::numeric_limits<double>::infinity();
-    double minimum_upper_bound = std::numeric_limits<double>::infinity();
-    for (const ExactGriddedNetPin& pin : net.pins) {
-      double current_x = pin.fixed_x;
-      double lower_bound = pin.fixed_x;
-      double upper_bound = pin.fixed_x;
-      if (pin.component_id >= 0) {
-        const auto cell = cells_by_id.find(pin.component_id);
-        DaliExpects(cell != cells_by_id.end(),
-                    "Exact row-band net refers to an unknown component");
-        const auto stripe = stripes_by_id.find(cell->second->initial_stripe_id);
-        DaliExpects(stripe != stripes_by_id.end(),
-                    "Exact row-band component refers to an unknown stripe");
-        const double offset =
-            cell->second->initial_is_flipped ? pin.offset_x_fs : pin.offset_x_n;
-        current_x = cell->second->initial_x + offset;
-        lower_bound =
-            stripe->second->lx + stripe->second->left_boundary_margin + offset;
-        upper_bound = stripe->second->ux -
-                      stripe->second->right_boundary_margin -
-                      cell->second->width + offset;
-        DaliExpects(lower_bound <= upper_bound,
-                    "Exact row-band pin has an empty X interval");
-      }
-      current_minimum = std::min(current_minimum, current_x);
-      current_maximum = std::max(current_maximum, current_x);
-      maximum_lower_bound = std::max(maximum_lower_bound, lower_bound);
-      minimum_upper_bound = std::min(minimum_upper_bound, upper_bound);
-    }
-
-    const double current_span = current_maximum - current_minimum;
-    const double relaxed_span =
-        std::max(0.0, maximum_lower_bound - minimum_upper_bound);
-    headroom += net.weight * model.distance_scale_x *
-                std::max(0.0, current_span - relaxed_span);
-  }
-  return headroom;
-}
-
 OrToolsGriddedStripeOptimizerResult OrToolsGriddedStripeOptimizer::Optimize(
     std::vector<StripeColumn>* columns) const {
   DaliExpects(columns != nullptr, "Stripe-column list must not be null");
@@ -230,16 +173,8 @@ OrToolsGriddedStripeOptimizerResult OrToolsGriddedStripeOptimizer::Optimize(
     int model_stripe_id = -1;
     int first_row_index = -1;
     int last_row_index = -1;
-    double initial_priority_headroom = 0.0;
     Stripe* stripe = nullptr;
   };
-
-  ExactGriddedStripeModelBuilderConfig builder_config;
-  builder_config.net_ignore_threshold = config_.net_ignore_threshold;
-  builder_config.minimum_p_well_height = config_.minimum_p_well_height;
-  builder_config.minimum_n_well_height = config_.minimum_n_well_height;
-  ExactGriddedStripeModelBuilder builder(circuit_, builder_config);
-
   std::vector<StripeTarget> targets;
   int next_stripe_id = 0;
   for (int column_index = 0; column_index < static_cast<int>(columns->size());
@@ -251,24 +186,17 @@ OrToolsGriddedStripeOptimizerResult OrToolsGriddedStripeOptimizer::Optimize(
       Stripe& stripe = column.stripe_list_[stripe_index];
       const int model_stripe_id = next_stripe_id++;
       for (const auto& [first_row, last_row] : BuildRowBands(stripe)) {
-        const ExactGriddedStripeBuildResult initial_build =
-            builder.BuildRowBand(&stripe, model_stripe_id, first_row, last_row);
-        const double initial_priority_headroom =
-            EstimateIndependentPinXHpwlHeadroom(initial_build.model);
         targets.push_back({column_index, stripe_index, model_stripe_id,
-                           first_row, last_row, initial_priority_headroom,
-                           &stripe});
+                           first_row, last_row, &stripe});
       }
     }
   }
-  // Rank once, then rebuild each model immediately before solving so accepted
-  // changes from earlier overlapping bands remain visible.
-  std::stable_sort(targets.begin(), targets.end(),
-                   [](const StripeTarget& lhs, const StripeTarget& rhs) {
-                     return lhs.initial_priority_headroom >
-                            rhs.initial_priority_headroom;
-                   });
 
+  ExactGriddedStripeModelBuilderConfig builder_config;
+  builder_config.net_ignore_threshold = config_.net_ignore_threshold;
+  builder_config.minimum_p_well_height = config_.minimum_p_well_height;
+  builder_config.minimum_n_well_height = config_.minimum_n_well_height;
+  ExactGriddedStripeModelBuilder builder(circuit_, builder_config);
   OrToolsCompactGriddedLegalizer solver;
   const auto start_time = std::chrono::steady_clock::now();
 
@@ -295,8 +223,6 @@ OrToolsGriddedStripeOptimizerResult OrToolsGriddedStripeOptimizer::Optimize(
       stripe_result.component_count =
           static_cast<int>(build.model.cells.size());
       stripe_result.net_count = static_cast<int>(build.model.nets.size());
-      stripe_result.initial_priority_headroom =
-          target.initial_priority_headroom;
       stripe_result.modeled_hpwl_before =
           AffectedNetHpwl(build.affected_net_ids, true);
       stripe_result.affected_hpwl_before =
