@@ -67,7 +67,10 @@ ExactGriddedWholeDesignBuildResult ExactGriddedWholeDesignModelBuilder::Build(
       model_stripe.uy = stripe.URY();
       model_stripe.minimum_p_well_height = config_.minimum_p_well_height;
       model_stripe.minimum_n_well_height = config_.minimum_n_well_height;
-      model_stripe.maximum_rows = stripe.Height() / minimum_row_height;
+      model_stripe.maximum_rows =
+          config_.use_full_row_slot_capacity
+              ? stripe.Height() / minimum_row_height
+              : std::max(1, static_cast<int>(rows.size()));
       DaliExpects(model_stripe.maximum_rows >= static_cast<int>(rows.size()),
                   "Existing gridded rows exceed physical stripe capacity");
 
@@ -130,6 +133,10 @@ ExactGriddedWholeDesignBuildResult ExactGriddedWholeDesignModelBuilder::Build(
     const int component_region_count =
         assignment.component->MacroPtr()->RegionCount();
     for (const ExactGriddedStripe& stripe : result.model.stripes) {
+      if (!config_.allow_cross_stripe_moves &&
+          stripe.stripe_id != assignment.stripe_id) {
+        continue;
+      }
       const int usable_width = stripe.ux - stripe.lx -
                                stripe.left_boundary_margin -
                                stripe.right_boundary_margin;

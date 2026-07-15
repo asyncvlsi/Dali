@@ -37,6 +37,7 @@ using operations_research::sat::BoolVar;
 using operations_research::sat::CpModelBuilder;
 using operations_research::sat::CpSolverResponse;
 using operations_research::sat::DoubleLinearExpr;
+using operations_research::sat::IntervalVar;
 using operations_research::sat::IntVar;
 using operations_research::sat::LinearExpr;
 
@@ -47,14 +48,16 @@ struct CompactGriddedRowVariables {
   IntVar y;
   IntVar p_well_height;
   IntVar n_well_height;
+  std::vector<IntervalVar> component_intervals;
 };
 
 /** CP-SAT variables and coordinate bounds for one movable component. */
 struct CompactGriddedCellVariables {
   IntVar x;
   IntVar y;
-  IntVar start_slot;
+  IntVar start_choice;
   BoolVar is_flipped;
+  std::vector<int> candidate_start_slots;
   int minimum_x = 0;
   int maximum_x = 0;
   int minimum_y = 0;
@@ -141,10 +144,11 @@ ExactGriddedLegalizationResult OrToolsCompactGriddedLegalizer::Solve(
     return result;
   }
   if (config.maximum_time_seconds <= 0.0 || config.number_of_workers <= 0 ||
-      config.pin_coordinate_scale <= 0) {
+      config.pin_coordinate_scale <= 0 ||
+      config.maximum_row_displacement < -1) {
     result.status = ExactGriddedLegalizationStatus::kInvalidModel;
     result.message =
-        "solver time, worker count, and pin scale must be positive";
+        "solver time, worker count, pin scale, and row radius are invalid";
     return result;
   }
   if (!std::isfinite(config.weighted_hpwl_weight) ||
@@ -303,6 +307,13 @@ ExactGriddedLegalizationResult OrToolsCompactGriddedLegalizer::Solve(
   hinted_cell_x.reserve(model.cells.size());
   hinted_cell_y.reserve(model.cells.size());
   auto no_overlap = cp_model.AddNoOverlap2D();
+  const bool use_fixed_row_no_overlap =
+      config.maximum_row_displacement == 0 &&
+      std::all_of(model.cells.begin(), model.cells.end(),
+                  [](const ExactGriddedCell& cell) {
+                    return cell.candidate_stripe_ids.size() == 1 &&
+                           cell.initial_start_row >= 0;
+                  });
 
   for (size_t cell_index = 0; cell_index < model.cells.size(); ++cell_index) {
     const ExactGriddedCell& cell = model.cells[cell_index];
@@ -314,9 +325,17 @@ ExactGriddedLegalizationResult OrToolsCompactGriddedLegalizer::Solve(
     for (int stripe_id : cell.candidate_stripe_ids) {
       const size_t stripe_index = stripe_indices.at(stripe_id);
       const ExactGriddedStripe& stripe = model.stripes[stripe_index];
-      const int last_start =
+      int first_start = 0;
+      int last_start =
           stripe.maximum_rows - static_cast<int>(cell.regions.size());
-      for (int start_row = 0; start_row <= last_start; ++start_row) {
+      if (config.maximum_row_displacement >= 0 && cell.initial_start_row >= 0) {
+        first_start =
+            std::max(first_start,
+                     cell.initial_start_row - config.maximum_row_displacement);
+        last_start = std::min(last_start, cell.initial_start_row +
+                                              config.maximum_row_displacement);
+      }
+      for (int start_row = first_start; start_row <= last_start; ++start_row) {
         legal_start_slots.push_back(stripe_slot_offsets[stripe_index] +
                                     start_row);
       }
@@ -332,6 +351,7 @@ ExactGriddedLegalizationResult OrToolsCompactGriddedLegalizer::Solve(
       result.message = "component has no compact legal placement domain";
       return result;
     }
+    result.row_assignment_choice_count += legal_start_slots.size();
 
     CompactGriddedCellVariables variables;
     variables.minimum_x = minimum_x;
@@ -344,26 +364,61 @@ ExactGriddedLegalizationResult OrToolsCompactGriddedLegalizer::Solve(
     variables.y =
         cp_model.NewIntVar(Domain(minimum_y, maximum_y))
             .WithName("compact_cell_y_" + std::to_string(cell.component_id));
-    variables.start_slot =
-        cp_model.NewIntVar(Domain::FromValues(legal_start_slots))
-            .WithName("compact_cell_slot_" + std::to_string(cell.component_id));
+    variables.start_choice =
+        cp_model.NewIntVar(Domain(0, legal_start_slots.size() - 1))
+            .WithName("compact_cell_row_choice_" +
+                      std::to_string(cell.component_id));
+    variables.candidate_start_slots.reserve(legal_start_slots.size());
+    for (int64_t slot : legal_start_slots) {
+      variables.candidate_start_slots.push_back(static_cast<int>(slot));
+    }
     variables.is_flipped = cp_model.NewBoolVar().WithName(
         "compact_cell_flipped_" + std::to_string(cell.component_id));
 
-    IntVar selected_lx = cp_model.NewIntVar(Domain(minimum_x, maximum_x));
-    IntVar selected_ly = cp_model.NewIntVar(Domain(minimum_y, maximum_y));
-    IntVar selected_ux = cp_model.NewIntVar(
-        Domain(minimum_x + cell.width, maximum_x + cell.width));
-    IntVar selected_uy = cp_model.NewIntVar(
-        Domain(minimum_y + cell.height, maximum_y + cell.height));
-    cp_model.AddElement(variables.start_slot, flat_row_lx, selected_lx);
-    cp_model.AddElement(variables.start_slot, flat_row_ly, selected_ly);
-    cp_model.AddElement(variables.start_slot, flat_row_ux, selected_ux);
-    cp_model.AddElement(variables.start_slot, flat_row_uy, selected_uy);
-    cp_model.AddGreaterOrEqual(variables.x, selected_lx);
-    cp_model.AddLessOrEqual(variables.x + cell.width, selected_ux);
-    cp_model.AddGreaterOrEqual(variables.y, selected_ly);
-    cp_model.AddLessOrEqual(variables.y + cell.height, selected_uy);
+    std::vector<int64_t> candidate_lx;
+    std::vector<int64_t> candidate_ly;
+    std::vector<int64_t> candidate_ux;
+    std::vector<int64_t> candidate_uy;
+    candidate_lx.reserve(legal_start_slots.size());
+    candidate_ly.reserve(legal_start_slots.size());
+    candidate_ux.reserve(legal_start_slots.size());
+    candidate_uy.reserve(legal_start_slots.size());
+    for (int64_t slot : legal_start_slots) {
+      candidate_lx.push_back(flat_row_lx[slot]);
+      candidate_ly.push_back(flat_row_ly[slot]);
+      candidate_ux.push_back(flat_row_ux[slot]);
+      candidate_uy.push_back(flat_row_uy[slot]);
+    }
+    const bool uses_one_stripe =
+        std::all_of(candidate_lx.begin(), candidate_lx.end(),
+                    [&](int64_t value) { return value == candidate_lx[0]; }) &&
+        std::all_of(candidate_ly.begin(), candidate_ly.end(),
+                    [&](int64_t value) { return value == candidate_ly[0]; }) &&
+        std::all_of(candidate_ux.begin(), candidate_ux.end(),
+                    [&](int64_t value) { return value == candidate_ux[0]; }) &&
+        std::all_of(candidate_uy.begin(), candidate_uy.end(),
+                    [&](int64_t value) { return value == candidate_uy[0]; });
+    if (uses_one_stripe) {
+      cp_model.AddGreaterOrEqual(variables.x, candidate_lx[0]);
+      cp_model.AddLessOrEqual(variables.x + cell.width, candidate_ux[0]);
+      cp_model.AddGreaterOrEqual(variables.y, candidate_ly[0]);
+      cp_model.AddLessOrEqual(variables.y + cell.height, candidate_uy[0]);
+    } else {
+      IntVar selected_lx = cp_model.NewIntVar(Domain(minimum_x, maximum_x));
+      IntVar selected_ly = cp_model.NewIntVar(Domain(minimum_y, maximum_y));
+      IntVar selected_ux = cp_model.NewIntVar(
+          Domain(minimum_x + cell.width, maximum_x + cell.width));
+      IntVar selected_uy = cp_model.NewIntVar(
+          Domain(minimum_y + cell.height, maximum_y + cell.height));
+      cp_model.AddElement(variables.start_choice, candidate_lx, selected_lx);
+      cp_model.AddElement(variables.start_choice, candidate_ly, selected_ly);
+      cp_model.AddElement(variables.start_choice, candidate_ux, selected_ux);
+      cp_model.AddElement(variables.start_choice, candidate_uy, selected_uy);
+      cp_model.AddGreaterOrEqual(variables.x, selected_lx);
+      cp_model.AddLessOrEqual(variables.x + cell.width, selected_ux);
+      cp_model.AddGreaterOrEqual(variables.y, selected_ly);
+      cp_model.AddLessOrEqual(variables.y + cell.height, selected_uy);
+    }
 
     IntVar first_row_y;
     IntVar first_row_p_height;
@@ -375,24 +430,55 @@ ExactGriddedLegalizationResult OrToolsCompactGriddedLegalizer::Solve(
           cell.regions[cell.regions.size() - 1 - region_index];
       const bool normal_orient_n = normal_region.n_well_above_p_well;
       const bool flipped_orient_n = !source_flipped_region.n_well_above_p_well;
-      const LinearExpr selected_slot = variables.start_slot + region_index;
-      IntVar selected_active = cp_model.NewIntVar(Domain(0, 1));
-      IntVar selected_orient_n = cp_model.NewIntVar(Domain(0, 1));
-      IntVar selected_y =
-          cp_model.NewIntVar(Domain(minimum_y, maximum_y + cell.height));
-      IntVar selected_p_height =
-          cp_model.NewIntVar(Domain(0, maximum_y - minimum_y + cell.height));
-      IntVar selected_n_height =
-          cp_model.NewIntVar(Domain(0, maximum_y - minimum_y + cell.height));
-      cp_model.AddVariableElement(selected_slot, flat_row_active,
-                                  selected_active);
-      cp_model.AddVariableElement(selected_slot, flat_row_orient_n,
-                                  selected_orient_n);
-      cp_model.AddVariableElement(selected_slot, flat_row_y, selected_y);
-      cp_model.AddVariableElement(selected_slot, flat_row_p_height,
-                                  selected_p_height);
-      cp_model.AddVariableElement(selected_slot, flat_row_n_height,
-                                  selected_n_height);
+      std::vector<IntVar> candidate_active;
+      std::vector<IntVar> candidate_orient_n;
+      std::vector<IntVar> candidate_y;
+      std::vector<IntVar> candidate_p_height;
+      std::vector<IntVar> candidate_n_height;
+      candidate_active.reserve(legal_start_slots.size());
+      candidate_orient_n.reserve(legal_start_slots.size());
+      candidate_y.reserve(legal_start_slots.size());
+      candidate_p_height.reserve(legal_start_slots.size());
+      candidate_n_height.reserve(legal_start_slots.size());
+      for (int64_t start_slot : legal_start_slots) {
+        const size_t selected_slot = start_slot + region_index;
+        candidate_active.push_back(flat_row_active[selected_slot]);
+        candidate_orient_n.push_back(flat_row_orient_n[selected_slot]);
+        candidate_y.push_back(flat_row_y[selected_slot]);
+        candidate_p_height.push_back(flat_row_p_height[selected_slot]);
+        candidate_n_height.push_back(flat_row_n_height[selected_slot]);
+      }
+      IntVar selected_active;
+      IntVar selected_orient_n;
+      IntVar selected_y;
+      IntVar selected_p_height;
+      IntVar selected_n_height;
+      if (candidate_active.size() == 1) {
+        selected_active = candidate_active[0];
+        selected_orient_n = candidate_orient_n[0];
+        selected_y = candidate_y[0];
+        selected_p_height = candidate_p_height[0];
+        selected_n_height = candidate_n_height[0];
+      } else {
+        selected_active = cp_model.NewIntVar(Domain(0, 1));
+        selected_orient_n = cp_model.NewIntVar(Domain(0, 1));
+        selected_y =
+            cp_model.NewIntVar(Domain(minimum_y, maximum_y + cell.height));
+        selected_p_height =
+            cp_model.NewIntVar(Domain(0, maximum_y - minimum_y + cell.height));
+        selected_n_height =
+            cp_model.NewIntVar(Domain(0, maximum_y - minimum_y + cell.height));
+        cp_model.AddVariableElement(variables.start_choice, candidate_active,
+                                    selected_active);
+        cp_model.AddVariableElement(variables.start_choice, candidate_orient_n,
+                                    selected_orient_n);
+        cp_model.AddVariableElement(variables.start_choice, candidate_y,
+                                    selected_y);
+        cp_model.AddVariableElement(variables.start_choice, candidate_p_height,
+                                    selected_p_height);
+        cp_model.AddVariableElement(variables.start_choice, candidate_n_height,
+                                    selected_n_height);
+      }
       cp_model.AddEquality(selected_active, 1);
       cp_model.AddEquality(selected_orient_n,
                            SelectCompactOrientationValue(
@@ -449,7 +535,17 @@ ExactGriddedLegalizationResult OrToolsCompactGriddedLegalizer::Solve(
           stripe_indices.at(cell.initial_stripe_id);
       const int initial_slot =
           stripe_slot_offsets[initial_stripe_index] + cell.initial_start_row;
-      cp_model.AddHint(variables.start_slot, initial_slot);
+      const auto initial_choice =
+          std::find(variables.candidate_start_slots.begin(),
+                    variables.candidate_start_slots.end(), initial_slot);
+      if (initial_choice == variables.candidate_start_slots.end()) {
+        result.status = ExactGriddedLegalizationStatus::kInvalidModel;
+        result.message = "component hint is outside its compact row domain";
+        return result;
+      }
+      cp_model.AddHint(variables.start_choice,
+                       std::distance(variables.candidate_start_slots.begin(),
+                                     initial_choice));
       cp_model.AddHint(variables.is_flipped, cell.initial_is_flipped);
       bool required_phase = true;
       if (!ExactGriddedCandidateMatchesAlternatingRows(
@@ -469,17 +565,42 @@ ExactGriddedLegalizationResult OrToolsCompactGriddedLegalizer::Solve(
       phase_hint = required_phase_value;
     }
 
-    no_overlap.AddRectangle(
-        cp_model.NewFixedSizeIntervalVar(variables.x, cell.width),
-        cp_model.NewFixedSizeIntervalVar(variables.y, cell.height));
+    if (use_fixed_row_no_overlap) {
+      const int start_slot = variables.candidate_start_slots[0];
+      for (int region_index = 0;
+           region_index < static_cast<int>(cell.regions.size());
+           ++region_index) {
+        flat_rows[start_slot + region_index]->component_intervals.push_back(
+            cp_model.NewFixedSizeIntervalVar(variables.x, cell.width));
+      }
+    } else {
+      no_overlap.AddRectangle(
+          cp_model.NewFixedSizeIntervalVar(variables.x, cell.width),
+          cp_model.NewFixedSizeIntervalVar(variables.y, cell.height));
+    }
     cell_variables.push_back(std::move(variables));
+  }
+
+  if (use_fixed_row_no_overlap) {
+    for (CompactGriddedRowVariables* row : flat_rows) {
+      if (!row->component_intervals.empty()) {
+        cp_model.AddNoOverlap(row->component_intervals);
+      }
+    }
   }
 
   for (size_t stripe_index = 0; stripe_index < stripe_phase_hints.size();
        ++stripe_index) {
     if (stripe_phase_hints[stripe_index] >= 0) {
+      const bool first_row_orient_n = stripe_phase_hints[stripe_index] != 0;
       cp_model.AddHint(stripe_phase_variables[stripe_index],
-                       stripe_phase_hints[stripe_index] != 0);
+                       first_row_orient_n);
+      for (int row_index = 0;
+           row_index < model.stripes[stripe_index].maximum_rows; ++row_index) {
+        cp_model.AddHint(
+            stripe_row_variables[stripe_index][row_index].orient_n,
+            row_index % 2 == 0 ? first_row_orient_n : !first_row_orient_n);
+      }
     }
   }
 
@@ -628,6 +749,13 @@ ExactGriddedLegalizationResult OrToolsCompactGriddedLegalizer::Solve(
   parameters.set_max_time_in_seconds(config.maximum_time_seconds);
   parameters.set_num_search_workers(config.number_of_workers);
   parameters.set_log_search_progress(config.log_search_progress);
+  parameters.set_repair_hint(true);
+  if (use_fixed_row_no_overlap && config.validate_solution_hint) {
+    // The complete production hint has already been validated. Presolving a
+    // 16k-cell fixed-row disjunctive model can consume the entire time budget
+    // before CP-SAT records that incumbent, so begin search from the hint.
+    parameters.set_cp_model_presolve(false);
+  }
   const auto& cp_model_proto = cp_model.Build();
   result.model_variable_count = cp_model_proto.variables_size();
   result.model_constraint_count = cp_model_proto.constraints_size();
@@ -686,9 +814,10 @@ ExactGriddedLegalizationResult OrToolsCompactGriddedLegalizer::Solve(
   for (size_t cell_index = 0; cell_index < model.cells.size(); ++cell_index) {
     const ExactGriddedCell& cell = model.cells[cell_index];
     const CompactGriddedCellVariables& variables = cell_variables[cell_index];
-    const int slot =
+    const int choice =
         static_cast<int>(operations_research::sat::SolutionIntegerValue(
-            response, variables.start_slot));
+            response, variables.start_choice));
+    const int slot = variables.candidate_start_slots[choice];
     const int x = static_cast<int>(
         operations_research::sat::SolutionIntegerValue(response, variables.x));
     const int y = static_cast<int>(

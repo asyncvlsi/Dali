@@ -25,6 +25,11 @@ struct ExactGriddedWholeDesignBuilderConfig {
   int net_ignore_threshold = 100;
   int minimum_p_well_height = 0;
   int minimum_n_well_height = 0;
+  /** Allow a component to move to any physically compatible stripe. */
+  bool allow_cross_stripe_moves = true;
+  /** Include every physically possible row slot instead of current rows only.
+   */
+  bool use_full_row_slot_capacity = true;
 };
 
 /** Size information used to judge whether a solver formulation can scale. */

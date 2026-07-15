@@ -41,6 +41,8 @@ struct ExactGriddedLegalizationConfig {
   double weighted_hpwl_weight = 1.0;
   double displacement_weight = 0.0;
   bool log_search_progress = false;
+  // Negative values allow every row. Zero fixes the current row assignment.
+  int maximum_row_displacement = -1;
   // Check whether the supplied hints form a feasible solution before search.
   bool validate_solution_hint = false;
 };
@@ -81,6 +83,7 @@ struct ExactGriddedLegalizationResult {
   int64_t branch_count = 0;
   int64_t model_variable_count = 0;
   int64_t model_constraint_count = 0;
+  int64_t row_assignment_choice_count = 0;
   double wall_time_seconds = 0.0;
   ExactGriddedLegalizationStatus hint_validation_status =
       ExactGriddedLegalizationStatus::kUnavailable;
