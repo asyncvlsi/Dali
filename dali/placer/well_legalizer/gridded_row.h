@@ -130,6 +130,7 @@ class GriddedRow {
    * end caps, which are inserted only after row legalization finishes.
    */
   void LegalizeLooseX();
+  /** Synchronize row and component orientation, mirroring component Y once. */
   void SetOrient(bool is_orient_N);
   void InsertWellTapCell(Component& tap_cell, int loc);
   void PlacePhysicalCell(Component& cell, int loc) const;

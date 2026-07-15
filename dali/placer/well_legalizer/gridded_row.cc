@@ -236,15 +236,14 @@ void GriddedRow::LegalizeLooseX() {
 }
 
 void GriddedRow::SetOrient(bool is_orient_N) {
-  if (is_orient_N_ != is_orient_N) {
-    is_orient_N_ = is_orient_N;
-    ComponentOrient orient = is_orient_N_ ? N : FS;
-    double y_flip_axis = ly_ + height_ / 2.0;
-    for (auto& component_ptr : components_) {
-      double ly_to_axis = y_flip_axis - component_ptr->LLY();
-      component_ptr->SetOrient(orient);
-      component_ptr->SetURY(y_flip_axis + ly_to_axis);
-    }
+  is_orient_N_ = is_orient_N;
+  ComponentOrient orient = is_orient_N_ ? N : FS;
+  double y_flip_axis = ly_ + height_ / 2.0;
+  for (Component* component : components_) {
+    if (component->Orient() == orient) continue;
+    double ly_to_axis = y_flip_axis - component->LLY();
+    component->SetOrient(orient);
+    component->SetURY(y_flip_axis + ly_to_axis);
   }
 }
 
