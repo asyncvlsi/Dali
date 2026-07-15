@@ -17,6 +17,11 @@
 namespace dali {
 
 std::string ExactGriddedLegalizationModel::Validate() const {
+  if (!std::isfinite(distance_scale_x) || distance_scale_x <= 0.0 ||
+      !std::isfinite(distance_scale_y) || distance_scale_y <= 0.0) {
+    return "distance scales must be finite and positive";
+  }
+
   std::unordered_map<int, const ExactGriddedStripe*> stripes_by_id;
   stripes_by_id.reserve(stripes.size());
   for (const ExactGriddedStripe& stripe : stripes) {

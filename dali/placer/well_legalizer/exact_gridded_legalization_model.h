@@ -77,6 +77,8 @@ struct ExactGriddedLegalizationModel {
   std::vector<ExactGriddedCell> cells;
   std::vector<ExactGriddedStripe> stripes;
   std::vector<ExactGriddedNet> nets;
+  double distance_scale_x = 1.0;
+  double distance_scale_y = 1.0;
 
   /** Return an empty string when the model is structurally valid. */
   std::string Validate() const;
