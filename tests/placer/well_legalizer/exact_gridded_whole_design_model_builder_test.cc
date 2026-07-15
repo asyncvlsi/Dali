@@ -62,6 +62,11 @@ TEST(ExactGriddedWholeDesignModelBuilderTest,
   EXPECT_EQ(result.stats.component_count, 3);
   EXPECT_EQ(result.stats.net_count, 1);
   EXPECT_EQ(result.stats.enumerated_placement_choice_upper_bound, 36);
+  for (const ExactGriddedStripe& stripe : result.model.stripes) {
+    ASSERT_EQ(stripe.initial_rows.size(), 3U);
+    EXPECT_EQ(stripe.initial_rows[1].y, 2);
+    EXPECT_EQ(stripe.initial_rows[2].y, 2);
+  }
   ASSERT_EQ(result.model.cells.size(), 3U);
   for (const ExactGriddedCell& cell : result.model.cells) {
     EXPECT_EQ(cell.candidate_stripe_ids, (std::vector<int>{0, 1}));

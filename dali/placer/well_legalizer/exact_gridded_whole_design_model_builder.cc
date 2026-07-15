@@ -71,6 +71,7 @@ ExactGriddedWholeDesignBuildResult ExactGriddedWholeDesignModelBuilder::Build(
       DaliExpects(model_stripe.maximum_rows >= static_cast<int>(rows.size()),
                   "Existing gridded rows exceed physical stripe capacity");
 
+      int next_row_y = model_stripe.ly;
       for (int row_id = 0; row_id < static_cast<int>(rows.size()); ++row_id) {
         GriddedRow* row = rows[row_id];
         model_stripe.left_boundary_margin = std::max(
@@ -79,6 +80,7 @@ ExactGriddedWholeDesignBuildResult ExactGriddedWholeDesignModelBuilder::Build(
             model_stripe.right_boundary_margin, row->RightBoundaryMargin());
         model_stripe.initial_rows.push_back(
             {true, row->LLY(), row->PHeight(), row->NHeight()});
+        next_row_y = row->LLY() + row->PHeight() + row->NHeight();
 
         for (Component* component : row->Components()) {
           DaliExpects(component != nullptr,
@@ -98,7 +100,7 @@ ExactGriddedWholeDesignBuildResult ExactGriddedWholeDesignModelBuilder::Build(
 
       while (model_stripe.initial_rows.size() <
              static_cast<size_t>(model_stripe.maximum_rows)) {
-        model_stripe.initial_rows.push_back({false, model_stripe.ly, 0, 0});
+        model_stripe.initial_rows.push_back({false, next_row_y, 0, 0});
       }
       result.stats.active_row_count += static_cast<int>(rows.size());
       result.stats.row_slot_count += model_stripe.maximum_rows;
