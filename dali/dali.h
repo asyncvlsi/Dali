@@ -98,6 +98,11 @@ class Dali {
     int exact_gridded_stripe_components = 0;
     int exact_gridded_stripe_row_radius = 0;
     bool exact_gridded_stripe_fixed_row_prepass = false;
+    bool enable_exact_gridded_boundary_optimization = false;
+    double exact_gridded_boundary_time = 0.1;
+    double exact_gridded_boundary_total_time = 120.0;
+    int exact_gridded_boundary_components = 64;
+    int exact_gridded_boundary_max_changes = 4;
     bool enable_shrink_off_grid_die_area = false;
     PlacementInitializerType global_initializer =
         PlacementInitializerType::kUniform;
@@ -256,6 +261,11 @@ class Dali {
   int exact_gridded_stripe_components_ = 0;
   int exact_gridded_stripe_row_radius_ = 0;
   bool exact_gridded_stripe_fixed_row_prepass_ = false;
+  bool enable_exact_gridded_boundary_optimization_ = false;
+  double exact_gridded_boundary_time_ = 0.1;
+  double exact_gridded_boundary_total_time_ = 120.0;
+  int exact_gridded_boundary_components_ = 64;
+  int exact_gridded_boundary_max_changes_ = 4;
   bool enable_shrink_off_grid_die_area_ = false;
   PlacementInitializerType global_initializer_ =
       PlacementInitializerType::kUniform;

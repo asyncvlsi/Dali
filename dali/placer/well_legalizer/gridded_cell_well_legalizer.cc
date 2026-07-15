@@ -1931,6 +1931,71 @@ void GriddedCellWellLegalizer::RunExactStripeOptimizationStage() {
   }
 }
 
+void GriddedCellWellLegalizer::RunExactBoundaryOptimizationStage() {
+  const GriddedCapacityConfig capacity = BuildGriddedCapacityConfig(1.0);
+  exact_boundary_refiner_config_.minimum_p_well_height =
+      capacity.minimum_p_well_height;
+  exact_boundary_refiner_config_.minimum_n_well_height =
+      capacity.minimum_n_well_height;
+
+  ElapsedTime timer;
+  timer.RecordStartTime();
+  const OrToolsGriddedBoundaryRefinerResult result =
+      OrToolsGriddedBoundaryRefiner(ckt_ptr_, exact_boundary_refiner_config_)
+          .Optimize(&col_list_);
+  timer.RecordEndTime();
+
+  LOG(info) << "Exact gridded boundary optimization:\n"
+            << "  available               : " << result.available << "\n"
+            << "  candidate windows       : " << result.candidate_windows
+            << "\n"
+            << "  oversized windows       : " << result.oversized_windows
+            << "\n"
+            << "  attempted models        : " << result.attempted_models << "\n"
+            << "  solved models           : " << result.solved_models << "\n"
+            << "  accepted models         : " << result.accepted_models << "\n"
+            << "  cross-stripe components : "
+            << result.accepted_cross_stripe_components << "\n"
+            << "  HPWL before             : " << result.hpwl_before << "um\n"
+            << "  HPWL after              : " << result.hpwl_after << "um\n"
+            << "  improvement             : "
+            << result.hpwl_before - result.hpwl_after << "um\n"
+            << "  solver wall time        : " << result.solver_wall_time_seconds
+            << "s\n"
+            << "  total stage wall time   : " << timer.GetWallTime() << "s\n"
+            << "  time budget exhausted   : " << result.time_budget_exhausted
+            << "\n";
+  for (const OrToolsGriddedBoundaryWindowResult& window : result.windows) {
+    if (!window.optimization.accepted) continue;
+    LOG(info) << "  accepted boundary " << window.first_column << "-"
+              << window.second_column << ", rows " << window.first_row << "-"
+              << window.first_last_row << " / " << window.second_row << "-"
+              << window.second_last_row
+              << ": components=" << window.optimization.component_count
+              << ", cross-stripe="
+              << window.optimization.cross_stripe_component_count
+              << ", affected HPWL=" << window.optimization.affected_hpwl_before
+              << " -> " << window.optimization.affected_hpwl_after << "um\n";
+  }
+
+  RecordPlacementMetric("exact_boundary.candidates", result.candidate_windows);
+  RecordPlacementMetric("exact_boundary.oversized", result.oversized_windows);
+  RecordPlacementMetric("exact_boundary.attempted", result.attempted_models);
+  RecordPlacementMetric("exact_boundary.solved", result.solved_models);
+  RecordPlacementMetric("exact_boundary.accepted", result.accepted_models);
+  RecordPlacementMetric("exact_boundary.cross_stripe_components",
+                        result.accepted_cross_stripe_components);
+  RecordPlacementMetric("exact_boundary.hpwl.before", result.hpwl_before);
+  RecordPlacementMetric("exact_boundary.hpwl.after", result.hpwl_after);
+  RecordPlacementMetric("time.exact_boundary.solver_wall_s",
+                        result.solver_wall_time_seconds);
+  RecordPlacementMetric("time.exact_boundary.wall_s", timer.GetWallTime());
+  if (result.accepted_models > 0) {
+    EmitSnapshot("exact_boundary", "After Exact Boundary Optimization",
+                 "legalization", "exact_boundary", 0);
+  }
+}
+
 void GriddedCellWellLegalizer::RunJointOrientationAndRowLocationOptimization() {
   constexpr int kMaximumRounds = 4;
   constexpr double kMinimumRelativeImprovement = 1e-5;
@@ -1995,6 +2060,9 @@ void GriddedCellWellLegalizer::RunPostClusteringStages(
   }
   if (clustering_succeeded && enable_exact_stripe_optimization_) {
     RunExactStripeOptimizationStage();
+  }
+  if (clustering_succeeded && enable_exact_boundary_optimization_) {
+    RunExactBoundaryOptimizationStage();
   }
   if (clustering_succeeded && enable_exact_legalization_analysis_) {
     RunExactLegalizationAnalysisStage();

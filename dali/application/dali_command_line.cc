@@ -116,6 +116,11 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -exact_gridded_stripe_components <n>       target cells per overlapping row band; 0 uses full stripes\n"
       << "  -exact_gridded_stripe_row_radius <n>       allowed row movement in stripe refinement, default 0\n"
       << "  -exact_gridded_stripe_fixed_row_prepass    run a separately budgeted exact-X phase first\n"
+      << "  -enable_exact_gridded_boundary_optimization  refine adjacent stripe boundaries with CP-SAT\n"
+      << "  -exact_gridded_boundary_time <seconds>     solve limit per boundary model, default 0.1\n"
+      << "  -exact_gridded_boundary_total_time <seconds> total boundary solve budget, default 120\n"
+      << "  -exact_gridded_boundary_components <n>     maximum cells per boundary model, default 64\n"
+      << "  -exact_gridded_boundary_max_changes <n>    maximum changed assignments per model, default 4\n"
       << "  -debug_placement_region_scale <factor>      enlarge the placement boundary for debugging, default 1\n"
       << "  -standard_cell_legalizer_cost <displacement/hpwl>  default displacement\n"
       << "  -detailed_max_rounds <n>                   detailed-placement optimization rounds, default 1\n"
@@ -580,6 +585,40 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       config_set_int("dali.exact_gridded_stripe_row_radius", row_radius);
     } else if (arg == "-exact_gridded_stripe_fixed_row_prepass") {
       EnableConfigFlag("dali.exact_gridded_stripe_fixed_row_prepass");
+    } else if (arg == "-enable_exact_gridded_boundary_optimization") {
+      EnableConfigFlag("dali.enable_exact_gridded_boundary_optimization");
+    } else if (arg == "-exact_gridded_boundary_time") {
+      double boundary_time = 0.0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseDouble(value, &boundary_time) || boundary_time <= 0.0) {
+        error_output << "Invalid exact gridded boundary solve time!\n";
+        return false;
+      }
+      config_set_real("dali.exact_gridded_boundary_time", boundary_time);
+    } else if (arg == "-exact_gridded_boundary_total_time") {
+      double total_time = 0.0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseDouble(value, &total_time) || total_time <= 0.0) {
+        error_output << "Invalid exact gridded boundary total time!\n";
+        return false;
+      }
+      config_set_real("dali.exact_gridded_boundary_total_time", total_time);
+    } else if (arg == "-exact_gridded_boundary_components") {
+      int component_count = 0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseInt(value, &component_count) || component_count <= 0) {
+        error_output << "Invalid exact gridded boundary component limit!\n";
+        return false;
+      }
+      config_set_int("dali.exact_gridded_boundary_components", component_count);
+    } else if (arg == "-exact_gridded_boundary_max_changes") {
+      int change_count = 0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseInt(value, &change_count) || change_count < -1) {
+        error_output << "Invalid exact gridded boundary change limit!\n";
+        return false;
+      }
+      config_set_int("dali.exact_gridded_boundary_max_changes", change_count);
     } else if (arg == "-debug_placement_region_scale") {
       double scale = 0;
       if (!TryGetValue(argc, argv, &i, &value) ||

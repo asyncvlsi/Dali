@@ -317,6 +317,16 @@ void Dali::ShowParamsList() {
       << exact_gridded_stripe_row_radius_ << "\n"
       << "  exact_gridded_stripe_fixed_row_prepass: "
       << exact_gridded_stripe_fixed_row_prepass_ << "\n"
+      << "  enable_exact_gridded_boundary_optimization: "
+      << enable_exact_gridded_boundary_optimization_ << "\n"
+      << "  exact_gridded_boundary_time: " << exact_gridded_boundary_time_
+      << "\n"
+      << "  exact_gridded_boundary_total_time: "
+      << exact_gridded_boundary_total_time_ << "\n"
+      << "  exact_gridded_boundary_components: "
+      << exact_gridded_boundary_components_ << "\n"
+      << "  exact_gridded_boundary_max_changes: "
+      << exact_gridded_boundary_max_changes_ << "\n"
       << "  enable_shrink_off_grid_die_area: "
       << enable_shrink_off_grid_die_area_ << "\n"
       << "  global_initializer: " << static_cast<int>(global_initializer_)
@@ -511,6 +521,25 @@ void Dali::LoadParamsFromConfig() {
               "exact_gridded_stripe_row_radius must be non-negative");
   LoadBoolConfig(ConfigName(prefix_, "exact_gridded_stripe_fixed_row_prepass"),
                  &exact_gridded_stripe_fixed_row_prepass_);
+  LoadBoolConfig(
+      ConfigName(prefix_, "enable_exact_gridded_boundary_optimization"),
+      &enable_exact_gridded_boundary_optimization_);
+  LoadRealConfig(ConfigName(prefix_, "exact_gridded_boundary_time"),
+                 &exact_gridded_boundary_time_);
+  DaliExpects(exact_gridded_boundary_time_ > 0.0,
+              "exact_gridded_boundary_time must be positive");
+  LoadRealConfig(ConfigName(prefix_, "exact_gridded_boundary_total_time"),
+                 &exact_gridded_boundary_total_time_);
+  DaliExpects(exact_gridded_boundary_total_time_ > 0.0,
+              "exact_gridded_boundary_total_time must be positive");
+  LoadIntConfig(ConfigName(prefix_, "exact_gridded_boundary_components"),
+                &exact_gridded_boundary_components_);
+  DaliExpects(exact_gridded_boundary_components_ > 0,
+              "exact_gridded_boundary_components must be positive");
+  LoadIntConfig(ConfigName(prefix_, "exact_gridded_boundary_max_changes"),
+                &exact_gridded_boundary_max_changes_);
+  DaliExpects(exact_gridded_boundary_max_changes_ >= -1,
+              "exact_gridded_boundary_max_changes must be at least -1");
   LoadBoolConfig(ConfigName(prefix_, "enable_shrink_off_grid_die_area"),
                  &enable_shrink_off_grid_die_area_);
   param_name = ConfigName(prefix_, "global_initializer");
@@ -650,6 +679,11 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       exact_gridded_stripe_components_,
       exact_gridded_stripe_row_radius_,
       exact_gridded_stripe_fixed_row_prepass_,
+      enable_exact_gridded_boundary_optimization_,
+      exact_gridded_boundary_time_,
+      exact_gridded_boundary_total_time_,
+      exact_gridded_boundary_components_,
+      exact_gridded_boundary_max_changes_,
       enable_shrink_off_grid_die_area_,
       global_initializer_,
       global_anchor_schedule_,
@@ -1094,6 +1128,11 @@ void Dali::ConfigureWellLegalizer() {
       exact_gridded_stripe_row_radius_, exact_gridded_max_row_changes_,
       exact_gridded_stripe_fixed_row_prepass_, exact_gridded_use_solution_hint_,
       net_ignore_threshold_);
+  well_legalizer_.SetExactBoundaryOptimization(
+      enable_exact_gridded_boundary_optimization_, exact_gridded_boundary_time_,
+      exact_gridded_boundary_total_time_, exact_gridded_boundary_components_,
+      exact_gridded_boundary_max_changes_, num_threads_,
+      exact_gridded_use_solution_hint_, net_ignore_threshold_);
   well_legalizer_.SetSnapshotCallback(
       [this](const std::string& id, const std::string& label,
              const std::string& group, const std::string& subgroup,

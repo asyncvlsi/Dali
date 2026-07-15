@@ -38,6 +38,7 @@
 #include "gridded_row.h"
 #include "gridded_row_location_optimizer.h"
 #include "ortools_compact_gridded_legalizer.h"
+#include "ortools_gridded_boundary_refiner.h"
 #include "ortools_gridded_stripe_optimizer.h"
 #include "space_partitioner.h"
 #include "stripe.h"
@@ -251,6 +252,26 @@ class GriddedCellWellLegalizer : public Placer {
     exact_stripe_optimizer_config_.net_ignore_threshold = net_ignore_threshold;
   }
 
+  /** Configure exact refinement across adjacent gridded stripe boundaries. */
+  void SetExactBoundaryOptimization(
+      bool enable, double maximum_time_seconds_per_model,
+      double maximum_total_time_seconds, int maximum_components_per_model,
+      int maximum_assignment_changes, int number_of_workers,
+      bool use_solution_hint, int net_ignore_threshold) {
+    enable_exact_boundary_optimization_ = enable;
+    exact_boundary_refiner_config_.maximum_time_seconds_per_model =
+        maximum_time_seconds_per_model;
+    exact_boundary_refiner_config_.maximum_total_time_seconds =
+        maximum_total_time_seconds;
+    exact_boundary_refiner_config_.maximum_components_per_model =
+        maximum_components_per_model;
+    exact_boundary_refiner_config_.maximum_assignment_changes =
+        maximum_assignment_changes;
+    exact_boundary_refiner_config_.number_of_workers = number_of_workers;
+    exact_boundary_refiner_config_.use_solution_hint = use_solution_hint;
+    exact_boundary_refiner_config_.net_ignore_threshold = net_ignore_threshold;
+  }
+
   /** Set maximum legalized row width in microns. */
   void SetMaxRowWidth(double max_row_width_microns);
 
@@ -390,6 +411,8 @@ class GriddedCellWellLegalizer : public Placer {
   OrToolsGriddedStripeOptimizerResult RunExactStripeOptimizationPhase(
       const std::string& label, const std::string& metric_prefix,
       const OrToolsGriddedStripeOptimizerConfig& config);
+  /** Refine compact row bands across adjacent finalized stripe boundaries. */
+  void RunExactBoundaryOptimizationStage();
   /**
    * Alternate column orientation phases and row Y locations to convergence.
    *
@@ -486,6 +509,8 @@ class GriddedCellWellLegalizer : public Placer {
   bool enable_exact_stripe_optimization_ = false;
   bool exact_stripe_fixed_row_prepass_ = false;
   OrToolsGriddedStripeOptimizerConfig exact_stripe_optimizer_config_;
+  bool enable_exact_boundary_optimization_ = false;
+  OrToolsGriddedBoundaryRefinerConfig exact_boundary_refiner_config_;
   WellSpacePartitioner space_partitioner_;
   GriddedDetailedPlacer gridded_detailed_placer_;
   SnapshotCallback snapshot_callback_;

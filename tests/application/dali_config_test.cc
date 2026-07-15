@@ -76,6 +76,11 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_EQ(options.exact_gridded_stripe_components, 0);
   EXPECT_EQ(options.exact_gridded_stripe_row_radius, 0);
   EXPECT_FALSE(options.exact_gridded_stripe_fixed_row_prepass);
+  EXPECT_FALSE(options.enable_exact_gridded_boundary_optimization);
+  EXPECT_DOUBLE_EQ(options.exact_gridded_boundary_time, 0.1);
+  EXPECT_DOUBLE_EQ(options.exact_gridded_boundary_total_time, 120.0);
+  EXPECT_EQ(options.exact_gridded_boundary_components, 64);
+  EXPECT_EQ(options.exact_gridded_boundary_max_changes, 4);
   EXPECT_FALSE(options.enable_shrink_off_grid_die_area);
   EXPECT_EQ(options.global_initializer,
             dali::PlacementInitializerType::kUniform);
@@ -150,6 +155,11 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_int("dali.exact_gridded_stripe_components", 48);
   config_set_int("dali.exact_gridded_stripe_row_radius", 2);
   config_set_int("dali.exact_gridded_stripe_fixed_row_prepass", 1);
+  config_set_int("dali.enable_exact_gridded_boundary_optimization", 1);
+  config_set_real("dali.exact_gridded_boundary_time", 0.2);
+  config_set_real("dali.exact_gridded_boundary_total_time", 60.0);
+  config_set_int("dali.exact_gridded_boundary_components", 32);
+  config_set_int("dali.exact_gridded_boundary_max_changes", 6);
   config_set_int("dali.enable_shrink_off_grid_die_area", 1);
   config_set_string("dali.global_initializer", "keep");
   config_set_string("dali.global_lal_hotspot", "overflow_ratio");
@@ -222,6 +232,11 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_EQ(options.exact_gridded_stripe_components, 48);
   EXPECT_EQ(options.exact_gridded_stripe_row_radius, 2);
   EXPECT_TRUE(options.exact_gridded_stripe_fixed_row_prepass);
+  EXPECT_TRUE(options.enable_exact_gridded_boundary_optimization);
+  EXPECT_DOUBLE_EQ(options.exact_gridded_boundary_time, 0.2);
+  EXPECT_DOUBLE_EQ(options.exact_gridded_boundary_total_time, 60.0);
+  EXPECT_EQ(options.exact_gridded_boundary_components, 32);
+  EXPECT_EQ(options.exact_gridded_boundary_max_changes, 6);
   EXPECT_TRUE(options.enable_shrink_off_grid_die_area);
   EXPECT_EQ(options.global_initializer, dali::PlacementInitializerType::kKeep);
   EXPECT_EQ(options.global_lal_hotspot_mode,

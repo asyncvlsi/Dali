@@ -207,6 +207,15 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "-exact_gridded_stripe_row_radius",
                      "2",
                      "-exact_gridded_stripe_fixed_row_prepass",
+                     "-enable_exact_gridded_boundary_optimization",
+                     "-exact_gridded_boundary_time",
+                     "0.2",
+                     "-exact_gridded_boundary_total_time",
+                     "60",
+                     "-exact_gridded_boundary_components",
+                     "32",
+                     "-exact_gridded_boundary_max_changes",
+                     "6",
                      "-debug_placement_region_scale",
                      "1.1",
                      "-save_intermediate_result",
@@ -272,6 +281,13 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_EQ(config_get_int("dali.exact_gridded_stripe_components"), 48);
   EXPECT_EQ(config_get_int("dali.exact_gridded_stripe_row_radius"), 2);
   EXPECT_EQ(config_get_int("dali.exact_gridded_stripe_fixed_row_prepass"), 1);
+  EXPECT_EQ(config_get_int("dali.enable_exact_gridded_boundary_optimization"),
+            1);
+  EXPECT_DOUBLE_EQ(config_get_real("dali.exact_gridded_boundary_time"), 0.2);
+  EXPECT_DOUBLE_EQ(config_get_real("dali.exact_gridded_boundary_total_time"),
+                   60.0);
+  EXPECT_EQ(config_get_int("dali.exact_gridded_boundary_components"), 32);
+  EXPECT_EQ(config_get_int("dali.exact_gridded_boundary_max_changes"), 6);
   EXPECT_DOUBLE_EQ(config_get_real("dali.debug_placement_region_scale"), 1.1);
   EXPECT_EQ(config_get_int("dali.save_intermediate_result"), 1);
   EXPECT_EQ(config_get_int("dali.disable_detailed_place"), 1);
@@ -385,6 +401,12 @@ TEST_F(DaliCommandLineTest, RejectsOutOfRangeOptions) {
                      &options));
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
                       "-exact_gridded_stripe_row_radius", "-1"},
+                     &options));
+  EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                      "-exact_gridded_boundary_components", "0"},
+                     &options));
+  EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                      "-exact_gridded_boundary_max_changes", "-2"},
                      &options));
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
                       "-gui_pause", "sometimes"},
