@@ -358,6 +358,16 @@ OrToolsGriddedStripeOptimizerResult OrToolsGriddedStripeOptimizer::Optimize(
           stripe_result.accepted = true;
           ++aggregate.accepted_models;
           ++accepted_in_sweep;
+          const double hpwl_improvement = stripe_result.affected_hpwl_before -
+                                          stripe_result.affected_hpwl_after;
+          if (stripe_result.reassigned_component_count > 0) {
+            ++aggregate.accepted_reassignment_models;
+            aggregate.accepted_reassigned_components +=
+                stripe_result.reassigned_component_count;
+            aggregate.reassignment_hpwl_improvement += hpwl_improvement;
+          } else {
+            aggregate.fixed_row_hpwl_improvement += hpwl_improvement;
+          }
         } else {
           transaction.Restore();
           stripe_result.modeled_hpwl_after = stripe_result.modeled_hpwl_before;

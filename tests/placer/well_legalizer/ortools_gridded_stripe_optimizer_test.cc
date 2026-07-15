@@ -64,6 +64,11 @@ TEST(OrToolsGriddedStripeOptimizerTest,
   EXPECT_EQ(result.attempted_models, 1);
   EXPECT_EQ(result.solved_models, 1);
   EXPECT_EQ(result.accepted_models, 1);
+  EXPECT_EQ(result.accepted_reassignment_models, 0);
+  EXPECT_EQ(result.accepted_reassigned_components, 0);
+  EXPECT_DOUBLE_EQ(result.fixed_row_hpwl_improvement,
+                   result.hpwl_before - result.hpwl_after);
+  EXPECT_DOUBLE_EQ(result.reassignment_hpwl_improvement, 0.0);
   EXPECT_LT(result.hpwl_after, result.hpwl_before);
   EXPECT_DOUBLE_EQ(circuit.GetComponentPtr("move_left")->LLX(), 0.0);
   EXPECT_DOUBLE_EQ(circuit.GetComponentPtr("move_right")->LLX(), 2.0);
@@ -130,6 +135,11 @@ TEST(OrToolsGriddedStripeOptimizerTest,
       OrToolsGriddedStripeOptimizer(&circuit, config).Optimize(&columns);
 
   EXPECT_EQ(result.accepted_models, 1);
+  EXPECT_EQ(result.accepted_reassignment_models, 1);
+  EXPECT_EQ(result.accepted_reassigned_components, 2);
+  EXPECT_DOUBLE_EQ(result.fixed_row_hpwl_improvement, 0.0);
+  EXPECT_DOUBLE_EQ(result.reassignment_hpwl_improvement,
+                   result.hpwl_before - result.hpwl_after);
   EXPECT_LT(result.hpwl_after, result.hpwl_before);
   EXPECT_DOUBLE_EQ(circuit.GetComponentPtr("move_upper")->LLY(), 2.0);
   EXPECT_DOUBLE_EQ(circuit.GetComponentPtr("move_lower")->LLY(), 0.0);

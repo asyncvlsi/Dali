@@ -72,8 +72,12 @@ struct OrToolsGriddedStripeOptimizerResult {
   int attempted_models = 0;
   int solved_models = 0;
   int accepted_models = 0;
+  int accepted_reassignment_models = 0;
+  int accepted_reassigned_components = 0;
   double hpwl_before = 0.0;
   double hpwl_after = 0.0;
+  double fixed_row_hpwl_improvement = 0.0;
+  double reassignment_hpwl_improvement = 0.0;
   double solver_wall_time_seconds = 0.0;
   std::vector<OrToolsGriddedStripeSolveResult> stripes;
 };

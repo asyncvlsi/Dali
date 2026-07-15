@@ -1840,26 +1840,31 @@ void GriddedCellWellLegalizer::RunExactStripeOptimizationStage() {
           .Optimize(&col_list_);
   timer.RecordEndTime();
 
-  LOG(info) << "Exact gridded stripe optimization:\n"
-            << "  available              : " << result.available << "\n"
-            << "  maximum row displacement: "
-            << exact_stripe_optimizer_config_.maximum_row_displacement << "\n"
-            << "  maximum row changes    : "
-            << exact_stripe_optimizer_config_.maximum_row_assignment_changes
-            << "\n"
-            << "  completed sweeps       : " << result.completed_sweeps << "\n"
-            << "  attempted models       : " << result.attempted_models << "\n"
-            << "  solved models          : " << result.solved_models << "\n"
-            << "  accepted models        : " << result.accepted_models << "\n"
-            << "  HPWL before            : " << result.hpwl_before << "um\n"
-            << "  HPWL after             : " << result.hpwl_after << "um\n"
-            << "  improvement            : "
-            << result.hpwl_before - result.hpwl_after << "um\n"
-            << "  solver wall time       : " << result.solver_wall_time_seconds
-            << "s\n"
-            << "  total stage wall time  : " << timer.GetWallTime() << "s\n"
-            << "  time budget exhausted  : " << result.time_budget_exhausted
-            << "\n";
+  LOG(info)
+      << "Exact gridded stripe optimization:\n"
+      << "  available              : " << result.available << "\n"
+      << "  maximum row displacement: "
+      << exact_stripe_optimizer_config_.maximum_row_displacement << "\n"
+      << "  maximum row changes    : "
+      << exact_stripe_optimizer_config_.maximum_row_assignment_changes << "\n"
+      << "  completed sweeps       : " << result.completed_sweeps << "\n"
+      << "  attempted models       : " << result.attempted_models << "\n"
+      << "  solved models          : " << result.solved_models << "\n"
+      << "  accepted models        : " << result.accepted_models << "\n"
+      << "  accepted row moves     : " << result.accepted_reassignment_models
+      << " models, " << result.accepted_reassigned_components << " components\n"
+      << "  HPWL before            : " << result.hpwl_before << "um\n"
+      << "  HPWL after             : " << result.hpwl_after << "um\n"
+      << "  improvement            : " << result.hpwl_before - result.hpwl_after
+      << "um\n"
+      << "    fixed-row X gain     : " << result.fixed_row_hpwl_improvement
+      << "um\n"
+      << "    row-reassignment gain: " << result.reassignment_hpwl_improvement
+      << "um\n"
+      << "  solver wall time       : " << result.solver_wall_time_seconds
+      << "s\n"
+      << "  total stage wall time  : " << timer.GetWallTime() << "s\n"
+      << "  time budget exhausted  : " << result.time_budget_exhausted << "\n";
   for (const OrToolsGriddedStripeSolveResult& stripe : result.stripes) {
     LOG(info) << "  sweep " << stripe.sweep << ", column "
               << stripe.column_index << ", stripe " << stripe.stripe_index
@@ -1872,6 +1877,7 @@ void GriddedCellWellLegalizer::RunExactStripeOptimizationStage() {
               << stripe.modeled_hpwl_after << "um"
               << ", affected HPWL=" << stripe.affected_hpwl_before << " -> "
               << stripe.affected_hpwl_after << "um"
+              << ", reassigned=" << stripe.reassigned_component_count
               << ", accepted=" << stripe.accepted
               << ", gap=" << stripe.relative_gap
               << ", wall=" << stripe.solver_wall_time_seconds << "s\n";
@@ -1880,8 +1886,16 @@ void GriddedCellWellLegalizer::RunExactStripeOptimizationStage() {
   RecordPlacementMetric("exact_stripe.attempted", result.attempted_models);
   RecordPlacementMetric("exact_stripe.solved", result.solved_models);
   RecordPlacementMetric("exact_stripe.accepted", result.accepted_models);
+  RecordPlacementMetric("exact_stripe.accepted_reassignment_models",
+                        result.accepted_reassignment_models);
+  RecordPlacementMetric("exact_stripe.accepted_reassigned_components",
+                        result.accepted_reassigned_components);
   RecordPlacementMetric("exact_stripe.hpwl.before", result.hpwl_before);
   RecordPlacementMetric("exact_stripe.hpwl.after", result.hpwl_after);
+  RecordPlacementMetric("exact_stripe.hpwl.fixed_row_improvement",
+                        result.fixed_row_hpwl_improvement);
+  RecordPlacementMetric("exact_stripe.hpwl.reassignment_improvement",
+                        result.reassignment_hpwl_improvement);
   RecordPlacementMetric("time.exact_stripe.solver_wall_s",
                         result.solver_wall_time_seconds);
   RecordPlacementMetric("time.exact_stripe.wall_s", timer.GetWallTime());
