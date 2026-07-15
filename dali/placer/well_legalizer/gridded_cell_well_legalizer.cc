@@ -30,6 +30,7 @@
 #include "dali/common/helper.h"
 #include "dali/common/placement_metrics.h"
 #include "dali/placer/well_legalizer/gridded_stripe_balancer.h"
+#include "dali/placer/well_legalizer/ortools_gridded_row_optimizer.h"
 #include "dali/placer/well_legalizer/stripe_boundary_coordinate_optimizer.h"
 #include "dali/placer/well_legalizer/stripe_helper.h"
 #include "dali/placer/well_legalizer/well_geometry.h"
@@ -1531,6 +1532,49 @@ void GriddedCellWellLegalizer::RunRowLocationOptimizationStage() {
                "legalization", "row_location");
 }
 
+void GriddedCellWellLegalizer::RunOrToolsRowOptimizationStage() {
+  LOG(info) << "Optimize gridded row X locations with OR-Tools CP-SAT\n";
+  ElapsedTime timer;
+  timer.RecordStartTime();
+
+  OrToolsGriddedRowOptimizerConfig config;
+  config.net_ignore_threshold = ortools_net_ignore_threshold_;
+  // Keep this first integration deterministic. Per-model and total-stage time
+  // limits bound the additional runtime when the pass is used on large designs.
+  config.number_of_workers = 1;
+  config.maximum_time_seconds_per_model = 0.05;
+  config.maximum_total_time_seconds = 10.0;
+  config.target_components_per_model = 128;
+  OrToolsGriddedRowOptimizerResult result =
+      OrToolsGriddedRowOptimizer(ckt_ptr_, config).Optimize(&col_list_);
+  timer.RecordEndTime();
+
+  if (!result.available) {
+    LOG(warning) << "  OR-Tools support is unavailable; keep existing row "
+                    "locations\n";
+  }
+  LOG(info) << "  CP-SAT row optimization:\n"
+            << "    attempted models : " << result.attempted_models << "\n"
+            << "    solved models    : " << result.solved_models << "\n"
+            << "    accepted models  : " << result.accepted_models << "\n"
+            << "    improved models  : " << result.improved_models << "\n"
+            << "    time budget hit  : " << result.time_budget_exhausted << "\n"
+            << "    HPWL before       : " << result.hpwl_before << "um\n"
+            << "    HPWL after        : " << result.hpwl_after << "um\n"
+            << "    HPWL improvement  : "
+            << result.hpwl_before - result.hpwl_after << "um\n"
+            << "    solver wall time  : " << result.solver_wall_time_seconds
+            << "s\n"
+            << "    stage wall time   : " << timer.GetWallTime() << "s\n";
+  RecordPlacementHpwlMetrics("well_legalization.ortools_row", *ckt_ptr_);
+  RecordPlacementMetric("time.well_legalization.ortools_row.wall_s",
+                        timer.GetWallTime());
+  RecordPlacementMetric("time.well_legalization.ortools_row.cpu_s",
+                        timer.GetCpuTime());
+  EmitSnapshot("ortools_row", "After OR-Tools Row Optimization", "legalization",
+               "ortools_row");
+}
+
 void GriddedCellWellLegalizer::RunJointOrientationAndRowLocationOptimization() {
   constexpr int kMaximumRounds = 4;
   constexpr double kMinimumRelativeImprovement = 1e-5;
@@ -1586,6 +1630,9 @@ void GriddedCellWellLegalizer::RunPostClusteringStages(
   RunClusterOrientationStage();
   if (clustering_succeeded && enable_row_location_optimization_) {
     RunJointOrientationAndRowLocationOptimization();
+  }
+  if (clustering_succeeded && enable_ortools_row_optimization_) {
+    RunOrToolsRowOptimizationStage();
   }
   if (clustering_succeeded &&
       (enable_local_reorder_ || enable_detailed_placement_)) {

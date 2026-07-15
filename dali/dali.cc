@@ -284,6 +284,8 @@ void Dali::ShowParamsList() {
       << "\n"
       << "  enable_gridded_row_y_optimization: "
       << enable_gridded_row_y_optimization_ << "\n"
+      << "  enable_ortools_row_optimization: "
+      << enable_ortools_row_optimization_ << "\n"
       << "  enable_shrink_off_grid_die_area: "
       << enable_shrink_off_grid_die_area_ << "\n"
       << "  global_initializer: " << static_cast<int>(global_initializer_)
@@ -414,6 +416,8 @@ void Dali::LoadParamsFromConfig() {
                  &disable_gridded_vertical_swap_);
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_row_y_optimization"),
                  &enable_gridded_row_y_optimization_);
+  LoadBoolConfig(ConfigName(prefix_, "enable_ortools_row_optimization"),
+                 &enable_ortools_row_optimization_);
   LoadBoolConfig(ConfigName(prefix_, "enable_shrink_off_grid_die_area"),
                  &enable_shrink_off_grid_die_area_);
   param_name = ConfigName(prefix_, "global_initializer");
@@ -534,6 +538,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       gridded_detailed_min_relative_improvement_,
       disable_gridded_vertical_swap_,
       enable_gridded_row_y_optimization_,
+      enable_ortools_row_optimization_,
       enable_shrink_off_grid_die_area_,
       global_initializer_,
       global_anchor_schedule_,
@@ -960,6 +965,8 @@ void Dali::ConfigureWellLegalizer() {
   well_legalizer_.SetDetailedPlacementNetIgnoreThreshold(net_ignore_threshold_);
   well_legalizer_.SetEnableRowLocationOptimization(
       enable_gridded_row_y_optimization_);
+  well_legalizer_.SetEnableOrToolsRowOptimization(
+      enable_ortools_row_optimization_, net_ignore_threshold_);
   well_legalizer_.SetSnapshotCallback(
       [this](const std::string& id, const std::string& label,
              const std::string& group, const std::string& subgroup,

@@ -176,6 +176,8 @@ class GriddedRow {
   void SortComponentRegions();
 
   bool IsRowLegal();
+  /** Return true when ordinary components fit between the reserved margins. */
+  bool HasLegalComponentPlacement() const;
   /** Count overlapping component rectangles in this row. */
   size_t CountComponentOverlaps() const;
 

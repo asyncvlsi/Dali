@@ -174,18 +174,20 @@ FixedRowDisplacementResult OrToolsFixedRowDisplacementOptimizer::Solve(
     cp_model.AddHint(x, std::clamp(component.initial_x, component.minimum_x,
                                    component.maximum_x));
 
-    int64_t lower_displacement = std::abs(
-        static_cast<int64_t>(component.minimum_x) - component.initial_x);
-    int64_t upper_displacement = std::abs(
-        static_cast<int64_t>(component.maximum_x) - component.initial_x);
-    int64_t maximum_displacement =
-        std::max(lower_displacement, upper_displacement);
-    IntVar absolute_displacement =
-        cp_model.NewIntVar(Domain(0, maximum_displacement))
-            .WithName("x_displacement_" +
-                      std::to_string(component.component_id));
-    cp_model.AddAbsEquality(absolute_displacement, x - component.initial_x);
-    objective.AddTerm(absolute_displacement, config.displacement_weight);
+    if (config.displacement_weight > 0.0) {
+      int64_t lower_displacement = std::abs(
+          static_cast<int64_t>(component.minimum_x) - component.initial_x);
+      int64_t upper_displacement = std::abs(
+          static_cast<int64_t>(component.maximum_x) - component.initial_x);
+      int64_t maximum_displacement =
+          std::max(lower_displacement, upper_displacement);
+      IntVar absolute_displacement =
+          cp_model.NewIntVar(Domain(0, maximum_displacement))
+              .WithName("x_displacement_" +
+                        std::to_string(component.component_id));
+      cp_model.AddAbsEquality(absolute_displacement, x - component.initial_x);
+      objective.AddTerm(absolute_displacement, config.displacement_weight);
+    }
   }
 
   for (const FixedRowComponentSequence& row : model.rows) {

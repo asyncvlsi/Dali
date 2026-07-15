@@ -703,6 +703,22 @@ bool GriddedRow::IsRowLegal() {
   return front <= URX();
 }
 
+bool GriddedRow::HasLegalComponentPlacement() const {
+  std::vector<Component*> components = components_;
+  std::sort(components.begin(), components.end(),
+            [](const Component* lhs, const Component* rhs) {
+              return (lhs->LLX() < rhs->LLX()) ||
+                     (lhs->LLX() == rhs->LLX() && lhs->Id() < rhs->Id());
+            });
+
+  double contour = LLX() + LeftBoundaryMargin();
+  for (const Component* component : components) {
+    if (component->LLX() < contour) return false;
+    contour = component->URX();
+  }
+  return contour <= URX() - RightBoundaryMargin();
+}
+
 size_t GriddedRow::CountComponentOverlaps() const {
   std::vector<Component*> components = components_;
   std::sort(components.begin(), components.end(),

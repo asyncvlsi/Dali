@@ -153,6 +153,12 @@ class GriddedCellWellLegalizer : public Placer {
     enable_row_location_optimization_ = enable;
   }
 
+  /** Enable fixed-row CP-SAT X refinement with the shared fanout cutoff. */
+  void SetEnableOrToolsRowOptimization(bool enable, int net_ignore_threshold) {
+    enable_ortools_row_optimization_ = enable;
+    ortools_net_ignore_threshold_ = net_ignore_threshold;
+  }
+
   /** Set maximum legalized row width in microns. */
   void SetMaxRowWidth(double max_row_width_microns);
 
@@ -274,6 +280,8 @@ class GriddedCellWellLegalizer : public Placer {
   double OptimizeColumnOrientationPhases();
   void RunClusterOrientationStage();
   void RunRowLocationOptimizationStage();
+  /** Refine legal row X coordinates through the optional CP-SAT backend. */
+  void RunOrToolsRowOptimizationStage();
   /**
    * Alternate column orientation phases and row Y locations to convergence.
    *
@@ -360,6 +368,8 @@ class GriddedCellWellLegalizer : public Placer {
   bool enable_local_reorder_ = false;
   bool enable_detailed_placement_ = false;
   bool enable_row_location_optimization_ = false;
+  bool enable_ortools_row_optimization_ = false;
+  int ortools_net_ignore_threshold_ = 100;
   WellSpacePartitioner space_partitioner_;
   GriddedDetailedPlacer gridded_detailed_placer_;
   SnapshotCallback snapshot_callback_;
