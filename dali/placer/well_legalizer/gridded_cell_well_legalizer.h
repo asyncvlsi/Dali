@@ -187,6 +187,8 @@ class GriddedCellWellLegalizer : public Placer {
         analyze_adjacent_rows;
     exact_legalization_analysis_config_.use_compact_solver =
         analyze_adjacent_rows;
+    exact_legalization_analysis_config_.overlap_row_windows =
+        analyze_adjacent_rows;
   }
 
   /**

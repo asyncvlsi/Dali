@@ -93,7 +93,7 @@ TEST(ExactGriddedLegalizationWindowAnalyzerTest,
   circuit.SetManufacturingGrid(1);
   circuit.SetUnitsDistanceMicrons(1);
   circuit.SetGridValue(1, 1);
-  circuit.ReserveSpaceForDesignImp(4, 0, 1);
+  circuit.ReserveSpaceForDesignImp(5, 0, 1);
   Macro* macro = circuit.AddMacro("cell", 2, 2);
   macro->AddWellRect(false, 0, 0, 2, 1);
   macro->AddWellRect(true, 0, 1, 2, 2);
@@ -101,6 +101,7 @@ TEST(ExactGriddedLegalizationWindowAnalyzerTest,
   circuit.AddComponent("stay_lower", "cell", 0, 0, PLACED, N);
   circuit.AddComponent("move_upper", "cell", 2, 0, PLACED, N);
   circuit.AddComponent("stay_upper", "cell", 0, 2, PLACED, FS);
+  circuit.AddComponent("stay_top", "cell", 0, 4, PLACED, N);
   circuit.AddComponent("anchor", "cell", 10, 2, FIXED, N);
   circuit.AddNet("move_net", 2);
   circuit.AddComponentPinToNet("move_upper", "pin", "move_net");
@@ -112,8 +113,8 @@ TEST(ExactGriddedLegalizationWindowAnalyzerTest,
   stripe.lx_ = 0;
   stripe.ly_ = 0;
   stripe.width_ = 4;
-  stripe.height_ = 4;
-  stripe.gridded_rows_.resize(2);
+  stripe.height_ = 6;
+  stripe.gridded_rows_.resize(3);
   GriddedRow& lower_row = stripe.gridded_rows_[0];
   lower_row.SetLLX(0);
   lower_row.SetLLY(0);
@@ -130,6 +131,13 @@ TEST(ExactGriddedLegalizationWindowAnalyzerTest,
   upper_row.UpdateWellHeightUpward(1, 1);
   upper_row.AddComponent(circuit.GetComponentPtr("stay_upper"));
   upper_row.SetOrient(false);
+  GriddedRow& top_row = stripe.gridded_rows_[2];
+  top_row.SetLLX(0);
+  top_row.SetLLY(4);
+  top_row.SetWidth(4);
+  top_row.UpdateWellHeightUpward(1, 1);
+  top_row.AddComponent(circuit.GetComponentPtr("stay_top"));
+  top_row.SetOrient(true);
 
   const double original_x = move_upper->LLX();
   const double original_y = move_upper->LLY();
@@ -143,12 +151,13 @@ TEST(ExactGriddedLegalizationWindowAnalyzerTest,
   config.maximum_row_displacement = 1;
   config.fix_row_geometry = true;
   config.use_compact_solver = true;
+  config.overlap_row_windows = true;
   ExactGriddedWindowAnalysis result =
       ExactGriddedLegalizationWindowAnalyzer(&circuit, config)
           .Analyze(&columns);
 
   EXPECT_TRUE(result.available);
-  EXPECT_EQ(result.candidate_windows, 1);
+  EXPECT_EQ(result.candidate_windows, 2);
   EXPECT_EQ(result.attempted_windows, 1);
   EXPECT_EQ(result.solved_windows, 1);
   EXPECT_EQ(result.optimal_windows, 1);

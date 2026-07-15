@@ -1604,6 +1604,7 @@ void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
       << "    maximum row displacement: " << config.maximum_row_displacement
       << "\n"
       << "    fixed row geometry      : " << config.fix_row_geometry << "\n"
+      << "    overlapping row windows : " << config.overlap_row_windows << "\n"
       << "    candidate windows       : " << analysis.candidate_windows << "\n"
       << "    oversized windows       : " << analysis.oversized_windows << "\n"
       << "    attempted windows       : " << analysis.attempted_windows << "\n"

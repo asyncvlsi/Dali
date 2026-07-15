@@ -147,20 +147,26 @@ ExactGriddedLegalizationWindowAnalyzer::BuildStripeWindows(
       ++last_row;
     }
 
-    DaliExpects(!crosses_lower_boundary,
-                "Exact gridded window split a multi-region component");
+    const int next_first_row =
+        config_.overlap_row_windows ? first_row + 1 : last_row + 1;
+    if (crosses_lower_boundary) {
+      DaliExpects(config_.overlap_row_windows,
+                  "Exact gridded window split a multi-region component");
+      first_row = next_first_row;
+      continue;
+    }
     if (component_ids.empty()) {
-      first_row = last_row + 1;
+      first_row = next_first_row;
       continue;
     }
     if (last_row - first_row + 1 < config_.minimum_rows_per_window) {
-      first_row = last_row + 1;
+      first_row = next_first_row;
       continue;
     }
     if (component_ids.size() >
         static_cast<size_t>(config_.maximum_components_per_window)) {
       ++*oversized_windows;
-      first_row = last_row + 1;
+      first_row = next_first_row;
       continue;
     }
 
@@ -194,7 +200,7 @@ ExactGriddedLegalizationWindowAnalyzer::BuildStripeWindows(
     }
     window.current_weighted_hpwl = CurrentWindowHpwl(window.components);
     windows.push_back(std::move(window));
-    first_row = last_row + 1;
+    first_row = next_first_row;
   }
   return windows;
 }

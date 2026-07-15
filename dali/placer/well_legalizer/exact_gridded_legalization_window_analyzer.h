@@ -38,6 +38,8 @@ struct ExactGriddedWindowAnalyzerConfig {
   bool fix_row_geometry = false;
   // Use the compact row-assignment model instead of the full exact model.
   bool use_compact_solver = false;
+  // Advance by one row boundary so adjacent windows may overlap.
+  bool overlap_row_windows = false;
 };
 
 /** Exact-solver diagnostics for one closed, contiguous stripe-row window. */
