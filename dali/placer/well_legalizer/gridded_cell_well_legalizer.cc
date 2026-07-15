@@ -966,6 +966,7 @@ bool GriddedCellWellLegalizer::ComponentClusteringLoose() {
       }
       stripe.MinDisplacementAdjustment();
       if (is_success && stripe.used_height_ > stripe.Height()) {
+        res = false;
         ++failed_stripe_count;
         RecordStripeLegalizationFailure(stripe);
         LogStripeLegalizationFailure(col, stripe, col_id, stripe_id);
