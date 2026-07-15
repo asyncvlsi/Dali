@@ -11,11 +11,14 @@
 #include "dali/placer/well_legalizer/exact_gridded_legalization_window_analyzer.h"
 
 #include <algorithm>
+#include <iterator>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 
 #include "dali/common/helper.h"
 #include "dali/placer/well_legalizer/exact_gridded_legalization_model_builder.h"
+#include "dali/placer/well_legalizer/ortools_compact_gridded_legalizer.h"
 
 namespace dali {
 
@@ -29,6 +32,8 @@ ExactGriddedLegalizationWindowAnalyzer::ExactGriddedLegalizationWindowAnalyzer(
   DaliExpects(config_.maximum_components_per_window >=
                   config_.target_components_per_window,
               "Exact gridded maximum window size must cover the target size");
+  DaliExpects(config_.minimum_rows_per_window > 0,
+              "Exact gridded minimum window row count must be positive");
   DaliExpects(config_.maximum_windows > 0,
               "Exact gridded maximum window count must be positive");
   DaliExpects(config_.net_ignore_threshold >= 2,
@@ -40,6 +45,8 @@ ExactGriddedLegalizationWindowAnalyzer::ExactGriddedLegalizationWindowAnalyzer(
               "Exact gridded window solve time must be positive");
   DaliExpects(config_.number_of_workers > 0,
               "Exact gridded worker count must be positive");
+  DaliExpects(config_.maximum_row_displacement >= -1,
+              "Exact gridded row displacement must be at least negative one");
 }
 
 double ExactGriddedLegalizationWindowAnalyzer::CurrentWindowHpwl(
@@ -87,7 +94,7 @@ ExactGriddedLegalizationWindowAnalyzer::BuildStripeWindows(
     int last_row = -1;
   };
   std::unordered_map<int, ComponentExtent> extents;
-  std::vector<std::vector<int> > row_component_ids(rows.size());
+  std::vector<std::vector<int>> row_component_ids(rows.size());
   // Components() is the canonical row ownership used by final legalization
   // and gridded detailed placement. ComponentRegions() belongs to a separate
   // region-level path and is not populated for these finalized rows.
@@ -129,9 +136,11 @@ ExactGriddedLegalizationWindowAnalyzer::BuildStripeWindows(
         }
         ++scanned_row;
       }
+      const int row_count = last_row - first_row + 1;
       if (crosses_lower_boundary ||
-          component_ids.size() >=
-              static_cast<size_t>(config_.target_components_per_window) ||
+          (component_ids.size() >=
+               static_cast<size_t>(config_.target_components_per_window) &&
+           row_count >= config_.minimum_rows_per_window) ||
           last_row + 1 >= static_cast<int>(rows.size())) {
         break;
       }
@@ -141,6 +150,10 @@ ExactGriddedLegalizationWindowAnalyzer::BuildStripeWindows(
     DaliExpects(!crosses_lower_boundary,
                 "Exact gridded window split a multi-region component");
     if (component_ids.empty()) {
+      first_row = last_row + 1;
+      continue;
+    }
+    if (last_row - first_row + 1 < config_.minimum_rows_per_window) {
       first_row = last_row + 1;
       continue;
     }
@@ -192,7 +205,9 @@ ExactGriddedWindowAnalysis ExactGriddedLegalizationWindowAnalyzer::Analyze(
               "Exact gridded window analysis requires stripe columns");
 
   ExactGriddedWindowAnalysis analysis;
-  analysis.available = OrToolsExactGriddedLegalizer::IsAvailable();
+  analysis.available = config_.use_compact_solver
+                           ? OrToolsCompactGriddedLegalizer::IsAvailable()
+                           : OrToolsExactGriddedLegalizer::IsAvailable();
   if (!analysis.available) return analysis;
 
   std::vector<WindowCandidate> candidates;
@@ -232,8 +247,11 @@ ExactGriddedWindowAnalysis ExactGriddedLegalizationWindowAnalyzer::Analyze(
   ExactGriddedLegalizationConfig solver_config;
   solver_config.maximum_time_seconds = config_.maximum_time_seconds_per_window;
   solver_config.number_of_workers = config_.number_of_workers;
+  solver_config.maximum_row_displacement = config_.maximum_row_displacement;
+  solver_config.fix_row_geometry = config_.fix_row_geometry;
   solver_config.validate_solution_hint = true;
-  OrToolsExactGriddedLegalizer solver;
+  OrToolsExactGriddedLegalizer exact_solver;
+  OrToolsCompactGriddedLegalizer compact_solver;
 
   int windows_to_solve =
       std::min(config_.maximum_windows, static_cast<int>(candidates.size()));
@@ -267,7 +285,8 @@ ExactGriddedWindowAnalysis ExactGriddedLegalizationWindowAnalyzer::Analyze(
     ExactGriddedLegalizationModel model =
         builder.Build(domains, {model_stripe});
     ExactGriddedLegalizationResult solution =
-        solver.Solve(model, solver_config);
+        config_.use_compact_solver ? compact_solver.Solve(model, solver_config)
+                                   : exact_solver.Solve(model, solver_config);
 
     ExactGriddedWindowResult result;
     result.column_index = candidate.column_index;
@@ -276,6 +295,7 @@ ExactGriddedWindowAnalysis ExactGriddedLegalizationWindowAnalyzer::Analyze(
     result.last_row_index = candidate.last_row_index;
     result.component_count = static_cast<int>(candidate.components.size());
     result.net_count = static_cast<int>(model.nets.size());
+    result.row_assignment_choice_count = solution.row_assignment_choice_count;
     result.current_weighted_hpwl = candidate.current_weighted_hpwl;
     result.solved_weighted_hpwl = solution.weighted_hpwl;
     result.best_objective_bound = solution.best_objective_bound;
@@ -287,7 +307,6 @@ ExactGriddedWindowAnalysis ExactGriddedLegalizationWindowAnalyzer::Analyze(
     result.status = solution.status;
     result.hint_validation_status = solution.hint_validation_status;
     result.hint_validation_message = solution.hint_validation_message;
-    analysis.windows.push_back(result);
     ++analysis.attempted_windows;
     analysis.solver_wall_time_seconds += solution.wall_time_seconds;
     analysis.hint_validation_wall_time_seconds +=
@@ -304,14 +323,45 @@ ExactGriddedWindowAnalysis ExactGriddedLegalizationWindowAnalyzer::Analyze(
       analysis.bounded_current_hpwl_sum += result.current_weighted_hpwl;
       analysis.positive_lower_bound_sum += result.best_objective_bound;
     }
-    if (!solution.HasSolution()) continue;
+    if (!solution.HasSolution()) {
+      analysis.windows.push_back(std::move(result));
+      continue;
+    }
 
     ++analysis.solved_windows;
     if (solution.status == ExactGriddedLegalizationStatus::kOptimal) {
       ++analysis.optimal_windows;
     }
+    std::unordered_map<int, std::pair<int, bool>> initial_assignments;
+    for (size_t component_index = 0;
+         component_index < candidate.components.size(); ++component_index) {
+      initial_assignments.emplace(
+          candidate.components[component_index]->Id(),
+          std::make_pair(candidate.initial_start_rows[component_index],
+                         candidate.components[component_index]->IsFlipped()));
+    }
+    for (const ExactGriddedCellPlacement& placement : solution.cells) {
+      const auto initial = initial_assignments.find(placement.component_id);
+      DaliExpects(initial != initial_assignments.end(),
+                  "Exact window solution contains an unknown component");
+      if (placement.row_index != initial->second.first) {
+        ++result.reassigned_component_count;
+      }
+      if (placement.is_flipped != initial->second.second) {
+        ++result.orientation_change_count;
+      }
+    }
+    analysis.reassigned_components += result.reassigned_component_count;
+    analysis.orientation_changes += result.orientation_change_count;
+    const double improvement_tolerance =
+        1e-9 * std::max(1.0, result.current_weighted_hpwl);
+    if (result.solved_weighted_hpwl + improvement_tolerance <
+        result.current_weighted_hpwl) {
+      ++analysis.improved_windows;
+    }
     analysis.solved_current_hpwl_sum += result.current_weighted_hpwl;
     analysis.solved_incumbent_hpwl_sum += result.solved_weighted_hpwl;
+    analysis.windows.push_back(std::move(result));
   }
   return analysis;
 }

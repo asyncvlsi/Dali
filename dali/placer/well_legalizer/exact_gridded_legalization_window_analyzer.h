@@ -24,12 +24,20 @@ namespace dali {
 struct ExactGriddedWindowAnalyzerConfig {
   int target_components_per_window = 48;
   int maximum_components_per_window = 96;
+  // Require enough rows to expose the assignment freedom under study.
+  int minimum_rows_per_window = 1;
   int maximum_windows = 24;
   int net_ignore_threshold = 100;
   int minimum_p_well_height = 0;
   int minimum_n_well_height = 0;
   double maximum_time_seconds_per_window = 0.25;
   int number_of_workers = 1;
+  // Negative values allow every row; zero fixes the current assignment.
+  int maximum_row_displacement = -1;
+  // Preserve production row locations, heights, and alternating orientation.
+  bool fix_row_geometry = false;
+  // Use the compact row-assignment model instead of the full exact model.
+  bool use_compact_solver = false;
 };
 
 /** Exact-solver diagnostics for one closed, contiguous stripe-row window. */
@@ -40,6 +48,9 @@ struct ExactGriddedWindowResult {
   int last_row_index = -1;
   int component_count = 0;
   int net_count = 0;
+  int row_assignment_choice_count = 0;
+  int reassigned_component_count = 0;
+  int orientation_change_count = 0;
   double current_weighted_hpwl = 0.0;
   double solved_weighted_hpwl = 0.0;
   double best_objective_bound = 0.0;
@@ -62,6 +73,9 @@ struct ExactGriddedWindowAnalysis {
   int attempted_windows = 0;
   int solved_windows = 0;
   int optimal_windows = 0;
+  int improved_windows = 0;
+  int reassigned_components = 0;
+  int orientation_changes = 0;
   int positive_bound_windows = 0;
   int feasible_hint_windows = 0;
   double solved_current_hpwl_sum = 0.0;

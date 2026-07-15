@@ -59,6 +59,7 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_FALSE(options.enable_gridded_row_y_optimization);
   EXPECT_FALSE(options.enable_ortools_row_optimization);
   EXPECT_FALSE(options.analyze_exact_gridded_legalization);
+  EXPECT_FALSE(options.analyze_exact_adjacent_rows);
   EXPECT_EQ(options.exact_gridded_window_components, 48);
   EXPECT_EQ(options.exact_gridded_max_windows, 24);
   EXPECT_DOUBLE_EQ(options.exact_gridded_window_time, 0.25);
@@ -129,6 +130,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_int("dali.enable_gridded_row_y_optimization", 1);
   config_set_int("dali.enable_ortools_row_optimization", 1);
   config_set_int("dali.analyze_exact_gridded_legalization", 1);
+  config_set_int("dali.analyze_exact_adjacent_rows", 1);
   config_set_int("dali.exact_gridded_window_components", 64);
   config_set_int("dali.exact_gridded_max_windows", 12);
   config_set_real("dali.exact_gridded_window_time", 0.5);
@@ -197,6 +199,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_TRUE(options.enable_gridded_row_y_optimization);
   EXPECT_TRUE(options.enable_ortools_row_optimization);
   EXPECT_TRUE(options.analyze_exact_gridded_legalization);
+  EXPECT_TRUE(options.analyze_exact_adjacent_rows);
   EXPECT_EQ(options.exact_gridded_window_components, 64);
   EXPECT_EQ(options.exact_gridded_max_windows, 12);
   EXPECT_DOUBLE_EQ(options.exact_gridded_window_time, 0.5);

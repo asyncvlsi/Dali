@@ -99,6 +99,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -enable_gridded_row_y_optimization         shift legal row groups toward net-optimal Y regions\n"
       << "  -enable_ortools_row_optimization           refine legal gridded-row X locations with optional CP-SAT\n"
       << "  -analyze_exact_gridded_legalization        measure bounded exact legal-placement headroom\n"
+      << "  -analyze_exact_adjacent_rows               analyze fixed-geometry moves to adjacent rows\n"
       << "  -exact_gridded_window_components <n>       target components per exact window, default 48\n"
       << "  -exact_gridded_max_windows <n>             maximum exact windows to solve, default 24\n"
       << "  -exact_gridded_window_time <seconds>       solve limit per exact window, default 0.25\n"
@@ -475,6 +476,9 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.enable_ortools_row_optimization");
     } else if (arg == "-analyze_exact_gridded_legalization") {
       EnableConfigFlag("dali.analyze_exact_gridded_legalization");
+    } else if (arg == "-analyze_exact_adjacent_rows") {
+      EnableConfigFlag("dali.analyze_exact_gridded_legalization");
+      EnableConfigFlag("dali.analyze_exact_adjacent_rows");
     } else if (arg == "-exact_gridded_window_components") {
       int component_count = 0;
       if (!TryGetValue(argc, argv, &i, &value) ||

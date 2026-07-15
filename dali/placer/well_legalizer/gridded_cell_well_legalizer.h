@@ -164,7 +164,7 @@ class GriddedCellWellLegalizer : public Placer {
   }
 
   /** Configure read-only exact analysis of bounded legal row windows. */
-  void SetExactLegalizationAnalysis(bool enable,
+  void SetExactLegalizationAnalysis(bool enable, bool analyze_adjacent_rows,
                                     int target_components_per_window,
                                     int maximum_windows,
                                     double maximum_time_seconds_per_window,
@@ -179,6 +179,14 @@ class GriddedCellWellLegalizer : public Placer {
         maximum_time_seconds_per_window;
     exact_legalization_analysis_config_.net_ignore_threshold =
         net_ignore_threshold;
+    exact_legalization_analysis_config_.minimum_rows_per_window =
+        analyze_adjacent_rows ? 2 : 1;
+    exact_legalization_analysis_config_.maximum_row_displacement =
+        analyze_adjacent_rows ? 1 : -1;
+    exact_legalization_analysis_config_.fix_row_geometry =
+        analyze_adjacent_rows;
+    exact_legalization_analysis_config_.use_compact_solver =
+        analyze_adjacent_rows;
   }
 
   /**

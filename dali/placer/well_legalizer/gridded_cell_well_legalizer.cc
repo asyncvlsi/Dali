@@ -1597,11 +1597,23 @@ void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
 
   LOG(info)
       << "  exact legalization analysis:\n"
+      << "    solver backend          : "
+      << (config.use_compact_solver ? "compact" : "exact") << "\n"
+      << "    minimum rows/window     : " << config.minimum_rows_per_window
+      << "\n"
+      << "    maximum row displacement: " << config.maximum_row_displacement
+      << "\n"
+      << "    fixed row geometry      : " << config.fix_row_geometry << "\n"
       << "    candidate windows       : " << analysis.candidate_windows << "\n"
       << "    oversized windows       : " << analysis.oversized_windows << "\n"
       << "    attempted windows       : " << analysis.attempted_windows << "\n"
       << "    solved windows          : " << analysis.solved_windows << "\n"
       << "    optimal windows         : " << analysis.optimal_windows << "\n"
+      << "    improved windows        : " << analysis.improved_windows << "\n"
+      << "    reassigned components   : " << analysis.reassigned_components
+      << "\n"
+      << "    orientation changes     : " << analysis.orientation_changes
+      << "\n"
       << "    positive-bound windows  : " << analysis.positive_bound_windows
       << "\n"
       << "    feasible solution hints : " << analysis.feasible_hint_windows
@@ -1627,7 +1639,8 @@ void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
             << ", stripe " << window.stripe_index << ", rows "
             << window.first_row_index << "-" << window.last_row_index << ", "
             << window.component_count << " components, " << window.net_count
-            << " nets, status "
+            << " nets, " << window.row_assignment_choice_count
+            << " row choices, status "
             << ExactGriddedLegalizationStatusName(window.status)
             << ", current HPWL " << window.current_weighted_hpwl << "um"
             << ", hint "
@@ -1645,7 +1658,9 @@ void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
         window.status == ExactGriddedLegalizationStatus::kOptimal) {
       message << ", incumbent " << window.solved_weighted_hpwl << "um, bound "
               << window.best_objective_bound << "um, gap "
-              << window.relative_gap;
+              << window.relative_gap << ", reassigned "
+              << window.reassigned_component_count << ", reoriented "
+              << window.orientation_change_count;
     } else if (window.best_objective_bound > 0.0) {
       message << ", incumbent unavailable, bound "
               << window.best_objective_bound << "um";
@@ -1666,6 +1681,12 @@ void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
                         analysis.solved_windows);
   RecordPlacementMetric("exact_legalization.optimal_windows",
                         analysis.optimal_windows);
+  RecordPlacementMetric("exact_legalization.improved_windows",
+                        analysis.improved_windows);
+  RecordPlacementMetric("exact_legalization.reassigned_components",
+                        analysis.reassigned_components);
+  RecordPlacementMetric("exact_legalization.orientation_changes",
+                        analysis.orientation_changes);
   RecordPlacementMetric("exact_legalization.positive_bound_windows",
                         analysis.positive_bound_windows);
   RecordPlacementMetric("exact_legalization.feasible_hint_windows",

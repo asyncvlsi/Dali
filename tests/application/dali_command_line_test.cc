@@ -179,6 +179,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "-enable_gridded_row_y_optimization",
                      "-enable_ortools_row_optimization",
                      "-analyze_exact_gridded_legalization",
+                     "-analyze_exact_adjacent_rows",
                      "-exact_gridded_window_components",
                      "64",
                      "-exact_gridded_max_windows",
@@ -248,6 +249,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_EQ(config_get_int("dali.enable_gridded_row_y_optimization"), 1);
   EXPECT_EQ(config_get_int("dali.enable_ortools_row_optimization"), 1);
   EXPECT_EQ(config_get_int("dali.analyze_exact_gridded_legalization"), 1);
+  EXPECT_EQ(config_get_int("dali.analyze_exact_adjacent_rows"), 1);
   EXPECT_EQ(config_get_int("dali.exact_gridded_window_components"), 64);
   EXPECT_EQ(config_get_int("dali.exact_gridded_max_windows"), 12);
   EXPECT_DOUBLE_EQ(config_get_real("dali.exact_gridded_window_time"), 0.5);
@@ -268,6 +270,16 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_EQ(config_get_int("dali.disable_io_place"), 1);
   EXPECT_EQ(config_get_int("dali.gui_debug"), 1);
   EXPECT_STREQ(config_get_string("dali.gui_pause"), "off");
+}
+
+TEST_F(DaliCommandLineTest, AdjacentRowAnalysisAlsoEnablesExactAnalysis) {
+  dali::DaliCommandLineOptions options;
+  EXPECT_TRUE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                     "-analyze_exact_adjacent_rows"},
+                    &options));
+
+  EXPECT_EQ(config_get_int("dali.analyze_exact_gridded_legalization"), 1);
+  EXPECT_EQ(config_get_int("dali.analyze_exact_adjacent_rows"), 1);
 }
 
 TEST_F(DaliCommandLineTest, RejectsMissingRequiredInputs) {
