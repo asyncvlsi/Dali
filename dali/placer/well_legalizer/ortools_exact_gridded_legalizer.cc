@@ -387,9 +387,9 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
       if (!row.intervals.empty()) cp_model.AddNoOverlap(row.intervals);
       if (row_index > 0) {
         cp_model.AddGreaterOrEqual(rows[row_index - 1].active, row.active);
-        cp_model.AddEquality(row.y, rows[row_index - 1].y +
-                                        rows[row_index - 1].p_well_height +
-                                        rows[row_index - 1].n_well_height);
+        cp_model.AddGreaterOrEqual(
+            row.y, rows[row_index - 1].y + rows[row_index - 1].p_well_height +
+                       rows[row_index - 1].n_well_height);
       } else {
         cp_model.AddGreaterOrEqual(row.y, stripe.ly);
       }

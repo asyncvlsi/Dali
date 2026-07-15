@@ -110,6 +110,32 @@ TEST(OrToolsExactGriddedLegalizerTest,
   EXPECT_DOUBLE_EQ(result.weighted_hpwl, 0.0);
 }
 
+TEST(OrToolsExactGriddedLegalizerTest, AllowsWhitespaceBetweenLegalRows) {
+  if (!OrToolsExactGriddedLegalizer::IsAvailable()) {
+    GTEST_SKIP() << "Dali was built without OR-Tools 9.15.x";
+  }
+
+  ExactGriddedLegalizationModel model;
+  model.stripes = {{0, 0, 0, 4, 10, 2, 0, 0, 1, 1}};
+  model.cells = {
+      {0, 2, 0, 0, {{1, 1, true}}, {0}},
+      {1, 2, 2, 8, {{1, 1, false}}, {0}},
+  };
+  model.nets = {MakeAnchoredNet(0, 1.0, 1.0), MakeAnchoredNet(1, 3.0, 9.0)};
+
+  ExactGriddedLegalizationConfig config;
+  config.maximum_time_seconds = 10.0;
+  ExactGriddedLegalizationResult result =
+      OrToolsExactGriddedLegalizer().Solve(model, config);
+
+  ASSERT_EQ(result.status, ExactGriddedLegalizationStatus::kOptimal)
+      << result.message;
+  EXPECT_DOUBLE_EQ(result.weighted_hpwl, 0.0);
+  ASSERT_EQ(result.rows.size(), 2U);
+  EXPECT_EQ(result.rows[0].y, 0);
+  EXPECT_EQ(result.rows[1].y, 8);
+}
+
 TEST(OrToolsExactGriddedLegalizerTest, ReportsUnavailableBackend) {
   if (OrToolsExactGriddedLegalizer::IsAvailable()) GTEST_SKIP();
   ExactGriddedLegalizationResult result =
