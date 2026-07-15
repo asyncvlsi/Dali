@@ -45,7 +45,7 @@ struct OrToolsGriddedStripeSolveResult {
   int last_row_index = -1;
   int component_count = 0;
   int net_count = 0;
-  double initial_priority_hpwl = 0.0;
+  double initial_priority_headroom = 0.0;
   int64_t model_variable_count = 0;
   int64_t model_constraint_count = 0;
   double modeled_hpwl_before = 0.0;
@@ -100,6 +100,16 @@ class OrToolsGriddedStripeOptimizer {
   /** Return HPWL over affected nets, optionally applying the fanout cutoff. */
   double AffectedNetHpwl(const std::vector<int>& net_ids,
                          bool apply_fanout_cutoff) const;
+
+  /**
+   * Estimate reducible X HPWL after relaxing overlap and pin correlations.
+   *
+   * Movable pins contribute their full legal X intervals, while external pins
+   * remain fixed. The result is an optimistic bound used only to order models;
+   * exact solving and full affected-net acceptance still decide every move.
+   */
+  double EstimateIndependentPinXHpwlHeadroom(
+      const ExactGriddedLegalizationModel& model) const;
 
   Circuit* circuit_ = nullptr;
   OrToolsGriddedStripeOptimizerConfig config_;

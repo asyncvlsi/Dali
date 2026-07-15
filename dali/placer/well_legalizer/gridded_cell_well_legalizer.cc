@@ -1830,9 +1830,8 @@ void GriddedCellWellLegalizer::RunExactStripeOptimizationStage() {
               << stripe.last_row_index << ": status="
               << ExactGriddedLegalizationStatusName(stripe.status)
               << ", cells=" << stripe.component_count
-              << ", nets=" << stripe.net_count
-              << ", initial priority HPWL=" << stripe.initial_priority_hpwl
-              << "um"
+              << ", nets=" << stripe.net_count << ", initial X-HPWL headroom="
+              << stripe.initial_priority_headroom << "um"
               << ", modeled HPWL=" << stripe.modeled_hpwl_before << " -> "
               << stripe.modeled_hpwl_after << "um"
               << ", affected HPWL=" << stripe.affected_hpwl_before << " -> "
