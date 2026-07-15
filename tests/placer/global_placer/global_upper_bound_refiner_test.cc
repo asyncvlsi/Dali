@@ -40,6 +40,12 @@ class TestableGlobalPlacer : public GlobalPlacer {
   GlobalRefinementFeedbackMode RefinementFeedbackMode() const {
     return refinement_feedback_mode_;
   }
+  void SaveFeedbackCheckpointForTest() {
+    previous_feedback_checkpoint_ = SaveCurrentPlacement();
+  }
+  bool RollbackFeedbackForTest(const GlobalUpperBoundRefinement& refinement) {
+    return RollbackRefinementFeedbackIfRequested(refinement);
+  }
   void ApplyFeedbackForTest(
       const std::vector<std::pair<double, double>>& original_locations,
       const std::vector<int>& component_ids = {},
@@ -116,6 +122,28 @@ TEST(GlobalUpperBoundRefinerTest, RequiresFreshPhysicalConvergenceBound) {
 
   placer.SetCurrentUpperBoundPhysicalForTest(true);
   EXPECT_TRUE(placer.HasCurrentConvergenceUpperBound());
+}
+
+TEST(GlobalUpperBoundRefinerTest, RestoresRequestedFeedbackCheckpoint) {
+  Circuit circuit;
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.SetDieArea(0, 0, 100, 100);
+  circuit.ReserveSpaceForDesignImp(1, 0, 0);
+  circuit.AddMacro("cell", 1, 1);
+  circuit.AddComponent("movable", "cell", 10, 20, PLACED);
+
+  TestableGlobalPlacer placer;
+  placer.SetCircuit(&circuit);
+  placer.SaveFeedbackCheckpointForTest();
+  circuit.Components().front().SetLowerLeft(30, 40);
+
+  GlobalUpperBoundRefinement refinement;
+  refinement.rollback_previous_anchor_feedback = true;
+  EXPECT_TRUE(placer.RollbackFeedbackForTest(refinement));
+  EXPECT_DOUBLE_EQ(circuit.Components().front().LLX(), 10);
+  EXPECT_DOUBLE_EQ(circuit.Components().front().LLY(), 20);
 }
 
 TEST(GlobalUpperBoundRefinerTest, RefinedAnchorFeedbackCanBeDisabled) {

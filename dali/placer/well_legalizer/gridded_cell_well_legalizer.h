@@ -180,13 +180,14 @@ class GriddedCellWellLegalizer : public Placer {
   /**
    * Roughly legalize the current global-placement upper bound.
    *
-   * This method forms gridded rows but intentionally skips orientation,
-   * detailed placement, taps, end caps, and well geometry. A successful pass
-   * commits provisional component coordinates; a failed pass restores every
-   * incoming coordinate and orientation.
+   * This method forms gridded rows and optionally applies mandatory row
+   * orientation plus row-location optimization. It always skips detailed
+   * placement, taps, end caps, and well geometry. A successful pass commits
+   * provisional component coordinates; a failed pass restores every incoming
+   * coordinate and orientation.
    */
   ProvisionalGriddedPlacementResult RunProvisionalPlacement(
-      bool enable_overflow_balancing = false);
+      bool enable_overflow_balancing = false, bool refine_row_geometry = false);
 
   /** Release row and stripe state retained by provisional legalization. */
   void ClearProvisionalState();
@@ -314,6 +315,9 @@ class GriddedCellWellLegalizer : public Placer {
 
   /** Return component ids in physical X order for provisional gridded rows. */
   std::vector<std::vector<int>> CollectProvisionalComponentRows() const;
+
+  /** Apply cheap mandatory row geometry to a provisional legal placement. */
+  void RefineProvisionalRowGeometry();
 
   /** Move a minimal HPWL-ranked set out of overflowing provisional stripes. */
   bool TryBalanceProvisionalPlacement(

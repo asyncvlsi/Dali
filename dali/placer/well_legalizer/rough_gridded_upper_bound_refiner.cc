@@ -11,6 +11,8 @@
 
 namespace dali {
 
+constexpr int kProvisionalRowGeometryIterationCount = 10;
+
 /** Convert well-legalizer diagnostics to the global-refiner interface. */
 std::vector<GlobalUpperBoundViolation> ConvertProvisionalViolations(
     const std::vector<ProvisionalGriddedPlacementViolation>&
@@ -51,6 +53,8 @@ RoughGriddedUpperBoundRefiner::RoughGriddedUpperBoundRefiner(
 
 void RoughGriddedUpperBoundRefiner::Initialize(double placement_density) {
   total_wall_time_ = 0.0;
+  row_geometry_feedback_enabled_ = true;
+  previous_refinement_used_row_geometry_ = false;
   well_legalizer_->SetPlacementDensity(placement_density);
 }
 
@@ -58,8 +62,12 @@ GlobalUpperBoundRefinement RoughGriddedUpperBoundRefiner::Refine(
     int iteration) {
   ElapsedTime timer;
   timer.RecordStartTime();
+  const bool refine_row_geometry =
+      row_geometry_feedback_enabled_ &&
+      iteration < kProvisionalRowGeometryIterationCount;
   ProvisionalGriddedPlacementResult provisional =
-      well_legalizer_->RunProvisionalPlacement(enable_overflow_balancing_);
+      well_legalizer_->RunProvisionalPlacement(enable_overflow_balancing_,
+                                               refine_row_geometry);
   timer.RecordEndTime();
   total_wall_time_ += timer.GetWallTime();
 
@@ -87,6 +95,15 @@ GlobalUpperBoundRefinement RoughGriddedUpperBoundRefiner::Refine(
 
   GlobalUpperBoundRefinement refinement;
   refinement.feasible = provisional.feasible;
+  refinement.rollback_previous_anchor_feedback =
+      !provisional.feasible && previous_refinement_used_row_geometry_;
+  if (refinement.rollback_previous_anchor_feedback) {
+    row_geometry_feedback_enabled_ = false;
+    LOG(info) << "    provisional row geometry destabilized physical "
+                 "feasibility; disable it and roll back its anchor feedback\n";
+  }
+  previous_refinement_used_row_geometry_ =
+      provisional.feasible && refine_row_geometry;
   refinement.hpwl = provisional.hpwl;
   refinement.initial_overflow = provisional.initial_overflow;
   refinement.initial_violations = std::move(initial_violations);

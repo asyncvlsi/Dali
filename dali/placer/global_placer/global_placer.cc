@@ -186,6 +186,7 @@ void GlobalPlacer::InitializePlacementEngines() {
   accepted_upper_bound_hpwl_x_.clear();
   accepted_upper_bound_hpwl_y_.clear();
   best_upper_bound_placement_.clear();
+  previous_feedback_checkpoint_.clear();
   best_upper_bound_hpwl_ = std::numeric_limits<double>::max();
   current_upper_bound_is_physical_ = upper_bound_refiner_ == nullptr;
   if (upper_bound_refiner_) {
@@ -282,7 +283,11 @@ void GlobalPlacer::RunPlacementIterations() {
       GlobalUpperBoundRefinement refinement =
           upper_bound_refiner_->Refine(cur_iter_);
       UpdateLegalizationPressure(refinement);
-      if (refinement.feasible) {
+      if (RollbackRefinementFeedbackIfRequested(refinement)) {
+        accepted_hpwl = WeightedHPWL();
+        accepted_hpwl_x = ckt_ptr_->WeightedHPWLX();
+        accepted_hpwl_y = ckt_ptr_->WeightedHPWLY();
+      } else if (refinement.feasible) {
         accepted_hpwl = refinement.hpwl;
         accepted_hpwl_x = ckt_ptr_->WeightedHPWLX();
         accepted_hpwl_y = ckt_ptr_->WeightedHPWLY();
@@ -292,6 +297,8 @@ void GlobalPlacer::RunPlacementIterations() {
         refined_component_rows = std::move(refinement.component_rows);
         current_upper_bound_is_physical_ = true;
         LogRefinementDisplacement(placement_before_refinement);
+      } else {
+        previous_feedback_checkpoint_.clear();
       }
     }
     accepted_upper_bound_hpwl_.push_back(accepted_hpwl);
@@ -305,6 +312,7 @@ void GlobalPlacer::RunPlacementIterations() {
       ApplyRefinedAnchorFeedback(placement_before_refinement,
                                  selective_anchor_component_ids,
                                  refined_component_rows);
+      previous_feedback_checkpoint_ = std::move(placement_before_refinement);
     }
     PrintHpwl();
     if (IsPlacementConverged()) break;
@@ -632,6 +640,21 @@ void GlobalPlacer::RestorePlacement(
   for (size_t i = 0; i < placement.size(); ++i) {
     ckt_ptr_->Components()[i].SetLowerLeft(placement[i].lx, placement[i].ly);
   }
+}
+
+bool GlobalPlacer::RollbackRefinementFeedbackIfRequested(
+    const GlobalUpperBoundRefinement& refinement) {
+  if (!refinement.rollback_previous_anchor_feedback) return false;
+
+  DaliExpects(!refinement.feasible,
+              "A feasible refinement cannot request feedback rollback");
+  DaliExpects(!previous_feedback_checkpoint_.empty(),
+              "Cannot roll back refinement feedback without a checkpoint");
+  RestorePlacement(previous_feedback_checkpoint_);
+  previous_feedback_checkpoint_.clear();
+  LOG(info) << "    restore placement before destabilizing refinement "
+               "feedback\n";
+  return true;
 }
 
 void GlobalPlacer::LogRefinementDisplacement(

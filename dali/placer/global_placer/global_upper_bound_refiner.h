@@ -50,6 +50,14 @@ struct GlobalUpperBoundViolation {
 /** Result of replacing an LAL upper bound with a more physical placement. */
 struct GlobalUpperBoundRefinement {
   bool feasible = false;
+  /**
+   * Restore the analytical placement saved before the previous refinement.
+   *
+   * A stateful refiner sets this when feedback from its last feasible result
+   * made the next physical refinement infeasible. The current result must be
+   * infeasible and must otherwise preserve its incoming placement.
+   */
+  bool rollback_previous_anchor_feedback = false;
   double hpwl = 0.0;
   /** Overflow observed before the refiner applies any repair. */
   double initial_overflow = 0.0;

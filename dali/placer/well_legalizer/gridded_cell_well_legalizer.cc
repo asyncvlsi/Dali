@@ -314,9 +314,27 @@ GriddedCellWellLegalizer::CollectProvisionalComponentRows() const {
   return component_rows;
 }
 
+void GriddedCellWellLegalizer::RefineProvisionalRowGeometry() {
+  const double hpwl_before_orientation = WeightedHPWL();
+  if (!disable_cell_flip_) {
+    UpdateClusterOrient();
+  }
+  const double hpwl_after_orientation = WeightedHPWL();
+
+  GriddedRowLocationResult row_location;
+  if (enable_row_location_optimization_) {
+    row_location = GriddedRowLocationOptimizer(ckt_ptr_).Optimize(&col_list_);
+  }
+  LOG(info) << "    provisional row geometry: orientation "
+            << (disable_cell_flip_ ? "disabled" : "applied")
+            << ", row groups moved " << row_location.groups_moved << ", HPWL "
+            << hpwl_before_orientation << " -> " << hpwl_after_orientation
+            << " -> " << WeightedHPWL() << "um\n";
+}
+
 ProvisionalGriddedPlacementResult
 GriddedCellWellLegalizer::RunProvisionalPlacement(
-    bool enable_overflow_balancing) {
+    bool enable_overflow_balancing, bool refine_row_geometry) {
   const std::vector<ComponentPlacementSnapshot> incoming_placement =
       CaptureComponentPlacement();
   const int configured_stripe_mode = stripe_mode_;
@@ -359,6 +377,9 @@ GriddedCellWellLegalizer::RunProvisionalPlacement(
   stripe_mode_ = configured_stripe_mode;
   enable_adaptive_stripe_boundaries_ = configured_adaptive_boundaries;
   if (result.feasible) {
+    if (refine_row_geometry) {
+      RefineProvisionalRowGeometry();
+    }
     result.hpwl = WeightedHPWL();
     result.component_rows = CollectProvisionalComponentRows();
   } else {

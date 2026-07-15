@@ -158,6 +158,9 @@ class GlobalPlacer : public Placer {
   std::vector<ComponentLocation> SaveCurrentPlacement() const;
   /** Restore component coordinates from a complete placement copy. */
   void RestorePlacement(const std::vector<ComponentLocation>& placement);
+  /** Restore the checkpoint requested by a destabilized physical refiner. */
+  bool RollbackRefinementFeedbackIfRequested(
+      const GlobalUpperBoundRefinement& refinement);
   /** Apply the configured refined coordinates to the next analytical anchor. */
   void ApplyRefinedAnchorFeedback(
       const std::vector<ComponentLocation>& placement_before_refinement,
@@ -230,6 +233,8 @@ class GlobalPlacer : public Placer {
     double ly = 0.0;
   };
   std::vector<ComponentLocation> best_upper_bound_placement_;
+  /** Analytical placement saved before the most recent anchor feedback. */
+  std::vector<ComponentLocation> previous_feedback_checkpoint_;
   double best_upper_bound_hpwl_ = std::numeric_limits<double>::max();
   int upper_bound_refiner_warmup_ = 0;
   int upper_bound_refiner_interval_ = 1;
