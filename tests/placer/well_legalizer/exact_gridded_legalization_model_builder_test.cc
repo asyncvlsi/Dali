@@ -94,4 +94,27 @@ TEST(ExactGriddedLegalizationModelBuilderTest,
   EXPECT_EQ(variable_pin_count, 5);
 }
 
+TEST(ExactGriddedLegalizationModelBuilderTest,
+     SupportsLegacyImpliedSingleWellRegion) {
+  Circuit circuit;
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.ReserveSpaceForDesignImp(1, 0, 0);
+  Macro* macro = circuit.AddMacro("legacy_cell", 2, 3);
+  macro->AddNwellRect(0, 1, 2, 3);
+  circuit.AddComponent("component", "legacy_cell", 0, 0, PLACED);
+
+  ExactGriddedLegalizationModel model =
+      ExactGriddedLegalizationModelBuilder(&circuit).Build(
+          {{circuit.GetComponentPtr("component"), {0}}},
+          {{0, 0, 0, 2, 3, 1, 0, 0, 0, 0}});
+
+  ASSERT_EQ(model.cells.size(), 1U);
+  ASSERT_EQ(model.cells[0].regions.size(), 1U);
+  EXPECT_EQ(model.cells[0].regions[0].p_well_height, 1);
+  EXPECT_EQ(model.cells[0].regions[0].n_well_height, 2);
+  EXPECT_TRUE(model.cells[0].regions[0].n_well_above_p_well);
+}
+
 }  // namespace dali

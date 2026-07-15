@@ -49,8 +49,8 @@ ExactGriddedLegalizationModel ExactGriddedLegalizationModelBuilder::Build(
 
     Macro* macro = component->MacroPtr();
     DaliExpects(macro != nullptr, "Exact gridded component has no cell master");
-    DaliExpects(macro->HasCompleteWellRegions(),
-                "Exact gridded component has incomplete well regions");
+    DaliExpects(macro->HasWellInfo(),
+                "Exact gridded component has no well information");
 
     ExactGriddedCell cell;
     cell.component_id = component->Id();
@@ -58,11 +58,19 @@ ExactGriddedLegalizationModel ExactGriddedLegalizationModelBuilder::Build(
     cell.initial_x = static_cast<int>(std::llround(component->LLX()));
     cell.initial_y = static_cast<int>(std::llround(component->LLY()));
     cell.candidate_stripe_ids = domain.candidate_stripe_ids;
-    cell.regions.reserve(macro->RegionCount());
-    for (int region_id = 0; region_id < macro->RegionCount(); ++region_id) {
-      cell.regions.push_back({macro->PwellHeight(region_id),
-                              macro->NwellHeight(region_id),
-                              macro->IsNwellAbovePwell(region_id)});
+    if (macro->HasCompleteWellRegions()) {
+      cell.regions.reserve(macro->RegionCount());
+      for (int region_id = 0; region_id < macro->RegionCount(); ++region_id) {
+        cell.regions.push_back({macro->PwellHeight(region_id),
+                                macro->NwellHeight(region_id),
+                                macro->IsNwellAbovePwell(region_id)});
+      }
+    } else {
+      // Legacy .cell inputs describe a single N-well rectangle and imply the
+      // complementary P-well below it. Match final legalization and capacity
+      // estimation by treating that shape as one complete logical region.
+      cell.regions.push_back(
+          {macro->FirstPwellHeight(), macro->FirstNwellHeight(), true});
     }
     model.cells.push_back(std::move(cell));
     affected_net_ids.insert(affected_net_ids.end(),

@@ -36,8 +36,10 @@ struct ExactGriddedModelBuilderConfig {
  *
  * Components in `domains` become solver variables. Other components connected
  * to an affected net remain fixed at their current pin locations, so a bounded
- * window retains its full external HPWL context. The builder deliberately does
- * not choose candidate stripes; the caller defines that neighborhood.
+ * window retains its full external HPWL context. Legacy one-rectangle well
+ * descriptions use the same implied single-region fallback as production
+ * legalization. The builder deliberately does not choose candidate stripes;
+ * the caller defines that neighborhood.
  */
 class ExactGriddedLegalizationModelBuilder {
  public:
