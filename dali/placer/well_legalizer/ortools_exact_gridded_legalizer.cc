@@ -573,7 +573,6 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
   parameters.set_max_time_in_seconds(config.maximum_time_seconds);
   parameters.set_num_search_workers(config.number_of_workers);
   parameters.set_log_search_progress(config.log_search_progress);
-  parameters.set_repair_hint(true);
   CpSolverResponse response = operations_research::sat::SolveWithParameters(
       cp_model.Build(), parameters);
 
