@@ -11,6 +11,7 @@
 #ifndef DALI_PLACER_WELL_LEGALIZER_EXACT_GRIDDED_LEGALIZATION_WINDOW_ANALYZER_H_
 #define DALI_PLACER_WELL_LEGALIZER_EXACT_GRIDDED_LEGALIZATION_WINDOW_ANALYZER_H_
 
+#include <string>
 #include <vector>
 
 #include "dali/circuit/circuit.h"
@@ -50,6 +51,7 @@ struct ExactGriddedWindowResult {
       ExactGriddedLegalizationStatus::kUnavailable;
   ExactGriddedLegalizationStatus hint_validation_status =
       ExactGriddedLegalizationStatus::kUnavailable;
+  std::string hint_validation_message;
 };
 
 /** Aggregate diagnostics from independently solved legalization windows. */

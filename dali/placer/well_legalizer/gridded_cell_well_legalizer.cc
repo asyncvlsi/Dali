@@ -1638,6 +1638,8 @@ void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
         window.hint_validation_status ==
             ExactGriddedLegalizationStatus::kOptimal) {
       message << " (" << window.hinted_weighted_hpwl << "um)";
+    } else if (!window.hint_validation_message.empty()) {
+      message << " (" << window.hint_validation_message << ")";
     }
     if (window.status == ExactGriddedLegalizationStatus::kFeasible ||
         window.status == ExactGriddedLegalizationStatus::kOptimal) {

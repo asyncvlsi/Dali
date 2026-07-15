@@ -148,6 +148,139 @@ bool ExactGriddedCandidateMatchesAlternatingRows(
   return true;
 }
 
+/** One component interval and well demand assigned to a hinted row. */
+struct ExactHintedRowOccupant {
+  int component_id = -1;
+  int x = 0;
+  int width = 0;
+  int p_well_height = 0;
+  int n_well_height = 0;
+};
+
+/**
+ * Return the first exact constraint violated by a complete placement hint.
+ *
+ * This deterministic check mirrors the physical CP-SAT constraints so an
+ * infeasible production seed can be diagnosed without an opaque unsat result.
+ */
+std::string ValidateExactSolutionHint(
+    const ExactGriddedLegalizationModel& model) {
+  std::unordered_map<int, size_t> stripe_indices;
+  for (size_t index = 0; index < model.stripes.size(); ++index) {
+    stripe_indices.emplace(model.stripes[index].stripe_id, index);
+    if (model.stripes[index].initial_rows.empty()) {
+      return "solution hint does not include row geometry";
+    }
+  }
+
+  std::vector<std::vector<std::vector<ExactHintedRowOccupant>>> occupants;
+  occupants.reserve(model.stripes.size());
+  for (const ExactGriddedStripe& stripe : model.stripes) {
+    occupants.emplace_back(stripe.maximum_rows);
+  }
+  std::vector<int> stripe_phase(model.stripes.size(), -1);
+
+  for (const ExactGriddedCell& cell : model.cells) {
+    if (cell.initial_stripe_id < 0 || cell.initial_start_row < 0) {
+      return "solution hint does not include every component assignment";
+    }
+    size_t stripe_index = stripe_indices.at(cell.initial_stripe_id);
+    const ExactGriddedStripe& stripe = model.stripes[stripe_index];
+    if (cell.initial_x < stripe.lx + stripe.left_boundary_margin ||
+        cell.initial_x + cell.width >
+            stripe.ux - stripe.right_boundary_margin) {
+      return "component " + std::to_string(cell.component_id) +
+             " lies outside its hinted stripe boundary";
+    }
+
+    bool required_first_row_orient_n = true;
+    if (!ExactGriddedCandidateMatchesAlternatingRows(
+            cell, cell.initial_start_row, cell.initial_is_flipped,
+            &required_first_row_orient_n)) {
+      return "component " + std::to_string(cell.component_id) +
+             " violates alternating row orientations";
+    }
+    const int required_phase = required_first_row_orient_n ? 1 : 0;
+    if (stripe_phase[stripe_index] >= 0 &&
+        stripe_phase[stripe_index] != required_phase) {
+      return "hinted components require inconsistent stripe orientations";
+    }
+    stripe_phase[stripe_index] = required_phase;
+
+    const ExactGriddedRowHint& first_row =
+        stripe.initial_rows[cell.initial_start_row];
+    ExactGriddedCellRegion first_region =
+        GetExactGriddedPhysicalRegion(cell, 0, cell.initial_is_flipped);
+    int expected_y = first_row.y;
+    if (first_region.n_well_above_p_well) {
+      expected_y += first_row.p_well_height - first_region.p_well_height;
+    } else {
+      expected_y += first_row.n_well_height - first_region.n_well_height;
+    }
+    if (cell.initial_y != expected_y) {
+      return "component " + std::to_string(cell.component_id) +
+             " Y does not match its hinted row geometry";
+    }
+
+    for (int region_index = 0;
+         region_index < static_cast<int>(cell.regions.size()); ++region_index) {
+      ExactGriddedCellRegion region = GetExactGriddedPhysicalRegion(
+          cell, region_index, cell.initial_is_flipped);
+      occupants[stripe_index][cell.initial_start_row + region_index].push_back(
+          {cell.component_id, cell.initial_x, cell.width, region.p_well_height,
+           region.n_well_height});
+    }
+  }
+
+  for (size_t stripe_index = 0; stripe_index < model.stripes.size();
+       ++stripe_index) {
+    const ExactGriddedStripe& stripe = model.stripes[stripe_index];
+    for (int row_index = 0; row_index < stripe.maximum_rows; ++row_index) {
+      const ExactGriddedRowHint& row = stripe.initial_rows[row_index];
+      std::vector<ExactHintedRowOccupant>& row_occupants =
+          occupants[stripe_index][row_index];
+      if (row.active != !row_occupants.empty()) {
+        return "stripe " + std::to_string(stripe.stripe_id) + " row " +
+               std::to_string(row_index) +
+               " activity does not match its occupants";
+      }
+
+      int expected_p_height = row.active ? stripe.minimum_p_well_height : 0;
+      int expected_n_height = row.active ? stripe.minimum_n_well_height : 0;
+      for (const ExactHintedRowOccupant& occupant : row_occupants) {
+        expected_p_height = std::max(expected_p_height, occupant.p_well_height);
+        expected_n_height = std::max(expected_n_height, occupant.n_well_height);
+      }
+      if (row.p_well_height != expected_p_height ||
+          row.n_well_height != expected_n_height) {
+        return "stripe " + std::to_string(stripe.stripe_id) + " row " +
+               std::to_string(row_index) +
+               " well heights do not equal occupied maxima";
+      }
+
+      std::sort(row_occupants.begin(), row_occupants.end(),
+                [](const ExactHintedRowOccupant& first,
+                   const ExactHintedRowOccupant& second) {
+                  if (first.x != second.x) return first.x < second.x;
+                  return first.component_id < second.component_id;
+                });
+      for (size_t occupant_index = 1; occupant_index < row_occupants.size();
+           ++occupant_index) {
+        const ExactHintedRowOccupant& previous =
+            row_occupants[occupant_index - 1];
+        const ExactHintedRowOccupant& current = row_occupants[occupant_index];
+        if (previous.x + previous.width > current.x) {
+          return "stripe " + std::to_string(stripe.stripe_id) + " row " +
+                 std::to_string(row_index) + " components " +
+                 std::to_string(previous.component_id) + " and " +
+                 std::to_string(current.component_id) + " overlap";
+        }
+      }
+    }
+  }
+  return "";
+}
+
 /** Return physical weighted HPWL represented by solved net-extrema variables.
  */
 double ExtractExactWeightedHpwl(
@@ -236,7 +369,7 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
   CpModelBuilder cp_model;
   DoubleLinearExpr objective;
   std::vector<BoolVar> first_row_orient_n_variables;
-  std::vector<std::vector<ExactGriddedRowVariables> > row_variables;
+  std::vector<std::vector<ExactGriddedRowVariables>> row_variables;
   first_row_orient_n_variables.reserve(model.stripes.size());
   row_variables.reserve(model.stripes.size());
 
@@ -693,6 +826,15 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
             ExactGriddedLegalizationStatus::kOptimal) {
       result.hinted_weighted_hpwl = ExtractExactWeightedHpwl(
           hint_response, net_variables, model, pin_scale);
+    } else if (result.hint_validation_status ==
+               ExactGriddedLegalizationStatus::kInfeasible) {
+      result.hint_validation_message = ValidateExactSolutionHint(model);
+      if (result.hint_validation_message.empty()) {
+        result.hint_validation_message =
+            "CP-SAT rejected a hint that passed deterministic validation";
+      }
+    } else {
+      result.hint_validation_message = hint_response.solution_info();
     }
   }
   CpSolverResponse response =

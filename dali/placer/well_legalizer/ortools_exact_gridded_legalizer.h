@@ -84,6 +84,7 @@ struct ExactGriddedLegalizationResult {
       ExactGriddedLegalizationStatus::kUnavailable;
   double hinted_weighted_hpwl = 0.0;
   double hint_validation_wall_time_seconds = 0.0;
+  std::string hint_validation_message;
 
   /** Return true when the result contains a complete legal placement. */
   bool HasSolution() const;

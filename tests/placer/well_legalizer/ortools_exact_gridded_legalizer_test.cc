@@ -137,6 +137,7 @@ TEST(OrToolsExactGriddedLegalizerTest, DetectsAnInfeasibleCompleteHint) {
   EXPECT_TRUE(result.HasSolution()) << result.message;
   EXPECT_EQ(result.hint_validation_status,
             ExactGriddedLegalizationStatus::kInfeasible);
+  EXPECT_NE(result.hint_validation_message.find("overlap"), std::string::npos);
 }
 
 TEST(OrToolsExactGriddedLegalizerTest, AllowsWhitespaceBetweenLegalRows) {

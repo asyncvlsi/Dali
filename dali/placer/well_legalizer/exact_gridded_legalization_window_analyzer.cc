@@ -286,6 +286,7 @@ ExactGriddedWindowAnalysis ExactGriddedLegalizationWindowAnalyzer::Analyze(
         solution.hint_validation_wall_time_seconds;
     result.status = solution.status;
     result.hint_validation_status = solution.hint_validation_status;
+    result.hint_validation_message = solution.hint_validation_message;
     analysis.windows.push_back(result);
     ++analysis.attempted_windows;
     analysis.solver_wall_time_seconds += solution.wall_time_seconds;
