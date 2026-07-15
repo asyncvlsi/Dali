@@ -57,6 +57,7 @@ struct ExactGriddedWindowResult {
   int orientation_change_count = 0;
   double current_weighted_hpwl = 0.0;
   double solved_weighted_hpwl = 0.0;
+  double best_known_weighted_hpwl = 0.0;
   double best_objective_bound = 0.0;
   double relative_gap = 0.0;
   double wall_time_seconds = 0.0;
@@ -67,6 +68,7 @@ struct ExactGriddedWindowResult {
   ExactGriddedLegalizationStatus hint_validation_status =
       ExactGriddedLegalizationStatus::kUnavailable;
   std::string hint_validation_message;
+  bool has_best_known_solution = false;
 };
 
 /** Aggregate diagnostics from independently solved legalization windows. */
@@ -82,8 +84,10 @@ struct ExactGriddedWindowAnalysis {
   int orientation_changes = 0;
   int positive_bound_windows = 0;
   int feasible_hint_windows = 0;
+  int best_known_windows = 0;
   double solved_current_hpwl_sum = 0.0;
-  double solved_incumbent_hpwl_sum = 0.0;
+  double solver_solution_hpwl_sum = 0.0;
+  double best_known_hpwl_sum = 0.0;
   double bounded_current_hpwl_sum = 0.0;
   double positive_lower_bound_sum = 0.0;
   double hinted_hpwl_sum = 0.0;

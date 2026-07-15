@@ -1621,10 +1621,13 @@ void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
       << "\n"
       << "    feasible solution hints : " << analysis.feasible_hint_windows
       << "\n"
+      << "    best-known windows      : " << analysis.best_known_windows << "\n"
       << "    hinted model HPWL       : " << analysis.hinted_hpwl_sum << "um\n"
       << "    solved current HPWL     : " << analysis.solved_current_hpwl_sum
       << "um\n"
-      << "    solved incumbent HPWL   : " << analysis.solved_incumbent_hpwl_sum
+      << "    solver solution HPWL    : " << analysis.solver_solution_hpwl_sum
+      << "um\n"
+      << "    best-known HPWL         : " << analysis.best_known_hpwl_sum
       << "um\n"
       << "    bounded current HPWL    : " << analysis.bounded_current_hpwl_sum
       << "um\n"
@@ -1659,16 +1662,17 @@ void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
     }
     if (window.status == ExactGriddedLegalizationStatus::kFeasible ||
         window.status == ExactGriddedLegalizationStatus::kOptimal) {
-      message << ", incumbent " << window.solved_weighted_hpwl << "um, bound "
-              << window.best_objective_bound << "um, gap "
+      message << ", solver solution " << window.solved_weighted_hpwl
+              << "um, best known " << window.best_known_weighted_hpwl
+              << "um, bound " << window.best_objective_bound << "um, gap "
               << window.relative_gap << ", reassigned "
               << window.reassigned_component_count << ", reoriented "
               << window.orientation_change_count;
     } else if (window.best_objective_bound > 0.0) {
-      message << ", incumbent unavailable, bound "
+      message << ", solver solution unavailable, bound "
               << window.best_objective_bound << "um";
     } else {
-      message << ", incumbent unavailable, bound unavailable";
+      message << ", solver solution unavailable, bound unavailable";
     }
     message << ", time " << window.wall_time_seconds << "s\n";
     LOG(info) << message.str();
@@ -1694,12 +1698,16 @@ void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
                         analysis.positive_bound_windows);
   RecordPlacementMetric("exact_legalization.feasible_hint_windows",
                         analysis.feasible_hint_windows);
+  RecordPlacementMetric("exact_legalization.best_known_windows",
+                        analysis.best_known_windows);
   RecordPlacementMetric("exact_legalization.hinted_hpwl",
                         analysis.hinted_hpwl_sum);
   RecordPlacementMetric("exact_legalization.solved_current_hpwl",
                         analysis.solved_current_hpwl_sum);
-  RecordPlacementMetric("exact_legalization.solved_incumbent_hpwl",
-                        analysis.solved_incumbent_hpwl_sum);
+  RecordPlacementMetric("exact_legalization.solver_solution_hpwl",
+                        analysis.solver_solution_hpwl_sum);
+  RecordPlacementMetric("exact_legalization.best_known_hpwl",
+                        analysis.best_known_hpwl_sum);
   RecordPlacementMetric("exact_legalization.bounded_current_hpwl",
                         analysis.bounded_current_hpwl_sum);
   RecordPlacementMetric("exact_legalization.positive_lower_bound",

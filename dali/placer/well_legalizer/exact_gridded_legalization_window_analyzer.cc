@@ -328,6 +328,8 @@ ExactGriddedWindowAnalysis ExactGriddedLegalizationWindowAnalyzer::Analyze(
             ExactGriddedLegalizationStatus::kOptimal) {
       ++analysis.feasible_hint_windows;
       analysis.hinted_hpwl_sum += solution.hinted_weighted_hpwl;
+      result.best_known_weighted_hpwl = solution.hinted_weighted_hpwl;
+      result.has_best_known_solution = true;
     }
     if (solution.best_objective_bound > 0.0) {
       ++analysis.positive_bound_windows;
@@ -335,6 +337,10 @@ ExactGriddedWindowAnalysis ExactGriddedLegalizationWindowAnalyzer::Analyze(
       analysis.positive_lower_bound_sum += result.best_objective_bound;
     }
     if (!solution.HasSolution()) {
+      if (result.has_best_known_solution) {
+        ++analysis.best_known_windows;
+        analysis.best_known_hpwl_sum += result.best_known_weighted_hpwl;
+      }
       analysis.windows.push_back(std::move(result));
       continue;
     }
@@ -364,14 +370,21 @@ ExactGriddedWindowAnalysis ExactGriddedLegalizationWindowAnalyzer::Analyze(
     }
     analysis.reassigned_components += result.reassigned_component_count;
     analysis.orientation_changes += result.orientation_change_count;
+    if (!result.has_best_known_solution ||
+        result.solved_weighted_hpwl < result.best_known_weighted_hpwl) {
+      result.best_known_weighted_hpwl = result.solved_weighted_hpwl;
+      result.has_best_known_solution = true;
+    }
+    ++analysis.best_known_windows;
+    analysis.best_known_hpwl_sum += result.best_known_weighted_hpwl;
     const double improvement_tolerance =
         1e-9 * std::max(1.0, result.current_weighted_hpwl);
-    if (result.solved_weighted_hpwl + improvement_tolerance <
+    if (result.best_known_weighted_hpwl + improvement_tolerance <
         result.current_weighted_hpwl) {
       ++analysis.improved_windows;
     }
     analysis.solved_current_hpwl_sum += result.current_weighted_hpwl;
-    analysis.solved_incumbent_hpwl_sum += result.solved_weighted_hpwl;
+    analysis.solver_solution_hpwl_sum += result.solved_weighted_hpwl;
     analysis.windows.push_back(std::move(result));
   }
   return analysis;
