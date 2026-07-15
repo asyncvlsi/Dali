@@ -117,6 +117,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -exact_gridded_stripe_components <n>       target cells per overlapping row band; 0 uses full stripes\n"
       << "  -exact_gridded_stripe_row_radius <n>       allowed row movement in stripe refinement, default 0\n"
       << "  -exact_gridded_stripe_fixed_row_prepass    run a separately budgeted exact-X phase first\n"
+      << "  -exact_gridded_stripe_before_detailed      run exact stripe refinement before detailed placement\n"
       << "  -enable_exact_gridded_boundary_optimization  refine adjacent stripe boundaries with CP-SAT\n"
       << "  -exact_gridded_boundary_time <seconds>     solve limit per boundary model, default 0.1\n"
       << "  -exact_gridded_boundary_total_time <seconds> total boundary solve budget, default 120\n"
@@ -589,6 +590,8 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       config_set_int("dali.exact_gridded_stripe_row_radius", row_radius);
     } else if (arg == "-exact_gridded_stripe_fixed_row_prepass") {
       EnableConfigFlag("dali.exact_gridded_stripe_fixed_row_prepass");
+    } else if (arg == "-exact_gridded_stripe_before_detailed") {
+      EnableConfigFlag("dali.exact_gridded_stripe_before_detailed");
     } else if (arg == "-enable_exact_gridded_boundary_optimization") {
       EnableConfigFlag("dali.enable_exact_gridded_boundary_optimization");
     } else if (arg == "-exact_gridded_boundary_time") {

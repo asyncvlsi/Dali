@@ -217,6 +217,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "-exact_gridded_stripe_row_radius",
                      "2",
                      "-exact_gridded_stripe_fixed_row_prepass",
+                     "-exact_gridded_stripe_before_detailed",
                      "-enable_exact_gridded_boundary_optimization",
                      "-exact_gridded_boundary_time",
                      "0.2",
@@ -291,6 +292,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_EQ(config_get_int("dali.exact_gridded_stripe_components"), 48);
   EXPECT_EQ(config_get_int("dali.exact_gridded_stripe_row_radius"), 2);
   EXPECT_EQ(config_get_int("dali.exact_gridded_stripe_fixed_row_prepass"), 1);
+  EXPECT_EQ(config_get_int("dali.exact_gridded_stripe_before_detailed"), 1);
   EXPECT_EQ(config_get_int("dali.enable_exact_gridded_boundary_optimization"),
             1);
   EXPECT_DOUBLE_EQ(config_get_real("dali.exact_gridded_boundary_time"), 0.2);

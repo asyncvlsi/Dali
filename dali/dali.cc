@@ -318,6 +318,8 @@ void Dali::ShowParamsList() {
       << exact_gridded_stripe_row_radius_ << "\n"
       << "  exact_gridded_stripe_fixed_row_prepass: "
       << exact_gridded_stripe_fixed_row_prepass_ << "\n"
+      << "  exact_gridded_stripe_before_detailed: "
+      << exact_gridded_stripe_before_detailed_ << "\n"
       << "  enable_exact_gridded_boundary_optimization: "
       << enable_exact_gridded_boundary_optimization_ << "\n"
       << "  exact_gridded_boundary_time: " << exact_gridded_boundary_time_
@@ -527,6 +529,8 @@ void Dali::LoadParamsFromConfig() {
               "exact_gridded_stripe_row_radius must be non-negative");
   LoadBoolConfig(ConfigName(prefix_, "exact_gridded_stripe_fixed_row_prepass"),
                  &exact_gridded_stripe_fixed_row_prepass_);
+  LoadBoolConfig(ConfigName(prefix_, "exact_gridded_stripe_before_detailed"),
+                 &exact_gridded_stripe_before_detailed_);
   LoadBoolConfig(
       ConfigName(prefix_, "enable_exact_gridded_boundary_optimization"),
       &enable_exact_gridded_boundary_optimization_);
@@ -686,6 +690,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       exact_gridded_stripe_components_,
       exact_gridded_stripe_row_radius_,
       exact_gridded_stripe_fixed_row_prepass_,
+      exact_gridded_stripe_before_detailed_,
       enable_exact_gridded_boundary_optimization_,
       exact_gridded_boundary_time_,
       exact_gridded_boundary_total_time_,
@@ -1133,7 +1138,8 @@ void Dali::ConfigureWellLegalizer() {
       exact_gridded_stripe_total_time_, exact_gridded_stripe_sweeps_,
       exact_gridded_stripe_components_, num_threads_,
       exact_gridded_stripe_row_radius_, exact_gridded_max_row_changes_,
-      exact_gridded_stripe_fixed_row_prepass_, exact_gridded_use_solution_hint_,
+      exact_gridded_stripe_fixed_row_prepass_,
+      exact_gridded_stripe_before_detailed_, exact_gridded_use_solution_hint_,
       net_ignore_threshold_);
   well_legalizer_.SetExactBoundaryOptimization(
       enable_exact_gridded_boundary_optimization_, exact_gridded_boundary_time_,

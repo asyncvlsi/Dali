@@ -236,8 +236,8 @@ class GriddedCellWellLegalizer : public Placer {
       double maximum_total_time_seconds, int maximum_sweeps,
       int target_components_per_model, int number_of_workers,
       int maximum_row_displacement, int maximum_row_assignment_changes,
-      bool run_fixed_row_prepass, bool use_solution_hint,
-      int net_ignore_threshold) {
+      bool run_fixed_row_prepass, bool run_before_detailed_placement,
+      bool use_solution_hint, int net_ignore_threshold) {
     enable_exact_stripe_optimization_ = enable;
     exact_stripe_optimizer_config_.maximum_time_seconds_per_stripe =
         maximum_time_seconds_per_stripe;
@@ -256,6 +256,7 @@ class GriddedCellWellLegalizer : public Placer {
     exact_stripe_optimizer_config_.maximum_row_assignment_changes =
         maximum_row_assignment_changes;
     exact_stripe_fixed_row_prepass_ = run_fixed_row_prepass;
+    exact_stripe_before_detailed_placement_ = run_before_detailed_placement;
     exact_stripe_optimizer_config_.use_solution_hint = use_solution_hint;
     exact_stripe_optimizer_config_.net_ignore_threshold = net_ignore_threshold;
   }
@@ -516,6 +517,7 @@ class GriddedCellWellLegalizer : public Placer {
   int whole_design_exact_net_ignore_threshold_ = 100;
   bool enable_exact_stripe_optimization_ = false;
   bool exact_stripe_fixed_row_prepass_ = false;
+  bool exact_stripe_before_detailed_placement_ = false;
   OrToolsGriddedStripeOptimizerConfig exact_stripe_optimizer_config_;
   bool enable_exact_boundary_optimization_ = false;
   OrToolsGriddedBoundaryRefinerConfig exact_boundary_refiner_config_;

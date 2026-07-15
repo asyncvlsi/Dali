@@ -2087,11 +2087,16 @@ void GriddedCellWellLegalizer::RunPostClusteringStages(
   if (clustering_succeeded && enable_ortools_row_optimization_) {
     RunOrToolsRowOptimizationStage();
   }
+  if (clustering_succeeded && enable_exact_stripe_optimization_ &&
+      exact_stripe_before_detailed_placement_) {
+    RunExactStripeOptimizationStage();
+  }
   if (clustering_succeeded &&
       (enable_local_reorder_ || enable_detailed_placement_)) {
     RunGriddedDetailedPlacementStage();
   }
-  if (clustering_succeeded && enable_exact_stripe_optimization_) {
+  if (clustering_succeeded && enable_exact_stripe_optimization_ &&
+      !exact_stripe_before_detailed_placement_) {
     RunExactStripeOptimizationStage();
   }
   if (clustering_succeeded && enable_exact_boundary_optimization_) {
