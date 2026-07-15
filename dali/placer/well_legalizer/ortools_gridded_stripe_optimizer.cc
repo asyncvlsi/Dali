@@ -173,8 +173,16 @@ OrToolsGriddedStripeOptimizerResult OrToolsGriddedStripeOptimizer::Optimize(
     int model_stripe_id = -1;
     int first_row_index = -1;
     int last_row_index = -1;
+    double initial_priority_hpwl = 0.0;
     Stripe* stripe = nullptr;
   };
+
+  ExactGriddedStripeModelBuilderConfig builder_config;
+  builder_config.net_ignore_threshold = config_.net_ignore_threshold;
+  builder_config.minimum_p_well_height = config_.minimum_p_well_height;
+  builder_config.minimum_n_well_height = config_.minimum_n_well_height;
+  ExactGriddedStripeModelBuilder builder(circuit_, builder_config);
+
   std::vector<StripeTarget> targets;
   int next_stripe_id = 0;
   for (int column_index = 0; column_index < static_cast<int>(columns->size());
@@ -186,17 +194,24 @@ OrToolsGriddedStripeOptimizerResult OrToolsGriddedStripeOptimizer::Optimize(
       Stripe& stripe = column.stripe_list_[stripe_index];
       const int model_stripe_id = next_stripe_id++;
       for (const auto& [first_row, last_row] : BuildRowBands(stripe)) {
+        const ExactGriddedStripeBuildResult initial_build =
+            builder.BuildRowBand(&stripe, model_stripe_id, first_row, last_row);
+        const double initial_priority_hpwl =
+            AffectedNetHpwl(initial_build.affected_net_ids, true);
         targets.push_back({column_index, stripe_index, model_stripe_id,
-                           first_row, last_row, &stripe});
+                           first_row, last_row, initial_priority_hpwl,
+                           &stripe});
       }
     }
   }
+  // Rank once, then rebuild each model immediately before solving so accepted
+  // changes from earlier overlapping bands remain visible.
+  std::stable_sort(targets.begin(), targets.end(),
+                   [](const StripeTarget& lhs, const StripeTarget& rhs) {
+                     return lhs.initial_priority_hpwl >
+                            rhs.initial_priority_hpwl;
+                   });
 
-  ExactGriddedStripeModelBuilderConfig builder_config;
-  builder_config.net_ignore_threshold = config_.net_ignore_threshold;
-  builder_config.minimum_p_well_height = config_.minimum_p_well_height;
-  builder_config.minimum_n_well_height = config_.minimum_n_well_height;
-  ExactGriddedStripeModelBuilder builder(circuit_, builder_config);
   OrToolsCompactGriddedLegalizer solver;
   const auto start_time = std::chrono::steady_clock::now();
 
@@ -223,6 +238,7 @@ OrToolsGriddedStripeOptimizerResult OrToolsGriddedStripeOptimizer::Optimize(
       stripe_result.component_count =
           static_cast<int>(build.model.cells.size());
       stripe_result.net_count = static_cast<int>(build.model.nets.size());
+      stripe_result.initial_priority_hpwl = target.initial_priority_hpwl;
       stripe_result.modeled_hpwl_before =
           AffectedNetHpwl(build.affected_net_ids, true);
       stripe_result.affected_hpwl_before =

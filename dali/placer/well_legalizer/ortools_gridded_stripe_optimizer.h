@@ -45,6 +45,7 @@ struct OrToolsGriddedStripeSolveResult {
   int last_row_index = -1;
   int component_count = 0;
   int net_count = 0;
+  double initial_priority_hpwl = 0.0;
   int64_t model_variable_count = 0;
   int64_t model_constraint_count = 0;
   double modeled_hpwl_before = 0.0;
