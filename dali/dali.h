@@ -85,6 +85,7 @@ class Dali {
     int exact_gridded_window_components = 48;
     int exact_gridded_max_windows = 24;
     double exact_gridded_window_time = 0.25;
+    int exact_gridded_max_row_changes = -1;
     bool solve_exact_gridded_legalization = false;
     double exact_gridded_solve_time = 3600.0;
     int exact_gridded_row_radius = 0;
@@ -240,6 +241,7 @@ class Dali {
   int exact_gridded_window_components_ = 48;
   int exact_gridded_max_windows_ = 24;
   double exact_gridded_window_time_ = 0.25;
+  int exact_gridded_max_row_changes_ = -1;
   bool solve_exact_gridded_legalization_ = false;
   double exact_gridded_solve_time_ = 3600.0;
   int exact_gridded_row_radius_ = 0;

@@ -186,6 +186,8 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "12",
                      "-exact_gridded_window_time",
                      "0.5",
+                     "-exact_gridded_max_row_changes",
+                     "4",
                      "-solve_exact_gridded_legalization",
                      "-exact_gridded_solve_time",
                      "7200",
@@ -253,6 +255,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_EQ(config_get_int("dali.exact_gridded_window_components"), 64);
   EXPECT_EQ(config_get_int("dali.exact_gridded_max_windows"), 12);
   EXPECT_DOUBLE_EQ(config_get_real("dali.exact_gridded_window_time"), 0.5);
+  EXPECT_EQ(config_get_int("dali.exact_gridded_max_row_changes"), 4);
   EXPECT_EQ(config_get_int("dali.solve_exact_gridded_legalization"), 1);
   EXPECT_DOUBLE_EQ(config_get_real("dali.exact_gridded_solve_time"), 7200.0);
   EXPECT_EQ(config_get_int("dali.exact_gridded_row_radius"), 3);
@@ -371,6 +374,9 @@ TEST_F(DaliCommandLineTest, RejectsOutOfRangeOptions) {
                      &options));
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
                       "-exact_gridded_window_time", "0"},
+                     &options));
+  EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                      "-exact_gridded_max_row_changes", "-1"},
                      &options));
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
                       "-gui_pause", "sometimes"},

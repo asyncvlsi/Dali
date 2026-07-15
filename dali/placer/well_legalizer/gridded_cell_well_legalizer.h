@@ -168,6 +168,7 @@ class GriddedCellWellLegalizer : public Placer {
                                     int target_components_per_window,
                                     int maximum_windows,
                                     double maximum_time_seconds_per_window,
+                                    int maximum_row_assignment_changes,
                                     int net_ignore_threshold) {
     enable_exact_legalization_analysis_ = enable;
     exact_legalization_analysis_config_.target_components_per_window =
@@ -177,6 +178,8 @@ class GriddedCellWellLegalizer : public Placer {
     exact_legalization_analysis_config_.maximum_windows = maximum_windows;
     exact_legalization_analysis_config_.maximum_time_seconds_per_window =
         maximum_time_seconds_per_window;
+    exact_legalization_analysis_config_.maximum_row_assignment_changes =
+        maximum_row_assignment_changes;
     exact_legalization_analysis_config_.net_ignore_threshold =
         net_ignore_threshold;
     exact_legalization_analysis_config_.minimum_rows_per_window =

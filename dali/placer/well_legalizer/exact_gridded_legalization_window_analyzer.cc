@@ -47,6 +47,9 @@ ExactGriddedLegalizationWindowAnalyzer::ExactGriddedLegalizationWindowAnalyzer(
               "Exact gridded worker count must be positive");
   DaliExpects(config_.maximum_row_displacement >= -1,
               "Exact gridded row displacement must be at least negative one");
+  DaliExpects(
+      config_.maximum_row_assignment_changes >= -1,
+      "Exact gridded maximum row changes must be at least negative one");
 }
 
 double ExactGriddedLegalizationWindowAnalyzer::CurrentWindowHpwl(
@@ -254,6 +257,8 @@ ExactGriddedWindowAnalysis ExactGriddedLegalizationWindowAnalyzer::Analyze(
   solver_config.maximum_time_seconds = config_.maximum_time_seconds_per_window;
   solver_config.number_of_workers = config_.number_of_workers;
   solver_config.maximum_row_displacement = config_.maximum_row_displacement;
+  solver_config.maximum_row_assignment_changes =
+      config_.maximum_row_assignment_changes;
   solver_config.fix_row_geometry = config_.fix_row_geometry;
   solver_config.validate_solution_hint = true;
   OrToolsExactGriddedLegalizer exact_solver;

@@ -103,6 +103,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -exact_gridded_window_components <n>       target components per exact window, default 48\n"
       << "  -exact_gridded_max_windows <n>             maximum exact windows to solve, default 24\n"
       << "  -exact_gridded_window_time <seconds>       solve limit per exact window, default 0.25\n"
+      << "  -exact_gridded_max_row_changes <n>         limit changed row assignments per window\n"
       << "  -solve_exact_gridded_legalization          analyze one compact whole-design CP-SAT model\n"
       << "  -exact_gridded_solve_time <seconds>        whole-design solve limit, default 3600\n"
       << "  -exact_gridded_row_radius <n>              allowed row movement around the current row, default 0\n"
@@ -503,6 +504,14 @@ bool ParseDaliCommandLine(int argc, char* argv[],
         return false;
       }
       config_set_real("dali.exact_gridded_window_time", window_time);
+    } else if (arg == "-exact_gridded_max_row_changes") {
+      int maximum_changes = 0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseInt(value, &maximum_changes) || maximum_changes < 0) {
+        error_output << "Invalid exact gridded maximum row changes!\n";
+        return false;
+      }
+      config_set_int("dali.exact_gridded_max_row_changes", maximum_changes);
     } else if (arg == "-solve_exact_gridded_legalization") {
       EnableConfigFlag("dali.solve_exact_gridded_legalization");
     } else if (arg == "-exact_gridded_solve_time") {

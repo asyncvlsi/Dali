@@ -156,4 +156,41 @@ TEST(OrToolsCompactGriddedLegalizerTest,
       << result.message;
 }
 
+TEST(OrToolsCompactGriddedLegalizerTest,
+     LimitsTheNumberOfChangedRowAssignments) {
+  if (!OrToolsCompactGriddedLegalizer::IsAvailable()) {
+    GTEST_SKIP() << "Dali was built without OR-Tools 9.15.x";
+  }
+
+  ExactGriddedLegalizationModel model;
+  model.stripes = {
+      {0, 0, 0, 6, 4, 2, 0, 0, 1, 1, {{true, 0, 1, 1}, {true, 2, 1, 1}}}};
+  model.cells = {
+      {0, 4, 2, 0, 0, {{1, 1, true}}, {0}, 0, 0, false},
+      {1, 4, 2, 0, 2, {{1, 1, true}}, {0}, 0, 1, true},
+  };
+  model.nets = {MakeCompactAnchoredNet(0, 1.0, 3.0),
+                MakeCompactAnchoredNet(1, 1.0, 1.0)};
+
+  ExactGriddedLegalizationConfig config;
+  config.maximum_time_seconds = 10.0;
+  config.maximum_row_displacement = 1;
+  config.maximum_row_assignment_changes = 1;
+  config.fix_row_geometry = true;
+  ExactGriddedLegalizationResult one_change =
+      OrToolsCompactGriddedLegalizer().Solve(model, config);
+
+  ASSERT_EQ(one_change.status, ExactGriddedLegalizationStatus::kOptimal)
+      << one_change.message;
+  EXPECT_DOUBLE_EQ(one_change.weighted_hpwl, 4.0);
+
+  config.maximum_row_assignment_changes = 2;
+  ExactGriddedLegalizationResult two_changes =
+      OrToolsCompactGriddedLegalizer().Solve(model, config);
+
+  ASSERT_EQ(two_changes.status, ExactGriddedLegalizationStatus::kOptimal)
+      << two_changes.message;
+  EXPECT_DOUBLE_EQ(two_changes.weighted_hpwl, 0.0);
+}
+
 }  // namespace dali

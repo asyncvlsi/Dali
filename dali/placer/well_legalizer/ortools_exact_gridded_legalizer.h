@@ -43,6 +43,8 @@ struct ExactGriddedLegalizationConfig {
   bool log_search_progress = false;
   // Negative values allow every row. Zero fixes the current row assignment.
   int maximum_row_displacement = -1;
+  // Negative values allow any number of components to change row assignment.
+  int maximum_row_assignment_changes = -1;
   // Keep active rows, Y coordinates, and well heights at their supplied hints.
   bool fix_row_geometry = false;
   // Enable CP-SAT model presolve before search.

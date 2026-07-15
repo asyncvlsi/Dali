@@ -34,6 +34,8 @@ struct ExactGriddedWindowAnalyzerConfig {
   int number_of_workers = 1;
   // Negative values allow every row; zero fixes the current assignment.
   int maximum_row_displacement = -1;
+  // Negative values leave the number of changed row assignments unrestricted.
+  int maximum_row_assignment_changes = -1;
   // Preserve production row locations, heights, and alternating orientation.
   bool fix_row_geometry = false;
   // Use the compact row-assignment model instead of the full exact model.

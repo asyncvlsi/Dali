@@ -145,10 +145,12 @@ ExactGriddedLegalizationResult OrToolsCompactGriddedLegalizer::Solve(
   }
   if (config.maximum_time_seconds <= 0.0 || config.number_of_workers <= 0 ||
       config.pin_coordinate_scale <= 0 ||
-      config.maximum_row_displacement < -1) {
+      config.maximum_row_displacement < -1 ||
+      config.maximum_row_assignment_changes < -1) {
     result.status = ExactGriddedLegalizationStatus::kInvalidModel;
     result.message =
-        "solver time, worker count, pin scale, and row radius are invalid";
+        "solver time, worker count, pin scale, row radius, or row-change "
+        "budget is invalid";
     return result;
   }
   if (!std::isfinite(config.weighted_hpwl_weight) ||
@@ -309,9 +311,11 @@ ExactGriddedLegalizationResult OrToolsCompactGriddedLegalizer::Solve(
   std::vector<CompactGriddedCellVariables> cell_variables;
   std::vector<int> hinted_cell_x;
   std::vector<int> hinted_cell_y;
+  std::vector<BoolVar> row_assignment_changes;
   cell_variables.reserve(model.cells.size());
   hinted_cell_x.reserve(model.cells.size());
   hinted_cell_y.reserve(model.cells.size());
+  row_assignment_changes.reserve(model.cells.size());
   auto no_overlap = cp_model.AddNoOverlap2D();
   const bool use_fixed_row_no_overlap =
       config.maximum_row_displacement == 0 &&
@@ -549,10 +553,20 @@ ExactGriddedLegalizationResult OrToolsCompactGriddedLegalizer::Solve(
         result.message = "component hint is outside its compact row domain";
         return result;
       }
-      cp_model.AddHint(variables.start_choice,
-                       std::distance(variables.candidate_start_slots.begin(),
-                                     initial_choice));
+      const int initial_choice_index = static_cast<int>(std::distance(
+          variables.candidate_start_slots.begin(), initial_choice));
+      cp_model.AddHint(variables.start_choice, initial_choice_index);
       cp_model.AddHint(variables.is_flipped, cell.initial_is_flipped);
+      if (config.maximum_row_assignment_changes >= 0) {
+        BoolVar assignment_changed = cp_model.NewBoolVar().WithName(
+            "compact_cell_row_changed_" + std::to_string(cell.component_id));
+        cp_model.AddNotEqual(variables.start_choice, initial_choice_index)
+            .OnlyEnforceIf(assignment_changed);
+        cp_model.AddEquality(variables.start_choice, initial_choice_index)
+            .OnlyEnforceIf(assignment_changed.Not());
+        cp_model.AddHint(assignment_changed, false);
+        row_assignment_changes.push_back(assignment_changed);
+      }
       bool required_phase = true;
       if (!ExactGriddedCandidateMatchesAlternatingRows(
               cell, cell.initial_start_row, cell.initial_is_flipped,
@@ -585,6 +599,17 @@ ExactGriddedLegalizationResult OrToolsCompactGriddedLegalizer::Solve(
           cp_model.NewFixedSizeIntervalVar(variables.y, cell.height));
     }
     cell_variables.push_back(std::move(variables));
+  }
+
+  if (config.maximum_row_assignment_changes >= 0) {
+    if (row_assignment_changes.size() != model.cells.size()) {
+      result.status = ExactGriddedLegalizationStatus::kInvalidModel;
+      result.message =
+          "row-change budget requires a row assignment hint for every cell";
+      return result;
+    }
+    cp_model.AddLessOrEqual(LinearExpr::Sum(row_assignment_changes),
+                            config.maximum_row_assignment_changes);
   }
 
   if (use_fixed_row_no_overlap) {
