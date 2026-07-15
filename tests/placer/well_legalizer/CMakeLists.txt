@@ -164,6 +164,15 @@ add_test(NAME exact_gridded_boundary_model_builder_test
 set_tests_properties(exact_gridded_boundary_model_builder_test
                      PROPERTIES LABELS "unit;placer;well_legalizer")
 
+add_executable(ortools_gridded_boundary_optimizer_test
+               ortools_gridded_boundary_optimizer_test.cc)
+target_link_libraries(ortools_gridded_boundary_optimizer_test
+                      PRIVATE dalilib GTest::gtest_main)
+add_test(NAME ortools_gridded_boundary_optimizer_test
+         COMMAND ortools_gridded_boundary_optimizer_test)
+set_tests_properties(ortools_gridded_boundary_optimizer_test
+                     PROPERTIES LABELS "unit;placer;well_legalizer")
+
 add_executable(exact_gridded_legalization_window_analyzer_test
                exact_gridded_legalization_window_analyzer_test.cc)
 target_link_libraries(exact_gridded_legalization_window_analyzer_test
