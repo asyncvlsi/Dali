@@ -265,6 +265,15 @@ OrToolsGriddedBoundaryRefinerResult OrToolsGriddedBoundaryRefiner::Optimize(
         ++accepted_in_sweep;
         aggregate.accepted_cross_stripe_components +=
             window.optimization.cross_stripe_component_count;
+        const double hpwl_improvement =
+            window.optimization.affected_hpwl_before -
+            window.optimization.affected_hpwl_after;
+        if (window.optimization.cross_stripe_component_count > 0) {
+          ++aggregate.accepted_cross_stripe_models;
+          aggregate.cross_stripe_hpwl_improvement += hpwl_improvement;
+        } else {
+          aggregate.local_hpwl_improvement += hpwl_improvement;
+        }
       }
       aggregate.solver_wall_time_seconds +=
           window.optimization.solver_wall_time_seconds;

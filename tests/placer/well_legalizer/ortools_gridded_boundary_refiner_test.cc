@@ -76,7 +76,11 @@ TEST(OrToolsGriddedBoundaryRefinerTest, FindsAndAppliesAnAdjacentColumnSwap) {
   EXPECT_EQ(result.attempted_models, 1);
   EXPECT_EQ(result.solved_models, 1);
   EXPECT_EQ(result.accepted_models, 1);
+  EXPECT_EQ(result.accepted_cross_stripe_models, 1);
   EXPECT_EQ(result.accepted_cross_stripe_components, 2);
+  EXPECT_DOUBLE_EQ(result.local_hpwl_improvement, 0.0);
+  EXPECT_DOUBLE_EQ(result.cross_stripe_hpwl_improvement,
+                   result.hpwl_before - result.hpwl_after);
   EXPECT_LT(result.hpwl_after, result.hpwl_before);
   EXPECT_EQ(left_row.Components()[0], circuit.GetComponentPtr("move_left"));
   EXPECT_EQ(right_row.Components()[0], circuit.GetComponentPtr("move_right"));

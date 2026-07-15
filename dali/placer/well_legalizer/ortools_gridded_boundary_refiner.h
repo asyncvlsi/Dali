@@ -58,10 +58,13 @@ struct OrToolsGriddedBoundaryRefinerResult {
   int attempted_models = 0;
   int solved_models = 0;
   int accepted_models = 0;
+  int accepted_cross_stripe_models = 0;
   int accepted_cross_stripe_components = 0;
   int completed_sweeps = 0;
   double hpwl_before = 0.0;
   double hpwl_after = 0.0;
+  double local_hpwl_improvement = 0.0;
+  double cross_stripe_hpwl_improvement = 0.0;
   double solver_wall_time_seconds = 0.0;
   std::vector<OrToolsGriddedBoundaryWindowResult> windows;
 };

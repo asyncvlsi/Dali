@@ -1954,12 +1954,18 @@ void GriddedCellWellLegalizer::RunExactBoundaryOptimizationStage() {
             << "  attempted models        : " << result.attempted_models << "\n"
             << "  solved models           : " << result.solved_models << "\n"
             << "  accepted models         : " << result.accepted_models << "\n"
+            << "  accepted crossing models: "
+            << result.accepted_cross_stripe_models << "\n"
             << "  cross-stripe components : "
             << result.accepted_cross_stripe_components << "\n"
             << "  HPWL before             : " << result.hpwl_before << "um\n"
             << "  HPWL after              : " << result.hpwl_after << "um\n"
             << "  improvement             : "
             << result.hpwl_before - result.hpwl_after << "um\n"
+            << "    local-window gain     : " << result.local_hpwl_improvement
+            << "um\n"
+            << "    cross-stripe gain     : "
+            << result.cross_stripe_hpwl_improvement << "um\n"
             << "  solver wall time        : " << result.solver_wall_time_seconds
             << "s\n"
             << "  total stage wall time   : " << timer.GetWallTime() << "s\n"
@@ -1983,10 +1989,16 @@ void GriddedCellWellLegalizer::RunExactBoundaryOptimizationStage() {
   RecordPlacementMetric("exact_boundary.attempted", result.attempted_models);
   RecordPlacementMetric("exact_boundary.solved", result.solved_models);
   RecordPlacementMetric("exact_boundary.accepted", result.accepted_models);
+  RecordPlacementMetric("exact_boundary.accepted_cross_stripe_models",
+                        result.accepted_cross_stripe_models);
   RecordPlacementMetric("exact_boundary.cross_stripe_components",
                         result.accepted_cross_stripe_components);
   RecordPlacementMetric("exact_boundary.hpwl.before", result.hpwl_before);
   RecordPlacementMetric("exact_boundary.hpwl.after", result.hpwl_after);
+  RecordPlacementMetric("exact_boundary.hpwl.local_improvement",
+                        result.local_hpwl_improvement);
+  RecordPlacementMetric("exact_boundary.hpwl.cross_stripe_improvement",
+                        result.cross_stripe_hpwl_improvement);
   RecordPlacementMetric("time.exact_boundary.solver_wall_s",
                         result.solver_wall_time_seconds);
   RecordPlacementMetric("time.exact_boundary.wall_s", timer.GetWallTime());
