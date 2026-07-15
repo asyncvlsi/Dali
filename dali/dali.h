@@ -96,6 +96,7 @@ class Dali {
     double exact_gridded_stripe_total_time = 120.0;
     int exact_gridded_stripe_sweeps = 2;
     int exact_gridded_stripe_components = 0;
+    int exact_gridded_stripe_row_radius = 0;
     bool enable_shrink_off_grid_die_area = false;
     PlacementInitializerType global_initializer =
         PlacementInitializerType::kUniform;
@@ -252,6 +253,7 @@ class Dali {
   double exact_gridded_stripe_total_time_ = 120.0;
   int exact_gridded_stripe_sweeps_ = 2;
   int exact_gridded_stripe_components_ = 0;
+  int exact_gridded_stripe_row_radius_ = 0;
   bool enable_shrink_off_grid_die_area_ = false;
   PlacementInitializerType global_initializer_ =
       PlacementInitializerType::kUniform;

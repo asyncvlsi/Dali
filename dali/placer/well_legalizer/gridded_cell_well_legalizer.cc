@@ -1842,6 +1842,11 @@ void GriddedCellWellLegalizer::RunExactStripeOptimizationStage() {
 
   LOG(info) << "Exact gridded stripe optimization:\n"
             << "  available              : " << result.available << "\n"
+            << "  maximum row displacement: "
+            << exact_stripe_optimizer_config_.maximum_row_displacement << "\n"
+            << "  maximum row changes    : "
+            << exact_stripe_optimizer_config_.maximum_row_assignment_changes
+            << "\n"
             << "  completed sweeps       : " << result.completed_sweeps << "\n"
             << "  attempted models       : " << result.attempted_models << "\n"
             << "  solved models          : " << result.solved_models << "\n"

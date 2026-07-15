@@ -204,6 +204,8 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "3",
                      "-exact_gridded_stripe_components",
                      "48",
+                     "-exact_gridded_stripe_row_radius",
+                     "2",
                      "-debug_placement_region_scale",
                      "1.1",
                      "-save_intermediate_result",
@@ -267,6 +269,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                    90.0);
   EXPECT_EQ(config_get_int("dali.exact_gridded_stripe_sweeps"), 3);
   EXPECT_EQ(config_get_int("dali.exact_gridded_stripe_components"), 48);
+  EXPECT_EQ(config_get_int("dali.exact_gridded_stripe_row_radius"), 2);
   EXPECT_DOUBLE_EQ(config_get_real("dali.debug_placement_region_scale"), 1.1);
   EXPECT_EQ(config_get_int("dali.save_intermediate_result"), 1);
   EXPECT_EQ(config_get_int("dali.disable_detailed_place"), 1);
@@ -377,6 +380,9 @@ TEST_F(DaliCommandLineTest, RejectsOutOfRangeOptions) {
                      &options));
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
                       "-exact_gridded_max_row_changes", "-1"},
+                     &options));
+  EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                      "-exact_gridded_stripe_row_radius", "-1"},
                      &options));
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
                       "-gui_pause", "sometimes"},

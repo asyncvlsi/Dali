@@ -114,6 +114,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -exact_gridded_stripe_total_time <seconds> total stripe solve budget, default 120\n"
       << "  -exact_gridded_stripe_sweeps <n>           maximum alternating sweeps, default 2\n"
       << "  -exact_gridded_stripe_components <n>       target cells per overlapping row band; 0 uses full stripes\n"
+      << "  -exact_gridded_stripe_row_radius <n>       allowed row movement in stripe refinement, default 0\n"
       << "  -debug_placement_region_scale <factor>      enlarge the placement boundary for debugging, default 1\n"
       << "  -standard_cell_legalizer_cost <displacement/hpwl>  default displacement\n"
       << "  -detailed_max_rounds <n>                   detailed-placement optimization rounds, default 1\n"
@@ -568,6 +569,14 @@ bool ParseDaliCommandLine(int argc, char* argv[],
         return false;
       }
       config_set_int("dali.exact_gridded_stripe_components", component_count);
+    } else if (arg == "-exact_gridded_stripe_row_radius") {
+      int row_radius = 0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseInt(value, &row_radius) || row_radius < 0) {
+        error_output << "Invalid exact gridded stripe row radius!\n";
+        return false;
+      }
+      config_set_int("dali.exact_gridded_stripe_row_radius", row_radius);
     } else if (arg == "-debug_placement_region_scale") {
       double scale = 0;
       if (!TryGetValue(argc, argv, &i, &value) ||
