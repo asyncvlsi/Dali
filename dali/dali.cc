@@ -290,6 +290,7 @@ void Dali::ShowParamsList() {
       << analyze_exact_gridded_legalization_ << "\n"
       << "  analyze_exact_adjacent_rows: " << analyze_exact_adjacent_rows_
       << "\n"
+      << "  analyze_exact_row_geometry: " << analyze_exact_row_geometry_ << "\n"
       << "  exact_gridded_window_components: "
       << exact_gridded_window_components_ << "\n"
       << "  exact_gridded_max_windows: " << exact_gridded_max_windows_ << "\n"
@@ -463,9 +464,14 @@ void Dali::LoadParamsFromConfig() {
                  &analyze_exact_gridded_legalization_);
   LoadBoolConfig(ConfigName(prefix_, "analyze_exact_adjacent_rows"),
                  &analyze_exact_adjacent_rows_);
-  if (analyze_exact_adjacent_rows_) {
+  LoadBoolConfig(ConfigName(prefix_, "analyze_exact_row_geometry"),
+                 &analyze_exact_row_geometry_);
+  if (analyze_exact_adjacent_rows_ || analyze_exact_row_geometry_) {
     analyze_exact_gridded_legalization_ = true;
   }
+  DaliExpects(!(analyze_exact_adjacent_rows_ && analyze_exact_row_geometry_),
+              "exact row-assignment and row-geometry analyses are mutually "
+              "exclusive");
   LoadIntConfig(ConfigName(prefix_, "exact_gridded_window_components"),
                 &exact_gridded_window_components_);
   DaliExpects(exact_gridded_window_components_ > 0,
@@ -663,6 +669,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       enable_ortools_row_optimization_,
       analyze_exact_gridded_legalization_,
       analyze_exact_adjacent_rows_,
+      analyze_exact_row_geometry_,
       exact_gridded_window_components_,
       exact_gridded_max_windows_,
       exact_gridded_window_time_,
@@ -1114,9 +1121,9 @@ void Dali::ConfigureWellLegalizer() {
       enable_ortools_row_optimization_, net_ignore_threshold_);
   well_legalizer_.SetExactLegalizationAnalysis(
       analyze_exact_gridded_legalization_, analyze_exact_adjacent_rows_,
-      exact_gridded_window_components_, exact_gridded_max_windows_,
-      exact_gridded_window_time_, exact_gridded_max_row_changes_,
-      net_ignore_threshold_);
+      analyze_exact_row_geometry_, exact_gridded_window_components_,
+      exact_gridded_max_windows_, exact_gridded_window_time_,
+      exact_gridded_max_row_changes_, net_ignore_threshold_);
   well_legalizer_.SetWholeDesignExactLegalization(
       solve_exact_gridded_legalization_, exact_gridded_solve_time_,
       num_threads_, exact_gridded_row_radius_, exact_gridded_use_solution_hint_,

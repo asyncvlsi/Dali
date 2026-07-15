@@ -1606,6 +1606,8 @@ void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
       << "    maximum row changes     : "
       << config.maximum_row_assignment_changes << "\n"
       << "    fixed row geometry      : " << config.fix_row_geometry << "\n"
+      << "    fixed component X       : " << config.fix_cell_x << "\n"
+      << "    fixed component orient. : " << config.fix_cell_orientation << "\n"
       << "    overlapping row windows : " << config.overlap_row_windows << "\n"
       << "    candidate windows       : " << analysis.candidate_windows << "\n"
       << "    oversized windows       : " << analysis.oversized_windows << "\n"
@@ -1616,6 +1618,13 @@ void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
       << "    reassigned components   : " << analysis.reassigned_components
       << "\n"
       << "    orientation changes     : " << analysis.orientation_changes
+      << "\n"
+      << "    component X changes     : " << analysis.x_location_changes << "\n"
+      << "    row activation changes  : " << analysis.row_activation_changes
+      << "\n"
+      << "    row location changes    : " << analysis.row_location_changes
+      << "\n"
+      << "    well height changes     : " << analysis.well_height_changes
       << "\n"
       << "    positive-bound windows  : " << analysis.positive_bound_windows
       << "\n"
@@ -1667,7 +1676,11 @@ void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
               << "um, bound " << window.best_objective_bound << "um, gap "
               << window.relative_gap << ", reassigned "
               << window.reassigned_component_count << ", reoriented "
-              << window.orientation_change_count;
+              << window.orientation_change_count << ", X moves "
+              << window.x_location_change_count << ", row activation changes "
+              << window.row_activation_change_count << ", row moves "
+              << window.row_location_change_count << ", well height changes "
+              << window.well_height_change_count;
     } else if (window.best_objective_bound > 0.0) {
       message << ", solver solution unavailable, bound "
               << window.best_objective_bound << "um";
@@ -1694,6 +1707,14 @@ void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
                         analysis.reassigned_components);
   RecordPlacementMetric("exact_legalization.orientation_changes",
                         analysis.orientation_changes);
+  RecordPlacementMetric("exact_legalization.x_location_changes",
+                        analysis.x_location_changes);
+  RecordPlacementMetric("exact_legalization.row_activation_changes",
+                        analysis.row_activation_changes);
+  RecordPlacementMetric("exact_legalization.row_location_changes",
+                        analysis.row_location_changes);
+  RecordPlacementMetric("exact_legalization.well_height_changes",
+                        analysis.well_height_changes);
   RecordPlacementMetric("exact_legalization.positive_bound_windows",
                         analysis.positive_bound_windows);
   RecordPlacementMetric("exact_legalization.feasible_hint_windows",

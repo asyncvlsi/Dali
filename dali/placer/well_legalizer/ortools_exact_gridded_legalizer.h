@@ -47,6 +47,10 @@ struct ExactGriddedLegalizationConfig {
   int maximum_row_assignment_changes = -1;
   // Keep active rows, Y coordinates, and well heights at their supplied hints.
   bool fix_row_geometry = false;
+  // Keep each component at its supplied X coordinate.
+  bool fix_cell_x = false;
+  // Keep each component at its supplied normal or flipped orientation.
+  bool fix_cell_orientation = false;
   // Enable CP-SAT model presolve before search.
   bool use_presolve = true;
   // Retain the production placement as a warm start for the main solve.

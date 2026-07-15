@@ -538,6 +538,9 @@ ExactGriddedLegalizationResult OrToolsCompactGriddedLegalizer::Solve(
     const int cell_hint_y = std::clamp(cell.initial_y, minimum_y, maximum_y);
     cp_model.AddHint(variables.x, cell_hint_x);
     cp_model.AddHint(variables.y, cell_hint_y);
+    if (config.fix_cell_x) {
+      cp_model.AddEquality(variables.x, cell_hint_x);
+    }
     hinted_cell_x.push_back(cell_hint_x);
     hinted_cell_y.push_back(cell_hint_y);
     if (cell.initial_stripe_id >= 0 && cell.initial_start_row >= 0) {
@@ -557,6 +560,9 @@ ExactGriddedLegalizationResult OrToolsCompactGriddedLegalizer::Solve(
           variables.candidate_start_slots.begin(), initial_choice));
       cp_model.AddHint(variables.start_choice, initial_choice_index);
       cp_model.AddHint(variables.is_flipped, cell.initial_is_flipped);
+      if (config.fix_cell_orientation) {
+        cp_model.AddEquality(variables.is_flipped, cell.initial_is_flipped);
+      }
       if (config.maximum_row_assignment_changes >= 0) {
         BoolVar assignment_changed = cp_model.NewBoolVar().WithName(
             "compact_cell_row_changed_" + std::to_string(cell.component_id));

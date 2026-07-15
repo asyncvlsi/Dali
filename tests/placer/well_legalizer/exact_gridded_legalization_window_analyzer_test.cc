@@ -175,4 +175,83 @@ TEST(ExactGriddedLegalizationWindowAnalyzerTest,
   EXPECT_EQ(move_upper->Orient(), original_orient);
 }
 
+TEST(ExactGriddedLegalizationWindowAnalyzerTest,
+     FindsRowGeometryHeadroomWithFixedAssignments) {
+  if (!OrToolsCompactGriddedLegalizer::IsAvailable()) {
+    GTEST_SKIP() << "Dali was built without OR-Tools 9.15.x";
+  }
+
+  Circuit circuit;
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.ReserveSpaceForDesignImp(3, 0, 2);
+  Macro* macro = circuit.AddMacro("cell", 2, 2);
+  macro->AddWellRect(false, 0, 0, 2, 1);
+  macro->AddWellRect(true, 0, 1, 2, 2);
+  circuit.AddMacroPin(macro, "pin", true)->SetOffset(1, 1);
+  circuit.AddComponent("lower", "cell", 0, 0, PLACED, N);
+  circuit.AddComponent("upper", "cell", 0, 4, PLACED, FS);
+  circuit.AddComponent("anchor", "cell", 8, 0, FIXED, N);
+  circuit.AddNet("upper_net", 2);
+  circuit.AddComponentPinToNet("upper", "pin", "upper_net");
+  circuit.AddComponentPinToNet("anchor", "pin", "upper_net");
+
+  std::vector<StripeColumn> columns(1);
+  columns[0].stripe_list_.resize(1);
+  Stripe& stripe = columns[0].stripe_list_[0];
+  stripe.lx_ = 0;
+  stripe.ly_ = 0;
+  stripe.width_ = 4;
+  stripe.height_ = 6;
+  stripe.gridded_rows_.resize(2);
+  GriddedRow& lower_row = stripe.gridded_rows_[0];
+  lower_row.SetLLX(0);
+  lower_row.SetLLY(0);
+  lower_row.SetWidth(4);
+  lower_row.UpdateWellHeightUpward(2, 2);
+  lower_row.AddComponent(circuit.GetComponentPtr("lower"));
+  lower_row.SetOrient(true);
+  GriddedRow& upper_row = stripe.gridded_rows_[1];
+  upper_row.SetLLX(0);
+  upper_row.SetLLY(4);
+  upper_row.SetWidth(4);
+  upper_row.UpdateWellHeightUpward(1, 1);
+  Component* upper = circuit.GetComponentPtr("upper");
+  upper_row.AddComponent(upper);
+  upper_row.SetOrient(false);
+
+  const double original_y = upper->LLY();
+  const double original_x = upper->LLX();
+  ExactGriddedWindowAnalyzerConfig config;
+  config.target_components_per_window = 2;
+  config.maximum_components_per_window = 4;
+  config.minimum_rows_per_window = 2;
+  config.maximum_windows = 1;
+  config.maximum_time_seconds_per_window = 10.0;
+  config.maximum_row_displacement = 0;
+  config.maximum_row_assignment_changes = 0;
+  config.fix_row_geometry = false;
+  config.fix_cell_x = true;
+  config.fix_cell_orientation = true;
+  config.use_compact_solver = true;
+  config.overlap_row_windows = true;
+  ExactGriddedWindowAnalysis result =
+      ExactGriddedLegalizationWindowAnalyzer(&circuit, config)
+          .Analyze(&columns);
+
+  EXPECT_TRUE(result.available);
+  EXPECT_EQ(result.solved_windows, 1);
+  EXPECT_EQ(result.optimal_windows, 1);
+  EXPECT_EQ(result.reassigned_components, 0);
+  EXPECT_EQ(result.x_location_changes, 0);
+  EXPECT_EQ(result.orientation_changes, 0);
+  EXPECT_EQ(result.row_activation_changes, 0);
+  EXPECT_GT(result.row_location_changes, 0);
+  EXPECT_GT(result.well_height_changes, 0);
+  EXPECT_LT(result.solver_solution_hpwl_sum, result.solved_current_hpwl_sum);
+  EXPECT_DOUBLE_EQ(upper->LLY(), original_y);
+  EXPECT_DOUBLE_EQ(upper->LLX(), original_x);
+}
+
 }  // namespace dali

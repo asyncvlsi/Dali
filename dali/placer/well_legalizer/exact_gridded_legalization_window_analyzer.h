@@ -38,6 +38,10 @@ struct ExactGriddedWindowAnalyzerConfig {
   int maximum_row_assignment_changes = -1;
   // Preserve production row locations, heights, and alternating orientation.
   bool fix_row_geometry = false;
+  // Preserve component X locations to isolate vertical row-stack headroom.
+  bool fix_cell_x = false;
+  // Preserve component orientation to isolate vertical row-stack headroom.
+  bool fix_cell_orientation = false;
   // Use the compact row-assignment model instead of the full exact model.
   bool use_compact_solver = false;
   // Advance by one row boundary so adjacent windows may overlap.
@@ -55,6 +59,10 @@ struct ExactGriddedWindowResult {
   int row_assignment_choice_count = 0;
   int reassigned_component_count = 0;
   int orientation_change_count = 0;
+  int x_location_change_count = 0;
+  int row_activation_change_count = 0;
+  int row_location_change_count = 0;
+  int well_height_change_count = 0;
   double current_weighted_hpwl = 0.0;
   double solved_weighted_hpwl = 0.0;
   double best_known_weighted_hpwl = 0.0;
@@ -82,6 +90,10 @@ struct ExactGriddedWindowAnalysis {
   int improved_windows = 0;
   int reassigned_components = 0;
   int orientation_changes = 0;
+  int x_location_changes = 0;
+  int row_activation_changes = 0;
+  int row_location_changes = 0;
+  int well_height_changes = 0;
   int positive_bound_windows = 0;
   int feasible_hint_windows = 0;
   int best_known_windows = 0;

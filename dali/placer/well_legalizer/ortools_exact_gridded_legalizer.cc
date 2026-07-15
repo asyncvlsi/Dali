@@ -476,6 +476,9 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
     int hinted_y = std::clamp(cell.initial_y, minimum_y, maximum_y);
     cp_model.AddHint(variables.x, hinted_x);
     cp_model.AddHint(variables.y, hinted_y);
+    if (config.fix_cell_x) {
+      cp_model.AddEquality(variables.x, hinted_x);
+    }
     hinted_cell_x_locations.push_back(hinted_x);
     hinted_cell_y_locations.push_back(hinted_y);
     cell_variables.push_back(std::move(variables));
@@ -522,6 +525,10 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
               is_flipped == cell.initial_is_flipped;
           if (use_discrete_hint) {
             cp_model.AddHint(presence, is_hinted_placement);
+          }
+          if (config.fix_cell_orientation && use_discrete_hint &&
+              is_flipped != cell.initial_is_flipped) {
+            cp_model.AddEquality(presence, false);
           }
           if (is_hinted_placement) {
             int& stripe_phase_hint = stripe_phase_hints[stripe_index];

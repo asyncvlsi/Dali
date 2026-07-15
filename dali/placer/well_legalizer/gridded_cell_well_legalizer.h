@@ -166,6 +166,7 @@ class GriddedCellWellLegalizer : public Placer {
 
   /** Configure read-only exact analysis of bounded legal row windows. */
   void SetExactLegalizationAnalysis(bool enable, bool analyze_adjacent_rows,
+                                    bool analyze_row_geometry,
                                     int target_components_per_window,
                                     int maximum_windows,
                                     double maximum_time_seconds_per_window,
@@ -183,16 +184,23 @@ class GriddedCellWellLegalizer : public Placer {
         maximum_row_assignment_changes;
     exact_legalization_analysis_config_.net_ignore_threshold =
         net_ignore_threshold;
+    const bool analyze_multi_row_windows =
+        analyze_adjacent_rows || analyze_row_geometry;
     exact_legalization_analysis_config_.minimum_rows_per_window =
-        analyze_adjacent_rows ? 2 : 1;
+        analyze_multi_row_windows ? 2 : 1;
     exact_legalization_analysis_config_.maximum_row_displacement =
-        analyze_adjacent_rows ? 1 : -1;
+        analyze_row_geometry ? 0 : (analyze_adjacent_rows ? 1 : -1);
+    exact_legalization_analysis_config_.maximum_row_assignment_changes =
+        analyze_row_geometry ? 0 : maximum_row_assignment_changes;
     exact_legalization_analysis_config_.fix_row_geometry =
         analyze_adjacent_rows;
+    exact_legalization_analysis_config_.fix_cell_x = analyze_row_geometry;
+    exact_legalization_analysis_config_.fix_cell_orientation =
+        analyze_row_geometry;
     exact_legalization_analysis_config_.use_compact_solver =
-        analyze_adjacent_rows;
+        analyze_multi_row_windows;
     exact_legalization_analysis_config_.overlap_row_windows =
-        analyze_adjacent_rows;
+        analyze_multi_row_windows;
   }
 
   /**

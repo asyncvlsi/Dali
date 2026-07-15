@@ -75,6 +75,16 @@ TEST_F(DaliCommandLineTest, ParsesHpwlFilteredLegalizationFeedback) {
                "y_row_hpwl");
 }
 
+TEST_F(DaliCommandLineTest, ParsesExactRowGeometryAnalysis) {
+  dali::DaliCommandLineOptions options;
+  EXPECT_TRUE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                     "-analyze_exact_row_geometry"},
+                    &options));
+
+  EXPECT_EQ(config_get_int("dali.analyze_exact_gridded_legalization"), 1);
+  EXPECT_EQ(config_get_int("dali.analyze_exact_row_geometry"), 1);
+}
+
 TEST_F(DaliCommandLineTest, ParsesTransactionalLegalizationFeedback) {
   dali::DaliCommandLineOptions options;
   EXPECT_TRUE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",

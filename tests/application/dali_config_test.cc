@@ -60,6 +60,7 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_FALSE(options.enable_ortools_row_optimization);
   EXPECT_FALSE(options.analyze_exact_gridded_legalization);
   EXPECT_FALSE(options.analyze_exact_adjacent_rows);
+  EXPECT_FALSE(options.analyze_exact_row_geometry);
   EXPECT_EQ(options.exact_gridded_window_components, 48);
   EXPECT_EQ(options.exact_gridded_max_windows, 24);
   EXPECT_DOUBLE_EQ(options.exact_gridded_window_time, 0.25);
@@ -216,6 +217,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_TRUE(options.enable_ortools_row_optimization);
   EXPECT_TRUE(options.analyze_exact_gridded_legalization);
   EXPECT_TRUE(options.analyze_exact_adjacent_rows);
+  EXPECT_FALSE(options.analyze_exact_row_geometry);
   EXPECT_EQ(options.exact_gridded_window_components, 64);
   EXPECT_EQ(options.exact_gridded_max_windows, 12);
   EXPECT_DOUBLE_EQ(options.exact_gridded_window_time, 0.5);
@@ -253,6 +255,19 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_TRUE(options.gui_debug);
   EXPECT_EQ(options.gui_pause, "off");
   EXPECT_DOUBLE_EQ(options.debug_placement_region_scale, 1.1);
+
+  placer.Close();
+}
+
+TEST_F(DaliConfigTest, EnablesExactRowGeometryAnalysis) {
+  config_set_int("dali.analyze_exact_row_geometry", 1);
+
+  dali::Dali placer(nullptr, dali::severity::info);
+  const dali::Dali::RuntimeOptions options = placer.GetRuntimeOptions();
+
+  EXPECT_TRUE(options.analyze_exact_gridded_legalization);
+  EXPECT_FALSE(options.analyze_exact_adjacent_rows);
+  EXPECT_TRUE(options.analyze_exact_row_geometry);
 
   placer.Close();
 }

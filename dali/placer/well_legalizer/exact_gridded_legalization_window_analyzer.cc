@@ -260,6 +260,8 @@ ExactGriddedWindowAnalysis ExactGriddedLegalizationWindowAnalyzer::Analyze(
   solver_config.maximum_row_assignment_changes =
       config_.maximum_row_assignment_changes;
   solver_config.fix_row_geometry = config_.fix_row_geometry;
+  solver_config.fix_cell_x = config_.fix_cell_x;
+  solver_config.fix_cell_orientation = config_.fix_cell_orientation;
   solver_config.validate_solution_hint = true;
   OrToolsExactGriddedLegalizer exact_solver;
   OrToolsCompactGriddedLegalizer compact_solver;
@@ -350,12 +352,15 @@ ExactGriddedWindowAnalysis ExactGriddedLegalizationWindowAnalyzer::Analyze(
       ++analysis.optimal_windows;
     }
     std::unordered_map<int, std::pair<int, bool>> initial_assignments;
+    std::unordered_map<int, int> initial_x_locations;
     for (size_t component_index = 0;
          component_index < candidate.components.size(); ++component_index) {
+      Component* component = candidate.components[component_index];
       initial_assignments.emplace(
-          candidate.components[component_index]->Id(),
+          component->Id(),
           std::make_pair(candidate.initial_start_rows[component_index],
-                         candidate.components[component_index]->IsFlipped()));
+                         component->IsFlipped()));
+      initial_x_locations.emplace(component->Id(), component->LLX());
     }
     for (const ExactGriddedCellPlacement& placement : solution.cells) {
       const auto initial = initial_assignments.find(placement.component_id);
@@ -364,12 +369,42 @@ ExactGriddedWindowAnalysis ExactGriddedLegalizationWindowAnalyzer::Analyze(
       if (placement.row_index != initial->second.first) {
         ++result.reassigned_component_count;
       }
+      if (placement.x != initial_x_locations.at(placement.component_id)) {
+        ++result.x_location_change_count;
+      }
       if (placement.is_flipped != initial->second.second) {
         ++result.orientation_change_count;
       }
     }
+    std::vector<bool> solved_row_active(candidate.initial_rows.size(), false);
+    for (const ExactGriddedRowPlacement& row : solution.rows) {
+      DaliExpects(
+          row.row_index >= 0 &&
+              row.row_index < static_cast<int>(candidate.initial_rows.size()),
+          "Exact window solution contains an unknown row");
+      solved_row_active[row.row_index] = true;
+      const ExactGriddedRowHint& initial =
+          candidate.initial_rows[row.row_index];
+      if (!initial.active) ++result.row_activation_change_count;
+      if (row.y != initial.y) ++result.row_location_change_count;
+      if (row.p_well_height != initial.p_well_height ||
+          row.n_well_height != initial.n_well_height) {
+        ++result.well_height_change_count;
+      }
+    }
+    for (size_t row_index = 0; row_index < candidate.initial_rows.size();
+         ++row_index) {
+      if (candidate.initial_rows[row_index].active &&
+          !solved_row_active[row_index]) {
+        ++result.row_activation_change_count;
+      }
+    }
     analysis.reassigned_components += result.reassigned_component_count;
     analysis.orientation_changes += result.orientation_change_count;
+    analysis.x_location_changes += result.x_location_change_count;
+    analysis.row_activation_changes += result.row_activation_change_count;
+    analysis.row_location_changes += result.row_location_change_count;
+    analysis.well_height_changes += result.well_height_change_count;
     if (!result.has_best_known_solution ||
         result.solved_weighted_hpwl < result.best_known_weighted_hpwl) {
       result.best_known_weighted_hpwl = result.solved_weighted_hpwl;

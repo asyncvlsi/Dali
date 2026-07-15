@@ -82,6 +82,7 @@ class Dali {
     bool enable_ortools_row_optimization = false;
     bool analyze_exact_gridded_legalization = false;
     bool analyze_exact_adjacent_rows = false;
+    bool analyze_exact_row_geometry = false;
     int exact_gridded_window_components = 48;
     int exact_gridded_max_windows = 24;
     double exact_gridded_window_time = 0.25;
@@ -245,6 +246,7 @@ class Dali {
   bool enable_ortools_row_optimization_ = false;
   bool analyze_exact_gridded_legalization_ = false;
   bool analyze_exact_adjacent_rows_ = false;
+  bool analyze_exact_row_geometry_ = false;
   int exact_gridded_window_components_ = 48;
   int exact_gridded_max_windows_ = 24;
   double exact_gridded_window_time_ = 0.25;
