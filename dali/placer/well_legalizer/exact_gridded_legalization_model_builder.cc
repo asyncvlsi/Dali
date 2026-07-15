@@ -61,7 +61,16 @@ ExactGriddedLegalizationModel ExactGriddedLegalizationModelBuilder::Build(
     cell.initial_stripe_id = domain.initial_stripe_id;
     cell.initial_start_row = domain.initial_start_row;
     cell.initial_is_flipped = component->IsFlipped();
-    if (macro->HasCompleteWellRegions()) {
+    if (macro->RegionCount() == 1) {
+      // Final single-row legalization aligns the cell's N/P interface, not the
+      // lower and upper edges of well rectangles that may have LEF overhang.
+      // Use the same cell-boundary-to-interface distances here so an existing
+      // legal placement remains feasible in the exact model.
+      cell.regions.push_back(
+          {macro->FirstPwellHeight(), macro->FirstNwellHeight(),
+           macro->HasCompleteWellRegions() ? macro->IsNwellAbovePwell(0)
+                                           : true});
+    } else if (macro->HasCompleteWellRegions()) {
       cell.regions.reserve(macro->RegionCount());
       for (int region_id = 0; region_id < macro->RegionCount(); ++region_id) {
         cell.regions.push_back({macro->PwellHeight(region_id),
@@ -69,11 +78,8 @@ ExactGriddedLegalizationModel ExactGriddedLegalizationModelBuilder::Build(
                                 macro->IsNwellAbovePwell(region_id)});
       }
     } else {
-      // Legacy .cell inputs describe a single N-well rectangle and imply the
-      // complementary P-well below it. Match final legalization and capacity
-      // estimation by treating that shape as one complete logical region.
-      cell.regions.push_back(
-          {macro->FirstPwellHeight(), macro->FirstNwellHeight(), true});
+      DaliExpects(false,
+                  "Multi-region exact gridded cell has incomplete well data");
     }
     model.cells.push_back(std::move(cell));
     affected_net_ids.insert(affected_net_ids.end(),

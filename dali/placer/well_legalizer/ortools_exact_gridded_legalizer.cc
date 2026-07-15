@@ -220,7 +220,16 @@ std::string ValidateExactSolutionHint(
     }
     if (cell.initial_y != expected_y) {
       return "component " + std::to_string(cell.component_id) +
-             " Y does not match its hinted row geometry";
+             " Y does not match its hinted row geometry: actual " +
+             std::to_string(cell.initial_y) + ", expected " +
+             std::to_string(expected_y) + ", row Y " +
+             std::to_string(first_row.y) + ", row P/N heights " +
+             std::to_string(first_row.p_well_height) + "/" +
+             std::to_string(first_row.n_well_height) +
+             ", component P/N heights " +
+             std::to_string(first_region.p_well_height) + "/" +
+             std::to_string(first_region.n_well_height) + ", flipped " +
+             std::to_string(cell.initial_is_flipped);
     }
 
     for (int region_index = 0;
