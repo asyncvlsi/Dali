@@ -41,6 +41,8 @@ struct ExactGriddedLegalizationConfig {
   double weighted_hpwl_weight = 1.0;
   double displacement_weight = 0.0;
   bool log_search_progress = false;
+  // Check whether the supplied hints form a feasible solution before search.
+  bool validate_solution_hint = false;
 };
 
 /** One solved component location and discrete legalization assignment. */
@@ -78,6 +80,10 @@ struct ExactGriddedLegalizationResult {
   int64_t conflict_count = 0;
   int64_t branch_count = 0;
   double wall_time_seconds = 0.0;
+  ExactGriddedLegalizationStatus hint_validation_status =
+      ExactGriddedLegalizationStatus::kUnavailable;
+  double hinted_weighted_hpwl = 0.0;
+  double hint_validation_wall_time_seconds = 0.0;
 
   /** Return true when the result contains a complete legal placement. */
   bool HasSolution() const;

@@ -66,8 +66,13 @@ TEST(ExactGriddedLegalizationWindowAnalyzerTest,
   EXPECT_EQ(result.attempted_windows, 1);
   EXPECT_EQ(result.solved_windows, 1);
   EXPECT_EQ(result.optimal_windows, 1);
-  EXPECT_GT(result.solved_current_hpwl_sum, result.solved_incumbent_hpwl_sum);
+  EXPECT_EQ(result.feasible_hint_windows, 1);
   ASSERT_EQ(result.windows.size(), 1U);
+  EXPECT_DOUBLE_EQ(result.hinted_hpwl_sum,
+                   result.windows[0].current_weighted_hpwl);
+  EXPECT_GT(result.solved_current_hpwl_sum, result.solved_incumbent_hpwl_sum);
+  EXPECT_EQ(result.windows[0].hint_validation_status,
+            ExactGriddedLegalizationStatus::kOptimal);
   EXPECT_LT(result.windows[0].solved_weighted_hpwl,
             result.windows[0].current_weighted_hpwl);
   EXPECT_DOUBLE_EQ(result.windows[0].solved_weighted_hpwl,

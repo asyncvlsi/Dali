@@ -148,6 +148,30 @@ bool ExactGriddedCandidateMatchesAlternatingRows(
   return true;
 }
 
+/** Return physical weighted HPWL represented by solved net-extrema variables.
+ */
+double ExtractExactWeightedHpwl(
+    const CpSolverResponse& response,
+    const std::vector<ExactGriddedNetVariables>& net_variables,
+    const ExactGriddedLegalizationModel& model, int64_t pin_scale) {
+  double weighted_hpwl = 0.0;
+  for (const ExactGriddedNetVariables& net : net_variables) {
+    int64_t span_x =
+        operations_research::sat::SolutionIntegerValue(response,
+                                                       net.maximum_x) -
+        operations_research::sat::SolutionIntegerValue(response, net.minimum_x);
+    int64_t span_y =
+        operations_research::sat::SolutionIntegerValue(response,
+                                                       net.maximum_y) -
+        operations_research::sat::SolutionIntegerValue(response, net.minimum_y);
+    weighted_hpwl +=
+        net.weight *
+        (span_x * model.distance_scale_x + span_y * model.distance_scale_y) /
+        static_cast<double>(pin_scale);
+  }
+  return weighted_hpwl;
+}
+
 #endif
 
 ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
@@ -632,8 +656,47 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
   parameters.set_max_time_in_seconds(config.maximum_time_seconds);
   parameters.set_num_search_workers(config.number_of_workers);
   parameters.set_log_search_progress(config.log_search_progress);
-  CpSolverResponse response = operations_research::sat::SolveWithParameters(
-      cp_model.Build(), parameters);
+  const auto& cp_model_proto = cp_model.Build();
+  if (config.validate_solution_hint) {
+    operations_research::sat::SatParameters hint_parameters = parameters;
+    hint_parameters.set_fix_variables_to_their_hinted_value(true);
+    CpSolverResponse hint_response =
+        operations_research::sat::SolveWithParameters(cp_model_proto,
+                                                      hint_parameters);
+    result.hint_validation_wall_time_seconds = hint_response.wall_time();
+    switch (hint_response.status()) {
+      case operations_research::sat::CpSolverStatus::OPTIMAL:
+        result.hint_validation_status =
+            ExactGriddedLegalizationStatus::kOptimal;
+        break;
+      case operations_research::sat::CpSolverStatus::FEASIBLE:
+        result.hint_validation_status =
+            ExactGriddedLegalizationStatus::kFeasible;
+        break;
+      case operations_research::sat::CpSolverStatus::INFEASIBLE:
+        result.hint_validation_status =
+            ExactGriddedLegalizationStatus::kInfeasible;
+        break;
+      case operations_research::sat::CpSolverStatus::MODEL_INVALID:
+        result.hint_validation_status =
+            ExactGriddedLegalizationStatus::kInvalidModel;
+        break;
+      case operations_research::sat::CpSolverStatus::UNKNOWN:
+      default:
+        result.hint_validation_status =
+            ExactGriddedLegalizationStatus::kUnknown;
+        break;
+    }
+    if (result.hint_validation_status ==
+            ExactGriddedLegalizationStatus::kFeasible ||
+        result.hint_validation_status ==
+            ExactGriddedLegalizationStatus::kOptimal) {
+      result.hinted_weighted_hpwl = ExtractExactWeightedHpwl(
+          hint_response, net_variables, model, pin_scale);
+    }
+  }
+  CpSolverResponse response =
+      operations_research::sat::SolveWithParameters(cp_model_proto, parameters);
 
   result.best_objective_bound = response.best_objective_bound();
   result.conflict_count = response.num_conflicts();
@@ -668,20 +731,8 @@ ExactGriddedLegalizationResult OrToolsExactGriddedLegalizer::Solve(
   result.relative_gap = std::max(0.0, response.objective_value() -
                                           response.best_objective_bound()) /
                         std::max(1.0, std::abs(response.objective_value()));
-  for (const ExactGriddedNetVariables& net : net_variables) {
-    int64_t span_x =
-        operations_research::sat::SolutionIntegerValue(response,
-                                                       net.maximum_x) -
-        operations_research::sat::SolutionIntegerValue(response, net.minimum_x);
-    int64_t span_y =
-        operations_research::sat::SolutionIntegerValue(response,
-                                                       net.maximum_y) -
-        operations_research::sat::SolutionIntegerValue(response, net.minimum_y);
-    result.weighted_hpwl +=
-        net.weight *
-        (span_x * model.distance_scale_x + span_y * model.distance_scale_y) /
-        static_cast<double>(pin_scale);
-  }
+  result.weighted_hpwl =
+      ExtractExactWeightedHpwl(response, net_variables, model, pin_scale);
 
   result.cells.reserve(model.cells.size());
   for (size_t cell_index = 0; cell_index < model.cells.size(); ++cell_index) {

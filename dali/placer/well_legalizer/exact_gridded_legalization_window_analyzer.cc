@@ -232,6 +232,7 @@ ExactGriddedWindowAnalysis ExactGriddedLegalizationWindowAnalyzer::Analyze(
   ExactGriddedLegalizationConfig solver_config;
   solver_config.maximum_time_seconds = config_.maximum_time_seconds_per_window;
   solver_config.number_of_workers = config_.number_of_workers;
+  solver_config.validate_solution_hint = true;
   OrToolsExactGriddedLegalizer solver;
 
   int windows_to_solve =
@@ -280,10 +281,23 @@ ExactGriddedWindowAnalysis ExactGriddedLegalizationWindowAnalyzer::Analyze(
     result.best_objective_bound = solution.best_objective_bound;
     result.relative_gap = solution.relative_gap;
     result.wall_time_seconds = solution.wall_time_seconds;
+    result.hinted_weighted_hpwl = solution.hinted_weighted_hpwl;
+    result.hint_validation_wall_time_seconds =
+        solution.hint_validation_wall_time_seconds;
     result.status = solution.status;
+    result.hint_validation_status = solution.hint_validation_status;
     analysis.windows.push_back(result);
     ++analysis.attempted_windows;
     analysis.solver_wall_time_seconds += solution.wall_time_seconds;
+    analysis.hint_validation_wall_time_seconds +=
+        solution.hint_validation_wall_time_seconds;
+    if (solution.hint_validation_status ==
+            ExactGriddedLegalizationStatus::kFeasible ||
+        solution.hint_validation_status ==
+            ExactGriddedLegalizationStatus::kOptimal) {
+      ++analysis.feasible_hint_windows;
+      analysis.hinted_hpwl_sum += solution.hinted_weighted_hpwl;
+    }
     if (solution.best_objective_bound > 0.0) {
       ++analysis.positive_bound_windows;
       analysis.bounded_current_hpwl_sum += result.current_weighted_hpwl;

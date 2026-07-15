@@ -110,6 +110,35 @@ TEST(OrToolsExactGriddedLegalizerTest,
   EXPECT_DOUBLE_EQ(result.weighted_hpwl, 0.0);
 }
 
+TEST(OrToolsExactGriddedLegalizerTest, DetectsAnInfeasibleCompleteHint) {
+  if (!OrToolsExactGriddedLegalizer::IsAvailable()) {
+    GTEST_SKIP() << "Dali was built without OR-Tools 9.15.x";
+  }
+
+  ExactGriddedLegalizationModel model;
+  model.stripes = {{0, 0, 0, 6, 5, 1, 0, 0, 0, 0, {}}};
+  model.stripes[0].initial_rows = {{true, 0, 2, 2}};
+  model.cells = {
+      {0, 3, 0, 1, {{1, 2, true}}, {0}},
+      {1, 3, 0, 0, {{2, 1, true}}, {0}},
+  };
+  for (ExactGriddedCell& cell : model.cells) {
+    cell.initial_stripe_id = 0;
+    cell.initial_start_row = 0;
+  }
+  model.nets = {MakeAnchoredNet(0, 1.0, 2.0), MakeAnchoredNet(1, 4.0, 1.0)};
+
+  ExactGriddedLegalizationConfig config;
+  config.maximum_time_seconds = 10.0;
+  config.validate_solution_hint = true;
+  ExactGriddedLegalizationResult result =
+      OrToolsExactGriddedLegalizer().Solve(model, config);
+
+  EXPECT_TRUE(result.HasSolution()) << result.message;
+  EXPECT_EQ(result.hint_validation_status,
+            ExactGriddedLegalizationStatus::kInfeasible);
+}
+
 TEST(OrToolsExactGriddedLegalizerTest, AllowsWhitespaceBetweenLegalRows) {
   if (!OrToolsExactGriddedLegalizer::IsAvailable()) {
     GTEST_SKIP() << "Dali was built without OR-Tools 9.15.x";
@@ -133,12 +162,16 @@ TEST(OrToolsExactGriddedLegalizerTest, AllowsWhitespaceBetweenLegalRows) {
 
   ExactGriddedLegalizationConfig config;
   config.maximum_time_seconds = 10.0;
+  config.validate_solution_hint = true;
   ExactGriddedLegalizationResult result =
       OrToolsExactGriddedLegalizer().Solve(model, config);
 
   ASSERT_EQ(result.status, ExactGriddedLegalizationStatus::kOptimal)
       << result.message;
   EXPECT_DOUBLE_EQ(result.weighted_hpwl, 0.0);
+  EXPECT_EQ(result.hint_validation_status,
+            ExactGriddedLegalizationStatus::kOptimal);
+  EXPECT_DOUBLE_EQ(result.hinted_weighted_hpwl, 0.0);
   ASSERT_EQ(result.rows.size(), 2U);
   EXPECT_EQ(result.rows[0].y, 0);
   EXPECT_EQ(result.rows[1].y, 8);

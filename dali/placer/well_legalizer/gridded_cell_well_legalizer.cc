@@ -1604,6 +1604,9 @@ void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
       << "    optimal windows         : " << analysis.optimal_windows << "\n"
       << "    positive-bound windows  : " << analysis.positive_bound_windows
       << "\n"
+      << "    feasible solution hints : " << analysis.feasible_hint_windows
+      << "\n"
+      << "    hinted model HPWL       : " << analysis.hinted_hpwl_sum << "um\n"
       << "    solved current HPWL     : " << analysis.solved_current_hpwl_sum
       << "um\n"
       << "    solved incumbent HPWL   : " << analysis.solved_incumbent_hpwl_sum
@@ -1614,6 +1617,8 @@ void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
       << "um\n"
       << "    solver wall time        : " << analysis.solver_wall_time_seconds
       << "s\n"
+      << "    hint validation time    : "
+      << analysis.hint_validation_wall_time_seconds << "s\n"
       << "    stage wall time         : " << timer.GetWallTime() << "s\n";
   for (size_t index = 0; index < analysis.windows.size(); ++index) {
     const ExactGriddedWindowResult& window = analysis.windows[index];
@@ -1624,7 +1629,16 @@ void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
             << window.component_count << " components, " << window.net_count
             << " nets, status "
             << ExactGriddedLegalizationStatusName(window.status)
-            << ", current HPWL " << window.current_weighted_hpwl << "um";
+            << ", current HPWL " << window.current_weighted_hpwl << "um"
+            << ", hint "
+            << ExactGriddedLegalizationStatusName(
+                   window.hint_validation_status);
+    if (window.hint_validation_status ==
+            ExactGriddedLegalizationStatus::kFeasible ||
+        window.hint_validation_status ==
+            ExactGriddedLegalizationStatus::kOptimal) {
+      message << " (" << window.hinted_weighted_hpwl << "um)";
+    }
     if (window.status == ExactGriddedLegalizationStatus::kFeasible ||
         window.status == ExactGriddedLegalizationStatus::kOptimal) {
       message << ", incumbent " << window.solved_weighted_hpwl << "um, bound "
@@ -1652,6 +1666,10 @@ void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
                         analysis.optimal_windows);
   RecordPlacementMetric("exact_legalization.positive_bound_windows",
                         analysis.positive_bound_windows);
+  RecordPlacementMetric("exact_legalization.feasible_hint_windows",
+                        analysis.feasible_hint_windows);
+  RecordPlacementMetric("exact_legalization.hinted_hpwl",
+                        analysis.hinted_hpwl_sum);
   RecordPlacementMetric("exact_legalization.solved_current_hpwl",
                         analysis.solved_current_hpwl_sum);
   RecordPlacementMetric("exact_legalization.solved_incumbent_hpwl",
@@ -1662,6 +1680,8 @@ void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
                         analysis.positive_lower_bound_sum);
   RecordPlacementMetric("time.exact_legalization.solver_wall_s",
                         analysis.solver_wall_time_seconds);
+  RecordPlacementMetric("time.exact_legalization.hint_validation.wall_s",
+                        analysis.hint_validation_wall_time_seconds);
   RecordPlacementMetric("time.exact_legalization.wall_s", timer.GetWallTime());
   RecordPlacementMetric("time.exact_legalization.cpu_s", timer.GetCpuTime());
 }

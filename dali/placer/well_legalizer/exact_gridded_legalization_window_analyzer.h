@@ -44,7 +44,11 @@ struct ExactGriddedWindowResult {
   double best_objective_bound = 0.0;
   double relative_gap = 0.0;
   double wall_time_seconds = 0.0;
+  double hinted_weighted_hpwl = 0.0;
+  double hint_validation_wall_time_seconds = 0.0;
   ExactGriddedLegalizationStatus status =
+      ExactGriddedLegalizationStatus::kUnavailable;
+  ExactGriddedLegalizationStatus hint_validation_status =
       ExactGriddedLegalizationStatus::kUnavailable;
 };
 
@@ -57,11 +61,14 @@ struct ExactGriddedWindowAnalysis {
   int solved_windows = 0;
   int optimal_windows = 0;
   int positive_bound_windows = 0;
+  int feasible_hint_windows = 0;
   double solved_current_hpwl_sum = 0.0;
   double solved_incumbent_hpwl_sum = 0.0;
   double bounded_current_hpwl_sum = 0.0;
   double positive_lower_bound_sum = 0.0;
+  double hinted_hpwl_sum = 0.0;
   double solver_wall_time_seconds = 0.0;
+  double hint_validation_wall_time_seconds = 0.0;
   std::vector<ExactGriddedWindowResult> windows;
 };
 
