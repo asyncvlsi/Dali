@@ -678,7 +678,7 @@ void Stripe::IterativeCellReordering(int max_iter, int number_of_threads) {
   omp_set_num_threads(number_of_threads);
   bool is_weighted_anchor = false;
   for (int i = 0; i < max_iter; ++i) {
-    // double decay = 30.0; // the bigger, the closer to CPLEX result
+    // double decay = 30.0;
     // double lambda = exp(-i / decay);
     double lambda = 1 / double(i + 1);
     OptimizeDisplacementInEachRowSegment(lambda, is_weighted_anchor,
@@ -710,131 +710,6 @@ size_t Stripe::OutOfBoundCell() {
   }
   return cnt;
 }
-
-#if DALI_USE_CPLEX
-void Stripe::PopulateVariableArray(IloModel& model, IloNumVarArray& x) {
-  IloEnv env = model.getEnv();
-  IloInt cnt = 0;
-  for (auto& row : gridded_rows_) {
-    for (auto& component_region : row.component_regions_) {
-      Component* component_ptr = component_region.component;
-      if (component_ptr_2_tmp_id.find(component_ptr) ==
-          component_ptr_2_tmp_id.end()) {
-        // x.add(IloNumVar(env, lx_, lx_ + width_));
-        // x.add(IloNumVar(env, lx_, IloInfinity));
-        x.add(IloNumVar(env, -IloInfinity, IloInfinity));
-        component_ptr_2_tmp_id[component_ptr] = cnt;
-        component_temp_id_to_ptr_[cnt] = component_ptr;
-        ++cnt;
-      }
-    }
-  }
-}
-
-void Stripe::AddVariableConstraints(IloModel& model, IloNumVarArray& x,
-                                    IloRangeArray& c) {
-  for (auto& row : gridded_rows_) {
-    size_t component_count = row.component_regions_.size();
-    for (size_t i = 0; i < component_count; ++i) {
-      if (i > 0) {
-        Component* component_ptr0 = row.component_regions_[i - 1].component;
-        IloInt id0 = component_ptr_2_tmp_id[component_ptr0];
-        int width = component_ptr0->Width();
-        Component* component_ptr1 = row.component_regions_[i].component;
-        IloInt id1 = component_ptr_2_tmp_id[component_ptr1];
-        c.add(x[id1] - x[id0] >= width);
-      }
-    }
-  }
-
-  model.add(c);
-}
-
-void Stripe::ConstructQuadraticObjective(IloModel& model, IloNumVarArray& x) {
-  IloEnv env = model.getEnv();
-  IloExpr objExpr(env);
-  for (auto& row : gridded_rows_) {
-    for (auto& component_region : row.component_regions_) {
-      Component* component_ptr = component_region.component;
-      auto aux_ptr =
-          static_cast<ComponentLegalizationState*>(component_ptr->AuxPtr());
-      double2d init = aux_ptr->InitLoc();
-      IloInt id = component_ptr_2_tmp_id[component_ptr];
-      objExpr += 1.0 * x[id] * x[id] - 2 * init.x * x[id];
-    }
-  }
-  IloObjective obj = IloMinimize(env, objExpr);
-  model.add(obj);
-  objExpr.end();
-}
-
-void Stripe::CreateQPModel(IloModel& model, IloNumVarArray& x,
-                           IloRangeArray& c) {
-  PopulateVariableArray(model, x);
-  AddVariableConstraints(model, x, c);
-  ConstructQuadraticObjective(model, x);
-}
-
-bool Stripe::SolveQPProblem(IloCplex& cplex, IloNumVarArray& var) {
-  IloEnv env = var.getEnv();
-
-  IloBool is_solved = cplex.solve();
-
-  if (is_solved) {
-    // LOG(info)
-    //   << "Solution status = " << cplex.getStatus() << "\n";
-    // LOG(info)
-    //   << "Solution value  = " << cplex.getObjValue() << "\n";
-
-    IloNumArray val(env);
-    cplex.getValues(val, var);
-    IloInt nvars = var.getSize();
-    for (IloInt j = 0; j < nvars; ++j) {
-      // env.out() << "Variable " << j << ": Value = " << val[j] << endl;
-      Component* component_ptr = component_temp_id_to_ptr_[j];
-      component_ptr->SetLLX(val[j]);
-    }
-    val.end();
-  } else {
-    LOG(info) << "Problem cannot be solved\n";
-  }
-
-  return is_solved;
-}
-
-bool Stripe::OptimizeDisplacementUsingQuadraticProgramming(
-    int number_of_threads) {
-  bool is_solved = true;
-
-  SortComponentsInEachRow();
-
-  IloEnv env;
-  try {
-    // create a QP problem
-    IloModel model(env);
-    IloNumVarArray var(env);
-    IloRangeArray con(env);
-    CreateQPModel(model, var, con);
-
-    IloCplex cplex(model);
-
-    cplex.setParam(IloCplex::Param::MIP::Display, 0);
-    cplex.setParam(IloCplex::Param::Threads, number_of_threads);
-
-    // solve the QP problem
-    is_solved = SolveQPProblem(cplex, var);
-  } catch (IloException& e) {
-    LOG(error) << "Concert exception caught: " << e << "\n";
-    is_solved = false;
-  } catch (...) {
-    LOG(error) << "Unknown exception caught" << "\n";
-    is_solved = false;
-  }
-
-  env.end();
-  return is_solved;
-}
-#endif
 
 void Stripe::ImportStandardRowSegments(phydb::PhyDB& phydb, Circuit& ckt) {
   lx_ = INT_MAX;

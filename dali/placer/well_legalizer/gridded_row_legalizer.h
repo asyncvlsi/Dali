@@ -44,9 +44,6 @@ class GriddedRowLegalizer : public Placer {
   /** Set worker thread count. */
   void SetNumThreads(int number_of_threads);
 
-  /** Enable or disable CPLEX-based displacement optimization. */
-  void SetCplexEnabled(bool use_cplex);
-
   /** Inject an external space partitioner. */
   void SetExternalSpacePartitioner(SpacePartitioner* p_external_partitioner);
 
@@ -69,11 +66,9 @@ class GriddedRowLegalizer : public Placer {
   void InitializeComponentAuxiliaryInfo();
   void SaveInitialLoc();
   void SaveUpDownLoc();
-  void SaveQPLoc();
   void SaveConsensusLoc();
   void RestoreInitialLocX();
   void RestoreGreedyLocX();
-  void RestoreQPLocX();
   void RestoreConsensusLocX();
 
   void SetLegalizationMaxIteration(int max_iteration);
@@ -89,8 +84,6 @@ class GriddedRowLegalizer : public Placer {
 
   bool IsLeftmostPlacementLegal();
   bool IsPlacementLegal();
-  bool OptimizeDisplacementUsingQuadraticProgramming();
-
   bool IterativeDisplacementOptimization();
 
   void EmbodyWellTapCells();
@@ -138,12 +131,10 @@ class GriddedRowLegalizer : public Placer {
 
   bool is_init_loc_cached_ = false;
   bool is_greedy_loc_cached_ = false;
-  bool is_qp_loc_cached_ = false;
   bool is_cons_loc_cached_ = false;
   std::vector<ComponentLegalizationState> component_auxs_;
 
   int number_of_threads_ = 1;
-  bool use_cplex_ = false;
 
   void SetWellTapCellNecessary(bool is_well_tap_needed);
   void SetWellTapCellPlacementMode(bool is_checker_board_mode);

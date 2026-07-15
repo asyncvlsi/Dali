@@ -40,9 +40,6 @@ class ComponentLegalizationState : public ComponentAux {
    * location. */
   void StoreCurLocAsGreedyLoc();
 
-  /** Cache the component's current location as its QP legalization location. */
-  void StoreCurLocAsQPLoc();
-
   /** Cache the component's current location as its consensus location. */
   void StoreCurLocAsConsLoc();
 
@@ -52,15 +49,11 @@ class ComponentLegalizationState : public ComponentAux {
   /** Restore the component to its greedy legalization location. */
   void RecoverGreedyLoc();
 
-  /** Restore the component to its QP legalization location. */
-  void RecoverQPLoc();
-
   /** Restore the component to its consensus location. */
   void RecoverConsLoc();
 
   void RecoverInitLocX();
   void RecoverGreedyLocX();
-  void RecoverQPLocX();
   void RecoverConsLocX();
 
   /** Store one sub-cell legalization location and weight. */
@@ -77,13 +70,11 @@ class ComponentLegalizationState : public ComponentAux {
 
   double2d InitLoc() const;
   double2d GreedyLoc() const;
-  double2d QPLoc() const;
   double2d ConsLoc() const;
 
  private:
   double2d init_loc_;    // location before legalization
   double2d greedy_loc_;  // location from the greedy legalization algorithm
-  double2d qp_loc_;      // location from quadratic programming
   double2d cons_loc_;    // location from the consensus algorithm
 
   std::vector<double> sub_locs_;  // locations from different sub-cells

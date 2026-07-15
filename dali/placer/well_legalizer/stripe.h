@@ -23,14 +23,8 @@
 
 #include "dali/circuit/circuit.h"
 #include "dali/circuit/component.h"
-#include "dali/common/config.h"
 #include "dali/common/misc.h"
 #include "dali/placer/well_legalizer/gridded_row.h"
-
-#if DALI_USE_CPLEX
-#include <ilcplex/ilocplex.h>
-ILOSTLBEGIN
-#endif
 
 namespace dali {
 
@@ -146,18 +140,6 @@ class Stripe {
   void SortComponentsInEachRow();
 
   size_t OutOfBoundCell();
-
-#if DALI_USE_CPLEX
-  std::unordered_map<Component*, IloInt> component_ptr_2_tmp_id;
-  std::unordered_map<IloInt, Component*> component_temp_id_to_ptr_;
-  void PopulateVariableArray(IloModel& model, IloNumVarArray& x);
-  void AddVariableConstraints(IloModel& model, IloNumVarArray& x,
-                              IloRangeArray& c);
-  void ConstructQuadraticObjective(IloModel& model, IloNumVarArray& x);
-  void CreateQPModel(IloModel& model, IloNumVarArray& x, IloRangeArray& c);
-  bool SolveQPProblem(IloCplex& cplex, IloNumVarArray& var);
-  bool OptimizeDisplacementUsingQuadraticProgramming(int number_of_threads = 1);
-#endif
 
   /**** for standard cells ****/
   int row_height_ = 1;

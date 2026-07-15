@@ -8,15 +8,11 @@
  * of the License, or (at your option) any later version.
  *
  ******************************************************************************/
-// clang-format off
-#include <stdio.h>
-#include <common/config.h>
-// clang-format on
-
 #include "dali/application/dali_command_line.h"
 
 #include <iostream>
 
+#include "dali/common/act_config.h"
 #include "dali/common/helper.h"
 
 namespace dali {

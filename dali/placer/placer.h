@@ -22,11 +22,6 @@
 #ifndef DALI_PLACER_PLACER_H_
 #define DALI_PLACER_PLACER_H_
 
-// clang-format off
-#include <stdio.h>
-#include <common/config.h>
-// clang-format on
-
 #include <fstream>
 #include <iostream>
 #include <string>

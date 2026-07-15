@@ -25,6 +25,7 @@
 #include <limits>
 #include <utility>
 
+#include "dali/common/act_config.h"
 #include "dali/common/elapsed_time.h"
 #include "dali/common/helper.h"
 #include "dali/common/placement_metrics.h"

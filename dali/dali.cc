@@ -20,8 +20,6 @@
  ******************************************************************************/
 #include "dali.h"
 
-#include <common/config.h>
-
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
@@ -29,6 +27,7 @@
 #include <utility>
 
 #include "dali/circuit/hpwl_lower_bound.h"
+#include "dali/common/act_config.h"
 #include "dali/common/elapsed_time.h"
 #include "dali/common/git_version.h"
 #include "dali/common/helper.h"

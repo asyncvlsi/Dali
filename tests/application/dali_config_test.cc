@@ -8,13 +8,9 @@
  * of the License, or (at your option) any later version.
  *
  ******************************************************************************/
-// clang-format off
-#include <stdio.h>
-#include <common/config.h>
-// clang-format on
-
 #include <gtest/gtest.h>
 
+#include "dali/common/act_config.h"
 #include "dali/dali.h"
 
 using testing::Test;

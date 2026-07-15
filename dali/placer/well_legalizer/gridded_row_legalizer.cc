@@ -23,7 +23,6 @@
 #include <algorithm>
 #include <cmath>
 
-#include "dali/common/config.h"
 #include "dali/common/elapsed_time.h"
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
@@ -54,10 +53,6 @@ void GriddedRowLegalizer::CheckWellInfo() {
 void GriddedRowLegalizer::SetNumThreads(int number_of_threads) {
   DaliExpects(number_of_threads > 0, "negative threads?");
   number_of_threads_ = number_of_threads;
-}
-
-void GriddedRowLegalizer::SetCplexEnabled(bool use_cplex) {
-  use_cplex_ = use_cplex;
 }
 
 void GriddedRowLegalizer::SetExternalSpacePartitioner(
@@ -148,16 +143,6 @@ void GriddedRowLegalizer::SaveUpDownLoc() {
   }
 }
 
-void GriddedRowLegalizer::SaveQPLoc() {
-  is_qp_loc_cached_ = true;
-  auto& components = ckt_ptr_->Components();
-  for (Component& component : components) {
-    if (IsDummyComponent(component)) continue;
-    auto aux_ptr = static_cast<ComponentLegalizationState*>(component.AuxPtr());
-    aux_ptr->StoreCurLocAsQPLoc();
-  }
-}
-
 void GriddedRowLegalizer::SaveConsensusLoc() {
   is_cons_loc_cached_ = true;
   auto& components = ckt_ptr_->Components();
@@ -187,18 +172,6 @@ void GriddedRowLegalizer::RestoreGreedyLocX() {
     if (IsDummyComponent(component)) continue;
     auto aux_ptr = static_cast<ComponentLegalizationState*>(component.AuxPtr());
     aux_ptr->RecoverGreedyLocX();
-  }
-}
-
-void GriddedRowLegalizer::RestoreQPLocX() {
-  DaliExpects(
-      is_qp_loc_cached_,
-      "Quadratic programming locations are not saved, no way to restore");
-  auto& components = ckt_ptr_->Components();
-  for (Component& component : components) {
-    if (IsDummyComponent(component)) continue;
-    auto aux_ptr = static_cast<ComponentLegalizationState*>(component.AuxPtr());
-    aux_ptr->RecoverQPLocX();
   }
 }
 
@@ -394,41 +367,6 @@ bool GriddedRowLegalizer::IsPlacementLegal() {
   return res;
 }
 
-bool GriddedRowLegalizer::OptimizeDisplacementUsingQuadraticProgramming() {
-#if DALI_USE_CPLEX
-  LOG(info) << "Optimizing displacement X using quadratic programming\n";
-  double wall_time = get_wall_time();
-  double cpu_time = get_cpu_time();
-
-  bool is_successful = true;
-  for (auto& col : col_list_) {
-    for (auto& stripe : col.stripe_list_) {
-      bool res = stripe.OptimizeDisplacementUsingQuadraticProgramming(
-          number_of_threads_);
-      is_successful = res && is_successful;
-    }
-  }
-
-  if (is_successful) {
-    LOG(info) << "Quadratic programming complete\n";
-  } else {
-    LOG(info) << "Quadratic programming solution not found\n";
-  }
-
-  wall_time = get_wall_time() - wall_time;
-  cpu_time = get_cpu_time() - cpu_time;
-  LOG(info) << "(wall time: " << wall_time << "s, cpu time: " << cpu_time
-            << "s)\n";
-
-  ReportDisplacement();
-  return is_successful;
-#else
-  LOG(info) << "Skip optimizing displacement using quadratic "
-               "programming: CPLEX not found\n";
-  return true;
-#endif
-}
-
 bool GriddedRowLegalizer::IterativeDisplacementOptimization() {
   LOG(info) << "Optimizing displacement X using the consensus algorithm\n";
   ElapsedTime elapsed_time;
@@ -541,22 +479,11 @@ bool GriddedRowLegalizer::StartPlacement() {
   ReportEffectiveDensity();
 
   if (is_success) {
-    if (use_cplex_) {
-      RestoreInitialLocX();
-      IsLeftmostPlacementLegal();
-      // IterativeCellReordering();
-      // bool is_qp_solved = OptimizeDisplacementUsingQuadraticProgramming();
-      OptimizeDisplacementUsingQuadraticProgramming();
-      SaveQPLoc();
-      ReportHPWL();
-    } else {
-      RestoreInitialLocX();
-      // bool is_cons_solved = IterativeDisplacementOptimization();
-      IterativeDisplacementOptimization();
-      GenSubCellTable("subcell");
-      ReportHPWL();
-      SaveConsensusLoc();
-    }
+    RestoreInitialLocX();
+    IterativeDisplacementOptimization();
+    GenSubCellTable("subcell");
+    ReportHPWL();
+    SaveConsensusLoc();
     ReportOutOfBoundCell();
     UpwardDownwardLegalization(true);
     ReportHPWL();

@@ -24,6 +24,7 @@
 #include <iostream>
 
 #include "dali/circuit/circuit.h"
+#include "dali/common/act_config.h"
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
 #include "dali/placer.h"

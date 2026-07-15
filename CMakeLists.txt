@@ -52,16 +52,13 @@ find_library(DEF_LIBRARY NAMES def PATHS $ENV{ACT_HOME}/lib REQUIRED)
 message(STATUS "Found libdef.a: ${DEF_LIBRARY}")
 
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-#Dependencies : Galois, OpenMP, CPLEX, Git Commit
+#Dependencies : Galois, OpenMP, Git Commit
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 #Detect if galois_eda library exists
 include(cmake/FindGaloisEDA.cmake)
 
 #Detect if OpenMP library exists
 include(cmake/FindOpenMPPackage.cmake)
-
-#Detect if CPLEX library exists
-include(cmake/FindCPLEX.cmake)
 
 #Set Git Commit version
 include(cmake/FindGitCommitVersion.cmake)
@@ -106,52 +103,8 @@ endif ()
 add_compile_options(-fopenmp)
 add_compile_options(-Wall -Wextra -Wshadow -Wnon-virtual-dtor -Werror=return-type -pedantic)
 
-set(DALI_GUI "AUTO" CACHE STRING "Qt live placement GUI mode: AUTO, ON, or OFF")
-set_property(CACHE DALI_GUI PROPERTY STRINGS AUTO ON OFF)
-string(TOUPPER "${DALI_GUI}" DALI_GUI_MODE)
-
-foreach(qt_prefix
-        /opt/homebrew/opt/qt
-        /opt/homebrew/opt/qt@6
-        /usr/local/opt/qt
-        /usr/local/opt/qt@6)
-    if (EXISTS "${qt_prefix}/lib/cmake/Qt6")
-        list(APPEND CMAKE_PREFIX_PATH "${qt_prefix}")
-    endif ()
-endforeach()
-
-find_program(BREW_EXECUTABLE brew)
-if (BREW_EXECUTABLE)
-    foreach(qt_formula qt qt@6)
-        execute_process(
-            COMMAND ${BREW_EXECUTABLE} --prefix ${qt_formula}
-            RESULT_VARIABLE brew_qt_result
-            OUTPUT_VARIABLE brew_qt_prefix
-            ERROR_QUIET
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
-        if (brew_qt_result EQUAL 0 AND EXISTS "${brew_qt_prefix}/lib/cmake/Qt6")
-            list(APPEND CMAKE_PREFIX_PATH "${brew_qt_prefix}")
-        endif ()
-    endforeach()
-endif ()
-
-if (DALI_GUI_MODE STREQUAL "OFF")
-    set(DALI_HAS_QT_GUI FALSE)
-else ()
-    find_package(Qt6 COMPONENTS Widgets QUIET)
-    if (Qt6Widgets_FOUND)
-        message(STATUS "Qt6 Widgets found: enabling Dali GUI debug support")
-        set(DALI_HAS_QT_GUI TRUE)
-    else ()
-        set(DALI_HAS_QT_GUI FALSE)
-        if (DALI_GUI_MODE STREQUAL "ON")
-            message(FATAL_ERROR "DALI_GUI=ON but Qt6 Widgets was not found")
-        else ()
-            message(STATUS "Qt6 Widgets not found: building Dali without GUI debug support")
-        endif ()
-    endif ()
-endif ()
+include(cmake/ConfigureOrTools.cmake)
+include(cmake/ConfigureQtGui.cmake)
 
 #Set output directories
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
@@ -187,14 +140,22 @@ else ()
     set(LIBCXXFS_LIB "")
 endif ()
 
+if (DALI_HAS_OR_TOOLS)
+    set(DALI_OPTIONAL_LIBRARIES ortools::ortools)
+    target_compile_definitions(dalilib PRIVATE DALI_HAS_OR_TOOLS)
+else ()
+    set(DALI_OPTIONAL_LIBRARIES "")
+endif ()
+
 target_link_libraries(
     dalilib
     ${ACT_LIBRARY} ${ACTVLSILIB_LIBRARY} ${PHYDB_LIBRARY}
     ${Galois_LIBRARIES}
     ${LEF_LIBRARY} ${DEF_LIBRARY}
-    ${CPLEX_LIBRARIES} m pthread dl
+    m pthread dl
     OpenMP::OpenMP_CXX
     ${LIBCXXFS_LIB}
+    ${DALI_OPTIONAL_LIBRARIES}
 )
 
 if (DALI_HAS_QT_GUI)

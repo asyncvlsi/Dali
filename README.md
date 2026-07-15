@@ -12,9 +12,19 @@
   * Si2 LEF/DEF parser, a mirror can be found [here](https://github.com/asyncvlsi/lefdef)
   * [PhyDB](https://github.com/asyncvlsi/phyDB)
   * OpenMP (for MacOS user, `libomp` from Homebrew will work)
+  * Qt 6 Widgets is optional and enables Dali's live placement GUI. Install it
+    with `brew install qt` on macOS or `sudo apt install qt6-base-dev` on
+    Ubuntu 22.04 and newer. CMake enables the GUI automatically when Qt is
+    available.
   * GoogleTest is optional. If CMake cannot find it, tests in `tests/common` are
     skipped while the rest of the build remains available. On Ubuntu/Debian,
     install it with `sudo apt install libgtest-dev`.
+  * [OR-Tools](https://developers.google.com/optimization/install/cpp) 9.15.x
+    is optional. It enables the experimental CP-SAT legalization backend when
+    CMake can find a compatible C++ package. On macOS, install it with
+    `brew install or-tools pkgconf`. On Ubuntu, install the official 9.15 C++
+    binary distribution or build and install it from source, then set
+    `ORTOOLS_ROOT` if it is outside a standard system prefix.
   
 ### Clone repo and compile
     $ git clone --recursive https://github.com/asyncvlsi/Dali.git
@@ -29,6 +39,19 @@ The default installation destination is `$ACT_HOME`.
 One can use the following command to specify the installation destination and install this package:
 
     $ cmake .. -DCMAKE_INSTALL_PREFIX=path/to/installation
+
+OR-Tools detection defaults to `AUTO`. Use `-DDALI_OR_TOOLS=ON` to require a
+compatible installation or `-DDALI_OR_TOOLS=OFF` to build without it. For a
+custom Ubuntu installation:
+
+    $ ORTOOLS_ROOT=/path/to/or-tools-9.15 cmake ..
+
+Qt GUI detection defaults to `AUTO`, so the normal `cmake ..` command enables
+the GUI automatically when Qt 6 Widgets is installed. Use `-DDALI_GUI=ON` only
+when configuration should fail if Qt is unavailable, or `-DDALI_GUI=OFF` to
+force a non-GUI build:
+
+    $ cmake .. -DDALI_GUI=ON
 
 ### Run tests
 After configuring and building from the `build/` directory, run:

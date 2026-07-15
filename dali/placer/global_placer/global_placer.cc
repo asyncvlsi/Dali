@@ -26,6 +26,7 @@
 #include <memory>
 #include <utility>
 
+#include "dali/common/act_config.h"
 #include "dali/common/logging.h"
 #include "dali/common/placement_metrics.h"
 

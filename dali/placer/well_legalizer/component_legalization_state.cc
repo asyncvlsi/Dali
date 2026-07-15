@@ -42,11 +42,6 @@ void ComponentLegalizationState::StoreCurLocAsGreedyLoc() {
   greedy_loc_.y = component_ptr_->LLY();
 }
 
-void ComponentLegalizationState::StoreCurLocAsQPLoc() {
-  qp_loc_.x = component_ptr_->LLX();
-  qp_loc_.y = component_ptr_->LLY();
-}
-
 void ComponentLegalizationState::StoreCurLocAsConsLoc() {
   cons_loc_.x = component_ptr_->LLX();
   cons_loc_.y = component_ptr_->LLY();
@@ -62,11 +57,6 @@ void ComponentLegalizationState::RecoverGreedyLoc() {
   component_ptr_->SetLLY(greedy_loc_.y);
 }
 
-void ComponentLegalizationState::RecoverQPLoc() {
-  component_ptr_->SetLLX(qp_loc_.x);
-  component_ptr_->SetLLY(qp_loc_.y);
-}
-
 void ComponentLegalizationState::RecoverConsLoc() {
   component_ptr_->SetLLX(cons_loc_.x);
   component_ptr_->SetLLY(cons_loc_.y);
@@ -78,10 +68,6 @@ void ComponentLegalizationState::RecoverInitLocX() {
 
 void ComponentLegalizationState::RecoverGreedyLocX() {
   component_ptr_->SetLLX(greedy_loc_.x);
-}
-
-void ComponentLegalizationState::RecoverQPLocX() {
-  component_ptr_->SetLLX(qp_loc_.x);
 }
 
 void ComponentLegalizationState::RecoverConsLocX() {
@@ -119,8 +105,6 @@ double ComponentLegalizationState::AverageLoc() const { return average_loc_; }
 double2d ComponentLegalizationState::InitLoc() const { return init_loc_; }
 
 double2d ComponentLegalizationState::GreedyLoc() const { return greedy_loc_; }
-
-double2d ComponentLegalizationState::QPLoc() const { return qp_loc_; }
 
 double2d ComponentLegalizationState::ConsLoc() const { return cons_loc_; }
 
