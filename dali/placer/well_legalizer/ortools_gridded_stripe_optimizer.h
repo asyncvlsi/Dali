@@ -30,6 +30,10 @@ struct OrToolsGriddedStripeOptimizerConfig {
   int net_ignore_threshold = 100;
   int minimum_p_well_height = 0;
   int minimum_n_well_height = 0;
+  // Zero preserves row membership; positive values permit nearby row moves.
+  int maximum_row_displacement = 0;
+  // Negative values leave the number of changed assignments unrestricted.
+  int maximum_row_assignment_changes = -1;
   // Zero solves complete stripes. Positive values create overlapping bands.
   int target_components_per_model = 0;
   int maximum_components_per_model = 96;
@@ -45,6 +49,7 @@ struct OrToolsGriddedStripeSolveResult {
   int last_row_index = -1;
   int component_count = 0;
   int net_count = 0;
+  int reassigned_component_count = 0;
   int64_t model_variable_count = 0;
   int64_t model_constraint_count = 0;
   double modeled_hpwl_before = 0.0;
@@ -76,12 +81,13 @@ struct OrToolsGriddedStripeOptimizerResult {
 /**
  * Improve finalized gridded stripes through conditional CP-SAT subproblems.
  *
- * A solve may reorder components within their current rows. Row membership,
- * row geometry, and orientation remain fixed. Pins outside the active stripe
- * are constants, and stripes are updated sequentially so every later model
- * sees all accepted earlier changes. A candidate is committed only when row
- * legality holds, modeled HPWL improves, and full affected-net HPWL does not
- * regress.
+ * By default, a solve reorders components within their current rows. An
+ * optional row radius also permits nearby row reassignment while preserving
+ * finalized row geometry. Pins outside the active stripe are constants, and
+ * stripes are updated sequentially so every later model sees all accepted
+ * earlier changes. A candidate is committed only when row legality holds,
+ * modeled HPWL improves, and full affected-net HPWL passes the configured
+ * non-regression guard.
  */
 class OrToolsGriddedStripeOptimizer {
  public:

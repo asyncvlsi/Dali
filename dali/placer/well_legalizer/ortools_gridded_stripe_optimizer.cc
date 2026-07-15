@@ -18,6 +18,7 @@
 
 #include "dali/common/helper.h"
 #include "dali/placer/well_legalizer/exact_gridded_stripe_model_builder.h"
+#include "dali/placer/well_legalizer/gridded_row_assignment_transaction.h"
 #include "dali/placer/well_legalizer/ortools_compact_gridded_legalizer.h"
 
 namespace dali {
@@ -42,6 +43,10 @@ OrToolsGriddedStripeOptimizer::OrToolsGriddedStripeOptimizer(
   DaliExpects(
       config_.minimum_p_well_height >= 0 && config_.minimum_n_well_height >= 0,
       "Stripe minimum well heights must be non-negative");
+  DaliExpects(config_.maximum_row_displacement >= 0,
+              "Stripe row displacement must be non-negative");
+  DaliExpects(config_.maximum_row_assignment_changes >= -1,
+              "Stripe row-change budget must be at least negative one");
   DaliExpects(config_.target_components_per_model >= 0,
               "Stripe model component target must be non-negative");
   DaliExpects(config_.maximum_components_per_model > 0,
@@ -235,7 +240,9 @@ OrToolsGriddedStripeOptimizerResult OrToolsGriddedStripeOptimizer::Optimize(
       solver_config.maximum_time_seconds =
           config_.maximum_time_seconds_per_stripe;
       solver_config.number_of_workers = config_.number_of_workers;
-      solver_config.maximum_row_displacement = 0;
+      solver_config.maximum_row_displacement = config_.maximum_row_displacement;
+      solver_config.maximum_row_assignment_changes =
+          config_.maximum_row_assignment_changes;
       solver_config.fix_row_geometry = true;
       solver_config.use_presolve = true;
       solver_config.use_solution_hint = config_.use_solution_hint;
@@ -261,38 +268,66 @@ OrToolsGriddedStripeOptimizerResult OrToolsGriddedStripeOptimizer::Optimize(
           model_cells_by_id.emplace(cell.component_id, &cell);
         }
 
-        bool preserves_fixed_assignment =
+        bool solution_is_complete =
             solution.cells.size() == build.model.cells.size();
+        std::unordered_set<int> placed_component_ids;
         for (const ExactGriddedCellPlacement& placement : solution.cells) {
           const auto model_cell =
               model_cells_by_id.find(placement.component_id);
-          if (model_cell == model_cells_by_id.end()) {
-            preserves_fixed_assignment = false;
+          if (model_cell == model_cells_by_id.end() ||
+              components_by_id.count(placement.component_id) == 0 ||
+              !placed_component_ids.insert(placement.component_id).second) {
+            solution_is_complete = false;
             break;
           }
           const ExactGriddedCell& cell = *model_cell->second;
           if (placement.stripe_id != cell.initial_stripe_id ||
-              placement.row_index != cell.initial_start_row ||
-              placement.y != cell.initial_y ||
-              placement.is_flipped != cell.initial_is_flipped) {
-            preserves_fixed_assignment = false;
+              placement.row_index < 0 ||
+              placement.row_index + static_cast<int>(cell.regions.size()) >
+                  static_cast<int>(build.rows.size())) {
+            solution_is_complete = false;
+            break;
+          }
+          if (placement.row_index != cell.initial_start_row) {
+            ++stripe_result.reassigned_component_count;
+          }
+          if (config_.maximum_row_displacement == 0 &&
+              (placement.row_index != cell.initial_start_row ||
+               placement.y != cell.initial_y ||
+               placement.is_flipped != cell.initial_is_flipped)) {
+            solution_is_complete = false;
             break;
           }
         }
 
-        std::vector<double> original_x;
-        original_x.reserve(build.components.size());
-        for (Component* component : build.components) {
-          original_x.push_back(component->LLX());
-        }
-        if (preserves_fixed_assignment) {
+        GriddedRowAssignmentTransaction transaction(circuit_, build.rows);
+        if (solution_is_complete) {
+          for (GriddedRow* row : build.rows) row->Components().clear();
           for (const ExactGriddedCellPlacement& placement : solution.cells) {
-            components_by_id.at(placement.component_id)->SetLLX(placement.x);
+            Component* component = components_by_id.at(placement.component_id);
+            component->SetLowerLeft(placement.x, placement.y);
+            component->SetOrient(placement.is_flipped ? FS : N);
+            const ExactGriddedCell& cell =
+                *model_cells_by_id.at(placement.component_id);
+            for (int region_index = 0;
+                 region_index < static_cast<int>(cell.regions.size());
+                 ++region_index) {
+              build.rows[placement.row_index + region_index]->AddComponent(
+                  component);
+            }
+          }
+          for (GriddedRow* row : build.rows) {
+            std::sort(
+                row->Components().begin(), row->Components().end(),
+                [](const Component* lhs, const Component* rhs) {
+                  return (lhs->LLX() < rhs->LLX()) ||
+                         (lhs->LLX() == rhs->LLX() && lhs->Id() < rhs->Id());
+                });
           }
         }
 
         const bool rows_are_legal =
-            preserves_fixed_assignment &&
+            solution_is_complete &&
             std::all_of(build.rows.begin(), build.rows.end(),
                         [](const GriddedRow* row) {
                           return row->HasLegalComponentPlacement();
@@ -313,24 +348,18 @@ OrToolsGriddedStripeOptimizerResult OrToolsGriddedStripeOptimizer::Optimize(
         const bool preserves_full_hpwl =
             stripe_result.affected_hpwl_after <=
             stripe_result.affected_hpwl_before + affected_tolerance;
-        if (rows_are_legal && improves_modeled_hpwl && preserves_full_hpwl) {
+        const bool improves_full_hpwl =
+            stripe_result.affected_hpwl_after + affected_tolerance <
+            stripe_result.affected_hpwl_before;
+        const bool passes_full_hpwl_guard =
+            config_.maximum_row_displacement == 0 ? preserves_full_hpwl
+                                                  : improves_full_hpwl;
+        if (rows_are_legal && improves_modeled_hpwl && passes_full_hpwl_guard) {
           stripe_result.accepted = true;
           ++aggregate.accepted_models;
           ++accepted_in_sweep;
-          for (GriddedRow* row : build.rows) {
-            std::sort(
-                row->Components().begin(), row->Components().end(),
-                [](const Component* lhs, const Component* rhs) {
-                  return (lhs->LLX() < rhs->LLX()) ||
-                         (lhs->LLX() == rhs->LLX() && lhs->Id() < rhs->Id());
-                });
-          }
         } else {
-          for (size_t component_index = 0;
-               component_index < build.components.size(); ++component_index) {
-            build.components[component_index]->SetLLX(
-                original_x[component_index]);
-          }
+          transaction.Restore();
           stripe_result.modeled_hpwl_after = stripe_result.modeled_hpwl_before;
           stripe_result.affected_hpwl_after =
               stripe_result.affected_hpwl_before;
