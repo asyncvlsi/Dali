@@ -11,6 +11,7 @@
 #ifndef DALI_PLACER_WELL_LEGALIZER_GRIDDED_ROW_ASSIGNMENT_TRANSACTION_H_
 #define DALI_PLACER_WELL_LEGALIZER_GRIDDED_ROW_ASSIGNMENT_TRANSACTION_H_
 
+#include <unordered_map>
 #include <vector>
 
 #include "dali/placer/well_legalizer/gridded_row.h"
@@ -41,13 +42,15 @@ class GriddedRowAssignmentTransaction {
    */
   double HpwlImprovement() const;
 
-  /** Restore component membership, order, location, and orientation. */
+  /** Restore complete row packing state and component placement. */
   void Restore() const;
 
  private:
   struct RowSnapshot {
     GriddedRow* row = nullptr;
     std::vector<Component*> component_order;
+    std::unordered_map<Component*, double2d> initial_locations;
+    int used_size = 0;
     std::vector<double> component_lx;
     std::vector<double> component_ly;
     std::vector<ComponentOrient> component_orient;

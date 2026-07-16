@@ -37,6 +37,7 @@
 #include "gridded_detailed_placer.h"
 #include "gridded_row.h"
 #include "gridded_row_location_optimizer.h"
+#include "gridded_vertical_hpwl_row_optimizer.h"
 #include "ortools_compact_gridded_legalizer.h"
 #include "ortools_gridded_boundary_refiner.h"
 #include "ortools_gridded_stripe_optimizer.h"
@@ -162,6 +163,13 @@ class GriddedCellWellLegalizer : public Placer {
   void SetEnableOrToolsRowOptimization(bool enable, int net_ignore_threshold) {
     enable_ortools_row_optimization_ = enable;
     ortools_net_ignore_threshold_ = net_ignore_threshold;
+  }
+
+  /** Configure the experimental vertical-HPWL row-membership pass. */
+  void SetVerticalHpwlRowAssignment(bool enable, int net_ignore_threshold) {
+    enable_vertical_hpwl_row_assignment_ = enable;
+    vertical_hpwl_row_optimizer_config_.net_ignore_threshold =
+        net_ignore_threshold;
   }
 
   /** Configure read-only exact analysis of bounded legal row windows. */
@@ -418,6 +426,8 @@ class GriddedCellWellLegalizer : public Placer {
   void RunWholeDesignExactLegalizationStage();
   /** Refine finalized stripes with sequential conditional CP-SAT solves. */
   void RunExactStripeOptimizationStage();
+  /** Run the opt-in decomposed vertical-HPWL row assignment experiment. */
+  void RunVerticalHpwlRowAssignmentStage();
   /** Run, report, and record one exact stripe optimization phase. */
   OrToolsGriddedStripeOptimizerResult RunExactStripeOptimizationPhase(
       const std::string& label, const std::string& metric_prefix,
@@ -512,6 +522,8 @@ class GriddedCellWellLegalizer : public Placer {
   bool enable_row_location_optimization_ = false;
   bool enable_ortools_row_optimization_ = false;
   int ortools_net_ignore_threshold_ = 100;
+  bool enable_vertical_hpwl_row_assignment_ = false;
+  GriddedVerticalHpwlRowOptimizerConfig vertical_hpwl_row_optimizer_config_;
   bool enable_exact_legalization_analysis_ = false;
   ExactGriddedWindowAnalyzerConfig exact_legalization_analysis_config_;
   bool enable_whole_design_exact_legalization_ = false;

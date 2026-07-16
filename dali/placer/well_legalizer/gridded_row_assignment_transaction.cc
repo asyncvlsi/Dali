@@ -31,6 +31,8 @@ GriddedRowAssignmentTransaction::GriddedRowAssignmentTransaction(
     RowSnapshot snapshot;
     snapshot.row = row;
     snapshot.component_order = row->Components();
+    snapshot.initial_locations = row->InitLocations();
+    snapshot.used_size = row->UsedSize();
     snapshot.component_lx.reserve(row->Components().size());
     snapshot.component_ly.reserve(row->Components().size());
     snapshot.component_orient.reserve(row->Components().size());
@@ -65,6 +67,8 @@ double GriddedRowAssignmentTransaction::HpwlImprovement() const {
 void GriddedRowAssignmentTransaction::Restore() const {
   for (const RowSnapshot& snapshot : row_snapshots_) {
     snapshot.row->Components() = snapshot.component_order;
+    snapshot.row->InitLocations() = snapshot.initial_locations;
+    snapshot.row->SetUsedSize(snapshot.used_size);
     for (std::size_t i = 0; i < snapshot.component_order.size(); ++i) {
       snapshot.component_order[i]->SetLLX(snapshot.component_lx[i]);
       snapshot.component_order[i]->SetLLY(snapshot.component_ly[i]);

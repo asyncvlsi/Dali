@@ -43,6 +43,7 @@ TEST(GriddedRowAssignmentTransactionTest, MeasuresAndRestoresTrialAssignment) {
   source_row.SetWidth(210);
   source_row.SetLLY(0);
   source_row.AddComponent(movable);
+  source_row.SetUsedSize(13);
   GriddedRow target_row;
   target_row.SetLLX(-100);
   target_row.SetWidth(210);
@@ -51,7 +52,11 @@ TEST(GriddedRowAssignmentTransactionTest, MeasuresAndRestoresTrialAssignment) {
   GriddedRowAssignmentTransaction improving_transaction(
       &circuit, {&source_row, &target_row});
   source_row.Components().clear();
+  source_row.InitLocations().clear();
+  source_row.SetUsedSize(0);
   target_row.Components().push_back(movable);
+  target_row.InitLocations()[movable] = double2d(100, 10);
+  target_row.SetUsedSize(10);
   movable->SetLLX(100);
   movable->SetLLY(10);
   movable->SetOrient(FS);
@@ -62,6 +67,10 @@ TEST(GriddedRowAssignmentTransactionTest, MeasuresAndRestoresTrialAssignment) {
   ASSERT_EQ(source_row.Components().size(), 1);
   EXPECT_EQ(source_row.Components().front(), movable);
   EXPECT_TRUE(target_row.Components().empty());
+  EXPECT_EQ(source_row.InitLocations().size(), 1U);
+  EXPECT_TRUE(target_row.InitLocations().empty());
+  EXPECT_EQ(source_row.UsedSize(), 13);
+  EXPECT_EQ(target_row.UsedSize(), 0);
   EXPECT_DOUBLE_EQ(movable->LLX(), 0);
   EXPECT_DOUBLE_EQ(movable->LLY(), 0);
   EXPECT_EQ(movable->Orient(), N);

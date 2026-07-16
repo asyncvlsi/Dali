@@ -285,6 +285,8 @@ void Dali::ShowParamsList() {
       << "\n"
       << "  enable_gridded_row_y_optimization: "
       << enable_gridded_row_y_optimization_ << "\n"
+      << "  enable_vertical_hpwl_row_assignment: "
+      << enable_vertical_hpwl_row_assignment_ << "\n"
       << "  enable_ortools_row_optimization: "
       << enable_ortools_row_optimization_ << "\n"
       << "  analyze_exact_gridded_legalization: "
@@ -463,6 +465,8 @@ void Dali::LoadParamsFromConfig() {
                  &disable_gridded_vertical_swap_);
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_row_y_optimization"),
                  &enable_gridded_row_y_optimization_);
+  LoadBoolConfig(ConfigName(prefix_, "enable_vertical_hpwl_row_assignment"),
+                 &enable_vertical_hpwl_row_assignment_);
   LoadBoolConfig(ConfigName(prefix_, "enable_ortools_row_optimization"),
                  &enable_ortools_row_optimization_);
   LoadBoolConfig(ConfigName(prefix_, "analyze_exact_gridded_legalization"),
@@ -679,6 +683,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       gridded_detailed_min_relative_improvement_,
       disable_gridded_vertical_swap_,
       enable_gridded_row_y_optimization_,
+      enable_vertical_hpwl_row_assignment_,
       enable_ortools_row_optimization_,
       analyze_exact_gridded_legalization_,
       analyze_exact_adjacent_rows_,
@@ -1132,6 +1137,8 @@ void Dali::ConfigureWellLegalizer() {
   well_legalizer_.SetDetailedPlacementNetIgnoreThreshold(net_ignore_threshold_);
   well_legalizer_.SetEnableRowLocationOptimization(
       enable_gridded_row_y_optimization_);
+  well_legalizer_.SetVerticalHpwlRowAssignment(
+      enable_vertical_hpwl_row_assignment_, net_ignore_threshold_);
   well_legalizer_.SetEnableOrToolsRowOptimization(
       enable_ortools_row_optimization_, net_ignore_threshold_);
   well_legalizer_.SetExactLegalizationAnalysis(

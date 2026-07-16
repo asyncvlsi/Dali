@@ -1575,6 +1575,52 @@ void GriddedCellWellLegalizer::RunOrToolsRowOptimizationStage() {
                "ortools_row");
 }
 
+void GriddedCellWellLegalizer::RunVerticalHpwlRowAssignmentStage() {
+  LOG(info) << "Run experimental vertical-HPWL row assignment\n";
+  ElapsedTime timer;
+  timer.RecordStartTime();
+  const GriddedVerticalHpwlRowOptimizerResult result =
+      GriddedVerticalHpwlRowOptimizer(ckt_ptr_,
+                                      vertical_hpwl_row_optimizer_config_)
+          .Optimize(&col_list_);
+  timer.RecordEndTime();
+
+  if (!result.available) {
+    LOG(warning) << "  OR-Tools support is unavailable; keep existing row "
+                    "assignments\n";
+  }
+  LOG(info) << "  vertical-HPWL row assignment:\n"
+            << "    completed sweeps       : " << result.completed_sweeps
+            << "\n"
+            << "    attempted windows      : " << result.attempted_windows
+            << "\n"
+            << "    solved windows         : " << result.solved_windows << "\n"
+            << "    accepted windows       : " << result.accepted_windows
+            << "\n"
+            << "    reassigned components  : " << result.reassigned_components
+            << "\n"
+            << "    HPWL before            : " << result.hpwl_before << "um\n"
+            << "    HPWL after             : " << result.hpwl_after << "um\n"
+            << "    HPWL improvement       : "
+            << result.hpwl_before - result.hpwl_after << "um\n"
+            << "    solver wall time       : "
+            << result.solver_wall_time_seconds << "s\n"
+            << "    stage wall time        : " << timer.GetWallTime() << "s\n"
+            << "    time budget hit        : " << result.time_budget_exhausted
+            << "\n";
+  RecordPlacementHpwlMetrics("well_legalization.vertical_hpwl_row_assignment",
+                             *ckt_ptr_);
+  RecordPlacementMetric(
+      "time.well_legalization.vertical_hpwl_row_assignment.optimizer_wall_s",
+      result.solver_wall_time_seconds);
+  RecordPlacementMetric(
+      "time.well_legalization.vertical_hpwl_row_assignment.wall_s",
+      timer.GetWallTime());
+  EmitSnapshot("vertical_hpwl_row_assignment",
+               "After Vertical-HPWL Row Assignment", "legalization",
+               "vertical_hpwl_row_assignment");
+}
+
 void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
   LOG(info) << "Analyze bounded exact gridded legalization windows\n";
   ElapsedTime timer;
@@ -2092,6 +2138,9 @@ void GriddedCellWellLegalizer::RunPostClusteringStages(
   }
   if (clustering_succeeded && enable_ortools_row_optimization_) {
     RunOrToolsRowOptimizationStage();
+  }
+  if (clustering_succeeded && enable_vertical_hpwl_row_assignment_) {
+    RunVerticalHpwlRowAssignmentStage();
   }
   if (clustering_succeeded && enable_exact_stripe_optimization_ &&
       exact_stripe_before_detailed_placement_) {

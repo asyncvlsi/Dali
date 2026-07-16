@@ -79,6 +79,9 @@ class Dali {
     double gridded_detailed_min_relative_improvement = 0.005;
     bool disable_gridded_vertical_swap = false;
     bool enable_gridded_row_y_optimization = false;
+    // Experimental and intentionally disabled until downstream quality is
+    // consistent across gridded benchmarks.
+    bool enable_vertical_hpwl_row_assignment = false;
     bool enable_ortools_row_optimization = false;
     bool analyze_exact_gridded_legalization = false;
     bool analyze_exact_adjacent_rows = false;
@@ -245,6 +248,7 @@ class Dali {
   double gridded_detailed_min_relative_improvement_ = 0.005;
   bool disable_gridded_vertical_swap_ = false;
   bool enable_gridded_row_y_optimization_ = false;
+  bool enable_vertical_hpwl_row_assignment_ = false;
   bool enable_ortools_row_optimization_ = false;
   bool analyze_exact_gridded_legalization_ = false;
   bool analyze_exact_adjacent_rows_ = false;

@@ -101,6 +101,24 @@ add_test(NAME gridded_row_assignment_transaction_test
 set_tests_properties(gridded_row_assignment_transaction_test
                      PROPERTIES LABELS "unit;placer;well_legalizer")
 
+add_executable(ortools_vertical_hpwl_row_assignment_test
+               ortools_vertical_hpwl_row_assignment_test.cc)
+target_link_libraries(ortools_vertical_hpwl_row_assignment_test
+                      PRIVATE dalilib ${DALI_GTEST_MAIN})
+add_test(NAME ortools_vertical_hpwl_row_assignment_test
+         COMMAND ortools_vertical_hpwl_row_assignment_test)
+set_tests_properties(ortools_vertical_hpwl_row_assignment_test
+                     PROPERTIES LABELS "unit;placer;well_legalizer")
+
+add_executable(gridded_vertical_hpwl_row_optimizer_test
+               gridded_vertical_hpwl_row_optimizer_test.cc)
+target_link_libraries(gridded_vertical_hpwl_row_optimizer_test
+                      PRIVATE dalilib ${DALI_GTEST_MAIN})
+add_test(NAME gridded_vertical_hpwl_row_optimizer_test
+         COMMAND gridded_vertical_hpwl_row_optimizer_test)
+set_tests_properties(gridded_vertical_hpwl_row_optimizer_test
+                     PROPERTIES LABELS "unit;placer;well_legalizer")
+
 add_executable(ortools_fixed_row_displacement_optimizer_test
                ortools_fixed_row_displacement_optimizer_test.cc)
 target_link_libraries(ortools_fixed_row_displacement_optimizer_test
