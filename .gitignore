@@ -61,3 +61,6 @@ include/
 
 # Local development notes and experiment records
 docs/
+
+# Log files
+*.log
