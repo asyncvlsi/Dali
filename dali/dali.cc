@@ -21,6 +21,7 @@
 #include "dali.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <iostream>
 #include <string>
@@ -316,6 +317,8 @@ void Dali::ShowParamsList() {
       << exact_gridded_stripe_components_ << "\n"
       << "  exact_gridded_stripe_row_radius: "
       << exact_gridded_stripe_row_radius_ << "\n"
+      << "  exact_gridded_stripe_displacement_weight: "
+      << exact_gridded_stripe_displacement_weight_ << "\n"
       << "  exact_gridded_stripe_fixed_row_prepass: "
       << exact_gridded_stripe_fixed_row_prepass_ << "\n"
       << "  exact_gridded_stripe_before_detailed: "
@@ -527,6 +530,12 @@ void Dali::LoadParamsFromConfig() {
                 &exact_gridded_stripe_row_radius_);
   DaliExpects(exact_gridded_stripe_row_radius_ >= 0,
               "exact_gridded_stripe_row_radius must be non-negative");
+  LoadRealConfig(
+      ConfigName(prefix_, "exact_gridded_stripe_displacement_weight"),
+      &exact_gridded_stripe_displacement_weight_);
+  DaliExpects(std::isfinite(exact_gridded_stripe_displacement_weight_) &&
+                  exact_gridded_stripe_displacement_weight_ >= 0.0,
+              "exact_gridded_stripe_displacement_weight must be non-negative");
   LoadBoolConfig(ConfigName(prefix_, "exact_gridded_stripe_fixed_row_prepass"),
                  &exact_gridded_stripe_fixed_row_prepass_);
   LoadBoolConfig(ConfigName(prefix_, "exact_gridded_stripe_before_detailed"),
@@ -689,6 +698,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       exact_gridded_stripe_sweeps_,
       exact_gridded_stripe_components_,
       exact_gridded_stripe_row_radius_,
+      exact_gridded_stripe_displacement_weight_,
       exact_gridded_stripe_fixed_row_prepass_,
       exact_gridded_stripe_before_detailed_,
       enable_exact_gridded_boundary_optimization_,
@@ -1138,6 +1148,7 @@ void Dali::ConfigureWellLegalizer() {
       exact_gridded_stripe_total_time_, exact_gridded_stripe_sweeps_,
       exact_gridded_stripe_components_, num_threads_,
       exact_gridded_stripe_row_radius_, exact_gridded_max_row_changes_,
+      exact_gridded_stripe_displacement_weight_,
       exact_gridded_stripe_fixed_row_prepass_,
       exact_gridded_stripe_before_detailed_, exact_gridded_use_solution_hint_,
       net_ignore_threshold_);

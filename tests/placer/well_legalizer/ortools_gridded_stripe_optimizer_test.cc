@@ -69,9 +69,62 @@ TEST(OrToolsGriddedStripeOptimizerTest,
   EXPECT_DOUBLE_EQ(result.fixed_row_hpwl_improvement,
                    result.hpwl_before - result.hpwl_after);
   EXPECT_DOUBLE_EQ(result.reassignment_hpwl_improvement, 0.0);
+  EXPECT_DOUBLE_EQ(result.accepted_physical_displacement, 4.0);
   EXPECT_LT(result.hpwl_after, result.hpwl_before);
   EXPECT_DOUBLE_EQ(circuit.GetComponentPtr("move_left")->LLX(), 0.0);
   EXPECT_DOUBLE_EQ(circuit.GetComponentPtr("move_right")->LLX(), 2.0);
+  EXPECT_TRUE(row.HasLegalComponentPlacement());
+}
+
+TEST(OrToolsGriddedStripeOptimizerTest,
+     DisplacementWeightCanPreserveTheInputPlacement) {
+  if (!OrToolsCompactGriddedLegalizer::IsAvailable()) {
+    GTEST_SKIP() << "Dali was built without OR-Tools 9.15.x";
+  }
+
+  Circuit circuit;
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.ReserveSpaceForDesignImp(6, 0, 2);
+  Macro* macro = circuit.AddMacro("cell", 2, 2);
+  macro->AddWellRect(false, 0, 0, 2, 1);
+  macro->AddWellRect(true, 0, 1, 2, 2);
+  circuit.AddMacroPin(macro, "pin", true)->SetOffset(1, 1);
+  circuit.AddComponent("movable", "cell", 0, 0, PLACED);
+  circuit.AddComponent("anchor", "cell", 4, 0, FIXED);
+  circuit.AddNet("net", 2);
+  circuit.AddComponentPinToNet("movable", "pin", "net");
+  circuit.AddComponentPinToNet("anchor", "pin", "net");
+
+  std::vector<StripeColumn> columns(1);
+  Stripe& stripe = columns[0].stripe_list_.emplace_back();
+  stripe.lx_ = 0;
+  stripe.ly_ = 0;
+  stripe.width_ = 6;
+  stripe.height_ = 2;
+  GriddedRow& row = stripe.gridded_rows_.emplace_back();
+  row.SetLLX(0);
+  row.SetLLY(0);
+  row.SetWidth(6);
+  row.UpdateWellHeightUpward(1, 1);
+  row.AddComponent(circuit.GetComponentPtr("movable"));
+
+  OrToolsGriddedStripeOptimizerConfig config;
+  config.maximum_time_seconds_per_stripe = 10.0;
+  config.maximum_total_time_seconds = 20.0;
+  config.maximum_sweeps = 1;
+  config.minimum_p_well_height = 1;
+  config.minimum_n_well_height = 1;
+  config.displacement_weight = 2.0;
+  const OrToolsGriddedStripeOptimizerResult result =
+      OrToolsGriddedStripeOptimizer(&circuit, config).Optimize(&columns);
+
+  EXPECT_TRUE(result.available);
+  EXPECT_EQ(result.solved_models, 1);
+  EXPECT_EQ(result.accepted_models, 0);
+  EXPECT_DOUBLE_EQ(result.accepted_physical_displacement, 0.0);
+  EXPECT_DOUBLE_EQ(circuit.GetComponentPtr("movable")->LLX(), 0.0);
   EXPECT_TRUE(row.HasLegalComponentPlacement());
 }
 

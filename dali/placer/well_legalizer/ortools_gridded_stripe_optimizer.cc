@@ -47,6 +47,9 @@ OrToolsGriddedStripeOptimizer::OrToolsGriddedStripeOptimizer(
               "Stripe row displacement must be non-negative");
   DaliExpects(config_.maximum_row_assignment_changes >= -1,
               "Stripe row-change budget must be at least negative one");
+  DaliExpects(std::isfinite(config_.displacement_weight) &&
+                  config_.displacement_weight >= 0.0,
+              "Stripe displacement weight must be finite and non-negative");
   DaliExpects(config_.target_components_per_model >= 0,
               "Stripe model component target must be non-negative");
   DaliExpects(config_.maximum_components_per_model > 0,
@@ -243,6 +246,7 @@ OrToolsGriddedStripeOptimizerResult OrToolsGriddedStripeOptimizer::Optimize(
       solver_config.maximum_row_displacement = config_.maximum_row_displacement;
       solver_config.maximum_row_assignment_changes =
           config_.maximum_row_assignment_changes;
+      solver_config.displacement_weight = config_.displacement_weight;
       solver_config.fix_row_geometry = true;
       solver_config.use_presolve = true;
       solver_config.use_solution_hint = config_.use_solution_hint;
@@ -291,6 +295,11 @@ OrToolsGriddedStripeOptimizerResult OrToolsGriddedStripeOptimizer::Optimize(
           if (placement.row_index != cell.initial_start_row) {
             ++stripe_result.reassigned_component_count;
           }
+          stripe_result.physical_displacement +=
+              std::abs(placement.x - cell.initial_x) *
+                  build.model.distance_scale_x +
+              std::abs(placement.y - cell.initial_y) *
+                  build.model.distance_scale_y;
           if (config_.maximum_row_displacement == 0 &&
               (placement.row_index != cell.initial_start_row ||
                placement.y != cell.initial_y ||
@@ -368,6 +377,8 @@ OrToolsGriddedStripeOptimizerResult OrToolsGriddedStripeOptimizer::Optimize(
           } else {
             aggregate.fixed_row_hpwl_improvement += hpwl_improvement;
           }
+          aggregate.accepted_physical_displacement +=
+              stripe_result.physical_displacement;
         } else {
           transaction.Restore();
           stripe_result.modeled_hpwl_after = stripe_result.modeled_hpwl_before;

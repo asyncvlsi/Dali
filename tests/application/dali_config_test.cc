@@ -76,6 +76,7 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_EQ(options.exact_gridded_stripe_sweeps, 2);
   EXPECT_EQ(options.exact_gridded_stripe_components, 0);
   EXPECT_EQ(options.exact_gridded_stripe_row_radius, 0);
+  EXPECT_DOUBLE_EQ(options.exact_gridded_stripe_displacement_weight, 0.0);
   EXPECT_FALSE(options.exact_gridded_stripe_fixed_row_prepass);
   EXPECT_FALSE(options.exact_gridded_stripe_before_detailed);
   EXPECT_FALSE(options.enable_exact_gridded_boundary_optimization);
@@ -156,6 +157,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_int("dali.exact_gridded_stripe_sweeps", 3);
   config_set_int("dali.exact_gridded_stripe_components", 48);
   config_set_int("dali.exact_gridded_stripe_row_radius", 2);
+  config_set_real("dali.exact_gridded_stripe_displacement_weight", 0.125);
   config_set_int("dali.exact_gridded_stripe_fixed_row_prepass", 1);
   config_set_int("dali.exact_gridded_stripe_before_detailed", 1);
   config_set_int("dali.enable_exact_gridded_boundary_optimization", 1);
@@ -235,6 +237,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_EQ(options.exact_gridded_stripe_sweeps, 3);
   EXPECT_EQ(options.exact_gridded_stripe_components, 48);
   EXPECT_EQ(options.exact_gridded_stripe_row_radius, 2);
+  EXPECT_DOUBLE_EQ(options.exact_gridded_stripe_displacement_weight, 0.125);
   EXPECT_TRUE(options.exact_gridded_stripe_fixed_row_prepass);
   EXPECT_TRUE(options.exact_gridded_stripe_before_detailed);
   EXPECT_TRUE(options.enable_exact_gridded_boundary_optimization);

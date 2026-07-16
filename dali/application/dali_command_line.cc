@@ -10,6 +10,7 @@
  ******************************************************************************/
 #include "dali/application/dali_command_line.h"
 
+#include <cmath>
 #include <iostream>
 
 #include "dali/common/act_config.h"
@@ -116,6 +117,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -exact_gridded_stripe_sweeps <n>           maximum alternating sweeps, default 2\n"
       << "  -exact_gridded_stripe_components <n>       target cells per overlapping row band; 0 uses full stripes\n"
       << "  -exact_gridded_stripe_row_radius <n>       allowed row movement in stripe refinement, default 0\n"
+      << "  -exact_gridded_stripe_displacement_weight <w>  physical L1 movement penalty, default 0\n"
       << "  -exact_gridded_stripe_fixed_row_prepass    run a separately budgeted exact-X phase first\n"
       << "  -exact_gridded_stripe_before_detailed      run exact stripe refinement before detailed placement\n"
       << "  -enable_exact_gridded_boundary_optimization  refine adjacent stripe boundaries with CP-SAT\n"
@@ -588,6 +590,16 @@ bool ParseDaliCommandLine(int argc, char* argv[],
         return false;
       }
       config_set_int("dali.exact_gridded_stripe_row_radius", row_radius);
+    } else if (arg == "-exact_gridded_stripe_displacement_weight") {
+      double displacement_weight = 0.0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseDouble(value, &displacement_weight) ||
+          !std::isfinite(displacement_weight) || displacement_weight < 0.0) {
+        error_output << "Invalid exact gridded stripe displacement weight!\n";
+        return false;
+      }
+      config_set_real("dali.exact_gridded_stripe_displacement_weight",
+                      displacement_weight);
     } else if (arg == "-exact_gridded_stripe_fixed_row_prepass") {
       EnableConfigFlag("dali.exact_gridded_stripe_fixed_row_prepass");
     } else if (arg == "-exact_gridded_stripe_before_detailed") {

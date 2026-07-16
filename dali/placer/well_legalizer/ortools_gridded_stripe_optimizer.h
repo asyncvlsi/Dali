@@ -34,6 +34,8 @@ struct OrToolsGriddedStripeOptimizerConfig {
   int maximum_row_displacement = 0;
   // Negative values leave the number of changed assignments unrestricted.
   int maximum_row_assignment_changes = -1;
+  // Penalize physical L1 movement from the input legal placement.
+  double displacement_weight = 0.0;
   // Zero solves complete stripes. Positive values create overlapping bands.
   int target_components_per_model = 0;
   int maximum_components_per_model = 96;
@@ -56,6 +58,7 @@ struct OrToolsGriddedStripeSolveResult {
   double modeled_hpwl_after = 0.0;
   double affected_hpwl_before = 0.0;
   double affected_hpwl_after = 0.0;
+  double physical_displacement = 0.0;
   double solver_wall_time_seconds = 0.0;
   double best_objective_bound = 0.0;
   double relative_gap = 0.0;
@@ -78,6 +81,8 @@ struct OrToolsGriddedStripeOptimizerResult {
   double hpwl_after = 0.0;
   double fixed_row_hpwl_improvement = 0.0;
   double reassignment_hpwl_improvement = 0.0;
+  // Sum of accepted per-model movement; repeated moves count more than once.
+  double accepted_physical_displacement = 0.0;
   double solver_wall_time_seconds = 0.0;
   std::vector<OrToolsGriddedStripeSolveResult> stripes;
 };

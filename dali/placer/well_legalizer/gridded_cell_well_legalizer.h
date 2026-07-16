@@ -236,8 +236,9 @@ class GriddedCellWellLegalizer : public Placer {
       double maximum_total_time_seconds, int maximum_sweeps,
       int target_components_per_model, int number_of_workers,
       int maximum_row_displacement, int maximum_row_assignment_changes,
-      bool run_fixed_row_prepass, bool run_before_detailed_placement,
-      bool use_solution_hint, int net_ignore_threshold) {
+      double displacement_weight, bool run_fixed_row_prepass,
+      bool run_before_detailed_placement, bool use_solution_hint,
+      int net_ignore_threshold) {
     enable_exact_stripe_optimization_ = enable;
     exact_stripe_optimizer_config_.maximum_time_seconds_per_stripe =
         maximum_time_seconds_per_stripe;
@@ -255,6 +256,7 @@ class GriddedCellWellLegalizer : public Placer {
         maximum_row_displacement;
     exact_stripe_optimizer_config_.maximum_row_assignment_changes =
         maximum_row_assignment_changes;
+    exact_stripe_optimizer_config_.displacement_weight = displacement_weight;
     exact_stripe_fixed_row_prepass_ = run_fixed_row_prepass;
     exact_stripe_before_detailed_placement_ = run_before_detailed_placement;
     exact_stripe_optimizer_config_.use_solution_hint = use_solution_hint;

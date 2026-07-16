@@ -1864,6 +1864,7 @@ GriddedCellWellLegalizer::RunExactStripeOptimizationPhase(
       << "\n"
       << "  maximum row changes    : " << config.maximum_row_assignment_changes
       << "\n"
+      << "  displacement weight    : " << config.displacement_weight << "\n"
       << "  completed sweeps       : " << result.completed_sweeps << "\n"
       << "  attempted models       : " << result.attempted_models << "\n"
       << "  solved models          : " << result.solved_models << "\n"
@@ -1877,6 +1878,8 @@ GriddedCellWellLegalizer::RunExactStripeOptimizationPhase(
       << "    fixed-row X gain     : " << result.fixed_row_hpwl_improvement
       << "um\n"
       << "    row-reassignment gain: " << result.reassignment_hpwl_improvement
+      << "um\n"
+      << "  accepted displacement  : " << result.accepted_physical_displacement
       << "um\n"
       << "  solver wall time       : " << result.solver_wall_time_seconds
       << "s\n"
@@ -1895,6 +1898,7 @@ GriddedCellWellLegalizer::RunExactStripeOptimizationPhase(
               << ", affected HPWL=" << stripe.affected_hpwl_before << " -> "
               << stripe.affected_hpwl_after << "um"
               << ", reassigned=" << stripe.reassigned_component_count
+              << ", displacement=" << stripe.physical_displacement << "um"
               << ", accepted=" << stripe.accepted
               << ", gap=" << stripe.relative_gap
               << ", wall=" << stripe.solver_wall_time_seconds << "s\n";
@@ -1913,6 +1917,8 @@ GriddedCellWellLegalizer::RunExactStripeOptimizationPhase(
                         result.fixed_row_hpwl_improvement);
   RecordPlacementMetric(metric_prefix + ".hpwl.reassignment_improvement",
                         result.reassignment_hpwl_improvement);
+  RecordPlacementMetric(metric_prefix + ".accepted_displacement_um",
+                        result.accepted_physical_displacement);
   RecordPlacementMetric("time." + metric_prefix + ".solver_wall_s",
                         result.solver_wall_time_seconds);
   RecordPlacementMetric("time." + metric_prefix + ".wall_s",

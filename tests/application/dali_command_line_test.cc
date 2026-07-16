@@ -216,6 +216,8 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "48",
                      "-exact_gridded_stripe_row_radius",
                      "2",
+                     "-exact_gridded_stripe_displacement_weight",
+                     "0.125",
                      "-exact_gridded_stripe_fixed_row_prepass",
                      "-exact_gridded_stripe_before_detailed",
                      "-enable_exact_gridded_boundary_optimization",
@@ -291,6 +293,8 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_EQ(config_get_int("dali.exact_gridded_stripe_sweeps"), 3);
   EXPECT_EQ(config_get_int("dali.exact_gridded_stripe_components"), 48);
   EXPECT_EQ(config_get_int("dali.exact_gridded_stripe_row_radius"), 2);
+  EXPECT_DOUBLE_EQ(
+      config_get_real("dali.exact_gridded_stripe_displacement_weight"), 0.125);
   EXPECT_EQ(config_get_int("dali.exact_gridded_stripe_fixed_row_prepass"), 1);
   EXPECT_EQ(config_get_int("dali.exact_gridded_stripe_before_detailed"), 1);
   EXPECT_EQ(config_get_int("dali.enable_exact_gridded_boundary_optimization"),
@@ -413,6 +417,12 @@ TEST_F(DaliCommandLineTest, RejectsOutOfRangeOptions) {
                      &options));
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
                       "-exact_gridded_stripe_row_radius", "-1"},
+                     &options));
+  EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                      "-exact_gridded_stripe_displacement_weight", "-0.1"},
+                     &options));
+  EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                      "-exact_gridded_stripe_displacement_weight", "nan"},
                      &options));
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
                       "-exact_gridded_boundary_components", "0"},

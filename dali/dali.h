@@ -98,6 +98,7 @@ class Dali {
     int exact_gridded_stripe_sweeps = 2;
     int exact_gridded_stripe_components = 0;
     int exact_gridded_stripe_row_radius = 0;
+    double exact_gridded_stripe_displacement_weight = 0.0;
     bool exact_gridded_stripe_fixed_row_prepass = false;
     bool exact_gridded_stripe_before_detailed = false;
     bool enable_exact_gridded_boundary_optimization = false;
@@ -263,6 +264,7 @@ class Dali {
   int exact_gridded_stripe_sweeps_ = 2;
   int exact_gridded_stripe_components_ = 0;
   int exact_gridded_stripe_row_radius_ = 0;
+  double exact_gridded_stripe_displacement_weight_ = 0.0;
   bool exact_gridded_stripe_fixed_row_prepass_ = false;
   bool exact_gridded_stripe_before_detailed_ = false;
   bool enable_exact_gridded_boundary_optimization_ = false;
