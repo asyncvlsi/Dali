@@ -108,6 +108,14 @@ class GriddedCellWellLegalizer : public Placer {
     enable_stripe_balancing_ = enable;
   }
 
+  /** Enable Y-banded nonlinear ownership assignment before final clustering. */
+  void SetBandedStripeAssignment(bool enable, int band_count,
+                                 double minimum_hpwl_improvement) {
+    enable_banded_stripe_assignment_ = enable;
+    banded_stripe_assignment_band_count_ = band_count;
+    banded_stripe_assignment_min_hpwl_improvement_ = minimum_hpwl_improvement;
+  }
+
   /** Enable demand-aware nonuniform stripe boundaries. */
   void SetEnableAdaptiveStripeBoundaries(bool enable) {
     enable_adaptive_stripe_boundaries_ = enable;
@@ -314,7 +322,8 @@ class GriddedCellWellLegalizer : public Placer {
   void RestoreInitialComponentLocation();
 
   /** Initialize stripes, clusters, and cached parameters. */
-  void InitializeWellLegalizer(int cluster_width = -1);
+  void InitializeWellLegalizer(int cluster_width = -1,
+                               bool apply_banded_assignment = true);
 
   /**
    * Roughly legalize the current global-placement upper bound.
@@ -515,6 +524,9 @@ class GriddedCellWellLegalizer : public Placer {
   int stripe_mode_ = 0;
   int max_row_width_ = -1;
   bool enable_stripe_balancing_ = false;
+  bool enable_banded_stripe_assignment_ = false;
+  int banded_stripe_assignment_band_count_ = 32;
+  double banded_stripe_assignment_min_hpwl_improvement_ = 0.0;
   bool enable_adaptive_stripe_boundaries_ = false;
   double adaptive_boundary_blend_ = 1.0;
   std::vector<int> stripe_boundaries_override_;

@@ -30,6 +30,7 @@
 #include "dali/common/elapsed_time.h"
 #include "dali/common/helper.h"
 #include "dali/common/placement_metrics.h"
+#include "dali/placer/well_legalizer/banded_stripe_assigner.h"
 #include "dali/placer/well_legalizer/gridded_stripe_balancer.h"
 #include "dali/placer/well_legalizer/ortools_gridded_row_optimizer.h"
 #include "dali/placer/well_legalizer/stripe_boundary_coordinate_optimizer.h"
@@ -244,7 +245,8 @@ void GriddedCellWellLegalizer::SetMaxRowWidth(double max_row_width_microns) {
   LOG(info) << "Max row width in grid unit : " << max_row_width_ << "\n";
 }
 
-void GriddedCellWellLegalizer::InitializeWellLegalizer(int cluster_width) {
+void GriddedCellWellLegalizer::InitializeWellLegalizer(
+    int cluster_width, bool apply_banded_assignment) {
   if (disable_welltap_) {
     well_tap_count_per_cluster_ = 0;
     LOG(info) << "set number of tap cells to 0, since well tap is disabled\n";
@@ -274,6 +276,57 @@ void GriddedCellWellLegalizer::InitializeWellLegalizer(int cluster_width) {
     space_partitioner_.SetMaxRowWidth(max_row_width_);
   }
   space_partitioner_.StartPartitioning();
+
+  if (enable_banded_stripe_assignment_ && apply_banded_assignment) {
+    BandedStripeAssignmentConfig config;
+    config.band_count = banded_stripe_assignment_band_count_;
+    config.minimum_projected_hpwl_improvement =
+        banded_stripe_assignment_min_hpwl_improvement_;
+    config.net_ignore_threshold = ortools_net_ignore_threshold_;
+    config.capacity = BuildGriddedCapacityConfig(1.0);
+    const BandedStripeAssignmentResult result =
+        BandedStripeAssigner(ckt_ptr_, config).Assign(&col_list_);
+    LOG(info) << "  Banded stripe assignment:\n"
+              << "    configured bands           : " << config.band_count
+              << "\n"
+              << "    populated bands            : "
+              << result.populated_band_count << "\n"
+              << "    minimum projected HPWL gain: "
+              << config.minimum_projected_hpwl_improvement << "um\n"
+              << "    assigned components        : "
+              << result.assigned_component_count << "\n"
+              << "    proposed stripe moves      : "
+              << result.proposed_move_count << "\n"
+              << "    changed stripe columns     : "
+              << result.moved_component_count << "\n"
+              << "    rejected by HPWL/capacity  : "
+              << result.rejected_hpwl_move_count << " / "
+              << result.rejected_capacity_move_count << "\n"
+              << "    projected HPWL improvement : "
+              << result.projected_hpwl_improvement << "um\n"
+              << "    average column displacement: "
+              << result.average_column_displacement << "\n"
+              << "    maximum column displacement: "
+              << result.maximum_column_displacement << "\n";
+    RecordPlacementMetric("well_legalization.banded_assignment.moved",
+                          result.moved_component_count);
+    RecordPlacementMetric("well_legalization.banded_assignment.proposed",
+                          result.proposed_move_count);
+    RecordPlacementMetric("well_legalization.banded_assignment.rejected_hpwl",
+                          result.rejected_hpwl_move_count);
+    RecordPlacementMetric(
+        "well_legalization.banded_assignment.rejected_capacity",
+        result.rejected_capacity_move_count);
+    RecordPlacementMetric(
+        "well_legalization.banded_assignment.projected_hpwl_improvement",
+        result.projected_hpwl_improvement);
+    RecordPlacementMetric(
+        "well_legalization.banded_assignment.average_column_displacement",
+        result.average_column_displacement);
+    RecordPlacementMetric(
+        "well_legalization.banded_assignment.maximum_column_displacement",
+        result.maximum_column_displacement);
+  }
 
   index_loc_list_.resize(ckt_ptr_->Components().size());
 }
@@ -349,7 +402,9 @@ GriddedCellWellLegalizer::RunProvisionalPlacement(
   enable_adaptive_stripe_boundaries_ = false;
 
   auto run_clustering = [this]() {
-    InitializeWellLegalizer();
+    // Keep the first experiment isolated to final legalization. Applying the
+    // nonlinear map during global feedback is a separate scheduling question.
+    InitializeWellLegalizer(-1, false);
     return ComponentClusteringLoose();
   };
 

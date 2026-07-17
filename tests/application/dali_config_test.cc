@@ -131,6 +131,9 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_int("dali.enable_gridded_legalization_pressure", 1);
   config_set_string("dali.gridded_legalization_feedback", "y_only");
   config_set_int("dali.enable_gridded_stripe_balancing", 1);
+  config_set_int("dali.enable_banded_stripe_assignment", 1);
+  config_set_int("dali.banded_stripe_assignment_bands", 64);
+  config_set_real("dali.banded_stripe_assignment_min_hpwl_gain", 12.5);
   config_set_int("dali.enable_gridded_local_reorder", 1);
   config_set_int("dali.enable_gridded_detailed_placement", 1);
   config_set_int("dali.enable_gridded_detailed_relocation", 1);
@@ -211,6 +214,9 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_EQ(options.gridded_legalization_feedback_mode,
             dali::GlobalRefinementFeedbackMode::kYOnly);
   EXPECT_TRUE(options.enable_gridded_stripe_balancing);
+  EXPECT_TRUE(options.enable_banded_stripe_assignment);
+  EXPECT_EQ(options.banded_stripe_assignment_bands, 64);
+  EXPECT_DOUBLE_EQ(options.banded_stripe_assignment_min_hpwl_gain, 12.5);
   EXPECT_TRUE(options.enable_gridded_local_reorder);
   EXPECT_TRUE(options.enable_gridded_detailed_placement);
   EXPECT_TRUE(options.enable_gridded_detailed_relocation);

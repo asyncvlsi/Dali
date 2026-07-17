@@ -269,6 +269,12 @@ void Dali::ShowParamsList() {
       << static_cast<int>(gridded_legalization_feedback_mode_) << "\n"
       << "  enable_gridded_stripe_balancing: "
       << enable_gridded_stripe_balancing_ << "\n"
+      << "  enable_banded_stripe_assignment: "
+      << enable_banded_stripe_assignment_ << "\n"
+      << "  banded_stripe_assignment_bands: " << banded_stripe_assignment_bands_
+      << "\n"
+      << "  banded_stripe_assignment_min_hpwl_gain: "
+      << banded_stripe_assignment_min_hpwl_gain_ << "\n"
       << "  enable_gridded_local_reorder: " << enable_gridded_local_reorder_
       << "\n"
       << "  enable_gridded_detailed_placement: "
@@ -442,6 +448,17 @@ void Dali::LoadParamsFromConfig() {
   }
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_stripe_balancing"),
                  &enable_gridded_stripe_balancing_);
+  LoadBoolConfig(ConfigName(prefix_, "enable_banded_stripe_assignment"),
+                 &enable_banded_stripe_assignment_);
+  LoadIntConfig(ConfigName(prefix_, "banded_stripe_assignment_bands"),
+                &banded_stripe_assignment_bands_);
+  DaliExpects(banded_stripe_assignment_bands_ >= 1 &&
+                  banded_stripe_assignment_bands_ <= 1024,
+              "banded_stripe_assignment_bands must be in [1, 1024]");
+  LoadRealConfig(ConfigName(prefix_, "banded_stripe_assignment_min_hpwl_gain"),
+                 &banded_stripe_assignment_min_hpwl_gain_);
+  DaliExpects(banded_stripe_assignment_min_hpwl_gain_ >= 0.0,
+              "banded_stripe_assignment_min_hpwl_gain must be non-negative");
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_local_reorder"),
                  &enable_gridded_local_reorder_);
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_detailed_placement"),
@@ -679,6 +696,9 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       enable_gridded_legalization_pressure_,
       gridded_legalization_feedback_mode_,
       enable_gridded_stripe_balancing_,
+      enable_banded_stripe_assignment_,
+      banded_stripe_assignment_bands_,
+      banded_stripe_assignment_min_hpwl_gain_,
       enable_gridded_local_reorder_,
       enable_gridded_detailed_placement_,
       enable_gridded_detailed_relocation_,
@@ -1127,6 +1147,9 @@ void Dali::ConfigureWellLegalizer() {
   well_legalizer_.SetStripePartitionMode(
       static_cast<int>(well_legalization_mode_));
   well_legalizer_.SetEnableStripeBalancing(enable_gridded_stripe_balancing_);
+  well_legalizer_.SetBandedStripeAssignment(
+      enable_banded_stripe_assignment_, banded_stripe_assignment_bands_,
+      banded_stripe_assignment_min_hpwl_gain_);
   well_legalizer_.SetEnableLocalReorder(enable_gridded_local_reorder_);
   well_legalizer_.SetEnableDetailedPlacement(
       enable_gridded_detailed_placement_);

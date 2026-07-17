@@ -76,6 +76,13 @@ add_test(NAME gridded_stripe_balancer_test COMMAND gridded_stripe_balancer_test)
 set_tests_properties(gridded_stripe_balancer_test
                      PROPERTIES LABELS "unit;placer;well_legalizer")
 
+add_executable(banded_stripe_assigner_test banded_stripe_assigner_test.cc)
+target_link_libraries(banded_stripe_assigner_test
+                      PRIVATE dalilib ${DALI_GTEST_MAIN})
+add_test(NAME banded_stripe_assigner_test COMMAND banded_stripe_assigner_test)
+set_tests_properties(banded_stripe_assigner_test
+                     PROPERTIES LABELS "unit;placer;well_legalizer")
+
 add_executable(gridded_row_location_optimizer_test
                gridded_row_location_optimizer_test.cc)
 target_link_libraries(gridded_row_location_optimizer_test

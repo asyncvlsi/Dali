@@ -71,6 +71,9 @@ class Dali {
     GlobalRefinementFeedbackMode gridded_legalization_feedback_mode =
         GlobalRefinementFeedbackMode::kYRowTransactionalConsistent;
     bool enable_gridded_stripe_balancing = false;
+    bool enable_banded_stripe_assignment = false;
+    int banded_stripe_assignment_bands = 32;
+    double banded_stripe_assignment_min_hpwl_gain = 0.0;
     bool enable_gridded_local_reorder = false;
     bool enable_gridded_detailed_placement = false;
     bool enable_gridded_detailed_relocation = false;
@@ -241,6 +244,9 @@ class Dali {
   GlobalRefinementFeedbackMode gridded_legalization_feedback_mode_ =
       GlobalRefinementFeedbackMode::kYRowTransactionalConsistent;
   bool enable_gridded_stripe_balancing_ = false;
+  bool enable_banded_stripe_assignment_ = false;
+  int banded_stripe_assignment_bands_ = 32;
+  double banded_stripe_assignment_min_hpwl_gain_ = 0.0;
   bool enable_gridded_local_reorder_ = false;
   bool enable_gridded_detailed_placement_ = false;
   bool enable_gridded_detailed_relocation_ = false;

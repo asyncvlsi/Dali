@@ -90,6 +90,9 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -gridded_legalization_feedback <full/x_only/y_only/y_row_scale/y_row_hpwl/y_row_transactional/y_row_transactional_positive/y_row_transactional_consistent/y_row_transactional_coherent/none>\n"
       << "  -disable_gridded_legalization_feedback     do not anchor the next solve to rough-legal coordinates\n"
       << "  -enable_gridded_stripe_balancing           rebalance final neighboring gridded stripes\n"
+      << "  -enable_banded_stripe_assignment           transport cells through Y-banded stripe capacity\n"
+      << "  -banded_stripe_assignment_bands <1..1024>  horizontal transport bands, default 32\n"
+      << "  -banded_stripe_assignment_min_hpwl_gain <um>  minimum projected gain per ownership move\n"
       << "  -enable_gridded_local_reorder              reorder cells within finalized gridded rows\n"
       << "  -enable_gridded_detailed_placement         run gridded global swap, vertical swap, and local reorder\n"
       << "  -enable_gridded_detailed_relocation        move cells into legal row whitespace before swaps\n"
@@ -448,6 +451,26 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.disable_gridded_legalization_feedback");
     } else if (arg == "-enable_gridded_stripe_balancing") {
       EnableConfigFlag("dali.enable_gridded_stripe_balancing");
+    } else if (arg == "-enable_banded_stripe_assignment") {
+      EnableConfigFlag("dali.enable_banded_stripe_assignment");
+    } else if (arg == "-banded_stripe_assignment_bands") {
+      int band_count = 0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseInt(value, &band_count) || band_count < 1 ||
+          band_count > 1024) {
+        error_output << "Invalid banded stripe assignment band count!\n";
+        return false;
+      }
+      config_set_int("dali.banded_stripe_assignment_bands", band_count);
+    } else if (arg == "-banded_stripe_assignment_min_hpwl_gain") {
+      double minimum_gain = 0.0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseDouble(value, &minimum_gain) || minimum_gain < 0.0) {
+        error_output << "Invalid banded stripe assignment HPWL margin!\n";
+        return false;
+      }
+      config_set_real("dali.banded_stripe_assignment_min_hpwl_gain",
+                      minimum_gain);
     } else if (arg == "-enable_gridded_local_reorder") {
       EnableConfigFlag("dali.enable_gridded_local_reorder");
     } else if (arg == "-enable_gridded_detailed_placement") {
