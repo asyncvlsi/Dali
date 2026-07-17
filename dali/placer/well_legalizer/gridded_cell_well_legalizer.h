@@ -127,8 +127,9 @@ class GriddedCellWellLegalizer : public Placer {
   }
 
   /** Commit gridded assignment cycles in exact-gain order. */
-  void SetEnableDetailedAssignmentBatch(bool enable) {
-    gridded_detailed_placer_.SetEnableBatchedAssignmentCycles(enable);
+  /** Enable deterministic exact-gain batching for detailed row moves. */
+  void SetEnableDetailedMoveBatching(bool enable) {
+    gridded_detailed_placer_.SetEnableBatchedAssignmentMoves(enable);
   }
 
   /** Set the per-component candidate-row cap in gridded detailed placement. */

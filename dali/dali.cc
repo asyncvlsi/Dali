@@ -1126,7 +1126,7 @@ void Dali::ConfigureWellLegalizer() {
       enable_gridded_detailed_placement_);
   well_legalizer_.SetEnableDetailedRelocation(
       enable_gridded_detailed_relocation_);
-  well_legalizer_.SetEnableDetailedAssignmentBatch(
+  well_legalizer_.SetEnableDetailedMoveBatching(
       enable_gridded_assignment_batch_);
   well_legalizer_.SetDetailedPlacementMaxCandidateRows(
       gridded_detailed_max_candidate_rows_);

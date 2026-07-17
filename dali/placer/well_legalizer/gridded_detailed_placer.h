@@ -56,8 +56,8 @@ class GriddedDetailedPlacer : public Placer {
   /** Enable or disable exact cross-row moves into existing row whitespace. */
   void SetEnableRelocation(bool enable);
 
-  /** Defer closed assignment cycles and commit them in exact-gain order. */
-  void SetEnableBatchedAssignmentCycles(bool enable);
+  /** Rank direct relocations and assignment cycles by exact HPWL gain. */
+  void SetEnableBatchedAssignmentMoves(bool enable);
 
   /** Set the maximum optimal-region rows considered for one component. */
   void SetMaxCandidateRows(int max_candidate_rows);
@@ -84,6 +84,7 @@ class GriddedDetailedPlacer : public Placer {
   static constexpr int kMaxCycleReceiverRows = 2;
   static constexpr int kMaxCycleComponentsPerReceiver = 2;
   static constexpr int kMaxAssignmentBatchPasses = 2;
+  static constexpr int kMaxBatchedRelocationPasses = 2;
   static constexpr int kMaxFinalClusteringPasses = 6;
   static constexpr double kMinClusteringRelativeImprovement = 0.0001;
   static constexpr double kMinSignificantHpwlImprovement = 1e-9;
@@ -111,6 +112,10 @@ class GriddedDetailedPlacer : public Placer {
     int cycle_no_hpwl_improvement = 0;
     int cycle_accepted = 0;
     int cycle_invalidated = 0;
+    int batch_plans = 0;
+    int batch_selected = 0;
+    int batch_accepted = 0;
+    int batch_passes = 0;
 
     /** Accumulate counters from another relocation traversal. */
     void Add(const MoveStats& other);
@@ -161,6 +166,15 @@ class GriddedDetailedPlacer : public Placer {
     GriddedRow* target_row = nullptr;
     OptimalRegion source_region;
     ClosedCycleCandidate candidate;
+  };
+
+  /** One direct row relocation evaluated against a frozen placement. */
+  struct RelocationPlan {
+    GriddedRow* source_row = nullptr;
+    Component* component = nullptr;
+    GriddedRow* target_row = nullptr;
+    double target_lx = 0;
+    double hpwl_improvement = 0;
   };
 
   struct ClusterStats {
@@ -240,6 +254,13 @@ class GriddedDetailedPlacer : public Placer {
    */
   bool TryMove(GriddedRow* source_row, Component* component,
                GriddedRow* target_row, double target_lx, MoveStats* stats);
+  /** Evaluate one direct move, restore it, and return its exact HPWL gain. */
+  bool EvaluateDirectRelocation(GriddedRow* source_row, Component* component,
+                                GriddedRow* target_row, double target_lx,
+                                RelocationPlan* plan, MoveStats* stats);
+  /** Find one component's best legal direct move in the frozen placement. */
+  bool FindBestDirectRelocation(GriddedRow* source_row, Component* component,
+                                RelocationPlan* plan, MoveStats* stats);
   /**
    * Trial a three-row move that frees target-row width by displacing one cell.
    *
@@ -289,6 +310,8 @@ class GriddedDetailedPlacer : public Placer {
   /** Evaluate and commit deferred assignment cycles in exact-gain order. */
   MoveStats RunBatchedAssignmentCycles(
       const std::vector<Component*>& deferred_components);
+  /** Rank frozen direct-move proposals and revalidate them before commit. */
+  MoveStats RunBatchedRelocationStage();
   /** Run relocation, optionally including the more expensive ejection search.
    */
   MoveStats RunRelocationStage(bool enable_ejection);
@@ -325,7 +348,7 @@ class GriddedDetailedPlacer : public Placer {
   double min_relative_improvement_ = 0.005;
   bool enable_vertical_swap_ = true;
   bool enable_relocation_ = false;
-  bool enable_batched_assignment_cycles_ = false;
+  bool enable_batched_assignment_moves_ = false;
   int max_candidate_rows_ = kMaxOptimalRegionRowsPerComponent;
   size_t net_ignore_threshold_ = 100;
 };

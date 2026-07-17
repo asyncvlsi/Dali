@@ -42,6 +42,10 @@ void GriddedDetailedPlacer::MoveStats::Add(const MoveStats& other) {
   cycle_no_hpwl_improvement += other.cycle_no_hpwl_improvement;
   cycle_accepted += other.cycle_accepted;
   cycle_invalidated += other.cycle_invalidated;
+  batch_plans += other.batch_plans;
+  batch_selected += other.batch_selected;
+  batch_accepted += other.batch_accepted;
+  batch_passes += other.batch_passes;
 }
 
 void GriddedDetailedPlacer::ClusterStats::Add(const ClusterStats& other) {
@@ -122,8 +126,8 @@ void GriddedDetailedPlacer::SetEnableRelocation(bool enable) {
   enable_relocation_ = enable;
 }
 
-void GriddedDetailedPlacer::SetEnableBatchedAssignmentCycles(bool enable) {
-  enable_batched_assignment_cycles_ = enable;
+void GriddedDetailedPlacer::SetEnableBatchedAssignmentMoves(bool enable) {
+  enable_batched_assignment_moves_ = enable;
 }
 
 void GriddedDetailedPlacer::SetMaxCandidateRows(int max_candidate_rows) {
@@ -785,6 +789,77 @@ bool GriddedDetailedPlacer::TryMove(GriddedRow* source_row,
   return true;
 }
 
+bool GriddedDetailedPlacer::EvaluateDirectRelocation(
+    GriddedRow* source_row, Component* component, GriddedRow* target_row,
+    double target_lx, RelocationPlan* plan, MoveStats* stats) {
+  DaliExpects(plan != nullptr, "Relocation plan output cannot be null");
+  DaliExpects(stats != nullptr, "Relocation statistics cannot be null");
+  ++stats->candidates;
+  if (source_row == target_row || !IsSwapCandidate(component)) return false;
+  if (source_row->Components().size() <= 1) {
+    ++stats->source_singleton;
+    return false;
+  }
+
+  RowRequirements requirements =
+      ComputeRowRequirementsAfterAssignment(target_row, nullptr, component);
+  bool blocked = false;
+  if (requirements.used_width > target_row->UsableWidth()) {
+    ++stats->width_blocked;
+    blocked = true;
+  }
+  if (requirements.p_well_height > target_row->PHeight()) {
+    ++stats->p_well_blocked;
+    blocked = true;
+  }
+  if (requirements.n_well_height > target_row->NHeight()) {
+    ++stats->n_well_blocked;
+    blocked = true;
+  }
+  if (blocked) return false;
+
+  auto source_component = std::find(source_row->Components().begin(),
+                                    source_row->Components().end(), component);
+  if (source_component == source_row->Components().end()) return false;
+
+  ++stats->evaluated;
+  GriddedRowAssignmentTransaction transaction(ckt_ptr_,
+                                              {source_row, target_row});
+  source_row->Components().erase(source_component);
+  target_row->Components().push_back(component);
+  component->SetLLX(target_lx);
+  LegalizeRowsAfterAssignment(source_row, target_row);
+  double improvement = transaction.HpwlImprovement();
+  transaction.Restore();
+  if (improvement <= kMinSignificantHpwlImprovement) {
+    ++stats->no_hpwl_improvement;
+    return false;
+  }
+  if (improvement > plan->hpwl_improvement) {
+    *plan = {source_row, component, target_row, target_lx, improvement};
+  }
+  return true;
+}
+
+bool GriddedDetailedPlacer::FindBestDirectRelocation(GriddedRow* source_row,
+                                                     Component* component,
+                                                     RelocationPlan* plan,
+                                                     MoveStats* stats) {
+  DaliExpects(plan != nullptr, "Relocation plan output cannot be null");
+  OptimalRegion region = ComputeOptimalRegion(component);
+  if (!region.valid) return false;
+
+  bool found = false;
+  for (const CandidateRow& candidate_row :
+       FindCandidateRows(source_row, component, region)) {
+    double target_lx = ComputeMoveTargetX(candidate_row.row, component, region);
+    found = EvaluateDirectRelocation(source_row, component, candidate_row.row,
+                                     target_lx, plan, stats) ||
+            found;
+  }
+  return found;
+}
+
 bool GriddedDetailedPlacer::TryEjectionChain(GriddedRow* source_row,
                                              Component* component,
                                              GriddedRow* target_row,
@@ -1267,8 +1342,77 @@ GriddedDetailedPlacer::RunBatchedAssignmentCycles(
   return stats;
 }
 
+GriddedDetailedPlacer::MoveStats
+GriddedDetailedPlacer::RunBatchedRelocationStage() {
+  MoveStats total_stats;
+  component_rows_.clear();
+  for (GriddedRow* row : rows_) {
+    for (Component* component : row->Components()) {
+      component_rows_[component] = row;
+    }
+  }
+
+  for (int pass = 0; pass < kMaxBatchedRelocationPasses; ++pass) {
+    std::vector<Component*> components;
+    components.reserve(component_rows_.size());
+    for (GriddedRow* row : rows_) {
+      components.insert(components.end(), row->Components().begin(),
+                        row->Components().end());
+    }
+    std::sort(components.begin(), components.end(),
+              [](const Component* lhs, const Component* rhs) {
+                return lhs->Id() < rhs->Id();
+              });
+
+    std::vector<RelocationPlan> plans;
+    plans.reserve(components.size());
+    for (Component* component : components) {
+      RelocationPlan plan;
+      if (FindBestDirectRelocation(component_rows_.at(component), component,
+                                   &plan, &total_stats)) {
+        plans.push_back(plan);
+      }
+    }
+    if (plans.empty()) break;
+    ++total_stats.batch_passes;
+    total_stats.batch_plans += static_cast<int>(plans.size());
+    std::sort(plans.begin(), plans.end(),
+              [](const RelocationPlan& lhs, const RelocationPlan& rhs) {
+                if (lhs.hpwl_improvement != rhs.hpwl_improvement) {
+                  return lhs.hpwl_improvement > rhs.hpwl_improvement;
+                }
+                return lhs.component->Id() < rhs.component->Id();
+              });
+
+    total_stats.batch_selected += static_cast<int>(plans.size());
+
+    int accepted_this_pass = 0;
+    for (const RelocationPlan& plan : plans) {
+      auto current_row = component_rows_.find(plan.component);
+      if (current_row == component_rows_.end() ||
+          current_row->second != plan.source_row) {
+        continue;
+      }
+      MoveStats commit_stats;
+      if (TryMove(plan.source_row, plan.component, plan.target_row,
+                  plan.target_lx, &commit_stats)) {
+        ++accepted_this_pass;
+        ++total_stats.accepted;
+        ++total_stats.batch_accepted;
+      }
+    }
+    if (accepted_this_pass == 0) break;
+  }
+  component_rows_.clear();
+  return total_stats;
+}
+
 GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::RunRelocationStage(
     bool enable_ejection) {
+  MoveStats total_stats;
+  if (enable_batched_assignment_moves_) {
+    total_stats.Add(RunBatchedRelocationStage());
+  }
   std::vector<Component*> components;
   component_rows_.clear();
   for (GriddedRow* row : rows_) {
@@ -1278,10 +1422,9 @@ GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::RunRelocationStage(
     }
   }
 
-  MoveStats total_stats;
   std::vector<Component*> deferred_cycle_components;
   std::vector<Component*>* deferred_cycles =
-      enable_ejection && enable_batched_assignment_cycles_
+      enable_ejection && enable_batched_assignment_moves_
           ? &deferred_cycle_components
           : nullptr;
   for (Component* component : components) {
@@ -1433,6 +1576,10 @@ void GriddedDetailedPlacer::LogMoveStage(const MoveStats& stats,
             << ", accepted=" << stats.cycle_accepted
             << ", invalidated=" << stats.cycle_invalidated
             << ", no-HPWL-gain=" << stats.cycle_no_hpwl_improvement << ")"
+            << ", batch(passes=" << stats.batch_passes
+            << ", plans=" << stats.batch_plans
+            << ", selected=" << stats.batch_selected
+            << ", accepted=" << stats.batch_accepted << ")"
             << ", HPWL=" << hpwl_after
             << "um, improvement=" << hpwl_before - hpwl_after << "um\n";
 }
@@ -1529,9 +1676,10 @@ bool GriddedDetailedPlacer::StartPlacement() {
             << "\n"
             << "  row relocation: "
             << (enable_relocation_ ? "enabled" : "disabled") << "\n"
-            << "  assignment cycles: "
-            << (enable_batched_assignment_cycles_ ? "exact-gain batch"
-                                                  : "sequential")
+            << "  assignment move order: "
+            << (enable_batched_assignment_moves_
+                    ? "exact-gain ranked, then sequential fallback"
+                    : "sequential")
             << "\n"
             << "  maximum candidate rows: " << max_candidate_rows_ << "\n"
             << "  vertical swap: "
@@ -1734,6 +1882,14 @@ bool GriddedDetailedPlacer::StartPlacement() {
                         total_relocation_stats.cycle_accepted);
   RecordPlacementMetric("gridded_detailed.assignment_cycle.invalidated",
                         total_relocation_stats.cycle_invalidated);
+  RecordPlacementMetric("gridded_detailed.relocation.batch.passes",
+                        total_relocation_stats.batch_passes);
+  RecordPlacementMetric("gridded_detailed.relocation.batch.plans",
+                        total_relocation_stats.batch_plans);
+  RecordPlacementMetric("gridded_detailed.relocation.batch.selected",
+                        total_relocation_stats.batch_selected);
+  RecordPlacementMetric("gridded_detailed.relocation.batch.accepted",
+                        total_relocation_stats.batch_accepted);
   RecordPlacementMetric("gridded_detailed.global_swap.candidates",
                         total_global_swap_stats.candidates);
   RecordPlacementMetric("gridded_detailed.global_swap.accepted",

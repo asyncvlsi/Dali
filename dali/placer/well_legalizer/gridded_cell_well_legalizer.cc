@@ -1571,6 +1571,14 @@ void GriddedCellWellLegalizer::RunOrToolsRowOptimizationStage() {
                         timer.GetWallTime());
   RecordPlacementMetric("time.well_legalization.ortools_row.cpu_s",
                         timer.GetCpuTime());
+  RecordPlacementMetric("well_legalization.ortools_row.attempted",
+                        result.attempted_models);
+  RecordPlacementMetric("well_legalization.ortools_row.solved",
+                        result.solved_models);
+  RecordPlacementMetric("well_legalization.ortools_row.accepted",
+                        result.accepted_models);
+  RecordPlacementMetric("well_legalization.ortools_row.improved",
+                        result.improved_models);
   EmitSnapshot("ortools_row", "After OR-Tools Row Optimization", "legalization",
                "ortools_row");
 }
@@ -1616,6 +1624,17 @@ void GriddedCellWellLegalizer::RunVerticalHpwlRowAssignmentStage() {
   RecordPlacementMetric(
       "time.well_legalization.vertical_hpwl_row_assignment.wall_s",
       timer.GetWallTime());
+  RecordPlacementMetric(
+      "well_legalization.vertical_hpwl_row_assignment.attempted",
+      result.attempted_windows);
+  RecordPlacementMetric("well_legalization.vertical_hpwl_row_assignment.solved",
+                        result.solved_windows);
+  RecordPlacementMetric(
+      "well_legalization.vertical_hpwl_row_assignment.accepted",
+      result.accepted_windows);
+  RecordPlacementMetric(
+      "well_legalization.vertical_hpwl_row_assignment.reassigned_components",
+      result.reassigned_components);
   EmitSnapshot("vertical_hpwl_row_assignment",
                "After Vertical-HPWL Row Assignment", "legalization",
                "vertical_hpwl_row_assignment");
@@ -2136,11 +2155,11 @@ void GriddedCellWellLegalizer::RunPostClusteringStages(
   if (clustering_succeeded && enable_row_location_optimization_) {
     RunJointOrientationAndRowLocationOptimization();
   }
-  if (clustering_succeeded && enable_ortools_row_optimization_) {
-    RunOrToolsRowOptimizationStage();
-  }
   if (clustering_succeeded && enable_vertical_hpwl_row_assignment_) {
     RunVerticalHpwlRowAssignmentStage();
+  }
+  if (clustering_succeeded && enable_ortools_row_optimization_) {
+    RunOrToolsRowOptimizationStage();
   }
   if (clustering_succeeded && enable_exact_stripe_optimization_ &&
       exact_stripe_before_detailed_placement_) {
