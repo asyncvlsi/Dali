@@ -148,6 +148,7 @@ class GriddedCellWellLegalizer : public Placer {
   /** Configure gridded detailed-placement convergence. */
   void SetDetailedPlacementConvergence(int max_rounds,
                                        double min_relative_improvement) {
+    detailed_placement_max_rounds_ = max_rounds;
     gridded_detailed_placer_.SetMaxRounds(max_rounds);
     gridded_detailed_placer_.SetMinRelativeImprovement(
         min_relative_improvement);
@@ -411,6 +412,15 @@ class GriddedCellWellLegalizer : public Placer {
   WellRowCompletionConfig BuildRowCompletionConfig() const;
 
   bool RunComponentClusteringStage();
+  /**
+   * Compare geometric and banded ownership after one detailed-place round.
+   *
+   * Immediate legalization HPWL is a poor predictor of final quality because
+   * a slightly worse row structure can expose better relocation and swap
+   * neighborhoods. This opt-in selector previews both legal structures, then
+   * reconstructs the lower-preview candidate for the normal full schedule.
+   */
+  bool RunBandedAssignmentPreviewStage();
   /** Trial uniform and adaptive clustering and retain the lower legal HPWL. */
   bool RunBestBoundaryClusteringStage();
   /** Return the column pitch boundaries used by the current partition. */
@@ -532,6 +542,7 @@ class GriddedCellWellLegalizer : public Placer {
   std::vector<int> stripe_boundaries_override_;
   bool enable_local_reorder_ = false;
   bool enable_detailed_placement_ = false;
+  int detailed_placement_max_rounds_ = 6;
   bool enable_row_location_optimization_ = false;
   bool enable_ortools_row_optimization_ = false;
   int ortools_net_ignore_threshold_ = 100;

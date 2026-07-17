@@ -1393,6 +1393,80 @@ bool GriddedCellWellLegalizer::RunComponentClusteringStage() {
   return is_success;
 }
 
+bool GriddedCellWellLegalizer::RunBandedAssignmentPreviewStage() {
+  DaliExpects(enable_banded_stripe_assignment_,
+              "Banded preview requires banded assignment");
+  DaliExpects(enable_detailed_placement_,
+              "Banded preview requires gridded detailed placement");
+
+  struct PreviewResult {
+    bool uses_banded_assignment = false;
+    bool feasible = false;
+    double legalized_hpwl = std::numeric_limits<double>::infinity();
+    double preview_hpwl = std::numeric_limits<double>::infinity();
+  };
+
+  std::vector<PreviewResult> previews = {{false}, {true}};
+  gridded_detailed_placer_.SetMaxRounds(1);
+  for (PreviewResult& preview : previews) {
+    RestoreInitialComponentLocation();
+    InitializeWellLegalizer(-1, preview.uses_banded_assignment);
+    preview.feasible = ComponentClusteringLoose();
+    if (!preview.feasible) continue;
+
+    preview.legalized_hpwl = WeightedHPWL();
+    RunClusterOrientationStage();
+    if (enable_row_location_optimization_) {
+      RunJointOrientationAndRowLocationOptimization();
+    }
+    RunGriddedDetailedPlacementStage();
+    preview.preview_hpwl = WeightedHPWL();
+  }
+  gridded_detailed_placer_.SetMaxRounds(detailed_placement_max_rounds_);
+
+  const PreviewResult* selected = nullptr;
+  for (const PreviewResult& preview : previews) {
+    if (preview.feasible && (selected == nullptr ||
+                             preview.preview_hpwl < selected->preview_hpwl)) {
+      selected = &preview;
+    }
+  }
+  DaliExpects(selected != nullptr,
+              "Banded assignment preview found no legal placement");
+
+  LOG(info) << "Banded stripe assignment detailed preview:\n";
+  for (const PreviewResult& preview : previews) {
+    LOG(info) << "  "
+              << (preview.uses_banded_assignment ? "banded" : "geometric")
+              << ": ";
+    if (preview.feasible) {
+      LOG(info) << "legalized HPWL=" << preview.legalized_hpwl
+                << "um, one-round HPWL=" << preview.preview_hpwl << "um\n";
+    } else {
+      LOG(info) << "infeasible\n";
+    }
+  }
+  LOG(info) << "  selected ownership: "
+            << (selected->uses_banded_assignment ? "banded" : "geometric")
+            << "\n";
+
+  RestoreInitialComponentLocation();
+  InitializeWellLegalizer(-1, selected->uses_banded_assignment);
+  bool is_success = RunComponentClusteringStage();
+  DaliExpects(is_success,
+              "Selected banded preview placement is not reproducibly legal");
+  RecordPlacementMetric("well_legalization.banded_assignment.preview.selected",
+                        selected->uses_banded_assignment ? 1.0 : 0.0);
+  RecordPlacementMetric(
+      "well_legalization.banded_assignment.preview.geometric_hpwl",
+      previews.front().feasible ? previews.front().preview_hpwl : -1.0);
+  RecordPlacementMetric(
+      "well_legalization.banded_assignment.preview.banded_hpwl",
+      previews.back().feasible ? previews.back().preview_hpwl : -1.0);
+  RunPostClusteringStages(is_success);
+  return is_success;
+}
+
 bool GriddedCellWellLegalizer::RunBestBoundaryClusteringStage() {
   DaliExpects(enable_adaptive_stripe_boundaries_,
               "Boundary selection requires adaptive stripes to be enabled");
@@ -2344,6 +2418,9 @@ bool GriddedCellWellLegalizer::StartPlacement() {
     is_success = RunBestBoundaryClusteringStage();
     LogEstimatedGriddedCapacity();
     RunPostClusteringStages(is_success);
+  } else if (enable_banded_stripe_assignment_ && enable_detailed_placement_) {
+    is_success = RunBandedAssignmentPreviewStage();
+    LogEstimatedGriddedCapacity();
   } else {
     InitializeWellLegalizer();
     LogEstimatedGriddedCapacity();
