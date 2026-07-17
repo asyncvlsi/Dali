@@ -85,8 +85,10 @@ class GriddedDetailedPlacer : public Placer {
   static constexpr int kMaxCycleComponentsPerReceiver = 2;
   static constexpr int kMaxAssignmentBatchPasses = 2;
   static constexpr int kMaxBatchedRelocationPasses = 2;
+  static constexpr int kMaxInsertionRefinementPasses = 8;
   static constexpr int kMaxFinalClusteringPasses = 6;
   static constexpr double kMinClusteringRelativeImprovement = 0.0001;
+  static constexpr double kMinInsertionRefinementRelativeImprovement = 0.0001;
   static constexpr double kMinSignificantHpwlImprovement = 1e-9;
 
   struct SwapStats {
@@ -116,6 +118,7 @@ class GriddedDetailedPlacer : public Placer {
     int batch_selected = 0;
     int batch_accepted = 0;
     int batch_passes = 0;
+    int insertion_positions_evaluated = 0;
 
     /** Accumulate counters from another relocation traversal. */
     void Add(const MoveStats& other);
@@ -174,6 +177,7 @@ class GriddedDetailedPlacer : public Placer {
     Component* component = nullptr;
     GriddedRow* target_row = nullptr;
     double target_lx = 0;
+    int insertion_position = -1;
     double hpwl_improvement = 0;
   };
 
@@ -243,6 +247,13 @@ class GriddedDetailedPlacer : public Placer {
   /** Recompute component Y/orientation and legalize X in two changed rows. */
   void LegalizeRowsAfterAssignment(GriddedRow* first_row,
                                    GriddedRow* second_row);
+  /** Legalize X while preserving the component order already stored by a row.
+   */
+  void LegalizeRowXInCurrentOrder(GriddedRow* row) const;
+  /** Apply a cross-row assignment at one explicit target-row X-order slot. */
+  void ApplyInsertionAssignment(GriddedRow* source_row, Component* component,
+                                GriddedRow* target_row, int insertion_position,
+                                double target_lx);
   /** Recompute used width from row margins and assigned ordinary components. */
   void SynchronizeRowUsedSize(GriddedRow* row) const;
   /** Transfer a component's original-location record between row owners. */
@@ -253,14 +264,24 @@ class GriddedDetailedPlacer : public Placer {
   /** Trial-move one component and commit only a legal exact-HPWL improvement.
    */
   bool TryMove(GriddedRow* source_row, Component* component,
-               GriddedRow* target_row, double target_lx, MoveStats* stats);
+               GriddedRow* target_row, double target_lx, MoveStats* stats,
+               int insertion_position = -1);
   /** Evaluate one direct move, restore it, and return its exact HPWL gain. */
   bool EvaluateDirectRelocation(GriddedRow* source_row, Component* component,
                                 GriddedRow* target_row, double target_lx,
                                 RelocationPlan* plan, MoveStats* stats);
+  /** Evaluate every target-row insertion slot for one direct relocation. */
+  bool EvaluateInsertionRelocations(GriddedRow* source_row,
+                                    Component* component,
+                                    GriddedRow* target_row, double target_lx,
+                                    RelocationPlan* plan, MoveStats* stats);
   /** Find one component's best legal direct move in the frozen placement. */
   bool FindBestDirectRelocation(GriddedRow* source_row, Component* component,
                                 RelocationPlan* plan, MoveStats* stats);
+  /** Find the best direct move after testing every target-row insertion slot.
+   */
+  bool FindBestInsertionRelocation(GriddedRow* source_row, Component* component,
+                                   RelocationPlan* plan, MoveStats* stats);
   /**
    * Trial a three-row move that frees target-row width by displacing one cell.
    *
@@ -311,7 +332,7 @@ class GriddedDetailedPlacer : public Placer {
   MoveStats RunBatchedAssignmentCycles(
       const std::vector<Component*>& deferred_components);
   /** Rank frozen direct-move proposals and revalidate them before commit. */
-  MoveStats RunBatchedRelocationStage();
+  MoveStats RunBatchedRelocationStage(bool insertion_aware = false);
   /** Run relocation, optionally including the more expensive ejection search.
    */
   MoveStats RunRelocationStage(bool enable_ejection);

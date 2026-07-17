@@ -149,6 +149,73 @@ TEST(GriddedDetailedPlacerTest,
   }
 }
 
+TEST(GriddedDetailedPlacerTest,
+     InsertionRefinementProtectsAnchoredTargetRowOrder) {
+  Circuit circuit;
+  circuit.SetDatabaseMicrons(1000);
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.SetDieArea(0, 0, 30, 110);
+  circuit.ReserveSpaceForDesignImp(7, 0, 3);
+
+  Macro* cell = circuit.AddMacro("cell", 10, 10);
+  ASSERT_NE(cell, nullptr);
+  cell->AddWellRect(false, 0, 0, 10, 4);
+  cell->AddWellRect(true, 0, 4, 10, 10);
+  circuit.AddMacroPin(cell, "p", true)->SetOffset(5, 5);
+
+  circuit.AddComponent("move", "cell", 0, 0, PLACED);
+  circuit.AddComponent("source_stay", "cell", 10, 0, PLACED);
+  circuit.AddComponent("target_left", "cell", 0, 100, PLACED);
+  circuit.AddComponent("target_right", "cell", 10, 100, PLACED);
+  circuit.AddComponent("move_anchor", "cell", 0, 100, FIXED);
+  circuit.AddComponent("left_anchor", "cell", 0, 100, FIXED);
+  circuit.AddComponent("right_anchor", "cell", 10, 100, FIXED);
+
+  circuit.AddNet("move_net", 2, 1);
+  circuit.AddComponentPinToNet("move", "p", "move_net");
+  circuit.AddComponentPinToNet("move_anchor", "p", "move_net");
+  circuit.AddNet("left_net", 2, 10);
+  circuit.AddComponentPinToNet("target_left", "p", "left_net");
+  circuit.AddComponentPinToNet("left_anchor", "p", "left_net");
+  circuit.AddNet("right_net", 2, 10);
+  circuit.AddComponentPinToNet("target_right", "p", "right_net");
+  circuit.AddComponentPinToNet("right_anchor", "p", "right_net");
+
+  std::vector<GriddedRow> rows(2);
+  for (size_t i = 0; i < rows.size(); ++i) {
+    rows[i].SetLLX(0);
+    rows[i].SetWidth(30);
+    rows[i].SetLLY(static_cast<int>(i) * 100);
+    rows[i].UpdateWellHeightUpward(4, 6);
+    rows[i].SetOrient(true);
+  }
+  rows[0].AddComponent(circuit.GetComponentPtr("move"));
+  rows[0].AddComponent(circuit.GetComponentPtr("source_stay"));
+  rows[1].AddComponent(circuit.GetComponentPtr("target_left"));
+  rows[1].AddComponent(circuit.GetComponentPtr("target_right"));
+
+  GriddedDetailedPlacer placer;
+  placer.SetCircuit(&circuit);
+  placer.SetRows({&rows[0], &rows[1]});
+  placer.SetEnableRelocation(true);
+  placer.SetEnableBatchedAssignmentMoves(true);
+  placer.SetEnableVerticalSwap(false);
+  placer.SetMaxRounds(0);
+  const double hpwl_before = circuit.WeightedHPWL();
+  ASSERT_TRUE(placer.StartPlacement());
+
+  ASSERT_EQ(rows[1].Components().size(), 3);
+  EXPECT_EQ(rows[1].Components()[0], circuit.GetComponentPtr("target_left"));
+  EXPECT_EQ(rows[1].Components()[1], circuit.GetComponentPtr("target_right"));
+  EXPECT_EQ(rows[1].Components()[2], circuit.GetComponentPtr("move"));
+  EXPECT_DOUBLE_EQ(circuit.GetComponentPtr("target_left")->LLX(), 0);
+  EXPECT_DOUBLE_EQ(circuit.GetComponentPtr("target_right")->LLX(), 10);
+  EXPECT_DOUBLE_EQ(circuit.GetComponentPtr("move")->LLX(), 20);
+  EXPECT_LT(circuit.WeightedHPWL(), hpwl_before);
+}
+
 TEST(GriddedDetailedPlacerTest, RelocationRanksRowsInPhysicalUnits) {
   Circuit circuit;
   circuit.SetDatabaseMicrons(1000);

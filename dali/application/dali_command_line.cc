@@ -92,7 +92,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -enable_gridded_local_reorder              reorder cells within finalized gridded rows\n"
       << "  -enable_gridded_detailed_placement         run gridded global swap, vertical swap, and local reorder\n"
       << "  -enable_gridded_detailed_relocation        move cells into legal row whitespace before swaps\n"
-      << "  -enable_gridded_assignment_batch           batch gridded row moves by exact HPWL gain\n"
+      << "  -enable_gridded_assignment_batch           rank and refine gridded row moves by exact HPWL gain\n"
       << "  -gridded_detailed_max_candidate_rows <1..32>  candidate rows per component, default 4\n"
       << "  -gridded_detailed_max_rounds <n>           maximum gridded detailed rounds, default 6\n"
       << "  -gridded_detailed_min_relative_improvement <0..1>  convergence threshold, default 0.005\n"

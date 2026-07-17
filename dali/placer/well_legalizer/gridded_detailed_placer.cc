@@ -46,6 +46,7 @@ void GriddedDetailedPlacer::MoveStats::Add(const MoveStats& other) {
   batch_selected += other.batch_selected;
   batch_accepted += other.batch_accepted;
   batch_passes += other.batch_passes;
+  insertion_positions_evaluated += other.insertion_positions_evaluated;
 }
 
 void GriddedDetailedPlacer::ClusterStats::Add(const ClusterStats& other) {
@@ -681,6 +682,58 @@ void GriddedDetailedPlacer::LegalizeRowsAfterAssignment(
   second_row->LegalizeLooseX();
 }
 
+void GriddedDetailedPlacer::LegalizeRowXInCurrentOrder(GriddedRow* row) const {
+  int contour = row->LLX() + row->LeftBoundaryMargin();
+  for (Component* component : row->Components()) {
+    component->SetLLX(std::max(contour, static_cast<int>(component->LLX())));
+    contour = static_cast<int>(component->URX());
+  }
+
+  contour = row->URX() - row->RightBoundaryMargin();
+  for (auto component = row->Components().rbegin();
+       component != row->Components().rend(); ++component) {
+    (*component)
+        ->SetURX(std::min(contour, static_cast<int>((*component)->URX())));
+    contour = static_cast<int>((*component)->LLX());
+  }
+}
+
+void GriddedDetailedPlacer::ApplyInsertionAssignment(GriddedRow* source_row,
+                                                     Component* component,
+                                                     GriddedRow* target_row,
+                                                     int insertion_position,
+                                                     double target_lx) {
+  auto component_order = [](const Component* lhs, const Component* rhs) {
+    if (lhs->LLX() == rhs->LLX()) return lhs->Id() < rhs->Id();
+    return lhs->LLX() < rhs->LLX();
+  };
+
+  auto& source_components = source_row->Components();
+  auto source_component =
+      std::find(source_components.begin(), source_components.end(), component);
+  DaliExpects(source_component != source_components.end(),
+              "Insertion assignment source must contain the component");
+  source_components.erase(source_component);
+  std::sort(source_components.begin(), source_components.end(),
+            component_order);
+
+  auto& target_components = target_row->Components();
+  std::sort(target_components.begin(), target_components.end(),
+            component_order);
+  insertion_position = std::clamp(insertion_position, 0,
+                                  static_cast<int>(target_components.size()));
+  target_components.insert(target_components.begin() + insertion_position,
+                           component);
+  component->SetLLX(target_lx);
+
+  for (GriddedRow* row : {source_row, target_row}) {
+    for (Component* row_component : row->Components()) {
+      PlaceComponentInRow(row, row_component);
+    }
+    LegalizeRowXInCurrentOrder(row);
+  }
+}
+
 void GriddedDetailedPlacer::SynchronizeRowUsedSize(GriddedRow* row) const {
   int used_width = row->LeftBoundaryMargin() + row->RightBoundaryMargin();
   for (Component* component : row->Components()) {
@@ -733,7 +786,7 @@ bool GriddedDetailedPlacer::TrySwap(GriddedRow* first_row, int first_index,
 bool GriddedDetailedPlacer::TryMove(GriddedRow* source_row,
                                     Component* component,
                                     GriddedRow* target_row, double target_lx,
-                                    MoveStats* stats) {
+                                    MoveStats* stats, int insertion_position) {
   DaliExpects(stats != nullptr, "Relocation statistics cannot be null");
   if (source_row == target_row || !IsSwapCandidate(component)) {
     return false;
@@ -771,10 +824,15 @@ bool GriddedDetailedPlacer::TryMove(GriddedRow* source_row,
   ++stats->evaluated;
   GriddedRowAssignmentTransaction transaction(ckt_ptr_,
                                               {source_row, target_row});
-  source_row->Components().erase(source_component);
-  target_row->Components().push_back(component);
-  component->SetLLX(target_lx);
-  LegalizeRowsAfterAssignment(source_row, target_row);
+  if (insertion_position >= 0) {
+    ApplyInsertionAssignment(source_row, component, target_row,
+                             insertion_position, target_lx);
+  } else {
+    source_row->Components().erase(source_component);
+    target_row->Components().push_back(component);
+    component->SetLLX(target_lx);
+    LegalizeRowsAfterAssignment(source_row, target_row);
+  }
 
   if (!transaction.ImprovesHpwl(kMinSignificantHpwlImprovement)) {
     transaction.Restore();
@@ -836,9 +894,72 @@ bool GriddedDetailedPlacer::EvaluateDirectRelocation(
     return false;
   }
   if (improvement > plan->hpwl_improvement) {
-    *plan = {source_row, component, target_row, target_lx, improvement};
+    plan->source_row = source_row;
+    plan->component = component;
+    plan->target_row = target_row;
+    plan->target_lx = target_lx;
+    plan->insertion_position = -1;
+    plan->hpwl_improvement = improvement;
   }
   return true;
+}
+
+bool GriddedDetailedPlacer::EvaluateInsertionRelocations(
+    GriddedRow* source_row, Component* component, GriddedRow* target_row,
+    double target_lx, RelocationPlan* plan, MoveStats* stats) {
+  DaliExpects(plan != nullptr, "Relocation plan output cannot be null");
+  DaliExpects(stats != nullptr, "Relocation statistics cannot be null");
+
+  ++stats->candidates;
+  if (source_row == target_row || !IsSwapCandidate(component)) return false;
+  if (source_row->Components().size() <= 1) {
+    ++stats->source_singleton;
+    return false;
+  }
+
+  RowRequirements requirements =
+      ComputeRowRequirementsAfterAssignment(target_row, nullptr, component);
+  bool blocked = false;
+  if (requirements.used_width > target_row->UsableWidth()) {
+    ++stats->width_blocked;
+    blocked = true;
+  }
+  if (requirements.p_well_height > target_row->PHeight()) {
+    ++stats->p_well_blocked;
+    blocked = true;
+  }
+  if (requirements.n_well_height > target_row->NHeight()) {
+    ++stats->n_well_blocked;
+    blocked = true;
+  }
+  if (blocked) return false;
+
+  ++stats->evaluated;
+  bool found = false;
+  const int insertion_count =
+      static_cast<int>(target_row->Components().size()) + 1;
+  GriddedRowAssignmentTransaction transaction(ckt_ptr_,
+                                              {source_row, target_row});
+  for (int insertion_position = 0; insertion_position < insertion_count;
+       ++insertion_position) {
+    ApplyInsertionAssignment(source_row, component, target_row,
+                             insertion_position, target_lx);
+    ++stats->insertion_positions_evaluated;
+    double improvement = transaction.HpwlImprovement();
+    transaction.Restore();
+    if (improvement <= kMinSignificantHpwlImprovement) continue;
+    found = true;
+    if (improvement > plan->hpwl_improvement) {
+      plan->source_row = source_row;
+      plan->component = component;
+      plan->target_row = target_row;
+      plan->target_lx = target_lx;
+      plan->insertion_position = insertion_position;
+      plan->hpwl_improvement = improvement;
+    }
+  }
+  if (!found) ++stats->no_hpwl_improvement;
+  return found;
 }
 
 bool GriddedDetailedPlacer::FindBestDirectRelocation(GriddedRow* source_row,
@@ -856,6 +977,25 @@ bool GriddedDetailedPlacer::FindBestDirectRelocation(GriddedRow* source_row,
     found = EvaluateDirectRelocation(source_row, component, candidate_row.row,
                                      target_lx, plan, stats) ||
             found;
+  }
+  return found;
+}
+
+bool GriddedDetailedPlacer::FindBestInsertionRelocation(GriddedRow* source_row,
+                                                        Component* component,
+                                                        RelocationPlan* plan,
+                                                        MoveStats* stats) {
+  OptimalRegion region = ComputeOptimalRegion(component);
+  if (!region.valid) return false;
+
+  bool found = false;
+  for (const CandidateRow& candidate_row :
+       FindCandidateRows(source_row, component, region)) {
+    double target_lx = ComputeMoveTargetX(candidate_row.row, component, region);
+    found =
+        EvaluateInsertionRelocations(source_row, component, candidate_row.row,
+                                     target_lx, plan, stats) ||
+        found;
   }
   return found;
 }
@@ -1343,7 +1483,7 @@ GriddedDetailedPlacer::RunBatchedAssignmentCycles(
 }
 
 GriddedDetailedPlacer::MoveStats
-GriddedDetailedPlacer::RunBatchedRelocationStage() {
+GriddedDetailedPlacer::RunBatchedRelocationStage(bool insertion_aware) {
   MoveStats total_stats;
   component_rows_.clear();
   for (GriddedRow* row : rows_) {
@@ -1352,7 +1492,10 @@ GriddedDetailedPlacer::RunBatchedRelocationStage() {
     }
   }
 
-  for (int pass = 0; pass < kMaxBatchedRelocationPasses; ++pass) {
+  const int max_passes = insertion_aware ? kMaxInsertionRefinementPasses
+                                         : kMaxBatchedRelocationPasses;
+  for (int pass = 0; pass < max_passes; ++pass) {
+    double hpwl_before_pass = insertion_aware ? WeightedHPWL() : 0;
     std::vector<Component*> components;
     components.reserve(component_rows_.size());
     for (GriddedRow* row : rows_) {
@@ -1368,8 +1511,13 @@ GriddedDetailedPlacer::RunBatchedRelocationStage() {
     plans.reserve(components.size());
     for (Component* component : components) {
       RelocationPlan plan;
-      if (FindBestDirectRelocation(component_rows_.at(component), component,
-                                   &plan, &total_stats)) {
+      GriddedRow* source_row = component_rows_.at(component);
+      bool found = insertion_aware
+                       ? FindBestInsertionRelocation(source_row, component,
+                                                     &plan, &total_stats)
+                       : FindBestDirectRelocation(source_row, component, &plan,
+                                                  &total_stats);
+      if (found) {
         plans.push_back(plan);
       }
     }
@@ -1395,13 +1543,28 @@ GriddedDetailedPlacer::RunBatchedRelocationStage() {
       }
       MoveStats commit_stats;
       if (TryMove(plan.source_row, plan.component, plan.target_row,
-                  plan.target_lx, &commit_stats)) {
+                  plan.target_lx, &commit_stats, plan.insertion_position)) {
         ++accepted_this_pass;
         ++total_stats.accepted;
         ++total_stats.batch_accepted;
       }
     }
     if (accepted_this_pass == 0) break;
+    if (insertion_aware) {
+      double hpwl_after_pass = WeightedHPWL();
+      double relative_improvement =
+          hpwl_before_pass > 0
+              ? (hpwl_before_pass - hpwl_after_pass) / hpwl_before_pass
+              : 0;
+      LOG(info) << "  insertion refinement pass " << pass
+                << ": accepted=" << accepted_this_pass
+                << ", HPWL=" << hpwl_after_pass
+                << "um, improvement=" << hpwl_before_pass - hpwl_after_pass
+                << "um (" << relative_improvement * 100.0 << "%)\n";
+      if (relative_improvement < kMinInsertionRefinementRelativeImprovement) {
+        break;
+      }
+    }
   }
   component_rows_.clear();
   return total_stats;
@@ -1410,7 +1573,7 @@ GriddedDetailedPlacer::RunBatchedRelocationStage() {
 GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::RunRelocationStage(
     bool enable_ejection) {
   MoveStats total_stats;
-  if (enable_batched_assignment_moves_) {
+  if (enable_relocation_ && enable_batched_assignment_moves_) {
     total_stats.Add(RunBatchedRelocationStage());
   }
   std::vector<Component*> components;
@@ -1579,7 +1742,9 @@ void GriddedDetailedPlacer::LogMoveStage(const MoveStats& stats,
             << ", batch(passes=" << stats.batch_passes
             << ", plans=" << stats.batch_plans
             << ", selected=" << stats.batch_selected
-            << ", accepted=" << stats.batch_accepted << ")"
+            << ", accepted=" << stats.batch_accepted
+            << ", insertion-trials=" << stats.insertion_positions_evaluated
+            << ")"
             << ", HPWL=" << hpwl_after
             << "um, improvement=" << hpwl_before - hpwl_after << "um\n";
 }
@@ -1678,7 +1843,8 @@ bool GriddedDetailedPlacer::StartPlacement() {
             << (enable_relocation_ ? "enabled" : "disabled") << "\n"
             << "  assignment move order: "
             << (enable_batched_assignment_moves_
-                    ? "exact-gain ranked, then sequential fallback"
+                    ? "exact-gain ranked, sequential fallback, then "
+                      "insertion refinement"
                     : "sequential")
             << "\n"
             << "  maximum candidate rows: " << max_candidate_rows_ << "\n"
@@ -1800,6 +1966,30 @@ bool GriddedDetailedPlacer::StartPlacement() {
                 << min_relative_improvement_ << "\n";
       break;
     }
+  }
+
+  if (enable_relocation_ && enable_batched_assignment_moves_) {
+    double hpwl_before_insertion_refinement = WeightedHPWL();
+    ElapsedTime insertion_timer;
+    insertion_timer.RecordStartTime();
+    MoveStats insertion_stats = RunBatchedRelocationStage(true);
+    total_relocation_stats.Add(insertion_stats);
+    insertion_timer.RecordEndTime();
+    relocation_wall_time += insertion_timer.GetWallTime();
+    relocation_cpu_time += insertion_timer.GetCpuTime();
+    LogMoveStage(insertion_stats, hpwl_before_insertion_refinement);
+    RecordPlacementHpwlMetrics("gridded_detailed.insertion_refinement",
+                               *ckt_ptr_);
+    RecordPlacementMetric("gridded_detailed.insertion_refinement.passes",
+                          insertion_stats.batch_passes);
+    RecordPlacementMetric("gridded_detailed.insertion_refinement.accepted",
+                          insertion_stats.batch_accepted);
+    RecordPlacementMetric(
+        "gridded_detailed.insertion_refinement.positions_evaluated",
+        insertion_stats.insertion_positions_evaluated);
+    EmitSnapshot("gridded.insertion_refinement",
+                 "Gridded Detailed Insertion Refinement",
+                 "insertion_refinement", iteration_count);
   }
 
   for (int pass = 0; pass < kMaxFinalClusteringPasses; ++pass) {
