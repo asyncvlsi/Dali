@@ -44,9 +44,11 @@ size_t CountAffectedComponents(
 }
 
 RoughGriddedUpperBoundRefiner::RoughGriddedUpperBoundRefiner(
-    GriddedCellWellLegalizer* well_legalizer, bool enable_overflow_balancing)
+    GriddedCellWellLegalizer* well_legalizer, bool enable_overflow_balancing,
+    bool rollback_destabilizing_feedback)
     : well_legalizer_(well_legalizer),
-      enable_overflow_balancing_(enable_overflow_balancing) {
+      enable_overflow_balancing_(enable_overflow_balancing),
+      rollback_destabilizing_feedback_(rollback_destabilizing_feedback) {
   DaliExpects(well_legalizer_ != nullptr,
               "Rough gridded refiner requires a well legalizer");
 }
@@ -96,7 +98,8 @@ GlobalUpperBoundRefinement RoughGriddedUpperBoundRefiner::Refine(
   GlobalUpperBoundRefinement refinement;
   refinement.feasible = provisional.feasible;
   refinement.rollback_previous_anchor_feedback =
-      !provisional.feasible && previous_refinement_used_row_geometry_;
+      rollback_destabilizing_feedback_ && !provisional.feasible &&
+      previous_refinement_used_row_geometry_;
   if (refinement.rollback_previous_anchor_feedback) {
     row_geometry_feedback_enabled_ = false;
     LOG(info) << "    provisional row geometry destabilized physical "

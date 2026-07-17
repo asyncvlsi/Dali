@@ -127,6 +127,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_int("dali.enable_gridded_global_capacity", 1);
   config_set_int("dali.enable_gridded_upper_bound_refiner", 1);
   config_set_int("dali.enable_gridded_upper_bound_balancing", 1);
+  config_set_int("dali.disable_gridded_feedback_rollback", 1);
   config_set_int("dali.enable_gridded_legalization_pressure", 1);
   config_set_string("dali.gridded_legalization_feedback", "y_only");
   config_set_int("dali.enable_gridded_stripe_balancing", 1);
@@ -205,6 +206,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_TRUE(options.enable_gridded_global_capacity);
   EXPECT_TRUE(options.enable_gridded_upper_bound_refiner);
   EXPECT_TRUE(options.enable_gridded_upper_bound_balancing);
+  EXPECT_TRUE(options.disable_gridded_feedback_rollback);
   EXPECT_TRUE(options.enable_gridded_legalization_pressure);
   EXPECT_EQ(options.gridded_legalization_feedback_mode,
             dali::GlobalRefinementFeedbackMode::kYOnly);

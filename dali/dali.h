@@ -66,6 +66,7 @@ class Dali {
     bool enable_gridded_global_capacity = false;
     bool enable_gridded_upper_bound_refiner = false;
     bool enable_gridded_upper_bound_balancing = false;
+    bool disable_gridded_feedback_rollback = false;
     bool enable_gridded_legalization_pressure = false;
     GlobalRefinementFeedbackMode gridded_legalization_feedback_mode =
         GlobalRefinementFeedbackMode::kYRowTransactionalConsistent;
@@ -235,6 +236,7 @@ class Dali {
   bool enable_gridded_global_capacity_ = false;
   bool enable_gridded_upper_bound_refiner_ = false;
   bool enable_gridded_upper_bound_balancing_ = false;
+  bool disable_gridded_feedback_rollback_ = false;
   bool enable_gridded_legalization_pressure_ = false;
   GlobalRefinementFeedbackMode gridded_legalization_feedback_mode_ =
       GlobalRefinementFeedbackMode::kYRowTransactionalConsistent;

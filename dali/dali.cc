@@ -261,6 +261,8 @@ void Dali::ShowParamsList() {
       << enable_gridded_upper_bound_refiner_ << "\n"
       << "  enable_gridded_upper_bound_balancing: "
       << enable_gridded_upper_bound_balancing_ << "\n"
+      << "  disable_gridded_feedback_rollback: "
+      << disable_gridded_feedback_rollback_ << "\n"
       << "  enable_gridded_legalization_pressure: "
       << enable_gridded_legalization_pressure_ << "\n"
       << "  gridded_legalization_feedback_mode: "
@@ -423,6 +425,8 @@ void Dali::LoadParamsFromConfig() {
                  &enable_gridded_upper_bound_refiner_);
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_upper_bound_balancing"),
                  &enable_gridded_upper_bound_balancing_);
+  LoadBoolConfig(ConfigName(prefix_, "disable_gridded_feedback_rollback"),
+                 &disable_gridded_feedback_rollback_);
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_legalization_pressure"),
                  &enable_gridded_legalization_pressure_);
   bool disable_gridded_legalization_feedback = false;
@@ -671,6 +675,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       enable_gridded_global_capacity_,
       enable_gridded_upper_bound_refiner_,
       enable_gridded_upper_bound_balancing_,
+      disable_gridded_feedback_rollback_,
       enable_gridded_legalization_pressure_,
       gridded_legalization_feedback_mode_,
       enable_gridded_stripe_balancing_,
@@ -1013,7 +1018,8 @@ bool Dali::RunGlobalPlacementStage() {
                      "global-placement iteration\n";
         gb_placer_.SetUpperBoundRefiner(
             std::make_unique<RoughGriddedUpperBoundRefiner>(
-                &well_legalizer_, enable_gridded_upper_bound_balancing_),
+                &well_legalizer_, enable_gridded_upper_bound_balancing_,
+                !disable_gridded_feedback_rollback_),
             0, 1);
         gb_placer_.SetRefinementFeedbackMode(
             gridded_legalization_feedback_mode_);
