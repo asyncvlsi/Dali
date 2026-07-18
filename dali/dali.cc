@@ -295,6 +295,12 @@ void Dali::ShowParamsList() {
       << enable_gridded_row_y_optimization_ << "\n"
       << "  enable_vertical_hpwl_row_assignment: "
       << enable_vertical_hpwl_row_assignment_ << "\n"
+      << "  enable_vertical_hpwl_row_assignment_preview: "
+      << enable_vertical_hpwl_row_assignment_preview_ << "\n"
+      << "  enable_vertical_hpwl_row_assignment_local_closure: "
+      << enable_vertical_hpwl_row_assignment_local_closure_ << "\n"
+      << "  vertical_hpwl_row_assignment_closure_windows: "
+      << vertical_hpwl_row_assignment_closure_windows_ << "\n"
       << "  enable_ortools_row_optimization: "
       << enable_ortools_row_optimization_ << "\n"
       << "  analyze_exact_gridded_legalization: "
@@ -488,6 +494,17 @@ void Dali::LoadParamsFromConfig() {
                  &enable_gridded_row_y_optimization_);
   LoadBoolConfig(ConfigName(prefix_, "enable_vertical_hpwl_row_assignment"),
                  &enable_vertical_hpwl_row_assignment_);
+  LoadBoolConfig(
+      ConfigName(prefix_, "enable_vertical_hpwl_row_assignment_preview"),
+      &enable_vertical_hpwl_row_assignment_preview_);
+  LoadBoolConfig(
+      ConfigName(prefix_, "enable_vertical_hpwl_row_assignment_local_closure"),
+      &enable_vertical_hpwl_row_assignment_local_closure_);
+  LoadIntConfig(
+      ConfigName(prefix_, "vertical_hpwl_row_assignment_closure_windows"),
+      &vertical_hpwl_row_assignment_closure_windows_);
+  DaliExpects(vertical_hpwl_row_assignment_closure_windows_ > 0,
+              "vertical_hpwl_row_assignment_closure_windows must be positive");
   LoadBoolConfig(ConfigName(prefix_, "enable_ortools_row_optimization"),
                  &enable_ortools_row_optimization_);
   LoadBoolConfig(ConfigName(prefix_, "analyze_exact_gridded_legalization"),
@@ -709,6 +726,9 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       disable_gridded_vertical_swap_,
       enable_gridded_row_y_optimization_,
       enable_vertical_hpwl_row_assignment_,
+      enable_vertical_hpwl_row_assignment_preview_,
+      enable_vertical_hpwl_row_assignment_local_closure_,
+      vertical_hpwl_row_assignment_closure_windows_,
       enable_ortools_row_optimization_,
       analyze_exact_gridded_legalization_,
       analyze_exact_adjacent_rows_,
@@ -1168,6 +1188,11 @@ void Dali::ConfigureWellLegalizer() {
       enable_gridded_row_y_optimization_);
   well_legalizer_.SetVerticalHpwlRowAssignment(
       enable_vertical_hpwl_row_assignment_, net_ignore_threshold_);
+  well_legalizer_.SetVerticalHpwlRowAssignmentPreview(
+      enable_vertical_hpwl_row_assignment_preview_);
+  well_legalizer_.SetVerticalHpwlRowAssignmentLocalClosure(
+      enable_vertical_hpwl_row_assignment_local_closure_,
+      vertical_hpwl_row_assignment_closure_windows_);
   well_legalizer_.SetEnableOrToolsRowOptimization(
       enable_ortools_row_optimization_, net_ignore_threshold_);
   well_legalizer_.SetExactLegalizationAnalysis(

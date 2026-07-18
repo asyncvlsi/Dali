@@ -72,6 +72,26 @@ class GriddedDetailedPlacer : public Placer {
   /** Reorder cells within each row without attempting cross-row swaps. */
   bool StartLocalReorder();
 
+  /**
+   * Apply the inexpensive order-preserving local closure to attached rows.
+   *
+   * The closure uses the same X clustering and local reordering primitives as
+   * the full detailed placer, but deliberately omits cross-row relocation and
+   * swaps. It is suitable for scoring many transactional row-assignment
+   * candidates without multiplying the complete detailed-placement runtime.
+   */
+  void RunLocalClosure();
+
+  /**
+   * Apply one bounded detailed-placement round to attached rows.
+   *
+   * This is the initial X clustering, relocation, global/vertical swaps, local
+   * reordering, and final X clustering from the full flow. It omits iteration,
+   * snapshots, and reporting so local transactional candidate comparisons can
+   * reuse the production move classes without invoking a complete flow.
+   */
+  void RunOneRoundClosure();
+
  private:
   static constexpr int kLocalReorderWindowSize = 3;
   static constexpr int kMaxLocalReorderIterations = 6;
@@ -198,7 +218,7 @@ class GriddedDetailedPlacer : public Placer {
                           int gap, int window_size) const;
   int LocalReorderInRow(GriddedRow* row, int window_size) const;
   int LocalReorderAllRows();
-  int RunLocalReorderStage();
+  int RunLocalReorderStage(bool log_progress = true);
 
   bool IsSwapCandidate(Component* component) const;
   /** Compute row demand after optionally removing and adding a component. */

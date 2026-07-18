@@ -17,6 +17,8 @@
 #include <unordered_set>
 
 #include "dali/common/helper.h"
+#include "dali/common/placement_metrics.h"
+#include "dali/placer/well_legalizer/gridded_detailed_placer.h"
 #include "dali/placer/well_legalizer/gridded_row_assignment_transaction.h"
 
 namespace dali {
@@ -31,6 +33,9 @@ GriddedVerticalHpwlRowOptimizer::GriddedVerticalHpwlRowOptimizer(
   DaliExpects(
       config_.row_stride > 0 && config_.row_stride <= config_.rows_per_window,
       "Row windows require a positive stride no larger than a window");
+  DaliExpects(config_.first_row_offset >= 0 &&
+                  config_.first_row_offset < config_.row_stride,
+              "Row-window offset must fall within one stride");
   DaliExpects(config_.net_ignore_threshold >= 2,
               "Net ignore threshold must be at least two");
   DaliExpects(config_.maximum_time_seconds_per_window > 0.0 &&
@@ -39,6 +44,8 @@ GriddedVerticalHpwlRowOptimizer::GriddedVerticalHpwlRowOptimizer(
               "Row-assignment solve limits must be positive");
   DaliExpects(config_.minimum_hpwl_improvement >= 0.0,
               "Minimum HPWL improvement cannot be negative");
+  DaliExpects(config_.maximum_local_closure_windows > 0,
+              "Local closure window cap must be positive");
 }
 
 std::vector<GriddedVerticalHpwlRowOptimizer::Window>
@@ -52,20 +59,43 @@ GriddedVerticalHpwlRowOptimizer::BuildWindows(Stripe* stripe, int sweep) const {
               return lhs->LLY() < rhs->LLY();
             });
 
-  // Later sweeps shift an overlapping schedule by one stride. The retained
-  // default is one sweep, so production experiments reproduce even row pairs.
-  const int first_row = sweep == 0 ? 0 : sweep % config_.row_stride;
+  // Later sweeps shift the schedule by one row. A nonzero initial offset
+  // selects a complementary partition without applying an earlier sweep.
+  const int first_row = (config_.first_row_offset + sweep) % config_.row_stride;
   std::vector<Window> windows;
   for (int begin = first_row;
        begin + config_.rows_per_window <= static_cast<int>(rows.size());
        begin += config_.row_stride) {
     Window window;
     window.stripe = stripe;
+    window.first_row_index = begin;
     window.rows.insert(window.rows.end(), rows.begin() + begin,
                        rows.begin() + begin + config_.rows_per_window);
     windows.push_back(std::move(window));
   }
   return windows;
+}
+
+double GriddedVerticalHpwlRowOptimizer::WindowPotential(
+    const Window& window) const {
+  std::unordered_set<int> net_ids;
+  for (const GriddedRow* row : window.rows) {
+    for (const Component* component : row->Components()) {
+      net_ids.insert(component->NetList().begin(), component->NetList().end());
+    }
+  }
+
+  double potential = 0.0;
+  for (int net_id : net_ids) {
+    const Net& net = circuit_->Nets().at(net_id);
+    if (net.PinCnt() < 2 ||
+        net.PinCnt() >= static_cast<size_t>(config_.net_ignore_threshold) ||
+        net.Weight() <= 0.0) {
+      continue;
+    }
+    potential += circuit_->NetWeightedHPWL(net_id);
+  }
+  return potential;
 }
 
 double GriddedVerticalHpwlRowOptimizer::ComponentLlyInRow(
@@ -75,6 +105,20 @@ double GriddedVerticalHpwlRowOptimizer::ComponentLlyInRow(
     return row.LLY() + row.PHeight() - macro->FirstPwellHeight();
   }
   return row.LLY() + row.NHeight() - macro->FirstNwellHeight();
+}
+
+void GriddedVerticalHpwlRowOptimizer::RunLocalDetailedClosure(
+    const Window& window) const {
+  GriddedDetailedPlacer detailed_placer;
+  detailed_placer.SetCircuit(circuit_);
+  detailed_placer.SetRows(window.rows);
+  detailed_placer.SetEnableRelocation(true);
+  detailed_placer.SetNetIgnoreThreshold(config_.net_ignore_threshold);
+
+  // Candidate previews are private trials. Their per-stage metrics must not
+  // overwrite the metrics reported for the selected placement flow.
+  ScopedPlacementMetricSuppression suppress_metrics;
+  detailed_placer.RunOneRoundClosure();
 }
 
 void GriddedVerticalHpwlRowOptimizer::OptimizeWindow(
@@ -202,6 +246,12 @@ void GriddedVerticalHpwlRowOptimizer::OptimizeWindow(
   ++result->solved_windows;
 
   GriddedRowAssignmentTransaction transaction(circuit_, window.rows);
+  double baseline_closure_gain = 0.0;
+  if (config_.compare_local_detailed_closure) {
+    RunLocalDetailedClosure(window);
+    baseline_closure_gain = transaction.HpwlImprovement();
+    transaction.Restore();
+  }
   std::unordered_map<int, int> assigned_rows;
   for (const VerticalHpwlRowLocation& assignment : solution.assignments) {
     assigned_rows.emplace(assignment.component_id, assignment.row_id);
@@ -251,12 +301,30 @@ void GriddedVerticalHpwlRowOptimizer::OptimizeWindow(
     legal &= row->HasLegalComponentPlacement();
   }
 
-  if (!legal || !transaction.ImprovesHpwl(config_.minimum_hpwl_improvement)) {
+  bool improves = transaction.ImprovesHpwl(config_.minimum_hpwl_improvement);
+  double closure_advantage = 0.0;
+  if (legal && config_.compare_local_detailed_closure) {
+    RunLocalDetailedClosure(window);
+    const double candidate_closure_gain = transaction.HpwlImprovement();
+    result->local_closure_baseline_gain += baseline_closure_gain;
+    result->local_closure_candidate_gain += candidate_closure_gain;
+    closure_advantage = candidate_closure_gain - baseline_closure_gain;
+    improves = closure_advantage > config_.minimum_hpwl_improvement;
+    if (!improves) ++result->closure_rejected_windows;
+  }
+  if (!legal || !improves) {
     transaction.Restore();
     return;
   }
+
   ++result->accepted_windows;
   result->reassigned_components += reassigned;
+  if (config_.compare_local_detailed_closure) {
+    LOG(info) << "    accepted row-assignment window: stripe x="
+              << window.stripe->LLX() << ", rows " << window.first_row_index
+              << "-" << window.first_row_index + config_.rows_per_window - 1
+              << ", closure advantage=" << closure_advantage << "um\n";
+  }
 }
 
 GriddedVerticalHpwlRowOptimizerResult GriddedVerticalHpwlRowOptimizer::Optimize(
@@ -270,19 +338,43 @@ GriddedVerticalHpwlRowOptimizerResult GriddedVerticalHpwlRowOptimizer::Optimize(
 
   const auto start = std::chrono::steady_clock::now();
   for (int sweep = 0; sweep < config_.maximum_sweeps; ++sweep) {
+    std::vector<Window> windows;
     for (StripeColumn& column : *columns) {
       for (Stripe& stripe : column.stripe_list_) {
-        for (const Window& window : BuildWindows(&stripe, sweep)) {
-          OptimizeWindow(window, &result);
-          const double elapsed = std::chrono::duration<double>(
-                                     std::chrono::steady_clock::now() - start)
-                                     .count();
-          if (elapsed >= config_.maximum_total_time_seconds) {
-            result.time_budget_exhausted = true;
-            result.hpwl_after = circuit_->WeightedHPWL();
-            return result;
-          }
-        }
+        std::vector<Window> stripe_windows = BuildWindows(&stripe, sweep);
+        windows.insert(windows.end(),
+                       std::make_move_iterator(stripe_windows.begin()),
+                       std::make_move_iterator(stripe_windows.end()));
+      }
+    }
+    if (config_.compare_local_detailed_closure &&
+        windows.size() >
+            static_cast<size_t>(config_.maximum_local_closure_windows)) {
+      std::sort(windows.begin(), windows.end(),
+                [this](const Window& lhs, const Window& rhs) {
+                  const double lhs_potential = WindowPotential(lhs);
+                  const double rhs_potential = WindowPotential(rhs);
+                  if (lhs_potential != rhs_potential) {
+                    return lhs_potential > rhs_potential;
+                  }
+                  if (lhs.stripe->LLX() != rhs.stripe->LLX()) {
+                    return lhs.stripe->LLX() < rhs.stripe->LLX();
+                  }
+                  return lhs.first_row_index < rhs.first_row_index;
+                });
+      result.skipped_closure_windows += static_cast<int>(windows.size()) -
+                                        config_.maximum_local_closure_windows;
+      windows.resize(config_.maximum_local_closure_windows);
+    }
+    for (const Window& window : windows) {
+      OptimizeWindow(window, &result);
+      const double elapsed = std::chrono::duration<double>(
+                                 std::chrono::steady_clock::now() - start)
+                                 .count();
+      if (elapsed >= config_.maximum_total_time_seconds) {
+        result.time_budget_exhausted = true;
+        result.hpwl_after = circuit_->WeightedHPWL();
+        return result;
       }
     }
     ++result.completed_sweeps;

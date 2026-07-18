@@ -68,4 +68,48 @@ TEST(BandedStripeAssignerTest, BalancesCapacityIndependentlyInEachYBand) {
   EXPECT_EQ(upper_in_left, 2);
 }
 
+TEST(BandedStripeAssignerTest, RejectsTransportTargetAboveCapacityBudget) {
+  Circuit circuit;
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.ReserveSpaceForDesignImp(8, 0, 0);
+  Macro* small_macro = circuit.AddMacro("small", 1, 2);
+  small_macro->AddWellRect(false, 0, 0, 1, 1);
+  small_macro->AddWellRect(true, 0, 1, 1, 2);
+  Macro* large_macro = circuit.AddMacro("large", 3, 2);
+  large_macro->AddWellRect(false, 0, 0, 3, 1);
+  large_macro->AddWellRect(true, 0, 1, 3, 2);
+  circuit.AddComponent("small", "small", 0, 10, PLACED);
+  circuit.AddComponent("large", "large", 1, 10, PLACED);
+
+  std::vector<StripeColumn> columns(2);
+  for (int column_index = 0; column_index < 2; ++column_index) {
+    StripeColumn& column = columns[column_index];
+    column.lx_ = column_index * 10;
+    column.width_ = 10;
+    Stripe& stripe = column.stripe_list_.emplace_back();
+    stripe.lx_ = column.lx_;
+    stripe.ly_ = 0;
+    stripe.width_ = 10;
+    stripe.height_ = 100;
+  }
+  columns[0].component_list_.push_back(circuit.GetComponentPtr("small"));
+  columns[0].component_list_.push_back(circuit.GetComponentPtr("large"));
+
+  BandedStripeAssignmentConfig config;
+  config.band_count = 1;
+  config.require_projected_hpwl_improvement = false;
+  const BandedStripeAssignmentResult result =
+      BandedStripeAssigner(&circuit, config).Assign(&columns);
+
+  // The transport proposal places the large component in the right column,
+  // but its standalone demand is larger than that column's normalized budget.
+  EXPECT_EQ(result.proposed_move_count, 1);
+  EXPECT_EQ(result.moved_component_count, 0);
+  EXPECT_EQ(result.rejected_capacity_move_count, 1);
+  ASSERT_EQ(columns[0].component_list_.size(), 2U);
+  EXPECT_TRUE(columns[1].component_list_.empty());
+}
+
 }  // namespace dali

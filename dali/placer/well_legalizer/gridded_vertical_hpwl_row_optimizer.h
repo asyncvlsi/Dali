@@ -29,6 +29,9 @@ namespace dali {
 struct GriddedVerticalHpwlRowOptimizerConfig {
   int rows_per_window = 2;
   int row_stride = 2;
+  // Select the first row in the repeating window schedule. An offset of one
+  // with two-row windows evaluates the complementary odd row pairs.
+  int first_row_offset = 0;
   int maximum_sweeps = 1;
   int net_ignore_threshold = 100;
   double maximum_time_seconds_per_window = 0.05;
@@ -36,6 +39,18 @@ struct GriddedVerticalHpwlRowOptimizerConfig {
   int number_of_workers = 1;
   int coordinate_scale = 1000;
   double minimum_hpwl_improvement = 0.0;
+  /**
+   * Compare the solver assignment against the current rows after both receive
+   * the same bounded local detailed-placement closure.
+   *
+   * Immediate row-assignment HPWL does not capture the relocation, swap, X
+   * packing, and reordering opportunities exposed by a different row
+   * population. This is deliberately opt-in while experiments establish its
+   * quality/runtime ROI.
+   */
+  bool compare_local_detailed_closure = false;
+  /** Bound expensive closure comparisons to the highest-potential windows. */
+  int maximum_local_closure_windows = 64;
 };
 
 /** Aggregate diagnostics from experimental row-assignment windows. */
@@ -44,11 +59,15 @@ struct GriddedVerticalHpwlRowOptimizerResult {
   bool time_budget_exhausted = false;
   int completed_sweeps = 0;
   int attempted_windows = 0;
+  int skipped_closure_windows = 0;
   int solved_windows = 0;
   int accepted_windows = 0;
   int reassigned_components = 0;
   double hpwl_before = 0.0;
   double hpwl_after = 0.0;
+  int closure_rejected_windows = 0;
+  double local_closure_baseline_gain = 0.0;
+  double local_closure_candidate_gain = 0.0;
   double solver_wall_time_seconds = 0.0;
 };
 
@@ -74,6 +93,7 @@ class GriddedVerticalHpwlRowOptimizer {
   struct Window {
     Stripe* stripe = nullptr;
     std::vector<GriddedRow*> rows;
+    int first_row_index = 0;
   };
 
   /** Build fixed-size row windows from one stripe for the given sweep. */
@@ -83,9 +103,15 @@ class GriddedVerticalHpwlRowOptimizer {
   double ComponentLlyInRow(const Component& component,
                            const GriddedRow& row) const;
 
+  /** Rank a local row window by the low-fanout net HPWL it can affect. */
+  double WindowPotential(const Window& window) const;
+
   /** Solve, pack, evaluate, and conditionally commit one window. */
   void OptimizeWindow(const Window& window,
                       GriddedVerticalHpwlRowOptimizerResult* result) const;
+
+  /** Apply one bounded production-equivalent detailed round to a window. */
+  void RunLocalDetailedClosure(const Window& window) const;
 
   Circuit* circuit_ = nullptr;
   GriddedVerticalHpwlRowOptimizerConfig config_;

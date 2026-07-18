@@ -183,6 +183,21 @@ class GriddedCellWellLegalizer : public Placer {
         net_ignore_threshold;
   }
 
+  /** Select row membership by a one-round downstream detailed preview. */
+  void SetVerticalHpwlRowAssignmentPreview(bool enable) {
+    enable_vertical_hpwl_row_assignment_preview_ = enable;
+  }
+
+  /** Compare each local row-assignment trial after one detailed-place round. */
+  void SetVerticalHpwlRowAssignmentLocalClosure(bool enable,
+                                                int maximum_windows) {
+    DaliExpects(maximum_windows > 0,
+                "Vertical row-assignment closure window cap must be positive");
+    vertical_hpwl_row_optimizer_config_.compare_local_detailed_closure = enable;
+    vertical_hpwl_row_optimizer_config_.maximum_local_closure_windows =
+        maximum_windows;
+  }
+
   /** Configure read-only exact analysis of bounded legal row windows. */
   void SetExactLegalizationAnalysis(bool enable, bool analyze_adjacent_rows,
                                     bool analyze_row_geometry,
@@ -422,6 +437,8 @@ class GriddedCellWellLegalizer : public Placer {
    * reconstructs the lower-preview candidate for the normal full schedule.
    */
   bool RunBandedAssignmentPreviewStage();
+  /** Compare baseline and CP-SAT row membership through one detailed round. */
+  bool RunVerticalHpwlRowAssignmentPreviewStage();
   /** Trial uniform and adaptive clustering and retain the lower legal HPWL. */
   bool RunBestBoundaryClusteringStage();
   /** Return the column pitch boundaries used by the current partition. */
@@ -501,6 +518,8 @@ class GriddedCellWellLegalizer : public Placer {
   /** Return component ids in physical X order for provisional gridded rows. */
   std::vector<std::vector<int>> CollectProvisionalComponentRows() const;
 
+  /** Return physical row costs for the current provisional stripe fragments. */
+
   /** Synchronize components with the configured provisional row orientations.
    */
   void ApplyProvisionalRowOrientations();
@@ -556,6 +575,7 @@ class GriddedCellWellLegalizer : public Placer {
   bool enable_ortools_row_optimization_ = false;
   int ortools_net_ignore_threshold_ = 100;
   bool enable_vertical_hpwl_row_assignment_ = false;
+  bool enable_vertical_hpwl_row_assignment_preview_ = false;
   GriddedVerticalHpwlRowOptimizerConfig vertical_hpwl_row_optimizer_config_;
   bool enable_exact_legalization_analysis_ = false;
   ExactGriddedWindowAnalyzerConfig exact_legalization_analysis_config_;

@@ -195,7 +195,6 @@ BandedStripeAssignmentResult BandedStripeAssigner::Assign(
 
     std::vector<int> final_columns(components.size(), 0);
     std::vector<unsigned long long> current_demand(columns->size(), 0);
-    std::vector<unsigned long long> proposed_demand(columns->size(), 0);
     struct CandidateMove {
       int component_index = -1;
       int source_column = -1;
@@ -213,14 +212,30 @@ BandedStripeAssignmentResult BandedStripeAssigner::Assign(
                                     : original->second;
       final_columns[component_index] = source_column;
       current_demand[source_column] += demands[component_index];
-      proposed_demand[proposed_columns[component_index]] +=
-          demands[component_index];
       if (source_column == proposed_columns[component_index]) continue;
       ++result.proposed_move_count;
       candidate_moves.push_back(
           {component_index, source_column, proposed_columns[component_index],
            ProjectedHpwlDelta(component,
                               (*columns)[proposed_columns[component_index]])});
+    }
+
+    // Standalone well demand is intentionally conservative: it cannot be
+    // compared directly with raw stripe area because cells share row heights
+    // after legal clustering. Scale the available stripe fragments to this
+    // band's total standalone demand, then enforce the resulting ownership
+    // budget exactly. This prevents the previous gate from accepting a move
+    // merely because the transport proposal itself had already overloaded the
+    // target column.
+    std::vector<unsigned long long> demand_budgets(columns->size(), 0);
+    for (int column_index = 0; column_index < static_cast<int>(columns->size());
+         ++column_index) {
+      demand_budgets[column_index] = static_cast<unsigned long long>(
+          static_cast<long double>(capacities[column_index]) * total_demand /
+          total_capacity);
+      if (current_demand[column_index] > demand_budgets[column_index]) {
+        ++result.initially_overloaded_target_count;
+      }
     }
     std::sort(candidate_moves.begin(), candidate_moves.end(),
               [](const CandidateMove& lhs, const CandidateMove& rhs) {
@@ -236,10 +251,8 @@ BandedStripeAssignmentResult BandedStripeAssigner::Assign(
         continue;
       }
       const unsigned long long demand = demands[move.component_index];
-      const unsigned long long target_limit =
-          std::max(current_demand[move.target_column],
-                   proposed_demand[move.target_column]);
-      if (current_demand[move.target_column] + demand > target_limit) {
+      if (current_demand[move.target_column] + demand >
+          demand_budgets[move.target_column]) {
         ++result.rejected_capacity_move_count;
         continue;
       }

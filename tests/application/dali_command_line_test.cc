@@ -193,6 +193,10 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "0.002",
                      "-disable_gridded_vertical_swap",
                      "-enable_gridded_row_y_optimization",
+                     "-enable_vertical_hpwl_row_assignment_preview",
+                     "-enable_vertical_hpwl_row_assignment_local_closure",
+                     "-vertical_hpwl_row_assignment_closure_windows",
+                     "24",
                      "-enable_ortools_row_optimization",
                      "-analyze_exact_gridded_legalization",
                      "-analyze_exact_adjacent_rows",
@@ -285,6 +289,14 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
       config_get_real("dali.gridded_detailed_min_relative_improvement"), 0.002);
   EXPECT_EQ(config_get_int("dali.disable_gridded_vertical_swap"), 1);
   EXPECT_EQ(config_get_int("dali.enable_gridded_row_y_optimization"), 1);
+  EXPECT_EQ(config_get_int("dali.enable_vertical_hpwl_row_assignment"), 1);
+  EXPECT_EQ(config_get_int("dali.enable_vertical_hpwl_row_assignment_preview"),
+            1);
+  EXPECT_EQ(
+      config_get_int("dali.enable_vertical_hpwl_row_assignment_local_closure"),
+      1);
+  EXPECT_EQ(config_get_int("dali.vertical_hpwl_row_assignment_closure_windows"),
+            24);
   EXPECT_EQ(config_get_int("dali.enable_ortools_row_optimization"), 1);
   EXPECT_EQ(config_get_int("dali.analyze_exact_gridded_legalization"), 1);
   EXPECT_EQ(config_get_int("dali.analyze_exact_adjacent_rows"), 1);

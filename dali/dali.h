@@ -86,6 +86,14 @@ class Dali {
     // Experimental and intentionally disabled until downstream quality is
     // consistent across gridded benchmarks.
     bool enable_vertical_hpwl_row_assignment = false;
+    // Select baseline or CP-SAT row membership with a one-round detailed
+    // placement preview. This remains separate from the assignment stage so
+    // the ordinary flow changes only when explicitly requested.
+    bool enable_vertical_hpwl_row_assignment_preview = false;
+    // Compare local solver candidates after the same one-round detailed
+    // placement closure used by the normal gridded flow.
+    bool enable_vertical_hpwl_row_assignment_local_closure = false;
+    int vertical_hpwl_row_assignment_closure_windows = 64;
     bool enable_ortools_row_optimization = false;
     bool analyze_exact_gridded_legalization = false;
     bool analyze_exact_adjacent_rows = false;
@@ -257,6 +265,9 @@ class Dali {
   bool disable_gridded_vertical_swap_ = false;
   bool enable_gridded_row_y_optimization_ = false;
   bool enable_vertical_hpwl_row_assignment_ = false;
+  bool enable_vertical_hpwl_row_assignment_preview_ = false;
+  bool enable_vertical_hpwl_row_assignment_local_closure_ = false;
+  int vertical_hpwl_row_assignment_closure_windows_ = 64;
   bool enable_ortools_row_optimization_ = false;
   bool analyze_exact_gridded_legalization_ = false;
   bool analyze_exact_adjacent_rows_ = false;

@@ -144,6 +144,9 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_int("dali.disable_gridded_vertical_swap", 1);
   config_set_int("dali.enable_gridded_row_y_optimization", 1);
   config_set_int("dali.enable_ortools_row_optimization", 1);
+  config_set_int("dali.enable_vertical_hpwl_row_assignment_preview", 1);
+  config_set_int("dali.enable_vertical_hpwl_row_assignment_local_closure", 1);
+  config_set_int("dali.vertical_hpwl_row_assignment_closure_windows", 24);
   config_set_int("dali.analyze_exact_gridded_legalization", 1);
   config_set_int("dali.analyze_exact_adjacent_rows", 1);
   config_set_int("dali.exact_gridded_window_components", 64);
@@ -227,6 +230,9 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_TRUE(options.disable_gridded_vertical_swap);
   EXPECT_TRUE(options.enable_gridded_row_y_optimization);
   EXPECT_TRUE(options.enable_ortools_row_optimization);
+  EXPECT_TRUE(options.enable_vertical_hpwl_row_assignment_preview);
+  EXPECT_TRUE(options.enable_vertical_hpwl_row_assignment_local_closure);
+  EXPECT_EQ(options.vertical_hpwl_row_assignment_closure_windows, 24);
   EXPECT_TRUE(options.analyze_exact_gridded_legalization);
   EXPECT_TRUE(options.analyze_exact_adjacent_rows);
   EXPECT_FALSE(options.analyze_exact_row_geometry);

@@ -30,6 +30,8 @@ struct BandedStripeAssignmentResult {
   int moved_component_count = 0;
   int rejected_hpwl_move_count = 0;
   int rejected_capacity_move_count = 0;
+  /** Number of band/column targets whose input ownership exceeds its budget. */
+  int initially_overloaded_target_count = 0;
   double projected_hpwl_improvement = 0.0;
   double average_column_displacement = 0.0;
   int maximum_column_displacement = 0;
@@ -41,8 +43,12 @@ struct BandedStripeAssignmentResult {
  * Each horizontal band independently maps cumulative standalone gridded demand
  * to cumulative local stripe capacity. The mapping preserves component X order
  * inside the band, but its effective column cutlines may differ between bands.
- * This creates a piecewise nonlinear ownership boundary without introducing
- * irregular physical well or stripe geometry.
+ *
+ * Standalone demand conservatively overestimates true row demand because cells
+ * can share well height after clustering. The assigner therefore normalizes
+ * each band's physical stripe area into a demand budget. A proposed move may
+ * enter a target only when it remains within that budget; final clustering is
+ * still the authority for complete row and well legality.
  */
 class BandedStripeAssigner {
  public:

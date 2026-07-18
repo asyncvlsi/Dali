@@ -270,7 +270,7 @@ int GriddedDetailedPlacer::LocalReorderAllRows() {
   return reorder_count;
 }
 
-int GriddedDetailedPlacer::RunLocalReorderStage() {
+int GriddedDetailedPlacer::RunLocalReorderStage(bool log_progress) {
   double previous_hpwl = WeightedHPWL();
   int total_changed_windows = 0;
   int iteration_count = 0;
@@ -279,13 +279,17 @@ int GriddedDetailedPlacer::RunLocalReorderStage() {
     int reorder_windows = LocalReorderAllRows();
     double current_hpwl = WeightedHPWL();
     double improvement = previous_hpwl - current_hpwl;
-    LOG(info) << "  local reorder iteration " << iteration
-              << ": windows=" << reorder_windows << ", HPWL=" << current_hpwl
-              << "um"
-              << ", improvement=" << improvement << "um\n";
+    if (log_progress) {
+      LOG(info) << "  local reorder iteration " << iteration
+                << ": windows=" << reorder_windows << ", HPWL=" << current_hpwl
+                << "um"
+                << ", improvement=" << improvement << "um\n";
+    }
     if (improvement <= kMinSignificantHpwlImprovement) {
       RestoreRowState(row_state_before_iteration);
-      LOG(info) << "    rejected: no significant HPWL improvement\n";
+      if (log_progress) {
+        LOG(info) << "    rejected: no significant HPWL improvement\n";
+      }
       break;
     }
     total_changed_windows += reorder_windows;
@@ -295,8 +299,11 @@ int GriddedDetailedPlacer::RunLocalReorderStage() {
   }
   RecordPlacementHpwlMetrics("gridded_detailed.local_reorder", *ckt_ptr_);
 
-  LOG(info) << "  local reorder iterations: " << iteration_count << "\n"
-            << "  accepted reorder windows: " << total_changed_windows << "\n";
+  if (log_progress) {
+    LOG(info) << "  local reorder iterations: " << iteration_count << "\n"
+              << "  accepted reorder windows: " << total_changed_windows
+              << "\n";
+  }
   return total_changed_windows;
 }
 
@@ -2195,6 +2202,29 @@ bool GriddedDetailedPlacer::StartLocalReorder() {
                         timer.GetCpuTime());
   PrintEndStatement("gridded local reorder", true);
   return true;
+}
+
+void GriddedDetailedPlacer::RunLocalClosure() {
+  DaliExpects(ckt_ptr_ != nullptr,
+              "No input circuit specified for gridded local closure");
+  RunSingleSegmentClustering();
+  RunLocalReorderStage(false);
+  RunSingleSegmentClustering();
+}
+
+void GriddedDetailedPlacer::RunOneRoundClosure() {
+  DaliExpects(ckt_ptr_ != nullptr,
+              "No input circuit specified for gridded detailed closure");
+  RunSingleSegmentClustering();
+  if (enable_relocation_) {
+    RunRelocationStage(true);
+  }
+  RunGlobalSwapStage();
+  if (enable_vertical_swap_) {
+    RunVerticalSwapStage();
+  }
+  RunLocalReorderStage(false);
+  RunSingleSegmentClustering();
 }
 
 }  // namespace dali

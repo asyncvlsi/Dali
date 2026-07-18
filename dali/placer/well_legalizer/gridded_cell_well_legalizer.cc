@@ -302,6 +302,8 @@ void GriddedCellWellLegalizer::InitializeWellLegalizer(
               << "    rejected by HPWL/capacity  : "
               << result.rejected_hpwl_move_count << " / "
               << result.rejected_capacity_move_count << "\n"
+              << "    initially overloaded targets: "
+              << result.initially_overloaded_target_count << "\n"
               << "    projected HPWL improvement : "
               << result.projected_hpwl_improvement << "um\n"
               << "    average column displacement: "
@@ -314,6 +316,9 @@ void GriddedCellWellLegalizer::InitializeWellLegalizer(
                           result.proposed_move_count);
     RecordPlacementMetric("well_legalization.banded_assignment.rejected_hpwl",
                           result.rejected_hpwl_move_count);
+    RecordPlacementMetric(
+        "well_legalization.banded_assignment.initially_overloaded_targets",
+        result.initially_overloaded_target_count);
     RecordPlacementMetric(
         "well_legalization.banded_assignment.rejected_capacity",
         result.rejected_capacity_move_count);
@@ -1541,6 +1546,109 @@ bool GriddedCellWellLegalizer::RunBandedAssignmentPreviewStage() {
   return is_success;
 }
 
+bool GriddedCellWellLegalizer::RunVerticalHpwlRowAssignmentPreviewStage() {
+  DaliExpects(enable_vertical_hpwl_row_assignment_,
+              "Row-assignment preview requires CP-SAT row assignment");
+  DaliExpects(enable_detailed_placement_,
+              "Row-assignment preview requires gridded detailed placement");
+
+  struct PreviewResult {
+    const char* label = "baseline assignment";
+    bool uses_row_assignment = false;
+    int row_stride = 2;
+    int first_row_offset = 0;
+    bool feasible = false;
+    double legalized_hpwl = std::numeric_limits<double>::infinity();
+    double preview_hpwl = std::numeric_limits<double>::infinity();
+  };
+
+  // Immediate legal HPWL cannot reliably select a row structure: detailed
+  // placement can unlock different relocation, swap, and ordering moves from
+  // the same global placement. The complementary pair partitions expose row
+  // moves across different boundaries, while the overlapping schedule tests
+  // their sequential combination. Rebuild every candidate before previewing.
+  std::vector<PreviewResult> previews = {
+      {"baseline assignment", false},
+      {"CP-SAT even row pairs", true, 2, 0},
+      {"CP-SAT odd row pairs", true, 2, 1},
+      {"CP-SAT overlapping row pairs", true, 1, 0},
+  };
+  const bool assignment_enabled = enable_vertical_hpwl_row_assignment_;
+  const GriddedVerticalHpwlRowOptimizerConfig assignment_config =
+      vertical_hpwl_row_optimizer_config_;
+  {
+    ScopedPlacementMetricSuppression suppress_preview_metrics;
+    suppress_snapshots_ = true;
+    gridded_detailed_placer_.SetMaxRounds(1);
+    for (PreviewResult& preview : previews) {
+      enable_vertical_hpwl_row_assignment_ = preview.uses_row_assignment;
+      vertical_hpwl_row_optimizer_config_ = assignment_config;
+      vertical_hpwl_row_optimizer_config_.row_stride = preview.row_stride;
+      vertical_hpwl_row_optimizer_config_.first_row_offset =
+          preview.first_row_offset;
+      RestoreInitialComponentLocation();
+      InitializeWellLegalizer();
+      preview.feasible = ComponentClusteringLoose();
+      if (!preview.feasible) continue;
+
+      preview.legalized_hpwl = WeightedHPWL();
+      RunPostClusteringStages(true, false);
+      preview.preview_hpwl = WeightedHPWL();
+    }
+    gridded_detailed_placer_.SetMaxRounds(detailed_placement_max_rounds_);
+    suppress_snapshots_ = false;
+  }
+  enable_vertical_hpwl_row_assignment_ = assignment_enabled;
+  vertical_hpwl_row_optimizer_config_ = assignment_config;
+
+  const PreviewResult* selected = nullptr;
+  int selected_index = -1;
+  for (int index = 0; index < static_cast<int>(previews.size()); ++index) {
+    const PreviewResult& preview = previews[index];
+    if (preview.feasible && (selected == nullptr ||
+                             preview.preview_hpwl < selected->preview_hpwl)) {
+      selected = &preview;
+      selected_index = index;
+    }
+  }
+  DaliExpects(selected != nullptr,
+              "Row-assignment preview found no legal placement");
+
+  LOG(info) << "Vertical-HPWL row-assignment detailed preview:\n";
+  for (const PreviewResult& preview : previews) {
+    LOG(info) << "  " << preview.label << ": ";
+    if (preview.feasible) {
+      LOG(info) << "legalized HPWL=" << preview.legalized_hpwl
+                << "um, one-round HPWL=" << preview.preview_hpwl << "um\n";
+    } else {
+      LOG(info) << "infeasible\n";
+    }
+  }
+  LOG(info) << "  selected row assignment: " << selected->label << "\n";
+
+  enable_vertical_hpwl_row_assignment_ = selected->uses_row_assignment;
+  vertical_hpwl_row_optimizer_config_ = assignment_config;
+  vertical_hpwl_row_optimizer_config_.row_stride = selected->row_stride;
+  vertical_hpwl_row_optimizer_config_.first_row_offset =
+      selected->first_row_offset;
+  RestoreInitialComponentLocation();
+  InitializeWellLegalizer();
+  bool is_success = RunComponentClusteringStage();
+  DaliExpects(is_success,
+              "Selected row-assignment preview is not reproducibly legal");
+  RecordPlacementMetric(
+      "well_legalization.vertical_hpwl_row_assignment.preview.selected",
+      selected_index);
+  for (int index = 0; index < static_cast<int>(previews.size()); ++index) {
+    RecordPlacementMetric(
+        "well_legalization.vertical_hpwl_row_assignment.preview.candidate_" +
+            std::to_string(index) + ".hpwl",
+        previews[index].feasible ? previews[index].preview_hpwl : -1.0);
+  }
+  RunPostClusteringStages(is_success);
+  return is_success;
+}
+
 bool GriddedCellWellLegalizer::RunBestBoundaryClusteringStage() {
   DaliExpects(enable_adaptive_stripe_boundaries_,
               "Boundary selection requires adaptive stripes to be enabled");
@@ -1805,15 +1913,22 @@ void GriddedCellWellLegalizer::RunVerticalHpwlRowAssignmentStage() {
             << "\n"
             << "    attempted windows      : " << result.attempted_windows
             << "\n"
+            << "    skipped closure windows: " << result.skipped_closure_windows
+            << "\n"
             << "    solved windows         : " << result.solved_windows << "\n"
             << "    accepted windows       : " << result.accepted_windows
             << "\n"
+            << "    rejected after closure : "
+            << result.closure_rejected_windows << "\n"
             << "    reassigned components  : " << result.reassigned_components
             << "\n"
             << "    HPWL before            : " << result.hpwl_before << "um\n"
             << "    HPWL after             : " << result.hpwl_after << "um\n"
             << "    HPWL improvement       : "
             << result.hpwl_before - result.hpwl_after << "um\n"
+            << "    local closure gain     : baseline="
+            << result.local_closure_baseline_gain
+            << "um, candidate=" << result.local_closure_candidate_gain << "um\n"
             << "    solver wall time       : "
             << result.solver_wall_time_seconds << "s\n"
             << "    stage wall time        : " << timer.GetWallTime() << "s\n"
@@ -1838,6 +1953,9 @@ void GriddedCellWellLegalizer::RunVerticalHpwlRowAssignmentStage() {
   RecordPlacementMetric(
       "well_legalization.vertical_hpwl_row_assignment.reassigned_components",
       result.reassigned_components);
+  RecordPlacementMetric(
+      "well_legalization.vertical_hpwl_row_assignment.closure_rejected",
+      result.closure_rejected_windows);
   EmitSnapshot("vertical_hpwl_row_assignment",
                "After Vertical-HPWL Row Assignment", "legalization",
                "vertical_hpwl_row_assignment");
@@ -2496,6 +2614,10 @@ bool GriddedCellWellLegalizer::StartPlacement() {
     RunPostClusteringStages(is_success);
   } else if (enable_banded_stripe_assignment_ && enable_detailed_placement_) {
     is_success = RunBandedAssignmentPreviewStage();
+    LogEstimatedGriddedCapacity();
+  } else if (enable_vertical_hpwl_row_assignment_preview_ &&
+             enable_detailed_placement_) {
+    is_success = RunVerticalHpwlRowAssignmentPreviewStage();
     LogEstimatedGriddedCapacity();
   } else {
     InitializeWellLegalizer();

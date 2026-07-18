@@ -103,6 +103,9 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -disable_gridded_vertical_swap            skip vertical swaps in gridded detailed placement\n"
       << "  -enable_gridded_row_y_optimization         shift legal row groups toward net-optimal Y regions\n"
       << "  -enable_vertical_hpwl_row_assignment       experimental CP-SAT row reassignment, disabled by default\n"
+      << "  -enable_vertical_hpwl_row_assignment_preview  choose baseline or CP-SAT rows by one detailed round\n"
+      << "  -enable_vertical_hpwl_row_assignment_local_closure  compare each row window after one bounded detailed round\n"
+      << "  -vertical_hpwl_row_assignment_closure_windows <n>  highest-potential windows to compare, default 64\n"
       << "  -enable_ortools_row_optimization           refine legal gridded-row X locations with optional CP-SAT\n"
       << "  -analyze_exact_gridded_legalization        measure bounded exact legal-placement headroom\n"
       << "  -analyze_exact_adjacent_rows               analyze fixed-geometry moves to adjacent rows\n"
@@ -513,6 +516,22 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.enable_gridded_row_y_optimization");
     } else if (arg == "-enable_vertical_hpwl_row_assignment") {
       EnableConfigFlag("dali.enable_vertical_hpwl_row_assignment");
+    } else if (arg == "-enable_vertical_hpwl_row_assignment_preview") {
+      EnableConfigFlag("dali.enable_vertical_hpwl_row_assignment");
+      EnableConfigFlag("dali.enable_vertical_hpwl_row_assignment_preview");
+    } else if (arg == "-enable_vertical_hpwl_row_assignment_local_closure") {
+      EnableConfigFlag("dali.enable_vertical_hpwl_row_assignment");
+      EnableConfigFlag(
+          "dali.enable_vertical_hpwl_row_assignment_local_closure");
+    } else if (arg == "-vertical_hpwl_row_assignment_closure_windows") {
+      int maximum_windows = 0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseInt(value, &maximum_windows) || maximum_windows <= 0) {
+        error_output << "Invalid vertical row-assignment closure window cap!\n";
+        return false;
+      }
+      config_set_int("dali.vertical_hpwl_row_assignment_closure_windows",
+                     maximum_windows);
     } else if (arg == "-enable_ortools_row_optimization") {
       EnableConfigFlag("dali.enable_ortools_row_optimization");
     } else if (arg == "-analyze_exact_gridded_legalization") {
