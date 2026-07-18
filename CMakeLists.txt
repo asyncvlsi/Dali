@@ -133,6 +133,7 @@ add_library(
     dali/common/placement_snapshot_writer.cc
     dali/common/placement_snapshot_writer.h
 )
+add_dependencies(dalilib dali_git_version)
 
 if (DEFINED NEED_LIBCXXFS)
     set(LIBCXXFS_LIB "stdc++fs")

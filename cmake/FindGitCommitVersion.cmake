@@ -1,33 +1,42 @@
-# CMake script for generating a Git version header
+# Generate the Git version header at build time so incremental builds cannot
+# retain a commit captured by an older CMake configure step.
 
-# This CMake script checks for the existence of the Git binary and generates
-# a header file (git_version.h) containing the Git commit hash if Git is
-# available, or "git version not found" if Git is not installed.
+find_package(Git QUIET)
 
-set(GIT_VERSION_NOT_FOUND "git version not found")
-set(GIT_VERSION ${GIT_VERSION_NOT_FOUND})
+set(DALI_GIT_VERSION_HEADER
+    "${CMAKE_CURRENT_BINARY_DIR}/dali/common/git_version.h")
+set(DALI_GIT_VERSION_SCRIPT
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenerateGitVersion.cmake")
+set(DALI_GIT_VERSION_TEMPLATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/dali/common/git_version.h.in")
 
-# Check if git binary exists
-execute_process(
-        COMMAND command -v git
-        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-        OUTPUT_VARIABLE GIT_FOUND
-        OUTPUT_STRIP_TRAILING_WHITESPACE
+set(DALI_GIT_VERSION_COMMAND
+    ${CMAKE_COMMAND}
+    -DGIT_EXECUTABLE=${GIT_EXECUTABLE}
+    -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+    -DTEMPLATE_FILE=${DALI_GIT_VERSION_TEMPLATE}
+    -DOUTPUT_FILE=${DALI_GIT_VERSION_HEADER}
+    -P ${DALI_GIT_VERSION_SCRIPT})
+
+# Create the header during configuration for IDEs and dependency scanners.
+execute_process(COMMAND ${DALI_GIT_VERSION_COMMAND})
+
+add_custom_target(
+    dali_git_version
+    COMMAND ${DALI_GIT_VERSION_COMMAND}
+    BYPRODUCTS ${DALI_GIT_VERSION_HEADER}
+    COMMENT "Refreshing Dali Git version"
+    VERBATIM
 )
 
-if(GIT_FOUND)
+if (GIT_FOUND)
     execute_process(
-            COMMAND git rev-parse HEAD
-            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-            OUTPUT_VARIABLE GIT_VERSION
-            OUTPUT_STRIP_TRAILING_WHITESPACE
+        COMMAND ${GIT_EXECUTABLE} rev-parse --short=12 HEAD
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        OUTPUT_VARIABLE DALI_CONFIGURED_GIT_VERSION
+        OUTPUT_STRIP_TRAILING_WHITESPACE
     )
-endif()
-
-message(STATUS "Git commit hash: ${GIT_VERSION}")
-
-# Configure the version.h header file
-configure_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/dali/common/git_version.h.in
-        ${CMAKE_CURRENT_BINARY_DIR}/dali/common/git_version.h
-)
+else ()
+    set(DALI_CONFIGURED_GIT_VERSION "git version not found")
+endif ()
+message(STATUS "Git commit hash: ${DALI_CONFIGURED_GIT_VERSION}")

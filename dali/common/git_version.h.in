@@ -28,8 +28,8 @@
 
 #include <string>
 
-#cmakedefine GIT_VERSION_NOT_FOUND "@GIT_VERSION_NOT_FOUND@"
-#cmakedefine GIT_VERSION "@GIT_VERSION@"
+#define GIT_VERSION_NOT_FOUND "@GIT_VERSION_NOT_FOUND@"
+#define GIT_VERSION "@GIT_VERSION@"
 
 namespace dali {
 
@@ -39,9 +39,11 @@ inline std::string get_git_version_short() {
   std::string git_version_full(GIT_VERSION);
   if (git_version_full == GIT_VERSION_NOT_FOUND) {
     return GIT_VERSION_NOT_FOUND;
-  } else {
-    return git_version_full.substr(0, 12);
   }
+  const bool is_dirty =
+      git_version_full.size() >= 6 &&
+      git_version_full.compare(git_version_full.size() - 6, 6, "-dirty") == 0;
+  return git_version_full.substr(0, 12) + (is_dirty ? "-dirty" : "");
 }
 
 }  // namespace dali
