@@ -1,0 +1,72 @@
+/*******************************************************************************
+ * Copyright (c) 2026 Yihang Yang
+ *******************************************************************************/
+#ifndef DALI_PLACER_WELL_LEGALIZER_GRIDDED_PLACEMENT_VALIDATOR_H_
+#define DALI_PLACER_WELL_LEGALIZER_GRIDDED_PLACEMENT_VALIDATOR_H_
+
+#include <cstddef>
+#include <vector>
+
+#include "dali/circuit/circuit.h"
+#include "dali/placer/well_legalizer/stripe.h"
+
+namespace dali {
+
+/** Physical-completion features expected in a finalized gridded placement. */
+struct GriddedPlacementValidationConfig {
+  bool check_component_orientation = true;
+  bool expect_well_taps = false;
+  bool expect_end_caps = false;
+  int space_to_well_tap = 0;
+  int pre_end_cap_width = 0;
+  int post_end_cap_width = 0;
+};
+
+/** Categorized violations found in a finalized gridded placement. */
+struct GriddedPlacementLegalityReport {
+  size_t movable_component_count = 0;
+  size_t assigned_component_count = 0;
+  size_t unassigned_component_count = 0;
+  size_t duplicate_assignment_count = 0;
+  size_t invalid_component_reference_count = 0;
+  size_t row_boundary_violation_count = 0;
+  size_t row_overlap_count = 0;
+  size_t component_boundary_violation_count = 0;
+  size_t component_overlap_count = 0;
+  size_t component_y_violation_count = 0;
+  size_t component_orientation_violation_count = 0;
+  size_t physical_completion_violation_count = 0;
+  size_t missing_well_tap_count = 0;
+  size_t well_tap_geometry_violation_count = 0;
+  size_t well_tap_spacing_violation_count = 0;
+  size_t missing_end_cap_count = 0;
+  size_t end_cap_geometry_violation_count = 0;
+  size_t end_cap_tap_overlap_count = 0;
+  size_t physical_component_count_violation_count = 0;
+
+  /** Return the total number of categorized legality violations. */
+  size_t TotalViolationCount() const;
+
+  /** Return true when no gridded-placement legality violation was found. */
+  bool IsLegal() const { return TotalViolationCount() == 0; }
+};
+
+/** Validates row ownership, geometry, orientation, and boundary-cell layout. */
+class GriddedPlacementValidator {
+ public:
+  GriddedPlacementValidator(Circuit* circuit,
+                            const std::vector<StripeColumn>* columns,
+                            GriddedPlacementValidationConfig config = {});
+
+  /** Validate the complete current gridded placement. */
+  GriddedPlacementLegalityReport Validate() const;
+
+ private:
+  Circuit* circuit_ = nullptr;
+  const std::vector<StripeColumn>* columns_ = nullptr;
+  GriddedPlacementValidationConfig config_;
+};
+
+}  // namespace dali
+
+#endif  // DALI_PLACER_WELL_LEGALIZER_GRIDDED_PLACEMENT_VALIDATOR_H_

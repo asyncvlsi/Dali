@@ -10,6 +10,7 @@
  ******************************************************************************/
 #include "dali/common/placement_metrics.h"
 
+#include <atomic>
 #include <fstream>
 #include <iomanip>
 #include <string>
@@ -23,6 +24,11 @@ namespace dali {
 static PlacementMetrics& GlobalPlacementMetrics() {
   static PlacementMetrics metrics;
   return metrics;
+}
+
+static std::atomic<int>& PlacementMetricSuppressionDepth() {
+  static std::atomic<int> suppression_depth = 0;
+  return suppression_depth;
 }
 
 static std::string JsonEscape(const std::string& text) {
@@ -65,6 +71,14 @@ void PlacementMetrics::Record(const std::string& name, double value) {
   metrics_.emplace_back(name, value);
 }
 
+ScopedPlacementMetricSuppression::ScopedPlacementMetricSuppression() {
+  PlacementMetricSuppressionDepth().fetch_add(1, std::memory_order_relaxed);
+}
+
+ScopedPlacementMetricSuppression::~ScopedPlacementMetricSuppression() {
+  PlacementMetricSuppressionDepth().fetch_sub(1, std::memory_order_relaxed);
+}
+
 bool PlacementMetrics::WriteJson(const std::string& file_name,
                                  bool completed) const {
   std::ofstream ost(file_name);
@@ -95,6 +109,9 @@ bool PlacementMetrics::WriteJson(const std::string& file_name,
 void ClearPlacementMetrics() { GlobalPlacementMetrics().Clear(); }
 
 void RecordPlacementMetric(const std::string& name, double value) {
+  if (PlacementMetricSuppressionDepth().load(std::memory_order_relaxed) > 0) {
+    return;
+  }
   GlobalPlacementMetrics().Record(name, value);
 }
 

@@ -139,6 +139,7 @@ class GriddedDetailedPlacer : public Placer {
   struct CandidateRow {
     GriddedRow* row = nullptr;
     double distance = 0;
+    OptimalRegion region;
   };
 
   struct RowRequirements {
@@ -231,8 +232,8 @@ class GriddedDetailedPlacer : public Placer {
       const OptimalRegion& region) const;
   /** Find legal receiving rows for a component displaced by an ejection. */
   std::vector<CandidateRow> FindEjectionDestinationRows(
-      GriddedRow* source_row, GriddedRow* target_row, Component* component,
-      const OptimalRegion& region) const;
+      GriddedRow* source_row, GriddedRow* target_row,
+      Component* component) const;
   /** Return target-row cells whose removal makes an incoming cell legal. */
   std::vector<DisplacementCandidate> FindDisplacementCandidates(
       GriddedRow* target_row, Component* incoming) const;
@@ -242,6 +243,11 @@ class GriddedDetailedPlacer : public Placer {
   /** Return the minimizer interval for weighted absolute-distance bounds. */
   static std::pair<double, double> ComputeWeightedMedianInterval(
       std::vector<std::pair<double, double>> weighted_bounds);
+  /** Compute a component's optimal lower-left region in one orientation. */
+  OptimalRegion ComputeOptimalRegion(Component* component,
+                                     ComponentOrient orientation) const;
+
+  /** Compute a component's optimal region in its current orientation. */
   OptimalRegion ComputeOptimalRegion(Component* component) const;
   void PlaceComponentInRow(GriddedRow* row, Component* component) const;
   /** Recompute component Y/orientation and legalize X in two changed rows. */

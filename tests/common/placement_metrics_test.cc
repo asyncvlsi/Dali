@@ -70,6 +70,29 @@ TEST(PlacementMetricsTest, GlobalWrapperClearRemovesOldStageValues) {
   std::filesystem::remove(metrics_file);
 }
 
+TEST(PlacementMetricsTest, ScopedSuppressionHidesDiscardedTrialMetrics) {
+  const std::filesystem::path metrics_file =
+      std::filesystem::temp_directory_path() /
+      "dali_placement_metrics_suppression_test.json";
+  std::filesystem::remove(metrics_file);
+
+  dali::ClearPlacementMetrics();
+  dali::RecordPlacementMetric("before_preview", 1.0);
+  {
+    dali::ScopedPlacementMetricSuppression suppress_preview_metrics;
+    dali::RecordPlacementMetric("discarded_preview", 2.0);
+  }
+  dali::RecordPlacementMetric("selected_flow", 3.0);
+
+  ASSERT_TRUE(dali::WritePlacementMetricsJson(metrics_file.string(), true));
+  const std::string json = ReadFile(metrics_file);
+  EXPECT_NE(json.find("\"before_preview\": 1"), std::string::npos);
+  EXPECT_EQ(json.find("\"discarded_preview\""), std::string::npos);
+  EXPECT_NE(json.find("\"selected_flow\": 3"), std::string::npos);
+
+  std::filesystem::remove(metrics_file);
+}
+
 TEST(PlacementMetricsTest, AttributesWeightedHpwlByAxisAndFanout) {
   dali::Circuit circuit;
   circuit.SetManufacturingGrid(0.05);

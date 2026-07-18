@@ -152,11 +152,12 @@ class GlobalPlacer : public Placer {
   void PreparePlacement();
   void RunPlacementIterations();
   bool ShouldRefineUpperBound() const;
-  /** Save component coordinates when the accepted upper bound improves. */
+  /** Save the complete component state when the accepted upper bound improves.
+   */
   void UpdateBestUpperBoundPlacement(double upper_bound_hpwl);
-  /** Return a copy of all current component coordinates. */
+  /** Return a copy of all current component coordinates and orientations. */
   std::vector<ComponentLocation> SaveCurrentPlacement() const;
-  /** Restore component coordinates from a complete placement copy. */
+  /** Restore component coordinates and orientations from a placement copy. */
   void RestorePlacement(const std::vector<ComponentLocation>& placement);
   /** Restore the checkpoint requested by a destabilized physical refiner. */
   bool RollbackRefinementFeedbackIfRequested(
@@ -164,7 +165,7 @@ class GlobalPlacer : public Placer {
   /** Apply the configured refined coordinates to the next analytical anchor. */
   void ApplyRefinedAnchorFeedback(
       const std::vector<ComponentLocation>& placement_before_refinement,
-      const std::vector<int>& component_ids,
+      bool anchor_all_components, const std::vector<int>& component_ids,
       const std::vector<std::vector<int>>& component_rows);
   /** Return weighted Y HPWL for modeled nets incident to a component. */
   double ConnectedNetWeightedHpwlY(const Component& component) const;
@@ -231,6 +232,7 @@ class GlobalPlacer : public Placer {
   struct ComponentLocation {
     double lx = 0.0;
     double ly = 0.0;
+    ComponentOrient orient = N;
   };
   std::vector<ComponentLocation> best_upper_bound_placement_;
   /** Analytical placement saved before the most recent anchor feedback. */

@@ -440,31 +440,42 @@ GriddedDetailedPlacer::FindCandidateRows(GriddedRow* source_row,
 
   std::vector<CandidateRow> candidate_rows;
   candidate_rows.reserve(row_stripes_.size() * kMaxOptimalRegionRowsPerStripe);
-  double target_y = (region.ly + region.uy) / 2.0;
+  const OptimalRegion n_region = ComputeOptimalRegion(component, N);
+  const OptimalRegion fs_region = ComputeOptimalRegion(component, FS);
   for (const RowStripe& stripe : row_stripes_) {
-    auto nearest = std::lower_bound(
-        stripe.rows.begin(), stripe.rows.end(), target_y,
-        [](const GriddedRow* row, double y) { return row->CenterY() < y; });
-    int nearest_index = static_cast<int>(nearest - stripe.rows.begin());
-    int first_index = std::max(0, nearest_index - 2);
-    int end_index =
-        std::min(static_cast<int>(stripe.rows.size()), nearest_index + 2);
-
     std::vector<CandidateRow> stripe_candidates;
-    for (int i = first_index; i < end_index; ++i) {
-      GriddedRow* row = stripe.rows[i];
-      if (row == source_row) {
-        continue;
-      }
-      double row_distance =
-          PhysicalDistanceFromRowToOptimalRegion(row, component, region);
-      if (row_distance < current_distance) {
-        stripe_candidates.push_back({row, row_distance});
+    for (const OptimalRegion* target_region : {&n_region, &fs_region}) {
+      if (!target_region->valid) continue;
+      const bool target_orient_n = target_region == &n_region;
+      const double target_y = (target_region->ly + target_region->uy) / 2.0;
+      auto nearest = std::lower_bound(
+          stripe.rows.begin(), stripe.rows.end(), target_y,
+          [](const GriddedRow* row, double y) { return row->CenterY() < y; });
+      const int nearest_index = static_cast<int>(nearest - stripe.rows.begin());
+      const int first_index = std::max(0, nearest_index - 2);
+      const int end_index =
+          std::min(static_cast<int>(stripe.rows.size()), nearest_index + 2);
+      for (int i = first_index; i < end_index; ++i) {
+        GriddedRow* row = stripe.rows[i];
+        if (row == source_row || row->IsOrientN() != target_orient_n) {
+          continue;
+        }
+        const double row_distance = PhysicalDistanceFromRowToOptimalRegion(
+            row, component, *target_region);
+        if (row_distance < current_distance) {
+          stripe_candidates.push_back({row, row_distance, *target_region});
+        }
       }
     }
     std::sort(stripe_candidates.begin(), stripe_candidates.end(),
               [](const CandidateRow& lhs, const CandidateRow& rhs) {
-                return lhs.distance < rhs.distance;
+                if (lhs.distance != rhs.distance) {
+                  return lhs.distance < rhs.distance;
+                }
+                if (lhs.row->LLY() != rhs.row->LLY()) {
+                  return lhs.row->LLY() < rhs.row->LLY();
+                }
+                return lhs.row->LLX() < rhs.row->LLX();
               });
     int stripe_limit = std::min(kMaxOptimalRegionRowsPerStripe,
                                 static_cast<int>(stripe_candidates.size()));
@@ -473,7 +484,13 @@ GriddedDetailedPlacer::FindCandidateRows(GriddedRow* source_row,
   }
   std::sort(candidate_rows.begin(), candidate_rows.end(),
             [](const CandidateRow& lhs, const CandidateRow& rhs) {
-              return lhs.distance < rhs.distance;
+              if (lhs.distance != rhs.distance) {
+                return lhs.distance < rhs.distance;
+              }
+              if (lhs.row->LLY() != rhs.row->LLY()) {
+                return lhs.row->LLY() < rhs.row->LLY();
+              }
+              return lhs.row->LLX() < rhs.row->LLX();
             });
   if (candidate_rows.size() > static_cast<size_t>(max_candidate_rows_)) {
     candidate_rows.resize(max_candidate_rows_);
@@ -482,39 +499,52 @@ GriddedDetailedPlacer::FindCandidateRows(GriddedRow* source_row,
 }
 
 std::vector<GriddedDetailedPlacer::CandidateRow>
-GriddedDetailedPlacer::FindEjectionDestinationRows(
-    GriddedRow* source_row, GriddedRow* target_row, Component* component,
-    const OptimalRegion& region) const {
+GriddedDetailedPlacer::FindEjectionDestinationRows(GriddedRow* source_row,
+                                                   GriddedRow* target_row,
+                                                   Component* component) const {
   std::vector<CandidateRow> candidate_rows;
-  double target_y = (region.ly + region.uy) / 2.0;
+  const OptimalRegion n_region = ComputeOptimalRegion(component, N);
+  const OptimalRegion fs_region = ComputeOptimalRegion(component, FS);
   for (const RowStripe& stripe : row_stripes_) {
-    auto nearest = std::lower_bound(
-        stripe.rows.begin(), stripe.rows.end(), target_y,
-        [](const GriddedRow* row, double y) { return row->CenterY() < y; });
-    int nearest_index = static_cast<int>(nearest - stripe.rows.begin());
-    int first_index = std::max(0, nearest_index - 2);
-    int end_index =
-        std::min(static_cast<int>(stripe.rows.size()), nearest_index + 2);
-    for (int i = first_index; i < end_index; ++i) {
-      GriddedRow* row = stripe.rows[i];
-      if (row == source_row || row == target_row) {
-        continue;
+    for (const OptimalRegion* target_region : {&n_region, &fs_region}) {
+      if (!target_region->valid) continue;
+      const bool target_orient_n = target_region == &n_region;
+      const double target_y = (target_region->ly + target_region->uy) / 2.0;
+      auto nearest = std::lower_bound(
+          stripe.rows.begin(), stripe.rows.end(), target_y,
+          [](const GriddedRow* row, double y) { return row->CenterY() < y; });
+      const int nearest_index = static_cast<int>(nearest - stripe.rows.begin());
+      const int first_index = std::max(0, nearest_index - 2);
+      const int end_index =
+          std::min(static_cast<int>(stripe.rows.size()), nearest_index + 2);
+      for (int i = first_index; i < end_index; ++i) {
+        GriddedRow* row = stripe.rows[i];
+        if (row == source_row || row == target_row ||
+            row->IsOrientN() != target_orient_n) {
+          continue;
+        }
+        RowRequirements requirements =
+            ComputeRowRequirementsAfterAssignment(row, nullptr, component);
+        if (requirements.used_width > row->UsableWidth() ||
+            requirements.p_well_height > row->PHeight() ||
+            requirements.n_well_height > row->NHeight()) {
+          continue;
+        }
+        const double distance = PhysicalDistanceFromRowToOptimalRegion(
+            row, component, *target_region);
+        candidate_rows.push_back({row, distance, *target_region});
       }
-      RowRequirements requirements =
-          ComputeRowRequirementsAfterAssignment(row, nullptr, component);
-      if (requirements.used_width > row->UsableWidth() ||
-          requirements.p_well_height > row->PHeight() ||
-          requirements.n_well_height > row->NHeight()) {
-        continue;
-      }
-      double distance =
-          PhysicalDistanceFromRowToOptimalRegion(row, component, region);
-      candidate_rows.push_back({row, distance});
     }
   }
   std::sort(candidate_rows.begin(), candidate_rows.end(),
             [](const CandidateRow& lhs, const CandidateRow& rhs) {
-              return lhs.distance < rhs.distance;
+              if (lhs.distance != rhs.distance) {
+                return lhs.distance < rhs.distance;
+              }
+              if (lhs.row->LLY() != rhs.row->LLY()) {
+                return lhs.row->LLY() < rhs.row->LLY();
+              }
+              return lhs.row->LLX() < rhs.row->LLX();
             });
   if (candidate_rows.size() > kMaxEjectionDestinationRows) {
     candidate_rows.resize(kMaxEjectionDestinationRows);
@@ -606,7 +636,8 @@ std::pair<double, double> GriddedDetailedPlacer::ComputeWeightedMedianInterval(
 }
 
 GriddedDetailedPlacer::OptimalRegion
-GriddedDetailedPlacer::ComputeOptimalRegion(Component* component) const {
+GriddedDetailedPlacer::ComputeOptimalRegion(Component* component,
+                                            ComponentOrient orientation) const {
   std::vector<std::pair<double, double>> x_bounds;
   std::vector<std::pair<double, double>> y_bounds;
   auto& nets = ckt_ptr_->Nets();
@@ -626,8 +657,8 @@ GriddedDetailedPlacer::ComputeOptimalRegion(Component* component) const {
     for (NetPin& pin : net.ComponentPins()) {
       if (pin.ComponentPtr() == component) {
         found_component_pin = true;
-        offset_x = pin.OffsetX();
-        offset_y = pin.OffsetY();
+        offset_x = pin.PinPtr()->OffsetX(orientation);
+        offset_y = pin.PinPtr()->OffsetY(orientation);
         continue;
       }
       min_x = std::min(min_x, pin.AbsX());
@@ -656,6 +687,11 @@ GriddedDetailedPlacer::ComputeOptimalRegion(Component* component) const {
   auto [lx, ux] = ComputeWeightedMedianInterval(std::move(x_bounds));
   auto [ly, uy] = ComputeWeightedMedianInterval(std::move(y_bounds));
   return {true, lx, ly, ux, uy};
+}
+
+GriddedDetailedPlacer::OptimalRegion
+GriddedDetailedPlacer::ComputeOptimalRegion(Component* component) const {
+  return ComputeOptimalRegion(component, component->Orient());
 }
 
 void GriddedDetailedPlacer::PlaceComponentInRow(GriddedRow* row,
@@ -973,7 +1009,8 @@ bool GriddedDetailedPlacer::FindBestDirectRelocation(GriddedRow* source_row,
   bool found = false;
   for (const CandidateRow& candidate_row :
        FindCandidateRows(source_row, component, region)) {
-    double target_lx = ComputeMoveTargetX(candidate_row.row, component, region);
+    double target_lx =
+        ComputeMoveTargetX(candidate_row.row, component, candidate_row.region);
     found = EvaluateDirectRelocation(source_row, component, candidate_row.row,
                                      target_lx, plan, stats) ||
             found;
@@ -991,7 +1028,8 @@ bool GriddedDetailedPlacer::FindBestInsertionRelocation(GriddedRow* source_row,
   bool found = false;
   for (const CandidateRow& candidate_row :
        FindCandidateRows(source_row, component, region)) {
-    double target_lx = ComputeMoveTargetX(candidate_row.row, component, region);
+    double target_lx =
+        ComputeMoveTargetX(candidate_row.row, component, candidate_row.region);
     found =
         EvaluateInsertionRelocations(source_row, component, candidate_row.row,
                                      target_lx, plan, stats) ||
@@ -1014,7 +1052,7 @@ bool GriddedDetailedPlacer::TryEjectionChain(GriddedRow* source_row,
   for (const DisplacementCandidate& ejection :
        FindDisplacementCandidates(target_row, component)) {
     for (const CandidateRow& receiver : FindEjectionDestinationRows(
-             source_row, target_row, ejection.component, ejection.region)) {
+             source_row, target_row, ejection.component)) {
       ++stats->ejection_evaluated;
       GriddedRowAssignmentTransaction transaction(
           ckt_ptr_, {source_row, target_row, receiver.row});
@@ -1036,7 +1074,7 @@ bool GriddedDetailedPlacer::TryEjectionChain(GriddedRow* source_row,
       component->SetLLX(
           ComputeMoveTargetX(target_row, component, source_region));
       ejection.component->SetLLX(ComputeMoveTargetX(
-          receiver.row, ejection.component, ejection.region));
+          receiver.row, ejection.component, receiver.region));
       LegalizeRowsAfterAssignment(source_row, target_row);
       for (Component* receiver_component : receiver.row->Components()) {
         PlaceComponentInRow(receiver.row, receiver_component);
@@ -1124,7 +1162,8 @@ GriddedDetailedPlacer::FindBestClosedAssignmentCycle(
           continue;
         }
 
-        OptimalRegion returning_region = ComputeOptimalRegion(returning);
+        OptimalRegion returning_region =
+            ComputeOptimalRegion(returning, source_row->IsOrientN() ? N : FS);
         double return_distance =
             std::fabs(returning->CenterX() - source_row->CenterX()) *
                 ckt_ptr_->GridValueX() +
@@ -1150,7 +1189,7 @@ GriddedDetailedPlacer::FindBestClosedAssignmentCycle(
         GriddedRowAssignmentTransaction transaction(
             ckt_ptr_, {source_row, target_row, receiver.row});
         ClosedCycleCandidate candidate{
-            displacement.component,     displacement.region,     receiver.row,
+            displacement.component,     receiver.region,         receiver.row,
             return_candidate.component, return_candidate.region, 0};
         if (!ApplyClosedAssignmentCycle(source_row, component, target_row,
                                         source_region, candidate)) {
@@ -1355,7 +1394,8 @@ GriddedDetailedPlacer::SwapStats GriddedDetailedPlacer::TryOptimalRegionSwaps(
         continue;
       }
       target_components.push_back(
-          {target_index, DistanceToOptimalRegionX(target_component, region)});
+          {target_index,
+           DistanceToOptimalRegionX(target_component, candidate_row.region)});
     }
     std::sort(target_components.begin(), target_components.end(),
               [](const CandidateComponent& lhs, const CandidateComponent& rhs) {
@@ -1389,10 +1429,12 @@ GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::TryOptimalRegionMove(
 
   MoveStats stats;
   GriddedRow* ejection_target = nullptr;
+  OptimalRegion ejection_target_region;
   for (const CandidateRow& candidate_row :
        FindCandidateRows(source_row, component, region)) {
     ++stats.candidates;
-    double target_lx = ComputeMoveTargetX(candidate_row.row, component, region);
+    double target_lx =
+        ComputeMoveTargetX(candidate_row.row, component, candidate_row.region);
     int width_blocked_before = stats.width_blocked;
     if (TryMove(source_row, component, candidate_row.row, target_lx, &stats)) {
       return stats;
@@ -1400,14 +1442,15 @@ GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::TryOptimalRegionMove(
     if (ejection_target == nullptr &&
         stats.width_blocked > width_blocked_before) {
       ejection_target = candidate_row.row;
+      ejection_target_region = candidate_row.region;
     }
   }
   if (enable_ejection && ejection_target != nullptr) {
-    if (!TryEjectionChain(source_row, component, ejection_target, region,
-                          &stats)) {
+    if (!TryEjectionChain(source_row, component, ejection_target,
+                          ejection_target_region, &stats)) {
       if (deferred_cycle_components == nullptr) {
-        TryClosedAssignmentCycle(source_row, component, ejection_target, region,
-                                 &stats);
+        TryClosedAssignmentCycle(source_row, component, ejection_target,
+                                 ejection_target_region, &stats);
       } else {
         deferred_cycle_components->push_back(component);
       }
@@ -1445,6 +1488,7 @@ GriddedDetailedPlacer::RunBatchedAssignmentCycles(
             candidate_row.row, nullptr, component);
         if (requirements.used_width > candidate_row.row->UsableWidth()) {
           target_row = candidate_row.row;
+          source_region = candidate_row.region;
           break;
         }
       }
@@ -1584,7 +1628,10 @@ GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::RunRelocationStage(
       component_rows_[component] = row;
     }
   }
-
+  std::sort(components.begin(), components.end(),
+            [](const Component* lhs, const Component* rhs) {
+              return lhs->Id() < rhs->Id();
+            });
   std::vector<Component*> deferred_cycle_components;
   std::vector<Component*>* deferred_cycles =
       enable_ejection && enable_batched_assignment_moves_

@@ -112,6 +112,10 @@ GlobalUpperBoundRefinement RoughGriddedUpperBoundRefiner::Refine(
   refinement.initial_violations = std::move(initial_violations);
   refinement.overflow = provisional.overflow;
   refinement.violations = std::move(violations);
+  // A feasible rough placement gives every component a physical row target.
+  // Keep balanced ids as diagnostics instead of changing the meaning of an
+  // empty vector from "all" to "none" when one balancing move occurs.
+  refinement.anchor_all_components = true;
   refinement.anchor_component_ids =
       std::move(provisional.balanced_component_ids);
   refinement.component_rows = std::move(provisional.component_rows);

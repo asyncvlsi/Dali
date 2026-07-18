@@ -247,14 +247,14 @@ void GriddedRow::SetOrient(bool is_orient_N) {
   }
 }
 
-void GriddedRow::InsertWellTapCell(Component& tap_cell, int loc) {
+void GriddedRow::InsertWellTapCell(Component& tap_cell, double center_x) {
   tap_cell_ = &tap_cell;
   tap_cells_.push_back(&tap_cell);
-  PlacePhysicalCell(tap_cell, loc);
+  PlacePhysicalCell(tap_cell, center_x);
 }
 
-void GriddedRow::PlacePhysicalCell(Component& cell, int loc) const {
-  cell.SetCenterX(loc);
+void GriddedRow::PlacePhysicalCell(Component& cell, double center_x) const {
+  cell.SetCenterX(center_x);
   Macro* macro_ptr = cell.MacroPtr();
   int p_well_height = macro_ptr->FirstPwellHeight();
   int n_well_height = macro_ptr->FirstNwellHeight();

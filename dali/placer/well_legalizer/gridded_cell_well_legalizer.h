@@ -35,6 +35,7 @@
 #include "exact_gridded_whole_design_model_builder.h"
 #include "gridded_capacity_estimator.h"
 #include "gridded_detailed_placer.h"
+#include "gridded_placement_validator.h"
 #include "gridded_row.h"
 #include "gridded_row_location_optimizer.h"
 #include "gridded_vertical_hpwl_row_optimizer.h"
@@ -329,11 +330,11 @@ class GriddedCellWellLegalizer : public Placer {
   /**
    * Roughly legalize the current global-placement upper bound.
    *
-   * This method forms gridded rows and optionally applies mandatory row
-   * orientation plus row-location optimization. It always skips detailed
-   * placement, taps, end caps, and well geometry. A successful pass commits
-   * provisional component coordinates; a failed pass restores every incoming
-   * coordinate and orientation.
+   * This method forms gridded rows and applies their configured component
+   * orientations. It can additionally optimize row locations. It always skips
+   * detailed placement, taps, end caps, and well geometry. A successful pass
+   * commits provisional component coordinates and orientations; a failed pass
+   * restores the complete incoming state.
    */
   ProvisionalGriddedPlacementResult RunProvisionalPlacement(
       bool enable_overflow_balancing = false, bool refine_row_geometry = false);
@@ -465,8 +466,9 @@ class GriddedCellWellLegalizer : public Placer {
   void RunJointOrientationAndRowLocationOptimization();
   std::vector<GriddedRow*> CollectGriddedRows();
   void RunGriddedDetailedPlacementStage();
-  /** Run all configured stages after component clustering. */
-  void RunPostClusteringStages(bool clustering_succeeded);
+  /** Run configured placement stages after component clustering. */
+  void RunPostClusteringStages(bool clustering_succeeded,
+                               bool run_read_only_analysis = true);
   bool RunMovableCellLegalizationStages();
   void RunWellTapStage();
   void RunEndCapStage();
@@ -490,14 +492,21 @@ class GriddedCellWellLegalizer : public Placer {
   /** Count component rectangle overlaps after legalization. */
   size_t CountComponentOverlapsInRows() const;
 
+  /** Validate and record the final gridded placement's physical legality. */
+  bool ValidateFinalPlacement() const;
+
   /** Return total gridded-row overflow area in grid units. */
   double ProvisionalOverflowArea() const;
 
   /** Return component ids in physical X order for provisional gridded rows. */
   std::vector<std::vector<int>> CollectProvisionalComponentRows() const;
 
-  /** Apply cheap mandatory row geometry to a provisional legal placement. */
-  void RefineProvisionalRowGeometry();
+  /** Synchronize components with the configured provisional row orientations.
+   */
+  void ApplyProvisionalRowOrientations();
+
+  /** Optimize provisional row Y locations after orientation synchronization. */
+  void RefineProvisionalRowLocations(double hpwl_before_orientation);
 
   /** Move a minimal HPWL-ranked set out of overflowing provisional stripes. */
   bool TryBalanceProvisionalPlacement(
@@ -562,6 +571,7 @@ class GriddedCellWellLegalizer : public Placer {
   WellSpacePartitioner space_partitioner_;
   GriddedDetailedPlacer gridded_detailed_placer_;
   SnapshotCallback snapshot_callback_;
+  bool suppress_snapshots_ = false;
   int snapshot_attempt_ = 0;
   std::vector<ProvisionalGriddedPlacementViolation> last_clustering_violations_;
 
@@ -580,8 +590,8 @@ class GriddedCellWellLegalizer : public Placer {
   int max_iter_ = 10;
 
   struct ComponentPlacementSnapshot {
-    int lx = 0;
-    int ly = 0;
+    double lx = 0.0;
+    double ly = 0.0;
     ComponentOrient orient = N;
   };
 

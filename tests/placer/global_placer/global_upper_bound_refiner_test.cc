@@ -48,6 +48,7 @@ class TestableGlobalPlacer : public GlobalPlacer {
   }
   void ApplyFeedbackForTest(
       const std::vector<std::pair<double, double>>& original_locations,
+      bool anchor_all_components = true,
       const std::vector<int>& component_ids = {},
       const std::vector<std::vector<int>>& component_rows = {}) {
     std::vector<ComponentLocation> placement;
@@ -55,7 +56,16 @@ class TestableGlobalPlacer : public GlobalPlacer {
     for (const auto& location : original_locations) {
       placement.push_back({location.first, location.second});
     }
-    ApplyRefinedAnchorFeedback(placement, component_ids, component_rows);
+    ApplyRefinedAnchorFeedback(placement, anchor_all_components, component_ids,
+                               component_rows);
+  }
+  void RestoreSavedPlacementForTest() {
+    const std::vector<ComponentLocation> placement = SaveCurrentPlacement();
+    for (Component& component : ckt_ptr_->Components()) {
+      component.SetLowerLeft(-1.0, -1.0);
+      component.SetOrient(N);
+    }
+    RestorePlacement(placement);
   }
 };
 
@@ -133,17 +143,40 @@ TEST(GlobalUpperBoundRefinerTest, RestoresRequestedFeedbackCheckpoint) {
   circuit.ReserveSpaceForDesignImp(1, 0, 0);
   circuit.AddMacro("cell", 1, 1);
   circuit.AddComponent("movable", "cell", 10, 20, PLACED);
+  circuit.Components().front().SetOrient(FS);
 
   TestableGlobalPlacer placer;
   placer.SetCircuit(&circuit);
   placer.SaveFeedbackCheckpointForTest();
   circuit.Components().front().SetLowerLeft(30, 40);
+  circuit.Components().front().SetOrient(N);
 
   GlobalUpperBoundRefinement refinement;
   refinement.rollback_previous_anchor_feedback = true;
   EXPECT_TRUE(placer.RollbackFeedbackForTest(refinement));
   EXPECT_DOUBLE_EQ(circuit.Components().front().LLX(), 10);
   EXPECT_DOUBLE_EQ(circuit.Components().front().LLY(), 20);
+  EXPECT_EQ(circuit.Components().front().Orient(), FS);
+}
+
+TEST(GlobalUpperBoundRefinerTest, PlacementSnapshotPreservesCompleteState) {
+  Circuit circuit;
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.SetDieArea(0, 0, 100, 100);
+  circuit.ReserveSpaceForDesignImp(1, 0, 0);
+  circuit.AddMacro("cell", 1, 1);
+  circuit.AddComponent("movable", "cell", 10.25, 20.75, PLACED);
+  circuit.Components().front().SetOrient(FS);
+
+  TestableGlobalPlacer placer;
+  placer.SetCircuit(&circuit);
+  placer.RestoreSavedPlacementForTest();
+
+  EXPECT_DOUBLE_EQ(circuit.Components().front().LLX(), 10.25);
+  EXPECT_DOUBLE_EQ(circuit.Components().front().LLY(), 20.75);
+  EXPECT_EQ(circuit.Components().front().Orient(), FS);
 }
 
 TEST(GlobalUpperBoundRefinerTest, RefinedAnchorFeedbackCanBeDisabled) {
@@ -163,6 +196,25 @@ TEST(GlobalUpperBoundRefinerTest, SelectsOneFeedbackAxis) {
 
   EXPECT_EQ(placer.RefinementFeedbackMode(),
             GlobalRefinementFeedbackMode::kYOnly);
+}
+
+TEST(GlobalUpperBoundRefinerTest, EmptySelectiveAnchorSetSelectsNothing) {
+  Circuit circuit;
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.SetDieArea(0, 0, 100, 100);
+  circuit.ReserveSpaceForDesignImp(1, 0, 0);
+  circuit.AddMacro("cell", 2, 2);
+  circuit.AddComponent("movable", "cell", 10, 20, PLACED);
+
+  TestableGlobalPlacer placer;
+  placer.SetCircuit(&circuit);
+  placer.SetRefinementFeedbackMode(GlobalRefinementFeedbackMode::kYOnly);
+  placer.ApplyFeedbackForTest({{1, 2}}, false);
+
+  EXPECT_DOUBLE_EQ(circuit.Components().front().LLX(), 1);
+  EXPECT_DOUBLE_EQ(circuit.Components().front().LLY(), 2);
 }
 
 TEST(GlobalUpperBoundRefinerTest,

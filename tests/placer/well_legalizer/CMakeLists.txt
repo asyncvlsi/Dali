@@ -33,6 +33,15 @@ add_test(NAME gridded_row_test COMMAND gridded_row_test)
 set_tests_properties(gridded_row_test
                      PROPERTIES LABELS "unit;placer;well_legalizer")
 
+add_executable(gridded_placement_validator_test
+               gridded_placement_validator_test.cc)
+target_link_libraries(gridded_placement_validator_test
+                      PRIVATE dalilib ${DALI_GTEST_MAIN})
+add_test(NAME gridded_placement_validator_test
+         COMMAND gridded_placement_validator_test)
+set_tests_properties(gridded_placement_validator_test
+                     PROPERTIES LABELS "unit;placer;well_legalizer")
+
 add_executable(gridded_capacity_estimator_test
                gridded_capacity_estimator_test.cc)
 target_link_libraries(gridded_capacity_estimator_test

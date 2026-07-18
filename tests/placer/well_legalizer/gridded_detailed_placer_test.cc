@@ -325,6 +325,56 @@ TEST(GriddedDetailedPlacerTest, RelocationUsesWeightedOptimalRegion) {
   EXPECT_DOUBLE_EQ(circuit.WeightedHPWL(), 100);
 }
 
+TEST(GriddedDetailedPlacerTest,
+     RelocationUsesTargetOrientationForOptimalRegion) {
+  Circuit circuit;
+  circuit.SetDatabaseMicrons(1000);
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.SetDieArea(0, 0, 20, 20);
+  circuit.ReserveSpaceForDesignImp(3, 0, 1);
+
+  Macro* cell = circuit.AddMacro("cell", 10, 10);
+  ASSERT_NE(cell, nullptr);
+  cell->AddWellRect(false, 0, 0, 10, 4);
+  cell->AddWellRect(true, 0, 4, 10, 10);
+  circuit.AddMacroPin(cell, "p", true)->SetOffset(5, 1);
+
+  circuit.AddComponent("move", "cell", 0, 10, PLACED);
+  circuit.AddComponent("source_stay", "cell", 10, 10, PLACED);
+  circuit.AddComponent("anchor", "cell", 0, 8, FIXED);
+  circuit.AddNet("move_net", 2);
+  circuit.AddComponentPinToNet("move", "p", "move_net");
+  circuit.AddComponentPinToNet("anchor", "p", "move_net");
+
+  std::vector<GriddedRow> rows(2);
+  for (size_t i = 0; i < rows.size(); ++i) {
+    rows[i].SetLLX(0);
+    rows[i].SetWidth(20);
+    rows[i].SetLLY(static_cast<int>(i) * 10);
+    rows[i].UpdateWellHeightUpward(4, 6);
+  }
+  rows[0].SetOrient(false);
+  rows[1].SetOrient(true);
+  rows[1].AddComponent(circuit.GetComponentPtr("move"));
+  rows[1].AddComponent(circuit.GetComponentPtr("source_stay"));
+
+  GriddedDetailedPlacer placer;
+  placer.SetCircuit(&circuit);
+  placer.SetRows({&rows[0], &rows[1]});
+  placer.SetEnableRelocation(true);
+  placer.SetEnableVerticalSwap(false);
+  placer.SetMaxRounds(1);
+  ASSERT_TRUE(placer.StartPlacement());
+
+  EXPECT_NE(std::find(rows[0].Components().begin(), rows[0].Components().end(),
+                      circuit.GetComponentPtr("move")),
+            rows[0].Components().end());
+  EXPECT_EQ(circuit.GetComponentPtr("move")->Orient(), FS);
+  EXPECT_DOUBLE_EQ(circuit.WeightedHPWL(), 0);
+}
+
 TEST(GriddedDetailedPlacerTest, EjectionChainCreatesRowWhitespace) {
   Circuit circuit;
   circuit.SetDatabaseMicrons(1000);

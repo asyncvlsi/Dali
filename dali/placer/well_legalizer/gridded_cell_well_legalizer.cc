@@ -370,11 +370,14 @@ GriddedCellWellLegalizer::CollectProvisionalComponentRows() const {
   return component_rows;
 }
 
-void GriddedCellWellLegalizer::RefineProvisionalRowGeometry() {
-  const double hpwl_before_orientation = WeightedHPWL();
+void GriddedCellWellLegalizer::ApplyProvisionalRowOrientations() {
   if (!disable_cell_flip_) {
     UpdateClusterOrient();
   }
+}
+
+void GriddedCellWellLegalizer::RefineProvisionalRowLocations(
+    double hpwl_before_orientation) {
   const double hpwl_after_orientation = WeightedHPWL();
 
   GriddedRowLocationResult row_location;
@@ -435,8 +438,10 @@ GriddedCellWellLegalizer::RunProvisionalPlacement(
   stripe_mode_ = configured_stripe_mode;
   enable_adaptive_stripe_boundaries_ = configured_adaptive_boundaries;
   if (result.feasible) {
+    const double hpwl_before_orientation = WeightedHPWL();
+    ApplyProvisionalRowOrientations();
     if (refine_row_geometry) {
-      RefineProvisionalRowGeometry();
+      RefineProvisionalRowLocations(hpwl_before_orientation);
     }
     result.hpwl = WeightedHPWL();
     result.component_rows = CollectProvisionalComponentRows();
@@ -1031,7 +1036,9 @@ bool GriddedCellWellLegalizer::ComponentClusteringLoose() {
     }
   }
 
+  const size_t overlap_count = CountComponentOverlapsInRows();
   LogComponentClusteringSummary(failed_stripe_count);
+  if (overlap_count > 0) res = false;
   return res;
 }
 
@@ -1115,6 +1122,69 @@ size_t GriddedCellWellLegalizer::CountComponentOverlapsInRows() const {
     }
   }
   return overlap_count;
+}
+
+bool GriddedCellWellLegalizer::ValidateFinalPlacement() const {
+  GriddedPlacementValidationConfig config;
+  config.check_component_orientation = !disable_cell_flip_;
+  config.expect_well_taps = !disable_welltap_;
+  config.expect_end_caps = enable_end_cap_cell_;
+  config.space_to_well_tap = space_to_well_tap_;
+  if (enable_end_cap_cell_) {
+    config.pre_end_cap_width = pre_end_cap_min_width_;
+    config.post_end_cap_width = post_end_cap_min_width_;
+  }
+  const GriddedPlacementLegalityReport report =
+      GriddedPlacementValidator(ckt_ptr_, &col_list_, config).Validate();
+
+  LOG(info)
+      << "Final gridded placement legality:\n"
+      << "  legal                         : " << report.IsLegal() << "\n"
+      << "  total violations              : " << report.TotalViolationCount()
+      << "\n"
+      << "  movable / assigned components: " << report.movable_component_count
+      << " / " << report.assigned_component_count << "\n"
+      << "  unassigned / duplicate        : "
+      << report.unassigned_component_count << " / "
+      << report.duplicate_assignment_count << "\n"
+      << "  invalid references            : "
+      << report.invalid_component_reference_count << "\n"
+      << "  row boundary / overlap        : "
+      << report.row_boundary_violation_count << " / "
+      << report.row_overlap_count << "\n"
+      << "  component boundary / overlap  : "
+      << report.component_boundary_violation_count << " / "
+      << report.component_overlap_count << "\n"
+      << "  component Y / orientation     : "
+      << report.component_y_violation_count << " / "
+      << report.component_orientation_violation_count << "\n"
+      << "  physical completion           : "
+      << report.physical_completion_violation_count << "\n"
+      << "    missing taps / tap geometry : " << report.missing_well_tap_count
+      << " / " << report.well_tap_geometry_violation_count << "\n"
+      << "    tap spacing                 : "
+      << report.well_tap_spacing_violation_count << "\n"
+      << "    missing caps / cap geometry : " << report.missing_end_cap_count
+      << " / " << report.end_cap_geometry_violation_count << "\n"
+      << "    cap/tap overlap / count     : "
+      << report.end_cap_tap_overlap_count << " / "
+      << report.physical_component_count_violation_count << "\n";
+  RecordPlacementMetric("well_legalization.legality.legal",
+                        report.IsLegal() ? 1.0 : 0.0);
+  RecordPlacementMetric("well_legalization.legality.total_violations",
+                        report.TotalViolationCount());
+  RecordPlacementMetric("well_legalization.legality.unassigned_components",
+                        report.unassigned_component_count);
+  RecordPlacementMetric("well_legalization.legality.duplicate_assignments",
+                        report.duplicate_assignment_count);
+  RecordPlacementMetric("well_legalization.legality.row_overlaps",
+                        report.row_overlap_count);
+  RecordPlacementMetric("well_legalization.legality.component_overlaps",
+                        report.component_overlap_count);
+  RecordPlacementMetric(
+      "well_legalization.legality.physical_completion_violations",
+      report.physical_completion_violation_count);
+  return report.IsLegal();
 }
 
 bool GriddedCellWellLegalizer::ComponentClusteringCompact() {
@@ -1407,22 +1477,26 @@ bool GriddedCellWellLegalizer::RunBandedAssignmentPreviewStage() {
   };
 
   std::vector<PreviewResult> previews = {{false}, {true}};
-  gridded_detailed_placer_.SetMaxRounds(1);
-  for (PreviewResult& preview : previews) {
-    RestoreInitialComponentLocation();
-    InitializeWellLegalizer(-1, preview.uses_banded_assignment);
-    preview.feasible = ComponentClusteringLoose();
-    if (!preview.feasible) continue;
+  {
+    ScopedPlacementMetricSuppression suppress_preview_metrics;
+    suppress_snapshots_ = true;
+    gridded_detailed_placer_.SetMaxRounds(1);
+    for (PreviewResult& preview : previews) {
+      RestoreInitialComponentLocation();
+      InitializeWellLegalizer(-1, preview.uses_banded_assignment);
+      preview.feasible = ComponentClusteringLoose();
+      if (!preview.feasible) continue;
 
-    preview.legalized_hpwl = WeightedHPWL();
-    RunClusterOrientationStage();
-    if (enable_row_location_optimization_) {
-      RunJointOrientationAndRowLocationOptimization();
+      preview.legalized_hpwl = WeightedHPWL();
+      // Use the same quality-changing stages as the selected final flow. The
+      // detailed placer is limited to one round, and read-only solver analysis
+      // is omitted because it cannot affect candidate ranking.
+      RunPostClusteringStages(true, false);
+      preview.preview_hpwl = WeightedHPWL();
     }
-    RunGriddedDetailedPlacementStage();
-    preview.preview_hpwl = WeightedHPWL();
+    gridded_detailed_placer_.SetMaxRounds(detailed_placement_max_rounds_);
+    suppress_snapshots_ = false;
   }
-  gridded_detailed_placer_.SetMaxRounds(detailed_placement_max_rounds_);
 
   const PreviewResult* selected = nullptr;
   for (const PreviewResult& preview : previews) {
@@ -2279,7 +2353,7 @@ void GriddedCellWellLegalizer::RunJointOrientationAndRowLocationOptimization() {
 }
 
 void GriddedCellWellLegalizer::RunPostClusteringStages(
-    bool clustering_succeeded) {
+    bool clustering_succeeded, bool run_read_only_analysis) {
   RunClusterOrientationStage();
   if (clustering_succeeded && enable_row_location_optimization_) {
     RunJointOrientationAndRowLocationOptimization();
@@ -2305,10 +2379,12 @@ void GriddedCellWellLegalizer::RunPostClusteringStages(
   if (clustering_succeeded && enable_exact_boundary_optimization_) {
     RunExactBoundaryOptimizationStage();
   }
-  if (clustering_succeeded && enable_exact_legalization_analysis_) {
+  if (clustering_succeeded && run_read_only_analysis &&
+      enable_exact_legalization_analysis_) {
     RunExactLegalizationAnalysisStage();
   }
-  if (clustering_succeeded && enable_whole_design_exact_legalization_) {
+  if (clustering_succeeded && run_read_only_analysis &&
+      enable_whole_design_exact_legalization_) {
     RunWholeDesignExactLegalizationStage();
   }
 }
@@ -2403,7 +2479,7 @@ void GriddedCellWellLegalizer::EmitSnapshot(const std::string& id,
                                             const std::string& group,
                                             const std::string& subgroup,
                                             int iteration) {
-  if (!snapshot_callback_) return;
+  if (suppress_snapshots_ || !snapshot_callback_) return;
   snapshot_callback_("attempt_" + std::to_string(snapshot_attempt_) + "." + id,
                      label, group, subgroup, iteration);
 }
@@ -2440,6 +2516,7 @@ bool GriddedCellWellLegalizer::StartPlacement() {
   }
   LogActualGriddedUtilization();
   RunPhysicalCompletionStages();
+  is_success = ValidateFinalPlacement();
 
   PrintEndStatement("Standard Cluster Well Legalization", is_success);
 

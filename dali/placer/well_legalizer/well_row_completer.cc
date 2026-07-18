@@ -61,10 +61,10 @@ void WellRowCompleter::InsertWellTaps() {
               "Ordinary component is outside the physical-completion interval");
         }
 
-        int tap_centers[] = {
-            row.LLX() + config_.pre_end_cap_width + tap_width / 2,
-            row.URX() - config_.post_end_cap_width - tap_width / 2};
-        for (int tap_center : tap_centers) {
+        const double tap_centers[] = {
+            row.LLX() + config_.pre_end_cap_width + tap_width / 2.0,
+            row.URX() - config_.post_end_cap_width - tap_width / 2.0};
+        for (double tap_center : tap_centers) {
           std::string name = "__well_tap__" + std::to_string(component_id++);
           auto [tap, tap_id] = tap_components.CreateWithId(name);
           tap.SetPlacementStatus(PLACED);
@@ -143,7 +143,8 @@ void WellRowCompleter::InsertEndCaps() {
         pre_end_cap.SetPlacementStatus(PLACED);
         pre_end_cap.SetMacro(pre_macro);
         pre_end_cap.SetId(static_cast<int>(pre_id));
-        row.PlacePhysicalCell(pre_end_cap, row.LLX() + pre_macro->Width() / 2);
+        row.PlacePhysicalCell(pre_end_cap,
+                              row.LLX() + pre_macro->Width() / 2.0);
 
         auto [post_end_cap, post_id] = end_cap_components.CreateWithId(
             "__post_end_cap_cell__" + std::to_string(row_id));
@@ -151,7 +152,7 @@ void WellRowCompleter::InsertEndCaps() {
         post_end_cap.SetMacro(post_macro);
         post_end_cap.SetId(static_cast<int>(post_id));
         row.PlacePhysicalCell(post_end_cap,
-                              row.URX() - post_macro->Width() / 2);
+                              row.URX() - post_macro->Width() / 2.0);
         ++row_id;
       }
     }

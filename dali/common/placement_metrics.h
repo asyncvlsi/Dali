@@ -46,6 +46,18 @@ class PlacementMetrics {
   std::vector<std::pair<std::string, double>> metrics_;
 };
 
+/** Temporarily suppress metrics recorded through the process-wide wrappers. */
+class ScopedPlacementMetricSuppression {
+ public:
+  ScopedPlacementMetricSuppression();
+  ~ScopedPlacementMetricSuppression();
+
+  ScopedPlacementMetricSuppression(const ScopedPlacementMetricSuppression&) =
+      delete;
+  ScopedPlacementMetricSuppression& operator=(
+      const ScopedPlacementMetricSuppression&) = delete;
+};
+
 /** Clear all placement metrics recorded for the current process. */
 void ClearPlacementMetrics();
 

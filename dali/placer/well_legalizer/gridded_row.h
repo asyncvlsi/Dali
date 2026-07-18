@@ -132,8 +132,11 @@ class GriddedRow {
   void LegalizeLooseX();
   /** Synchronize row and component orientation, mirroring component Y once. */
   void SetOrient(bool is_orient_N);
-  void InsertWellTapCell(Component& tap_cell, int loc);
-  void PlacePhysicalCell(Component& cell, int loc) const;
+  /** Insert a well tap with its center at the given X coordinate. */
+  void InsertWellTapCell(Component& tap_cell, double center_x);
+
+  /** Place a physical-completion cell at an exact X center coordinate. */
+  void PlacePhysicalCell(Component& cell, double center_x) const;
   Component* WellTapCell() const;
   Component* LeftWellTapCell() const;
   Component* RightWellTapCell() const;

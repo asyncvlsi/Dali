@@ -67,7 +67,9 @@ struct GlobalUpperBoundRefinement {
   double overflow = 0.0;
   /** Violations remaining after refinement. */
   std::vector<GlobalUpperBoundViolation> violations;
-  /** Components whose refined coordinates may anchor the next iteration. */
+  /** Use every component as an anchor candidate for the next iteration. */
+  bool anchor_all_components = true;
+  /** Components whose refined coordinates may anchor a selective policy. */
   std::vector<int> anchor_component_ids;
   /** Ordered component ids for every multi-component provisional row. */
   std::vector<std::vector<int>> component_rows;

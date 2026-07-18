@@ -275,6 +275,7 @@ void GlobalPlacer::RunPlacementIterations() {
     double accepted_hpwl_x = spreader_->HpwlsX().back();
     double accepted_hpwl_y = spreader_->HpwlsY().back();
     bool accepted_physical_refinement = false;
+    bool anchor_all_components = true;
     std::vector<int> selective_anchor_component_ids;
     std::vector<std::vector<int>> refined_component_rows;
     current_upper_bound_is_physical_ = upper_bound_refiner_ == nullptr;
@@ -293,6 +294,7 @@ void GlobalPlacer::RunPlacementIterations() {
         accepted_hpwl_x = ckt_ptr_->WeightedHPWLX();
         accepted_hpwl_y = ckt_ptr_->WeightedHPWLY();
         accepted_physical_refinement = true;
+        anchor_all_components = refinement.anchor_all_components;
         selective_anchor_component_ids =
             std::move(refinement.anchor_component_ids);
         refined_component_rows = std::move(refinement.component_rows);
@@ -310,9 +312,9 @@ void GlobalPlacer::RunPlacementIterations() {
     }
     EmitIterationSnapshot("upper_bound", "Upper Bound", "upper_bound");
     if (accepted_physical_refinement) {
-      ApplyRefinedAnchorFeedback(placement_before_refinement,
-                                 selective_anchor_component_ids,
-                                 refined_component_rows);
+      ApplyRefinedAnchorFeedback(
+          placement_before_refinement, anchor_all_components,
+          selective_anchor_component_ids, refined_component_rows);
       previous_feedback_checkpoint_ = std::move(placement_before_refinement);
     }
     PrintHpwl();
@@ -360,14 +362,14 @@ void GlobalPlacer::UpdateLegalizationPressure(
 
 void GlobalPlacer::ApplyRefinedAnchorFeedback(
     const std::vector<ComponentLocation>& placement_before_refinement,
-    const std::vector<int>& component_ids,
+    bool anchor_all_components, const std::vector<int>& component_ids,
     const std::vector<std::vector<int>>& component_rows) {
   DaliExpects(
       placement_before_refinement.size() == ckt_ptr_->Components().size(),
       "Cannot apply refinement feedback: component count changed");
 
   std::vector<bool> selected_components(ckt_ptr_->Components().size(),
-                                        component_ids.empty());
+                                        anchor_all_components);
   for (int component_id : component_ids) {
     DaliExpects(
         component_id >= 0 &&
@@ -629,7 +631,7 @@ GlobalPlacer::SaveCurrentPlacement() const {
   std::vector<ComponentLocation> placement;
   placement.reserve(ckt_ptr_->Components().size());
   for (const Component& component : ckt_ptr_->Components()) {
-    placement.push_back({component.LLX(), component.LLY()});
+    placement.push_back({component.LLX(), component.LLY(), component.Orient()});
   }
   return placement;
 }
@@ -640,6 +642,7 @@ void GlobalPlacer::RestorePlacement(
               "Cannot restore placement: component count changed");
   for (size_t i = 0; i < placement.size(); ++i) {
     ckt_ptr_->Components()[i].SetLowerLeft(placement[i].lx, placement[i].ly);
+    ckt_ptr_->Components()[i].SetOrient(placement[i].orient);
   }
 }
 
