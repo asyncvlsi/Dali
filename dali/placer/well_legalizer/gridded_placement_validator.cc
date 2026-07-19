@@ -7,6 +7,8 @@
 #include <cmath>
 #include <vector>
 
+#include "dali/common/logging.h"
+
 namespace dali {
 
 size_t GriddedPlacementLegalityReport::TotalViolationCount() const {
@@ -30,7 +32,9 @@ GriddedPlacementValidator::GriddedPlacementValidator(
 
 GriddedPlacementLegalityReport GriddedPlacementValidator::Validate() const {
   constexpr double kCoordinateTolerance = 1e-9;
+  constexpr size_t kMaxLoggedCoordinateViolations = 8;
   GriddedPlacementLegalityReport report;
+  size_t logged_coordinate_violations = 0;
   std::vector<Component>& components = circuit_->Components();
   std::vector<int> assignment_counts(components.size(), 0);
   std::vector<const GriddedRow*> ordered_rows;
@@ -79,6 +83,18 @@ GriddedPlacementLegalityReport GriddedPlacementValidator::Validate() const {
               component->LLY() < row.LLY() - kCoordinateTolerance ||
               component->URY() > row.URY() + kCoordinateTolerance) {
             ++report.component_y_violation_count;
+            if (logged_coordinate_violations < kMaxLoggedCoordinateViolations) {
+              LOG(warning) << "Gridded-row Y violation: component="
+                           << component->Name() << ", row=[" << row.LLY()
+                           << ", " << row.URY()
+                           << "], actual_y=" << component->LLY()
+                           << ", expected_y=" << expected_y
+                           << ", row_pn_height=" << row.PHeight() << "/"
+                           << row.NHeight() << ", row_orientation="
+                           << (row.IsOrientN() ? "N" : "FS") << ", orientation="
+                           << (component->Orient() == N ? "N" : "FS") << "\n";
+              ++logged_coordinate_violations;
+            }
           }
           const ComponentOrient expected_orientation = row.IsOrientN() ? N : FS;
           if (config_.check_component_orientation &&

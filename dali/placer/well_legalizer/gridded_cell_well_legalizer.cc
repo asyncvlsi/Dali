@@ -1792,6 +1792,15 @@ std::vector<GriddedRow*> GriddedCellWellLegalizer::CollectGriddedRows() {
   return rows;
 }
 
+void GriddedCellWellLegalizer::SynchronizeComponentLocationsWithRows() {
+  // Detailed placement changes row membership transactionally. Recompute Y
+  // coordinates from the final row geometry so every component lies on its
+  // assigned row's P/N well edge before physical cells are materialized.
+  for (GriddedRow* row : CollectGriddedRows()) {
+    row->UpdateComponentLocY();
+  }
+}
+
 void GriddedCellWellLegalizer::RunGriddedDetailedPlacementStage() {
   LOG(info) << (enable_detailed_placement_ ? "Run gridded detailed placement\n"
                                            : "Run gridded local reorder\n");
@@ -2510,6 +2519,9 @@ void GriddedCellWellLegalizer::RunPostClusteringStages(
 bool GriddedCellWellLegalizer::RunMovableCellLegalizationStages() {
   bool is_success = RunComponentClusteringStage();
   RunPostClusteringStages(is_success);
+  if (is_success) {
+    SynchronizeComponentLocationsWithRows();
+  }
   return is_success;
 }
 

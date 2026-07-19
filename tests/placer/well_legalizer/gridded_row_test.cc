@@ -40,4 +40,34 @@ TEST(GriddedRowTest, SynchronizesComponentOrientationIdempotently) {
   EXPECT_DOUBLE_EQ(component->LLY(), 10.0);
 }
 
+TEST(GriddedRowTest, SynchronizesComponentYToFinalWellEdge) {
+  Circuit circuit;
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.ReserveSpaceForDesignImp(1, 0, 0);
+  Macro* macro = circuit.AddMacro("cell", 2, 2);
+  macro->AddWellRect(false, 0, 0, 2, 1);
+  macro->AddWellRect(true, 0, 1, 2, 2);
+  circuit.AddComponent("component", "cell", 0, 10, PLACED);
+  Component* component = circuit.GetComponentPtr("component");
+
+  GriddedRow row;
+  row.SetLLY(10);
+  row.UpdateWellHeightUpward(3, 2);
+  row.AddComponent(component);
+
+  row.SetOrient(true);
+  component->SetLLY(10);
+  row.UpdateComponentLocY();
+  EXPECT_EQ(component->Orient(), N);
+  EXPECT_DOUBLE_EQ(component->LLY(), 12.0);
+
+  row.SetOrient(false);
+  component->SetLLY(10);
+  row.UpdateComponentLocY();
+  EXPECT_EQ(component->Orient(), FS);
+  EXPECT_DOUBLE_EQ(component->LLY(), 11.0);
+}
+
 }  // namespace dali

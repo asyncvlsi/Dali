@@ -483,6 +483,9 @@ class GriddedCellWellLegalizer : public Placer {
   void RunJointOrientationAndRowLocationOptimization();
   std::vector<GriddedRow*> CollectGriddedRows();
   void RunGriddedDetailedPlacementStage();
+  /** Place each assigned component on the finalized P/N well edge of its row.
+   */
+  void SynchronizeComponentLocationsWithRows();
   /** Run configured placement stages after component clustering. */
   void RunPostClusteringStages(bool clustering_succeeded,
                                bool run_read_only_analysis = true);
