@@ -39,6 +39,7 @@ struct OrToolsGriddedStripeOptimizerConfig {
   // Zero solves complete stripes. Positive values create overlapping bands.
   int target_components_per_model = 0;
   int maximum_components_per_model = 96;
+  bool run_local_detailed_closure = false;
   bool use_solution_hint = true;
 };
 
@@ -114,6 +115,9 @@ class OrToolsGriddedStripeOptimizer {
   /** Return HPWL over affected nets, optionally applying the fanout cutoff. */
   double AffectedNetHpwl(const std::vector<int>& net_ids,
                          bool apply_fanout_cutoff) const;
+
+  /** Apply one private detailed-placement round to a stripe row band. */
+  void RunLocalDetailedClosure(const std::vector<GriddedRow*>& rows) const;
 
   Circuit* circuit_ = nullptr;
   OrToolsGriddedStripeOptimizerConfig config_;

@@ -339,8 +339,14 @@ void Dali::ShowParamsList() {
       << exact_gridded_stripe_fixed_row_prepass_ << "\n"
       << "  exact_gridded_stripe_before_detailed: "
       << exact_gridded_stripe_before_detailed_ << "\n"
+      << "  exact_gridded_stripe_local_closure: "
+      << exact_gridded_stripe_local_closure_ << "\n"
       << "  enable_exact_gridded_boundary_optimization: "
       << enable_exact_gridded_boundary_optimization_ << "\n"
+      << "  exact_gridded_boundary_before_detailed: "
+      << exact_gridded_boundary_before_detailed_ << "\n"
+      << "  exact_gridded_boundary_local_closure: "
+      << exact_gridded_boundary_local_closure_ << "\n"
       << "  exact_gridded_boundary_time: " << exact_gridded_boundary_time_
       << "\n"
       << "  exact_gridded_boundary_total_time: "
@@ -582,9 +588,15 @@ void Dali::LoadParamsFromConfig() {
                  &exact_gridded_stripe_fixed_row_prepass_);
   LoadBoolConfig(ConfigName(prefix_, "exact_gridded_stripe_before_detailed"),
                  &exact_gridded_stripe_before_detailed_);
+  LoadBoolConfig(ConfigName(prefix_, "exact_gridded_stripe_local_closure"),
+                 &exact_gridded_stripe_local_closure_);
   LoadBoolConfig(
       ConfigName(prefix_, "enable_exact_gridded_boundary_optimization"),
       &enable_exact_gridded_boundary_optimization_);
+  LoadBoolConfig(ConfigName(prefix_, "exact_gridded_boundary_before_detailed"),
+                 &exact_gridded_boundary_before_detailed_);
+  LoadBoolConfig(ConfigName(prefix_, "exact_gridded_boundary_local_closure"),
+                 &exact_gridded_boundary_local_closure_);
   LoadRealConfig(ConfigName(prefix_, "exact_gridded_boundary_time"),
                  &exact_gridded_boundary_time_);
   DaliExpects(exact_gridded_boundary_time_ > 0.0,
@@ -751,7 +763,10 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       exact_gridded_stripe_displacement_weight_,
       exact_gridded_stripe_fixed_row_prepass_,
       exact_gridded_stripe_before_detailed_,
+      exact_gridded_stripe_local_closure_,
       enable_exact_gridded_boundary_optimization_,
+      exact_gridded_boundary_before_detailed_,
+      exact_gridded_boundary_local_closure_,
       exact_gridded_boundary_time_,
       exact_gridded_boundary_total_time_,
       exact_gridded_boundary_components_,
@@ -1211,13 +1226,16 @@ void Dali::ConfigureWellLegalizer() {
       exact_gridded_stripe_row_radius_, exact_gridded_max_row_changes_,
       exact_gridded_stripe_displacement_weight_,
       exact_gridded_stripe_fixed_row_prepass_,
-      exact_gridded_stripe_before_detailed_, exact_gridded_use_solution_hint_,
+      exact_gridded_stripe_before_detailed_,
+      exact_gridded_stripe_local_closure_, exact_gridded_use_solution_hint_,
       net_ignore_threshold_);
   well_legalizer_.SetExactBoundaryOptimization(
       enable_exact_gridded_boundary_optimization_, exact_gridded_boundary_time_,
       exact_gridded_boundary_total_time_, exact_gridded_boundary_components_,
       exact_gridded_boundary_max_changes_, num_threads_,
-      exact_gridded_use_solution_hint_, net_ignore_threshold_);
+      exact_gridded_boundary_before_detailed_,
+      exact_gridded_boundary_local_closure_, exact_gridded_use_solution_hint_,
+      net_ignore_threshold_);
   well_legalizer_.SetSnapshotCallback(
       [this](const std::string& id, const std::string& label,
              const std::string& group, const std::string& subgroup,

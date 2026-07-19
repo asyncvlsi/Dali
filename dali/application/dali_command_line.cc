@@ -128,7 +128,10 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -exact_gridded_stripe_displacement_weight <w>  physical L1 movement penalty, default 0\n"
       << "  -exact_gridded_stripe_fixed_row_prepass    run a separately budgeted exact-X phase first\n"
       << "  -exact_gridded_stripe_before_detailed      run exact stripe refinement before detailed placement\n"
+      << "  -exact_gridded_stripe_local_closure       score stripe candidates after one local detailed round\n"
       << "  -enable_exact_gridded_boundary_optimization  refine adjacent stripe boundaries with CP-SAT\n"
+      << "  -exact_gridded_boundary_before_detailed    run boundary refinement before detailed placement\n"
+      << "  -exact_gridded_boundary_local_closure     score boundary candidates after one local detailed round\n"
       << "  -exact_gridded_boundary_time <seconds>     solve limit per boundary model, default 0.1\n"
       << "  -exact_gridded_boundary_total_time <seconds> total boundary solve budget, default 120\n"
       << "  -exact_gridded_boundary_components <n>     maximum cells per boundary model, default 64\n"
@@ -652,8 +655,14 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.exact_gridded_stripe_fixed_row_prepass");
     } else if (arg == "-exact_gridded_stripe_before_detailed") {
       EnableConfigFlag("dali.exact_gridded_stripe_before_detailed");
+    } else if (arg == "-exact_gridded_stripe_local_closure") {
+      EnableConfigFlag("dali.exact_gridded_stripe_local_closure");
     } else if (arg == "-enable_exact_gridded_boundary_optimization") {
       EnableConfigFlag("dali.enable_exact_gridded_boundary_optimization");
+    } else if (arg == "-exact_gridded_boundary_before_detailed") {
+      EnableConfigFlag("dali.exact_gridded_boundary_before_detailed");
+    } else if (arg == "-exact_gridded_boundary_local_closure") {
+      EnableConfigFlag("dali.exact_gridded_boundary_local_closure");
     } else if (arg == "-exact_gridded_boundary_time") {
       double boundary_time = 0.0;
       if (!TryGetValue(argc, argv, &i, &value) ||

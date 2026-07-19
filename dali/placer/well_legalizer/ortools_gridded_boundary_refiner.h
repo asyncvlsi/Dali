@@ -32,6 +32,7 @@ struct OrToolsGriddedBoundaryRefinerConfig {
   int net_ignore_threshold = 100;
   int minimum_p_well_height = 0;
   int minimum_n_well_height = 0;
+  bool run_local_detailed_closure = false;
   bool use_solution_hint = true;
 };
 

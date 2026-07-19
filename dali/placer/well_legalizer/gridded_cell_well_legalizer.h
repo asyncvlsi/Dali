@@ -271,8 +271,8 @@ class GriddedCellWellLegalizer : public Placer {
       int target_components_per_model, int number_of_workers,
       int maximum_row_displacement, int maximum_row_assignment_changes,
       double displacement_weight, bool run_fixed_row_prepass,
-      bool run_before_detailed_placement, bool use_solution_hint,
-      int net_ignore_threshold) {
+      bool run_before_detailed_placement, bool run_local_detailed_closure,
+      bool use_solution_hint, int net_ignore_threshold) {
     enable_exact_stripe_optimization_ = enable;
     exact_stripe_optimizer_config_.maximum_time_seconds_per_stripe =
         maximum_time_seconds_per_stripe;
@@ -293,6 +293,8 @@ class GriddedCellWellLegalizer : public Placer {
     exact_stripe_optimizer_config_.displacement_weight = displacement_weight;
     exact_stripe_fixed_row_prepass_ = run_fixed_row_prepass;
     exact_stripe_before_detailed_placement_ = run_before_detailed_placement;
+    exact_stripe_optimizer_config_.run_local_detailed_closure =
+        run_local_detailed_closure;
     exact_stripe_optimizer_config_.use_solution_hint = use_solution_hint;
     exact_stripe_optimizer_config_.net_ignore_threshold = net_ignore_threshold;
   }
@@ -302,6 +304,7 @@ class GriddedCellWellLegalizer : public Placer {
       bool enable, double maximum_time_seconds_per_model,
       double maximum_total_time_seconds, int maximum_components_per_model,
       int maximum_assignment_changes, int number_of_workers,
+      bool run_before_detailed_placement, bool run_local_detailed_closure,
       bool use_solution_hint, int net_ignore_threshold) {
     enable_exact_boundary_optimization_ = enable;
     exact_boundary_refiner_config_.maximum_time_seconds_per_model =
@@ -313,6 +316,9 @@ class GriddedCellWellLegalizer : public Placer {
     exact_boundary_refiner_config_.maximum_assignment_changes =
         maximum_assignment_changes;
     exact_boundary_refiner_config_.number_of_workers = number_of_workers;
+    exact_boundary_before_detailed_placement_ = run_before_detailed_placement;
+    exact_boundary_refiner_config_.run_local_detailed_closure =
+        run_local_detailed_closure;
     exact_boundary_refiner_config_.use_solution_hint = use_solution_hint;
     exact_boundary_refiner_config_.net_ignore_threshold = net_ignore_threshold;
   }
@@ -590,6 +596,7 @@ class GriddedCellWellLegalizer : public Placer {
   bool exact_stripe_before_detailed_placement_ = false;
   OrToolsGriddedStripeOptimizerConfig exact_stripe_optimizer_config_;
   bool enable_exact_boundary_optimization_ = false;
+  bool exact_boundary_before_detailed_placement_ = false;
   OrToolsGriddedBoundaryRefinerConfig exact_boundary_refiner_config_;
   WellSpacePartitioner space_partitioner_;
   GriddedDetailedPlacer gridded_detailed_placer_;

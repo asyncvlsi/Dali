@@ -16,7 +16,9 @@
 #include <vector>
 
 #include "dali/common/helper.h"
+#include "dali/common/placement_metrics.h"
 #include "dali/placer/well_legalizer/exact_gridded_boundary_model_builder.h"
+#include "dali/placer/well_legalizer/gridded_detailed_placer.h"
 #include "dali/placer/well_legalizer/gridded_row_assignment_transaction.h"
 #include "dali/placer/well_legalizer/ortools_compact_gridded_legalizer.h"
 
@@ -57,6 +59,20 @@ double OrToolsGriddedBoundaryOptimizer::AffectedNetHpwl(
     hpwl += circuit_->NetWeightedHPWL(net_id);
   }
   return hpwl;
+}
+
+void OrToolsGriddedBoundaryOptimizer::RunLocalDetailedClosure(
+    const std::vector<GriddedRow*>& rows) const {
+  GriddedDetailedPlacer detailed_placer;
+  detailed_placer.SetCircuit(circuit_);
+  detailed_placer.SetRows(rows);
+  detailed_placer.SetEnableRelocation(true);
+  detailed_placer.SetNetIgnoreThreshold(config_.net_ignore_threshold);
+
+  // This closure evaluates a private candidate. Its intermediate metrics must
+  // not be mixed with the metrics of the selected legalization flow.
+  ScopedPlacementMetricSuppression suppress_metrics;
+  detailed_placer.RunOneRoundClosure();
 }
 
 OrToolsGriddedBoundaryOptimizerResult OrToolsGriddedBoundaryOptimizer::Optimize(
@@ -168,12 +184,11 @@ OrToolsGriddedBoundaryOptimizerResult OrToolsGriddedBoundaryOptimizer::Optimize(
     }
   }
 
-  const bool rows_are_legal =
-      solution_is_complete &&
-      std::all_of(affected_rows.begin(), affected_rows.end(),
-                  [](const GriddedRow* row) {
-                    return row->HasLegalComponentPlacement();
-                  });
+  bool rows_are_legal = solution_is_complete &&
+                        std::all_of(affected_rows.begin(), affected_rows.end(),
+                                    [](const GriddedRow* row) {
+                                      return row->HasLegalComponentPlacement();
+                                    });
   if (rows_are_legal) {
     result.modeled_hpwl_after = AffectedNetHpwl(build.affected_net_ids, true);
     result.affected_hpwl_after = AffectedNetHpwl(build.affected_net_ids, false);
@@ -188,7 +203,27 @@ OrToolsGriddedBoundaryOptimizerResult OrToolsGriddedBoundaryOptimizer::Optimize(
   const bool improves_affected_hpwl =
       result.affected_hpwl_after + affected_tolerance <
       result.affected_hpwl_before;
-  if (rows_are_legal && improves_modeled_hpwl && improves_affected_hpwl) {
+  if (rows_are_legal && improves_modeled_hpwl && improves_affected_hpwl &&
+      config_.run_local_detailed_closure) {
+    RunLocalDetailedClosure(affected_rows);
+    rows_are_legal = std::all_of(affected_rows.begin(), affected_rows.end(),
+                                 [](const GriddedRow* row) {
+                                   return row->HasLegalComponentPlacement();
+                                 });
+    if (rows_are_legal) {
+      result.modeled_hpwl_after = AffectedNetHpwl(build.affected_net_ids, true);
+      result.affected_hpwl_after =
+          AffectedNetHpwl(build.affected_net_ids, false);
+    }
+  }
+  const bool closure_improves_modeled_hpwl =
+      result.modeled_hpwl_after + modeled_tolerance <
+      result.modeled_hpwl_before;
+  const bool closure_improves_affected_hpwl =
+      result.affected_hpwl_after + affected_tolerance <
+      result.affected_hpwl_before;
+  if (rows_are_legal && closure_improves_modeled_hpwl &&
+      closure_improves_affected_hpwl) {
     result.accepted = true;
   } else {
     transaction.Restore();

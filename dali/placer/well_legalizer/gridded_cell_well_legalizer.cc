@@ -2495,6 +2495,10 @@ void GriddedCellWellLegalizer::RunPostClusteringStages(
       exact_stripe_before_detailed_placement_) {
     RunExactStripeOptimizationStage();
   }
+  if (clustering_succeeded && enable_exact_boundary_optimization_ &&
+      exact_boundary_before_detailed_placement_) {
+    RunExactBoundaryOptimizationStage();
+  }
   if (clustering_succeeded &&
       (enable_local_reorder_ || enable_detailed_placement_)) {
     RunGriddedDetailedPlacementStage();
@@ -2503,7 +2507,8 @@ void GriddedCellWellLegalizer::RunPostClusteringStages(
       !exact_stripe_before_detailed_placement_) {
     RunExactStripeOptimizationStage();
   }
-  if (clustering_succeeded && enable_exact_boundary_optimization_) {
+  if (clustering_succeeded && enable_exact_boundary_optimization_ &&
+      !exact_boundary_before_detailed_placement_) {
     RunExactBoundaryOptimizationStage();
   }
   if (clustering_succeeded && run_read_only_analysis &&

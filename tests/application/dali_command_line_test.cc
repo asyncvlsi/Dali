@@ -230,7 +230,10 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "0.125",
                      "-exact_gridded_stripe_fixed_row_prepass",
                      "-exact_gridded_stripe_before_detailed",
+                     "-exact_gridded_stripe_local_closure",
                      "-enable_exact_gridded_boundary_optimization",
+                     "-exact_gridded_boundary_before_detailed",
+                     "-exact_gridded_boundary_local_closure",
                      "-exact_gridded_boundary_time",
                      "0.2",
                      "-exact_gridded_boundary_total_time",
@@ -320,8 +323,11 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
       config_get_real("dali.exact_gridded_stripe_displacement_weight"), 0.125);
   EXPECT_EQ(config_get_int("dali.exact_gridded_stripe_fixed_row_prepass"), 1);
   EXPECT_EQ(config_get_int("dali.exact_gridded_stripe_before_detailed"), 1);
+  EXPECT_EQ(config_get_int("dali.exact_gridded_stripe_local_closure"), 1);
   EXPECT_EQ(config_get_int("dali.enable_exact_gridded_boundary_optimization"),
             1);
+  EXPECT_EQ(config_get_int("dali.exact_gridded_boundary_before_detailed"), 1);
+  EXPECT_EQ(config_get_int("dali.exact_gridded_boundary_local_closure"), 1);
   EXPECT_DOUBLE_EQ(config_get_real("dali.exact_gridded_boundary_time"), 0.2);
   EXPECT_DOUBLE_EQ(config_get_real("dali.exact_gridded_boundary_total_time"),
                    60.0);

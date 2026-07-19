@@ -235,6 +235,8 @@ OrToolsGriddedBoundaryRefinerResult OrToolsGriddedBoundaryRefiner::Optimize(
       optimizer_config.maximum_row_displacement = -1;
       optimizer_config.maximum_assignment_changes =
           config_.maximum_assignment_changes;
+      optimizer_config.run_local_detailed_closure =
+          config_.run_local_detailed_closure;
       optimizer_config.use_solution_hint = config_.use_solution_hint;
 
       OrToolsGriddedBoundaryWindowResult window;

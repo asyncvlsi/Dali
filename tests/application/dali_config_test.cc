@@ -79,7 +79,10 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_DOUBLE_EQ(options.exact_gridded_stripe_displacement_weight, 0.0);
   EXPECT_FALSE(options.exact_gridded_stripe_fixed_row_prepass);
   EXPECT_FALSE(options.exact_gridded_stripe_before_detailed);
+  EXPECT_FALSE(options.exact_gridded_stripe_local_closure);
   EXPECT_FALSE(options.enable_exact_gridded_boundary_optimization);
+  EXPECT_FALSE(options.exact_gridded_boundary_before_detailed);
+  EXPECT_FALSE(options.exact_gridded_boundary_local_closure);
   EXPECT_DOUBLE_EQ(options.exact_gridded_boundary_time, 0.1);
   EXPECT_DOUBLE_EQ(options.exact_gridded_boundary_total_time, 120.0);
   EXPECT_EQ(options.exact_gridded_boundary_components, 64);
@@ -167,7 +170,10 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_real("dali.exact_gridded_stripe_displacement_weight", 0.125);
   config_set_int("dali.exact_gridded_stripe_fixed_row_prepass", 1);
   config_set_int("dali.exact_gridded_stripe_before_detailed", 1);
+  config_set_int("dali.exact_gridded_stripe_local_closure", 1);
   config_set_int("dali.enable_exact_gridded_boundary_optimization", 1);
+  config_set_int("dali.exact_gridded_boundary_before_detailed", 1);
+  config_set_int("dali.exact_gridded_boundary_local_closure", 1);
   config_set_real("dali.exact_gridded_boundary_time", 0.2);
   config_set_real("dali.exact_gridded_boundary_total_time", 60.0);
   config_set_int("dali.exact_gridded_boundary_components", 32);
@@ -254,7 +260,10 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_DOUBLE_EQ(options.exact_gridded_stripe_displacement_weight, 0.125);
   EXPECT_TRUE(options.exact_gridded_stripe_fixed_row_prepass);
   EXPECT_TRUE(options.exact_gridded_stripe_before_detailed);
+  EXPECT_TRUE(options.exact_gridded_stripe_local_closure);
   EXPECT_TRUE(options.enable_exact_gridded_boundary_optimization);
+  EXPECT_TRUE(options.exact_gridded_boundary_before_detailed);
+  EXPECT_TRUE(options.exact_gridded_boundary_local_closure);
   EXPECT_DOUBLE_EQ(options.exact_gridded_boundary_time, 0.2);
   EXPECT_DOUBLE_EQ(options.exact_gridded_boundary_total_time, 60.0);
   EXPECT_EQ(options.exact_gridded_boundary_components, 32);

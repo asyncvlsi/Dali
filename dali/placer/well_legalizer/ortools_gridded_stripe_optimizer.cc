@@ -17,7 +17,9 @@
 #include <unordered_set>
 
 #include "dali/common/helper.h"
+#include "dali/common/placement_metrics.h"
 #include "dali/placer/well_legalizer/exact_gridded_stripe_model_builder.h"
+#include "dali/placer/well_legalizer/gridded_detailed_placer.h"
 #include "dali/placer/well_legalizer/gridded_row_assignment_transaction.h"
 #include "dali/placer/well_legalizer/ortools_compact_gridded_legalizer.h"
 
@@ -163,6 +165,20 @@ double OrToolsGriddedStripeOptimizer::AffectedNetHpwl(
     hpwl += circuit_->NetWeightedHPWL(net_id);
   }
   return hpwl;
+}
+
+void OrToolsGriddedStripeOptimizer::RunLocalDetailedClosure(
+    const std::vector<GriddedRow*>& rows) const {
+  GriddedDetailedPlacer detailed_placer;
+  detailed_placer.SetCircuit(circuit_);
+  detailed_placer.SetRows(rows);
+  detailed_placer.SetEnableRelocation(true);
+  detailed_placer.SetNetIgnoreThreshold(config_.net_ignore_threshold);
+
+  // This closure evaluates a private candidate. Its intermediate metrics must
+  // not be mixed with the metrics of the selected legalization flow.
+  ScopedPlacementMetricSuppression suppress_metrics;
+  detailed_placer.RunOneRoundClosure();
 }
 
 OrToolsGriddedStripeOptimizerResult OrToolsGriddedStripeOptimizer::Optimize(
@@ -335,7 +351,7 @@ OrToolsGriddedStripeOptimizerResult OrToolsGriddedStripeOptimizer::Optimize(
           }
         }
 
-        const bool rows_are_legal =
+        bool rows_are_legal =
             solution_is_complete &&
             std::all_of(build.rows.begin(), build.rows.end(),
                         [](const GriddedRow* row) {
@@ -351,18 +367,44 @@ OrToolsGriddedStripeOptimizerResult OrToolsGriddedStripeOptimizer::Optimize(
             1e-9 * std::max(1.0, stripe_result.modeled_hpwl_before);
         const double affected_tolerance =
             1e-9 * std::max(1.0, stripe_result.affected_hpwl_before);
-        const bool improves_modeled_hpwl =
+        bool improves_modeled_hpwl =
             stripe_result.modeled_hpwl_after + modeled_tolerance <
             stripe_result.modeled_hpwl_before;
-        const bool preserves_full_hpwl =
+        bool preserves_full_hpwl =
             stripe_result.affected_hpwl_after <=
             stripe_result.affected_hpwl_before + affected_tolerance;
-        const bool improves_full_hpwl =
+        bool improves_full_hpwl =
             stripe_result.affected_hpwl_after + affected_tolerance <
             stripe_result.affected_hpwl_before;
-        const bool passes_full_hpwl_guard =
-            config_.maximum_row_displacement == 0 ? preserves_full_hpwl
-                                                  : improves_full_hpwl;
+        bool passes_full_hpwl_guard = config_.maximum_row_displacement == 0
+                                          ? preserves_full_hpwl
+                                          : improves_full_hpwl;
+        if (rows_are_legal && improves_modeled_hpwl && passes_full_hpwl_guard &&
+            config_.run_local_detailed_closure) {
+          RunLocalDetailedClosure(build.rows);
+          rows_are_legal = std::all_of(
+              build.rows.begin(), build.rows.end(), [](const GriddedRow* row) {
+                return row->HasLegalComponentPlacement();
+              });
+          if (rows_are_legal) {
+            stripe_result.modeled_hpwl_after =
+                AffectedNetHpwl(build.affected_net_ids, true);
+            stripe_result.affected_hpwl_after =
+                AffectedNetHpwl(build.affected_net_ids, false);
+          }
+          improves_modeled_hpwl =
+              stripe_result.modeled_hpwl_after + modeled_tolerance <
+              stripe_result.modeled_hpwl_before;
+          preserves_full_hpwl =
+              stripe_result.affected_hpwl_after <=
+              stripe_result.affected_hpwl_before + affected_tolerance;
+          improves_full_hpwl =
+              stripe_result.affected_hpwl_after + affected_tolerance <
+              stripe_result.affected_hpwl_before;
+          passes_full_hpwl_guard = config_.maximum_row_displacement == 0
+                                       ? preserves_full_hpwl
+                                       : improves_full_hpwl;
+        }
         if (rows_are_legal && improves_modeled_hpwl && passes_full_hpwl_guard) {
           stripe_result.accepted = true;
           ++aggregate.accepted_models;

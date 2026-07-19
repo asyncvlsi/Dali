@@ -28,6 +28,7 @@ struct OrToolsGriddedBoundaryOptimizerConfig {
   int minimum_n_well_height = 0;
   int maximum_row_displacement = 0;
   int maximum_assignment_changes = 4;
+  bool run_local_detailed_closure = false;
   bool use_solution_hint = true;
 };
 
@@ -73,6 +74,9 @@ class OrToolsGriddedBoundaryOptimizer {
   /** Return affected-net HPWL, optionally applying the fanout cutoff. */
   double AffectedNetHpwl(const std::vector<int>& net_ids,
                          bool apply_fanout_cutoff) const;
+
+  /** Apply one private detailed-placement round to the modeled row bands. */
+  void RunLocalDetailedClosure(const std::vector<GriddedRow*>& rows) const;
 
   Circuit* circuit_ = nullptr;
   OrToolsGriddedBoundaryOptimizerConfig config_;
