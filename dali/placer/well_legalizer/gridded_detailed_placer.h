@@ -15,6 +15,7 @@
 #include <functional>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -326,6 +327,18 @@ class GriddedDetailedPlacer : public Placer {
                                              GriddedRow* target_row,
                                              double target_lx,
                                              const OptimalRegion& region) const;
+  /**
+   * Collect components whose best insertion move may have changed after moving
+   * one component between two rows.
+   *
+   * This is the dependency set for the insertion pass's don't-look bits: the
+   * moved component, every component sharing a low-fanout net with it, and every
+   * component in the (repacked) source and target rows. Components outside this
+   * set provably keep last pass's "no improving move" result and are skipped.
+   */
+  void CollectInsertionDirtyComponents(
+      Component* moved, GriddedRow* source_row, GriddedRow* target_row,
+      std::unordered_set<Component*>* dirty) const;
   /** Find one component's best legal direct move in the frozen placement. */
   bool FindBestDirectRelocation(GriddedRow* source_row, Component* component,
                                 RelocationPlan* plan, MoveStats* stats);

@@ -15,6 +15,7 @@
 #include <cmath>
 #include <map>
 #include <set>
+#include <unordered_set>
 #include <utility>
 
 #include "dali/common/elapsed_time.h"
@@ -1020,6 +1021,34 @@ std::vector<int> GriddedDetailedPlacer::BoundedInsertionPositions(
   return {positions.begin(), positions.end()};
 }
 
+void GriddedDetailedPlacer::CollectInsertionDirtyComponents(
+    Component* moved, GriddedRow* source_row, GriddedRow* target_row,
+    std::unordered_set<Component*>* dirty) const {
+  dirty->insert(moved);
+  // Components sharing a low-fanout net: the move changed those nets' spans, so
+  // the connected cells' optimal regions and insertion costs may have changed.
+  auto& nets = ckt_ptr_->Nets();
+  for (int net_id : moved->NetList()) {
+    Net& net = nets[net_id];
+    if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) {
+      continue;
+    }
+    for (NetPin& pin : net.ComponentPins()) {
+      Component* neighbor = pin.ComponentPtr();
+      if (neighbor != nullptr) {
+        dirty->insert(neighbor);
+      }
+    }
+  }
+  // Both rows are repacked in fixed order after the move, so every cell in them
+  // shifts and must be re-looked.
+  for (GriddedRow* row : {source_row, target_row}) {
+    for (Component* row_component : row->Components()) {
+      dirty->insert(row_component);
+    }
+  }
+}
+
 bool GriddedDetailedPlacer::EvaluateInsertionRelocations(
     GriddedRow* source_row, Component* component, GriddedRow* target_row,
     double target_lx, const OptimalRegion& region, RelocationPlan* plan,
@@ -1629,6 +1658,16 @@ GriddedDetailedPlacer::RunBatchedRelocationStage(bool insertion_aware) {
 
   const int max_passes = insertion_aware ? kMaxInsertionRefinementPasses
                                          : kMaxBatchedRelocationPasses;
+  // Don't-look bits for the insertion pass: a component whose scan finds no
+  // improving move is skipped until a committed move touches its neighborhood.
+  // This removes the redundant full re-scan that dominated insertion-refinement
+  // cost (see the batch cost attribution experiment).
+  std::unordered_set<Component*> insertion_dont_look;
+  // The don't-look dependency set is conservative but not complete (a component
+  // that only targets a row whose contents changed is not re-looked). Once the
+  // incremental passes converge, run one final full sweep with all bits cleared
+  // to recover those missed moves before stopping.
+  bool insertion_verification_done = false;
   for (int pass = 0; pass < max_passes; ++pass) {
     double hpwl_before_pass = insertion_aware ? WeightedHPWL() : 0;
     std::vector<Component*> components;
@@ -1645,6 +1684,9 @@ GriddedDetailedPlacer::RunBatchedRelocationStage(bool insertion_aware) {
     std::vector<RelocationPlan> plans;
     plans.reserve(components.size());
     for (Component* component : components) {
+      if (insertion_aware && insertion_dont_look.count(component) > 0) {
+        continue;
+      }
       RelocationPlan plan;
       GriddedRow* source_row = component_rows_.at(component);
       bool found = insertion_aware
@@ -1654,9 +1696,19 @@ GriddedDetailedPlacer::RunBatchedRelocationStage(bool insertion_aware) {
                                                   &total_stats);
       if (found) {
         plans.push_back(plan);
+      } else if (insertion_aware) {
+        insertion_dont_look.insert(component);
       }
     }
-    if (plans.empty()) break;
+    if (plans.empty()) {
+      if (insertion_aware && !insertion_verification_done &&
+          !insertion_dont_look.empty()) {
+        insertion_dont_look.clear();
+        insertion_verification_done = true;
+        continue;
+      }
+      break;
+    }
     ++total_stats.batch_passes;
     total_stats.batch_plans += static_cast<int>(plans.size());
     std::sort(plans.begin(), plans.end(),
@@ -1670,6 +1722,7 @@ GriddedDetailedPlacer::RunBatchedRelocationStage(bool insertion_aware) {
     total_stats.batch_selected += static_cast<int>(plans.size());
 
     int accepted_this_pass = 0;
+    std::unordered_set<Component*> insertion_dirty;
     for (const RelocationPlan& plan : plans) {
       auto current_row = component_rows_.find(plan.component);
       if (current_row == component_rows_.end() ||
@@ -1682,9 +1735,17 @@ GriddedDetailedPlacer::RunBatchedRelocationStage(bool insertion_aware) {
         ++accepted_this_pass;
         ++total_stats.accepted;
         ++total_stats.batch_accepted;
+        if (insertion_aware) {
+          CollectInsertionDirtyComponents(plan.component, plan.source_row,
+                                          plan.target_row, &insertion_dirty);
+        }
       }
     }
     if (accepted_this_pass == 0) break;
+    // Re-look at every component whose neighborhood a committed move disturbed.
+    for (Component* component : insertion_dirty) {
+      insertion_dont_look.erase(component);
+    }
     if (insertion_aware) {
       double hpwl_after_pass = WeightedHPWL();
       double relative_improvement =
@@ -1697,6 +1758,11 @@ GriddedDetailedPlacer::RunBatchedRelocationStage(bool insertion_aware) {
                 << "um, improvement=" << hpwl_before_pass - hpwl_after_pass
                 << "um (" << relative_improvement * 100.0 << "%)\n";
       if (relative_improvement < kMinInsertionRefinementRelativeImprovement) {
+        if (!insertion_verification_done && !insertion_dont_look.empty()) {
+          insertion_dont_look.clear();
+          insertion_verification_done = true;
+          continue;
+        }
         break;
       }
     }
