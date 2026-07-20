@@ -24,6 +24,7 @@
 #include <cmath>
 #include <limits>
 #include <sstream>
+#include <unordered_map>
 #include <utility>
 
 #include "dali/common/act_config.h"
@@ -1801,6 +1802,90 @@ void GriddedCellWellLegalizer::SynchronizeComponentLocationsWithRows() {
   }
 }
 
+void GriddedCellWellLegalizer::LogMergeOpportunityAudit() {
+  // Size the opportunity for SafeChoice-style merging of two-pin-connected cell
+  // pairs before building it: how many pairs are legally mergeable into one row
+  // slot, and how many of those the current flow still leaves split across
+  // different rows (the only pairs a merge pass could actually help).
+  std::unordered_map<Component*, GriddedRow*> component_row;
+  int max_usable_width = 0;
+  for (GriddedRow* row : CollectGriddedRows()) {
+    max_usable_width = std::max(max_usable_width, row->UsableWidth());
+    for (Component* component : row->Components()) {
+      component_row[component] = row;
+    }
+  }
+
+  long long total_two_pin = 0;
+  long long movable_pairs = 0;
+  long long well_compatible = 0;
+  long long width_fits = 0;
+  long long low_degree = 0;      // both endpoints have degree <= 3
+  long long very_low_degree = 0; // both endpoints have degree <= 2
+  long long isolated = 0;        // both endpoints have degree == 1
+  long long addressable_split = 0;
+  long long already_adjacent = 0;
+  double addressable_split_hpwl = 0;
+
+  std::vector<Net>& nets = ckt_ptr_->Nets();
+  for (Net& net : nets) {
+    if (net.PinCnt() != 2) continue;
+    ++total_two_pin;
+    std::vector<NetPin>& pins = net.ComponentPins();
+    if (pins.size() != 2) continue;
+    Component* first = pins[0].ComponentPtr();
+    Component* second = pins[1].ComponentPtr();
+    if (first == nullptr || second == nullptr || first == second) continue;
+    if (!first->IsMovable() || !second->IsMovable()) continue;
+    ++movable_pairs;
+
+    Macro* first_macro = first->MacroPtr();
+    Macro* second_macro = second->MacroPtr();
+    if (first_macro->FirstPwellHeight() != second_macro->FirstPwellHeight() ||
+        first_macro->FirstNwellHeight() != second_macro->FirstNwellHeight()) {
+      continue;
+    }
+    ++well_compatible;
+
+    if (first->Width() + second->Width() > max_usable_width) continue;
+    ++width_fits;
+
+    const int degree = std::max(static_cast<int>(first->NetList().size()),
+                                static_cast<int>(second->NetList().size()));
+    if (first->NetList().size() == 1 && second->NetList().size() == 1) {
+      ++isolated;
+    }
+    if (degree <= 2) ++very_low_degree;
+    if (degree > 3) continue;
+    ++low_degree;
+
+    auto first_row = component_row.find(first);
+    auto second_row = component_row.find(second);
+    if (first_row == component_row.end() || second_row == component_row.end()) {
+      continue;
+    }
+    if (first_row->second != second_row->second) {
+      ++addressable_split;
+      addressable_split_hpwl += net.WeightedHPWL();
+    } else {
+      ++already_adjacent;
+    }
+  }
+
+  LOG(info) << "Merge-opportunity audit (two-pin cell pairs):\n"
+            << "  total two-pin nets:              " << total_two_pin << "\n"
+            << "  both endpoints movable:          " << movable_pairs << "\n"
+            << "  + well-signature compatible:     " << well_compatible << "\n"
+            << "  + combined width fits a row:     " << width_fits << "\n"
+            << "  + both degree <= 3 (low-degree): " << low_degree << "\n"
+            << "      of which both degree <= 2:   " << very_low_degree << "\n"
+            << "      of which both isolated (=1): " << isolated << "\n"
+            << "  low-degree AND split across rows:" << addressable_split << "\n"
+            << "  low-degree AND already adjacent: " << already_adjacent << "\n"
+            << "  recoverable HPWL of split pairs: " << addressable_split_hpwl
+            << "um\n";
+}
+
 void GriddedCellWellLegalizer::RunGriddedDetailedPlacementStage() {
   LOG(info) << (enable_detailed_placement_ ? "Run gridded detailed placement\n"
                                            : "Run gridded local reorder\n");
@@ -1822,6 +1907,9 @@ void GriddedCellWellLegalizer::RunGriddedDetailedPlacementStage() {
   }
   EmitSnapshot("gridded.final", "After Gridded Detailed Placement",
                "detailed_placement", "final");
+  if (merge_opportunity_audit_) {
+    LogMergeOpportunityAudit();
+  }
 }
 
 void GriddedCellWellLegalizer::RunRowLocationOptimizationStage() {
