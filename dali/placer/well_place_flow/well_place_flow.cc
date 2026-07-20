@@ -58,8 +58,7 @@ bool WellPlaceFlow::StartPlacement() {  // TODO: do not use this
 
       GriddedCellWellLegalizer well_legalizer;
       well_legalizer.CopyPlacementContextFrom(this);
-      well_legalizer.SetStripePartitionMode(
-          int(WellPartitionMode::kScavenge));
+      well_legalizer.SetStripePartitionMode(int(WellPartitionMode::kScavenge));
       well_legalizer.WellLegalize();
       spreader_->Hpwls().back() = ckt_ptr_->WeightedHPWL();
 

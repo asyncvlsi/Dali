@@ -13,8 +13,8 @@
 
 namespace dali {
 
-GriddedStripeBalancer::GriddedStripeBalancer(
-    Circuit* circuit, GriddedCapacityConfig config)
+GriddedStripeBalancer::GriddedStripeBalancer(Circuit* circuit,
+                                             GriddedCapacityConfig config)
     : circuit_(circuit), config_(config) {
   DaliExpects(circuit_ != nullptr, "Stripe balancer requires a circuit");
   // Balancing addresses physical feasibility. Target-density whitespace is a
@@ -31,8 +31,7 @@ GriddedCapacityEstimate GriddedStripeBalancer::Estimate(
 }
 
 Stripe* GriddedStripeBalancer::FindNearestTarget(
-    std::vector<StripeColumn>& columns, int source_column,
-    Component* component,
+    std::vector<StripeColumn>& columns, int source_column, Component* component,
     const std::unordered_map<Stripe*, unsigned long long>& available_spare)
     const {
   Stripe* best_target = nullptr;
@@ -50,12 +49,10 @@ Stripe* GriddedStripeBalancer::FindNearestTarget(
         if (component->Width() > stripe->Width()) continue;
         auto spare = available_spare.find(stripe);
         if (spare == available_spare.end() || spare->second == 0) continue;
-        double dx = std::max(
-            {0.0, stripe->LLX() - component->CenterX(),
-             component->CenterX() - stripe->URX()});
-        double dy = std::max(
-            {0.0, stripe->LLY() - component->CenterY(),
-             component->CenterY() - stripe->URY()});
+        double dx = std::max({0.0, stripe->LLX() - component->CenterX(),
+                              component->CenterX() - stripe->URX()});
+        double dy = std::max({0.0, stripe->LLY() - component->CenterY(),
+                              component->CenterY() - stripe->URY()});
         double distance = dx + dy;
         if (distance < best_distance) {
           best_distance = distance;
@@ -72,12 +69,12 @@ double GriddedStripeBalancer::EstimateAffectedNetHpwlDelta(
     Component* component, const Stripe& target) const {
   double original_x = component->CenterX();
   double original_y = component->CenterY();
-  double target_x = std::clamp(original_x,
-                               target.LLX() + component->Width() / 2.0,
-                               target.URX() - component->Width() / 2.0);
-  double target_y = std::clamp(original_y,
-                               target.LLY() + component->Height() / 2.0,
-                               target.URY() - component->Height() / 2.0);
+  double target_x =
+      std::clamp(original_x, target.LLX() + component->Width() / 2.0,
+                 target.URX() - component->Width() / 2.0);
+  double target_y =
+      std::clamp(original_y, target.LLY() + component->Height() / 2.0,
+                 target.URY() - component->Height() / 2.0);
 
   double hpwl_before = 0.0;
   for (int net_id : component->NetList()) {
@@ -97,10 +94,10 @@ double GriddedStripeBalancer::EstimateAffectedNetHpwlDelta(
 unsigned long long GriddedStripeBalancer::EstimateComponentDemand(
     const Component& component) const {
   const Macro* macro = component.MacroPtr();
-  int p_height = std::max(macro->FirstPwellHeight(),
-                          config_.minimum_p_well_height);
-  int n_height = std::max(macro->FirstNwellHeight(),
-                          config_.minimum_n_well_height);
+  int p_height =
+      std::max(macro->FirstPwellHeight(), config_.minimum_p_well_height);
+  int n_height =
+      std::max(macro->FirstNwellHeight(), config_.minimum_n_well_height);
   return static_cast<unsigned long long>(component.Width()) *
          (p_height + n_height);
 }
@@ -169,12 +166,10 @@ int GriddedStripeBalancer::ApplyMoves(
         if (target == nullptr) continue;
         unsigned long long demand = EstimateComponentDemand(*component);
         if ((*available_spare)[target] < demand) continue;
-        double dx = std::max(
-            {0.0, target->LLX() - component->CenterX(),
-             component->CenterX() - target->URX()});
-        double dy = std::max(
-            {0.0, target->LLY() - component->CenterY(),
-             component->CenterY() - target->URY()});
+        double dx = std::max({0.0, target->LLX() - component->CenterX(),
+                              component->CenterX() - target->URX()});
+        double dy = std::max({0.0, target->LLY() - component->CenterY(),
+                              component->CenterY() - target->URY()});
         candidates.push_back({component, &source, target,
                               EstimateAffectedNetHpwlDelta(component, *target),
                               dx + dy, demand});
@@ -209,18 +204,16 @@ int GriddedStripeBalancer::ApplyMoves(
                                   moved_from_source.end();
                          }),
           source.component_ptrs_vec_.end());
-      source_overflow->second =
-          relieved_area >= source_overflow->second
-              ? 0
-              : source_overflow->second - relieved_area;
+      source_overflow->second = relieved_area >= source_overflow->second
+                                    ? 0
+                                    : source_overflow->second - relieved_area;
     }
   }
 
   return moved_component_count;
 }
 
-GriddedStripeBalanceResult
-GriddedStripeBalancer::BalanceObservedOverflow(
+GriddedStripeBalanceResult GriddedStripeBalancer::BalanceObservedOverflow(
     std::vector<StripeColumn>* stripe_columns) const {
   DaliExpects(stripe_columns != nullptr,
               "Cannot balance a null stripe collection");
@@ -239,10 +232,9 @@ GriddedStripeBalancer::BalanceObservedOverflow(
         ++result.overflowing_stripes_before;
         result.overflow_area_before += overflow;
       } else {
-        available_spare[&stripe] =
-            static_cast<unsigned long long>(stripe.Height() -
-                                            stripe.used_height_) *
-            usable_width;
+        available_spare[&stripe] = static_cast<unsigned long long>(
+                                       stripe.Height() - stripe.used_height_) *
+                                   usable_width;
       }
     }
   }

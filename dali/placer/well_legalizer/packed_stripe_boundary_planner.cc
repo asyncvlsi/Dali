@@ -28,8 +28,7 @@ PackedStripeBoundaryPlanner::PackedStripeBoundaryPlanner(
   DaliExpects(config_.minimum_column_pitch > 0,
               "Packed stripe minimum pitch must be positive");
   DaliExpects(config_.maximum_column_pitch == 0 ||
-                  config_.maximum_column_pitch >=
-                      config_.minimum_column_pitch,
+                  config_.maximum_column_pitch >= config_.minimum_column_pitch,
               "Packed stripe maximum pitch is smaller than its minimum");
   DaliExpects(config_.boundary_step > 0,
               "Packed stripe boundary step must be positive");
@@ -41,9 +40,9 @@ AdaptiveStripeBoundaryResult PackedStripeBoundaryPlanner::Plan(
     const std::vector<StripePackingSample>& samples) const {
   AdaptiveStripeBoundaryResult result;
   const int region_width = config_.region_right - config_.region_left;
-  const int maximum_pitch =
-      config_.maximum_column_pitch > 0 ? config_.maximum_column_pitch
-                                       : region_width;
+  const int maximum_pitch = config_.maximum_column_pitch > 0
+                                ? config_.maximum_column_pitch
+                                : region_width;
   if (region_width < config_.column_count * config_.minimum_column_pitch ||
       region_width > config_.column_count * maximum_pitch) {
     return result;
@@ -70,7 +69,8 @@ AdaptiveStripeBoundaryResult PackedStripeBoundaryPlanner::Plan(
 
   int signature_count = 0;
   for (const StripePackingSample& sample : samples) {
-    DaliExpects(sample.width > 0, "Packed stripe sample width must be positive");
+    DaliExpects(sample.width > 0,
+                "Packed stripe sample width must be positive");
     DaliExpects(sample.signature_height > 0,
                 "Packed stripe signature height must be positive");
     DaliExpects(sample.signature_id >= 0,
@@ -80,12 +80,12 @@ AdaptiveStripeBoundaryResult PackedStripeBoundaryPlanner::Plan(
 
   std::vector<int> signature_heights(signature_count, 0);
   std::vector<std::vector<unsigned long long>> prefix_widths(
-      signature_count,
-      std::vector<unsigned long long>(candidates.size(), 0));
+      signature_count, std::vector<unsigned long long>(candidates.size(), 0));
   std::vector<StripePackingSample> sorted_samples = samples;
   std::sort(sorted_samples.begin(), sorted_samples.end(),
-            [](const StripePackingSample& lhs,
-               const StripePackingSample& rhs) { return lhs.x < rhs.x; });
+            [](const StripePackingSample& lhs, const StripePackingSample& rhs) {
+              return lhs.x < rhs.x;
+            });
   std::vector<unsigned long long> accumulated_widths(signature_count, 0);
   size_t sample_index = 0;
   for (size_t boundary_index = 0; boundary_index < candidates.size();
@@ -101,8 +101,7 @@ AdaptiveStripeBoundaryResult PackedStripeBoundaryPlanner::Plan(
       ++sample_index;
     }
     for (int signature = 0; signature < signature_count; ++signature) {
-      prefix_widths[signature][boundary_index] =
-          accumulated_widths[signature];
+      prefix_widths[signature][boundary_index] = accumulated_widths[signature];
     }
   }
   while (sample_index < sorted_samples.size()) {
@@ -163,9 +162,8 @@ AdaptiveStripeBoundaryResult PackedStripeBoundaryPlanner::Plan(
 
         double required_height = 0.0;
         for (int signature = 0; signature < signature_count; ++signature) {
-          unsigned long long width =
-              prefix_widths[signature][right_index] -
-              prefix_widths[signature][left_index];
+          unsigned long long width = prefix_widths[signature][right_index] -
+                                     prefix_widths[signature][left_index];
           unsigned long long shelf_count =
               (width + usable_width - 1) / usable_width;
           required_height += shelf_count * signature_heights[signature];
@@ -180,8 +178,7 @@ AdaptiveStripeBoundaryResult PackedStripeBoundaryPlanner::Plan(
             1e-9 * normalized_pitch_error * normalized_pitch_error;
         if (candidate_cost < cost[column][right_index]) {
           cost[column][right_index] = candidate_cost;
-          predecessor[column][right_index] =
-              static_cast<int>(left_index);
+          predecessor[column][right_index] = static_cast<int>(left_index);
         }
       }
     }

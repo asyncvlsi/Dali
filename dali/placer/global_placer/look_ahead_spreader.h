@@ -21,9 +21,9 @@
 #ifndef DALI_PLACER_GLOBAL_PLACER_LOOK_AHEAD_SPREADER_H_
 #define DALI_PLACER_GLOBAL_PLACER_LOOK_AHEAD_SPREADER_H_
 
+#include <memory>
 #include <queue>
 #include <set>
-#include <memory>
 
 #include "dali/placer/global_placer/global_spreader.h"
 #include "dali/placer/global_placer/grid_bin.h"

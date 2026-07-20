@@ -18,8 +18,7 @@
 namespace dali {
 
 WellGeometryBuilder::WellGeometryBuilder(
-    const std::vector<StripeColumn>& columns, int region_bottom,
-    int region_top)
+    const std::vector<StripeColumn>& columns, int region_bottom, int region_top)
     : columns_(columns),
       region_bottom_(region_bottom),
       region_top_(region_top) {

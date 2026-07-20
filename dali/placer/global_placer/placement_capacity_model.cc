@@ -57,9 +57,9 @@ PlacementCapacity GriddedPlacementCapacityModel::Evaluate(
   // and end-cap reservation in every bin would make narrow edge bins appear
   // to have zero capacity and grossly overstate global overflow.
   if (purpose == CapacityEvaluationPurpose::kDensityBin) {
-    return AreaCapacityModel().Evaluate(
-        components, region_width, region_height, whitespace_area,
-        target_density, purpose);
+    return AreaCapacityModel().Evaluate(components, region_width, region_height,
+                                        whitespace_area, target_density,
+                                        purpose);
   }
   GriddedCapacityConfig config = config_;
   config.target_density = target_density;
@@ -73,9 +73,9 @@ PlacementCapacity GriddedPlacementCapacityModel::Evaluate(
   // The estimator has already applied target density to row width/capacity.
   result.target_utilization = 1.0;
 
-  PlacementCapacity area_capacity = AreaCapacityModel().Evaluate(
-      components, region_width, region_height, whitespace_area,
-      target_density, purpose);
+  PlacementCapacity area_capacity =
+      AreaCapacityModel().Evaluate(components, region_width, region_height,
+                                   whitespace_area, target_density, purpose);
   double gridded_pressure = result.Utilization();
   double area_pressure =
       area_capacity.Utilization() / area_capacity.target_utilization;

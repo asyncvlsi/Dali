@@ -67,8 +67,7 @@ void SpacePartitioner::SetAdaptiveBoundaryBlend(double blend) {
   adaptive_boundary_blend_ = blend;
 }
 
-void SpacePartitioner::SetColumnBoundaries(
-    const std::vector<int>& boundaries) {
+void SpacePartitioner::SetColumnBoundaries(const std::vector<int>& boundaries) {
   column_boundaries_override_ = boundaries;
 }
 
@@ -483,11 +482,11 @@ int WellSpacePartitioner::RowToLoc(int row_num, int displacement) const {
 
 int WellSpacePartitioner::LocToCol(int x) const {
   const std::vector<StripeColumn>& columns = *output_stripes_;
-  auto column = std::upper_bound(
-      columns.begin(), columns.end(), x,
-      [](int location, const StripeColumn& candidate) {
-        return location < candidate.LLX();
-      });
+  auto column =
+      std::upper_bound(columns.begin(), columns.end(), x,
+                       [](int location, const StripeColumn& candidate) {
+                         return location < candidate.LLX();
+                       });
   if (column == columns.begin()) return 0;
   return static_cast<int>(std::distance(columns.begin(), column) - 1);
 }
@@ -506,11 +505,11 @@ std::vector<int> WellSpacePartitioner::PlanColumnBoundaries(
                 "Explicit stripe boundaries do not start at region left");
     DaliExpects(column_boundaries_override_.back() <= Right(),
                 "Explicit stripe boundaries exceed region right");
-    DaliExpects(std::adjacent_find(
-                    column_boundaries_override_.begin(),
-                    column_boundaries_override_.end(),
-                    [](int lhs, int rhs) { return lhs >= rhs; }) ==
-                    column_boundaries_override_.end(),
+    DaliExpects(std::adjacent_find(column_boundaries_override_.begin(),
+                                   column_boundaries_override_.end(),
+                                   [](int lhs, int rhs) {
+                                     return lhs >= rhs;
+                                   }) == column_boundaries_override_.end(),
                 "Explicit stripe boundaries must be strictly increasing");
     return column_boundaries_override_;
   }
@@ -523,10 +522,9 @@ std::vector<int> WellSpacePartitioner::PlanColumnBoundaries(
   planner_config.region_left = Left();
   planner_config.region_right = Right();
   planner_config.column_count = tot_col_num_;
-  planner_config.minimum_column_pitch =
-      std::max(max_component_width_ + well_spacing_ +
-                   capacity_config_.reserved_width,
-               average_pitch / 2);
+  planner_config.minimum_column_pitch = std::max(
+      max_component_width_ + well_spacing_ + capacity_config_.reserved_width,
+      average_pitch / 2);
   planner_config.maximum_column_pitch =
       std::min(region_width, average_pitch * 3 / 2);
   planner_config.boundary_step = std::max(1, max_component_width_);
@@ -557,12 +555,10 @@ std::vector<int> WellSpacePartitioner::PlanColumnBoundaries(
         signature_height += p_height + n_height;
       }
     } else {
-      int p_height =
-          std::max(macro->FirstPwellHeight(),
-                   capacity_config_.minimum_p_well_height);
-      int n_height =
-          std::max(macro->FirstNwellHeight(),
-                   capacity_config_.minimum_n_well_height);
+      int p_height = std::max(macro->FirstPwellHeight(),
+                              capacity_config_.minimum_p_well_height);
+      int n_height = std::max(macro->FirstNwellHeight(),
+                              capacity_config_.minimum_n_well_height);
       signature = {p_height, n_height};
       signature_height = p_height + n_height;
     }
@@ -576,20 +572,20 @@ std::vector<int> WellSpacePartitioner::PlanColumnBoundaries(
   AdaptiveStripeBoundaryResult plan =
       PackedStripeBoundaryPlanner(planner_config).Plan(samples);
   if (!plan.feasible) {
-    LOG(warning) << "  Adaptive stripe planning failed; use uniform boundaries\n";
+    LOG(warning)
+        << "  Adaptive stripe planning failed; use uniform boundaries\n";
     return uniform_boundaries;
   }
 
   if (adaptive_boundary_blend_ < 1.0) {
     for (int column = 1; column < tot_col_num_; ++column) {
       int uniform_boundary =
-          Left() + static_cast<int>(std::llround(
-                       region_width * column /
-                       static_cast<double>(tot_col_num_)));
+          Left() +
+          static_cast<int>(std::llround(region_width * column /
+                                        static_cast<double>(tot_col_num_)));
       plan.boundaries[column] = static_cast<int>(std::llround(
           uniform_boundary + adaptive_boundary_blend_ *
-                                 (plan.boundaries[column] -
-                                  uniform_boundary)));
+                                 (plan.boundaries[column] - uniform_boundary)));
     }
   }
 

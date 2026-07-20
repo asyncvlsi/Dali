@@ -69,8 +69,7 @@ class GriddedCapacityEstimator {
    * heights after applying physical-cell minimum heights. It intentionally
    * excludes row sharing, which is unknown before stripe boundaries exist.
    */
-  unsigned long long EstimateStandaloneDemand(
-      const Component& component) const;
+  unsigned long long EstimateStandaloneDemand(const Component& component) const;
 
  private:
   GriddedCapacityConfig config_;

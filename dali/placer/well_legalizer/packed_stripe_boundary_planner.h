@@ -37,10 +37,10 @@ struct StripePackingSample {
  */
 class PackedStripeBoundaryPlanner {
  public:
-  explicit PackedStripeBoundaryPlanner(
-      AdaptiveStripeBoundaryConfig config);
+  explicit PackedStripeBoundaryPlanner(AdaptiveStripeBoundaryConfig config);
 
-  /** Optimize boundaries and return an infeasible result if pitches conflict. */
+  /** Optimize boundaries and return an infeasible result if pitches conflict.
+   */
   AdaptiveStripeBoundaryResult Plan(
       const std::vector<StripePackingSample>& samples) const;
 

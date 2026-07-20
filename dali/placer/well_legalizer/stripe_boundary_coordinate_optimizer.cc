@@ -36,9 +36,9 @@ StripeBoundaryCoordinateResult StripeBoundaryCoordinateOptimizer::Optimize(
               "Stripe boundary optimization requires at least one column");
   DaliExpects(static_cast<bool>(evaluator),
               "Stripe boundary evaluator cannot be empty");
-  DaliExpects(std::is_sorted(initial_boundaries.begin(),
-                             initial_boundaries.end()),
-              "Stripe boundaries must be sorted");
+  DaliExpects(
+      std::is_sorted(initial_boundaries.begin(), initial_boundaries.end()),
+      "Stripe boundaries must be sorted");
 
   StripeBoundaryCoordinateResult result;
   result.boundaries = initial_boundaries;
@@ -77,17 +77,14 @@ StripeBoundaryCoordinateResult StripeBoundaryCoordinateOptimizer::Optimize(
 
 bool StripeBoundaryCoordinateOptimizer::PitchesAreLegal(
     const std::vector<int>& boundaries, int boundary_index) const {
-  int left_pitch =
-      boundaries[boundary_index] - boundaries[boundary_index - 1];
-  int right_pitch =
-      boundaries[boundary_index + 1] - boundaries[boundary_index];
+  int left_pitch = boundaries[boundary_index] - boundaries[boundary_index - 1];
+  int right_pitch = boundaries[boundary_index + 1] - boundaries[boundary_index];
   if (left_pitch < config_.minimum_pitch ||
       right_pitch < config_.minimum_pitch) {
     return false;
   }
-  if (config_.maximum_pitch > 0 &&
-      (left_pitch > config_.maximum_pitch ||
-       right_pitch > config_.maximum_pitch)) {
+  if (config_.maximum_pitch > 0 && (left_pitch > config_.maximum_pitch ||
+                                    right_pitch > config_.maximum_pitch)) {
     return false;
   }
   return true;

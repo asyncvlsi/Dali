@@ -4,8 +4,8 @@
 #ifndef DALI_PLACER_WELL_LEGALIZER_GRIDDED_STRIPE_BALANCER_H_
 #define DALI_PLACER_WELL_LEGALIZER_GRIDDED_STRIPE_BALANCER_H_
 
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 #include "dali/circuit/circuit.h"
 #include "dali/placer/well_legalizer/gridded_capacity_estimator.h"
@@ -47,10 +47,10 @@ class GriddedStripeBalancer {
   };
 
   GriddedCapacityEstimate Estimate(const Stripe& stripe) const;
-  Stripe* FindNearestTarget(std::vector<StripeColumn>& columns,
-                            int source_column, Component* component,
-                            const std::unordered_map<
-                                Stripe*, unsigned long long>& available_spare)
+  Stripe* FindNearestTarget(
+      std::vector<StripeColumn>& columns, int source_column,
+      Component* component,
+      const std::unordered_map<Stripe*, unsigned long long>& available_spare)
       const;
   double EstimateAffectedNetHpwlDelta(Component* component,
                                       const Stripe& target) const;

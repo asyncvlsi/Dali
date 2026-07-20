@@ -51,8 +51,7 @@ struct AdaptiveStripeBoundaryResult {
  */
 class AdaptiveStripeBoundaryPlanner {
  public:
-  explicit AdaptiveStripeBoundaryPlanner(
-      AdaptiveStripeBoundaryConfig config);
+  explicit AdaptiveStripeBoundaryPlanner(AdaptiveStripeBoundaryConfig config);
 
   /** Optimize stripe boundaries for the supplied horizontal demand samples. */
   AdaptiveStripeBoundaryResult Plan(

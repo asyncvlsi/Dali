@@ -28,8 +28,7 @@ AdaptiveStripeBoundaryPlanner::AdaptiveStripeBoundaryPlanner(
   DaliExpects(config_.minimum_column_pitch > 0,
               "Adaptive stripe minimum pitch must be positive");
   DaliExpects(config_.maximum_column_pitch == 0 ||
-                  config_.maximum_column_pitch >=
-                      config_.minimum_column_pitch,
+                  config_.maximum_column_pitch >= config_.minimum_column_pitch,
               "Adaptive stripe maximum pitch is smaller than its minimum");
   DaliExpects(config_.boundary_step > 0,
               "Adaptive stripe boundary step must be positive");
@@ -41,9 +40,9 @@ AdaptiveStripeBoundaryResult AdaptiveStripeBoundaryPlanner::Plan(
     const std::vector<StripeDemandSample>& samples) const {
   AdaptiveStripeBoundaryResult result;
   const int region_width = config_.region_right - config_.region_left;
-  const int maximum_pitch =
-      config_.maximum_column_pitch > 0 ? config_.maximum_column_pitch
-                                       : region_width;
+  const int maximum_pitch = config_.maximum_column_pitch > 0
+                                ? config_.maximum_column_pitch
+                                : region_width;
   if (region_width < config_.column_count * config_.minimum_column_pitch ||
       region_width > config_.column_count * maximum_pitch) {
     return result;
@@ -140,20 +139,17 @@ AdaptiveStripeBoundaryResult AdaptiveStripeBoundaryPlanner::Plan(
         if (usable_width <= 0) continue;
         const double interval_demand =
             prefix_demand[right_index] - prefix_demand[left_index];
-        const double target_demand =
-            demand_per_usable_width * usable_width;
+        const double target_demand = demand_per_usable_width * usable_width;
         const double normalized_error =
             (interval_demand - target_demand) / normalization;
         const double normalized_pitch_error =
             (pitch - average_pitch) / average_pitch;
         const double candidate_cost =
-            cost[column - 1][left_index] +
-            normalized_error * normalized_error +
+            cost[column - 1][left_index] + normalized_error * normalized_error +
             1e-9 * normalized_pitch_error * normalized_pitch_error;
         if (candidate_cost < cost[column][right_index]) {
           cost[column][right_index] = candidate_cost;
-          predecessor[column][right_index] =
-              static_cast<int>(left_index);
+          predecessor[column][right_index] = static_cast<int>(left_index);
         }
       }
     }

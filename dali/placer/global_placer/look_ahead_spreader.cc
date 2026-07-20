@@ -524,8 +524,8 @@ void LookAheadSpreader::UpdateClusterArea(OverfilledBinCluster& cluster) {
   int height = grid_bin_mesh[upper_right.x][upper_right.y].top -
                grid_bin_mesh[lower_left.x][lower_left.y].bottom;
   PlacementCapacity capacity = capacity_model_->Evaluate(
-      components, width, height, cluster.total_white_space,
-      placement_density_, CapacityEvaluationPurpose::kHotspot);
+      components, width, height, cluster.total_white_space, placement_density_,
+      CapacityEvaluationPurpose::kHotspot);
   cluster.capacity_demand = capacity.demand;
   cluster.capacity = capacity.capacity;
   cluster.capacity_target_utilization = capacity.target_utilization;
@@ -555,10 +555,9 @@ void LookAheadSpreader::UpdateRegionCapacity(SpreadingRegion* region) const {
   DaliExpects(region != nullptr, "Cannot evaluate a null spreading region");
   region->total_white_space =
       LookUpWhiteSpace(region->ll_index, region->ur_index);
-  PlacementCapacity capacity =
-      EvaluateWindow(region->ll_index, region->ur_index,
-                     region->total_white_space,
-                     CapacityEvaluationPurpose::kSpreadingRegion);
+  PlacementCapacity capacity = EvaluateWindow(
+      region->ll_index, region->ur_index, region->total_white_space,
+      CapacityEvaluationPurpose::kSpreadingRegion);
   region->filling_rate = capacity.Utilization();
   region->capacity_target_utilization = capacity.target_utilization;
 }
@@ -736,8 +735,8 @@ void LookAheadSpreader::UpdateLargestCluster() {
   }
 }
 
-uint32_t LookAheadSpreader::LookUpWhiteSpace(GridBinIndex const& ll_index,
-                                              GridBinIndex const& ur_index) const {
+uint32_t LookAheadSpreader::LookUpWhiteSpace(
+    GridBinIndex const& ll_index, GridBinIndex const& ur_index) const {
   /****
    * this function is used to return the white space in a region specified by
    * ll_index, and ur_index there are four cases, element at (0,0), elements on
@@ -818,9 +817,8 @@ bool LookAheadSpreader::ExpandBoxByBestNeighbor(SpreadingRegion* box) {
   }
 
   auto score = [&](const SpreadingRegion& candidate) {
-    double overflow =
-        std::max(0.0, candidate.filling_rate -
-                          candidate.capacity_target_utilization);
+    double overflow = std::max(
+        0.0, candidate.filling_rate - candidate.capacity_target_utilization);
     double area = double(candidate.ur_index.x - candidate.ll_index.x + 1) *
                   double(candidate.ur_index.y - candidate.ll_index.y + 1);
     double width = candidate.ur_index.x - candidate.ll_index.x + 1;
@@ -878,10 +876,9 @@ void LookAheadSpreader::FindMinimumBoxForLargestCluster() {
   last_hotspot_debug_.overflow =
       it->capacity_demand - it->capacity_target_utilization * it->capacity;
   last_hotspot_debug_.overflow_ratio =
-      it->capacity == 0
-          ? 0
-          : it->capacity_demand / it->capacity -
-                it->capacity_target_utilization;
+      it->capacity == 0 ? 0
+                        : it->capacity_demand / it->capacity -
+                              it->capacity_target_utilization;
   last_hotspot_debug_.score = HotspotScore(*it);
   for (auto& index : it->bin_set) {
     R.ll_index.x = std::min(R.ll_index.x, index.x);
@@ -1310,7 +1307,6 @@ double LookAheadSpreader::Spread() {
     // LOG(info) << "cluster count: " << cluster_set.size() <<
     // "\n";
   } while (!cluster_set.empty());
-
 
   double evaluate_result_x = circuit_->WeightedHPWLX();
   upper_bound_hpwl_x_.push_back(evaluate_result_x);
