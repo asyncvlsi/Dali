@@ -143,6 +143,14 @@ class GriddedRow {
 
   void UpdateComponentLocationCompact();
 
+  /**
+   * Legally pack a fixed X-order with minimum unweighted squared displacement.
+   *
+   * This is the gridded-row equivalent of equal-weight Abacus clustering: it
+   * preserves the order established by the row assignment, collapses
+   * overlapping component clusters, and keeps ordinary cells inside the
+   * usable interval after physical-completion margins are reserved.
+   */
   void MinDisplacementLegalization();
   void UpdateMinDisplacementLLY();
   double MinDisplacementLLY() const;

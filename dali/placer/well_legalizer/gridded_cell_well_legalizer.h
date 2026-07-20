@@ -38,6 +38,7 @@
 #include "gridded_placement_validator.h"
 #include "gridded_row.h"
 #include "gridded_row_location_optimizer.h"
+#include "gridded_stripe_capacity_model.h"
 #include "gridded_vertical_hpwl_row_optimizer.h"
 #include "ortools_compact_gridded_legalizer.h"
 #include "ortools_gridded_boundary_refiner.h"

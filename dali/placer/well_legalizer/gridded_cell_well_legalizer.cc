@@ -2664,7 +2664,6 @@ bool GriddedCellWellLegalizer::StartPlacement() {
 
 void GriddedCellWellLegalizer::LogEstimatedGriddedCapacity() {
   GriddedCapacityConfig config = BuildGriddedCapacityConfig(PlacementDensity());
-  GriddedCapacityEstimator estimator(config);
   unsigned long long raw_component_area = 0;
   unsigned long long required_gridded_area = 0;
   unsigned long long available_gridded_area = 0;
@@ -2675,24 +2674,17 @@ void GriddedCellWellLegalizer::LogEstimatedGriddedCapacity() {
   int unplaceable_component_count = 0;
   int single_region_fallback_count = 0;
   for (const StripeColumn& column : col_list_) {
-    for (const Stripe& stripe : column.stripe_list_) {
-      unsigned long long raw_whitespace_area =
-          static_cast<unsigned long long>(stripe.Width()) * stripe.Height();
-      GriddedCapacityEstimate estimate =
-          estimator.Estimate(stripe.component_ptrs_vec_, stripe.Width(),
-                             stripe.Height(), raw_whitespace_area);
-      ++stripe_count;
-      raw_component_area += estimate.raw_component_area;
-      required_gridded_area += estimate.required_gridded_area;
-      available_gridded_area += estimate.available_gridded_area;
-      predicted_overflow_area += estimate.predicted_overflow_area;
-      estimated_row_count += estimate.estimated_row_count;
-      unplaceable_component_count += estimate.unplaceable_component_count;
-      single_region_fallback_count += estimate.single_region_fallback_count;
-      if (estimate.predicted_overflow_area > 0) {
-        ++overflowing_stripe_count;
-      }
-    }
+    const GriddedStripeCapacitySummary summary =
+        GriddedStripeCapacityModel(config).Estimate(column);
+    stripe_count += static_cast<int>(summary.entries.size());
+    overflowing_stripe_count += summary.overflowing_stripe_count;
+    raw_component_area += summary.raw_component_area;
+    required_gridded_area += summary.required_gridded_area;
+    available_gridded_area += summary.available_gridded_area;
+    predicted_overflow_area += summary.predicted_overflow_area;
+    estimated_row_count += summary.estimated_row_count;
+    unplaceable_component_count += summary.unplaceable_component_count;
+    single_region_fallback_count += summary.single_region_fallback_count;
   }
 
   double raw_utilization =

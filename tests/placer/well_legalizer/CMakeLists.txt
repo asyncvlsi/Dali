@@ -51,6 +51,15 @@ add_test(NAME gridded_capacity_estimator_test
 set_tests_properties(gridded_capacity_estimator_test
                      PROPERTIES LABELS "unit;placer;well_legalizer")
 
+add_executable(gridded_stripe_capacity_model_test
+               gridded_stripe_capacity_model_test.cc)
+target_link_libraries(gridded_stripe_capacity_model_test
+                      PRIVATE dalilib ${DALI_GTEST_MAIN})
+add_test(NAME gridded_stripe_capacity_model_test
+         COMMAND gridded_stripe_capacity_model_test)
+set_tests_properties(gridded_stripe_capacity_model_test
+                     PROPERTIES LABELS "unit;placer;well_legalizer")
+
 add_executable(adaptive_stripe_boundary_planner_test
                adaptive_stripe_boundary_planner_test.cc)
 target_link_libraries(adaptive_stripe_boundary_planner_test

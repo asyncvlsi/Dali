@@ -70,4 +70,36 @@ TEST(GriddedRowTest, SynchronizesComponentYToFinalWellEdge) {
   EXPECT_DOUBLE_EQ(component->LLY(), 11.0);
 }
 
+TEST(GriddedRowTest, MinimizesFixedOrderXDisplacementWithinMargins) {
+  Circuit circuit;
+  circuit.SetManufacturingGrid(1);
+  circuit.SetUnitsDistanceMicrons(1);
+  circuit.SetGridValue(1, 1);
+  circuit.ReserveSpaceForDesignImp(3, 0, 0);
+  Macro* macro = circuit.AddMacro("cell", 6, 2);
+  macro->AddWellRect(false, 0, 0, 6, 1);
+  macro->AddWellRect(true, 0, 1, 6, 2);
+  circuit.AddComponent("left", "cell", 6, 0, PLACED);
+  circuit.AddComponent("middle", "cell", 8, 0, PLACED);
+  circuit.AddComponent("right", "cell", 10, 0, PLACED);
+
+  GriddedRow row;
+  row.SetLLX(0);
+  row.SetWidth(30);
+  row.SetBoundaryMargins(2, 2);
+  row.AddComponent(circuit.GetComponentPtr("left"));
+  row.AddComponent(circuit.GetComponentPtr("middle"));
+  row.AddComponent(circuit.GetComponentPtr("right"));
+
+  row.MinDisplacementLegalization();
+
+  // The fixed-order quadratic optimum starts at x=2: the transformed target
+  // locations are 6, 2, and -2, whose mean is 2 after the left bound clamps
+  // the overlapping cluster.
+  EXPECT_DOUBLE_EQ(circuit.GetComponentPtr("left")->LLX(), 2.0);
+  EXPECT_DOUBLE_EQ(circuit.GetComponentPtr("middle")->LLX(), 8.0);
+  EXPECT_DOUBLE_EQ(circuit.GetComponentPtr("right")->LLX(), 14.0);
+  EXPECT_TRUE(row.HasLegalComponentPlacement());
+}
+
 }  // namespace dali
