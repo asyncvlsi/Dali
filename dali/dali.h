@@ -293,7 +293,10 @@ class Dali {
   double exact_gridded_stripe_displacement_weight_ = 0.0;
   bool exact_gridded_stripe_fixed_row_prepass_ = false;
   bool exact_gridded_stripe_before_detailed_ = false;
+  bool exact_gridded_stripe_local_closure_ = false;
   bool enable_exact_gridded_boundary_optimization_ = false;
+  bool exact_gridded_boundary_before_detailed_ = false;
+  bool exact_gridded_boundary_local_closure_ = false;
   double exact_gridded_boundary_time_ = 0.1;
   double exact_gridded_boundary_total_time_ = 120.0;
   int exact_gridded_boundary_components_ = 64;
