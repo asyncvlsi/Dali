@@ -45,9 +45,11 @@ size_t CountAffectedComponents(
 
 RoughGriddedUpperBoundRefiner::RoughGriddedUpperBoundRefiner(
     GriddedCellWellLegalizer* well_legalizer, bool enable_overflow_balancing,
+    bool enable_evacuated_component_feedback,
     bool rollback_destabilizing_feedback)
     : well_legalizer_(well_legalizer),
       enable_overflow_balancing_(enable_overflow_balancing),
+      enable_evacuated_component_feedback_(enable_evacuated_component_feedback),
       rollback_destabilizing_feedback_(rollback_destabilizing_feedback) {
   DaliExpects(well_legalizer_ != nullptr,
               "Rough gridded refiner requires a well legalizer");
@@ -112,12 +114,19 @@ GlobalUpperBoundRefinement RoughGriddedUpperBoundRefiner::Refine(
   refinement.initial_violations = std::move(initial_violations);
   refinement.overflow = provisional.overflow;
   refinement.violations = std::move(violations);
-  // A feasible rough placement gives every component a physical row target.
-  // Keep balanced ids as diagnostics instead of changing the meaning of an
-  // empty vector from "all" to "none" when one balancing move occurs.
-  refinement.anchor_all_components = true;
+  // A repaired provisional placement contains two signals: the components
+  // moved across stripe ownership to relieve overflow, and incidental movement
+  // from rebuilding every row. The optional targeted policy preserves only the
+  // former, while an ordinary feasible provisional placement remains a
+  // complete physical anchor.
+  refinement.anchor_all_components = !enable_evacuated_component_feedback_ ||
+                                     provisional.balanced_component_ids.empty();
   refinement.anchor_component_ids =
       std::move(provisional.balanced_component_ids);
+  if (!refinement.anchor_all_components) {
+    LOG(info) << "    feedback only evacuated components: "
+              << refinement.anchor_component_ids.size() << "\n";
+  }
   refinement.component_rows = std::move(provisional.component_rows);
   return refinement;
 }

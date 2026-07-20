@@ -84,6 +84,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -enable_gridded_global_capacity            use experimental well-aware LAL capacity\n"
       << "  -enable_gridded_upper_bound_refiner        roughly legalize every gridded global-placement iteration\n"
       << "  -enable_gridded_upper_bound_balancing      minimally rebalance failed rough-legal stripes\n"
+      << "  -enable_gridded_evacuated_component_feedback  feed back only components moved by rough balancing\n"
       << "  -disable_gridded_feedback_rollback         retain accepted feedback after a failed rough-legal pass\n"
       << "  -enable_gridded_legalization_pressure      feed rough-legal capacity pressure into the next LAL pass\n"
       << "  -enable_adaptive_stripe_boundaries         optimize nonuniform gridded stripe widths\n"
@@ -437,6 +438,8 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.enable_gridded_upper_bound_refiner");
     } else if (arg == "-enable_gridded_upper_bound_balancing") {
       EnableConfigFlag("dali.enable_gridded_upper_bound_balancing");
+    } else if (arg == "-enable_gridded_evacuated_component_feedback") {
+      EnableConfigFlag("dali.enable_gridded_evacuated_component_feedback");
     } else if (arg == "-disable_gridded_feedback_rollback") {
       EnableConfigFlag("dali.disable_gridded_feedback_rollback");
     } else if (arg == "-enable_gridded_legalization_pressure") {
