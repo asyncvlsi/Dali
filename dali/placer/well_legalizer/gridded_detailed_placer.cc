@@ -131,6 +131,10 @@ void GriddedDetailedPlacer::SetEnableBatchedAssignmentMoves(bool enable) {
   enable_batched_assignment_moves_ = enable;
 }
 
+void GriddedDetailedPlacer::SetExhaustiveInsertionPositions(bool enable) {
+  exhaustive_insertion_positions_ = enable;
+}
+
 void GriddedDetailedPlacer::SetMaxCandidateRows(int max_candidate_rows) {
   DaliExpects(max_candidate_rows >= 1,
               "Gridded detailed candidate-row cap must be positive");
@@ -947,9 +951,79 @@ bool GriddedDetailedPlacer::EvaluateDirectRelocation(
   return true;
 }
 
+std::vector<int> GriddedDetailedPlacer::BoundedInsertionPositions(
+    Component* component, GriddedRow* target_row, double target_lx,
+    const OptimalRegion& region) const {
+  const auto& target_components = target_row->Components();
+  const int slot_count = static_cast<int>(target_components.size());
+
+  std::vector<double> sorted_lx;
+  sorted_lx.reserve(target_components.size());
+  for (Component* target_component : target_components) {
+    sorted_lx.push_back(target_component->LLX());
+  }
+  std::sort(sorted_lx.begin(), sorted_lx.end());
+
+  const double min_lx = target_row->LLX() + target_row->LeftBoundaryMargin();
+  const double max_lx = target_row->URX() - target_row->RightBoundaryMargin() -
+                        component->Width();
+
+  // Anchor the search at X positions that plausibly minimize affected-net
+  // HPWL: the clamped optimal target, the optimal-region boundaries, and each
+  // low-fanout net's connected-pin X extrema mapped into component LLX space.
+  std::vector<double> anchors;
+  anchors.push_back(target_lx);
+  if (region.valid) {
+    anchors.push_back(region.lx);
+    anchors.push_back(region.ux);
+  }
+  auto& nets = ckt_ptr_->Nets();
+  const ComponentOrient orientation = component->Orient();
+  for (int net_id : component->NetList()) {
+    Net& net = nets[net_id];
+    if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) {
+      continue;
+    }
+    bool found_component_pin = false;
+    double offset_x = 0;
+    double min_x = DBL_MAX;
+    double max_x = -DBL_MAX;
+    for (NetPin& pin : net.ComponentPins()) {
+      if (pin.ComponentPtr() == component) {
+        found_component_pin = true;
+        offset_x = pin.PinPtr()->OffsetX(orientation);
+        continue;
+      }
+      min_x = std::min(min_x, pin.AbsX());
+      max_x = std::max(max_x, pin.AbsX());
+    }
+    if (!found_component_pin || min_x == DBL_MAX) {
+      continue;
+    }
+    anchors.push_back(min_x - offset_x);
+    anchors.push_back(max_x - offset_x);
+  }
+
+  // Map each anchor to its natural X-order slot and widen by one slot so a
+  // slightly better neighboring order is still reachable.
+  std::set<int> positions;
+  for (double anchor : anchors) {
+    const double clamped = std::clamp(anchor, min_lx, max_lx);
+    const int slot = static_cast<int>(
+        std::lower_bound(sorted_lx.begin(), sorted_lx.end(), clamped) -
+        sorted_lx.begin());
+    for (int offset = -kInsertionSlotWindow; offset <= kInsertionSlotWindow;
+         ++offset) {
+      positions.insert(std::clamp(slot + offset, 0, slot_count));
+    }
+  }
+  return {positions.begin(), positions.end()};
+}
+
 bool GriddedDetailedPlacer::EvaluateInsertionRelocations(
     GriddedRow* source_row, Component* component, GriddedRow* target_row,
-    double target_lx, RelocationPlan* plan, MoveStats* stats) {
+    double target_lx, const OptimalRegion& region, RelocationPlan* plan,
+    MoveStats* stats) {
   DaliExpects(plan != nullptr, "Relocation plan output cannot be null");
   DaliExpects(stats != nullptr, "Relocation statistics cannot be null");
 
@@ -978,13 +1052,23 @@ bool GriddedDetailedPlacer::EvaluateInsertionRelocations(
   if (blocked) return false;
 
   ++stats->evaluated;
+  std::vector<int> insertion_positions;
+  if (exhaustive_insertion_positions_) {
+    const int insertion_count =
+        static_cast<int>(target_row->Components().size()) + 1;
+    insertion_positions.reserve(insertion_count);
+    for (int position = 0; position < insertion_count; ++position) {
+      insertion_positions.push_back(position);
+    }
+  } else {
+    insertion_positions =
+        BoundedInsertionPositions(component, target_row, target_lx, region);
+  }
+
   bool found = false;
-  const int insertion_count =
-      static_cast<int>(target_row->Components().size()) + 1;
   GriddedRowAssignmentTransaction transaction(ckt_ptr_,
                                               {source_row, target_row});
-  for (int insertion_position = 0; insertion_position < insertion_count;
-       ++insertion_position) {
+  for (int insertion_position : insertion_positions) {
     ApplyInsertionAssignment(source_row, component, target_row,
                              insertion_position, target_lx);
     ++stats->insertion_positions_evaluated;
@@ -1037,10 +1121,10 @@ bool GriddedDetailedPlacer::FindBestInsertionRelocation(GriddedRow* source_row,
        FindCandidateRows(source_row, component, region)) {
     double target_lx =
         ComputeMoveTargetX(candidate_row.row, component, candidate_row.region);
-    found =
-        EvaluateInsertionRelocations(source_row, component, candidate_row.row,
-                                     target_lx, plan, stats) ||
-        found;
+    found = EvaluateInsertionRelocations(source_row, component,
+                                         candidate_row.row, target_lx,
+                                         candidate_row.region, plan, stats) ||
+            found;
   }
   return found;
 }

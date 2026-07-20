@@ -285,6 +285,8 @@ void Dali::ShowParamsList() {
       << enable_gridded_detailed_relocation_ << "\n"
       << "  enable_gridded_assignment_batch: "
       << enable_gridded_assignment_batch_ << "\n"
+      << "  enable_gridded_exhaustive_insertion: "
+      << enable_gridded_exhaustive_insertion_ << "\n"
       << "  gridded_detailed_max_candidate_rows: "
       << gridded_detailed_max_candidate_rows_ << "\n"
       << "  gridded_detailed_max_rounds: " << gridded_detailed_max_rounds_
@@ -484,6 +486,8 @@ void Dali::LoadParamsFromConfig() {
                  &enable_gridded_detailed_relocation_);
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_assignment_batch"),
                  &enable_gridded_assignment_batch_);
+  LoadBoolConfig(ConfigName(prefix_, "enable_gridded_exhaustive_insertion"),
+                 &enable_gridded_exhaustive_insertion_);
   LoadIntConfig(ConfigName(prefix_, "gridded_detailed_max_candidate_rows"),
                 &gridded_detailed_max_candidate_rows_);
   DaliExpects(gridded_detailed_max_candidate_rows_ >= 1 &&
@@ -738,6 +742,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       enable_gridded_detailed_placement_,
       enable_gridded_detailed_relocation_,
       enable_gridded_assignment_batch_,
+      enable_gridded_exhaustive_insertion_,
       gridded_detailed_max_candidate_rows_,
       gridded_detailed_max_rounds_,
       gridded_detailed_min_relative_improvement_,
@@ -1199,6 +1204,8 @@ void Dali::ConfigureWellLegalizer() {
       enable_gridded_detailed_relocation_);
   well_legalizer_.SetEnableDetailedMoveBatching(
       enable_gridded_assignment_batch_);
+  well_legalizer_.SetEnableDetailedExhaustiveInsertion(
+      enable_gridded_exhaustive_insertion_);
   well_legalizer_.SetDetailedPlacementMaxCandidateRows(
       gridded_detailed_max_candidate_rows_);
   well_legalizer_.SetDetailedPlacementConvergence(

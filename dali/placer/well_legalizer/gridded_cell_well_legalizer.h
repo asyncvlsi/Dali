@@ -142,6 +142,11 @@ class GriddedCellWellLegalizer : public Placer {
     gridded_detailed_placer_.SetEnableBatchedAssignmentMoves(enable);
   }
 
+  /** Sweep every insertion slot instead of the bounded candidate set. */
+  void SetEnableDetailedExhaustiveInsertion(bool enable) {
+    gridded_detailed_placer_.SetExhaustiveInsertionPositions(enable);
+  }
+
   /** Set the per-component candidate-row cap in gridded detailed placement. */
   void SetDetailedPlacementMaxCandidateRows(int max_candidate_rows) {
     gridded_detailed_placer_.SetMaxCandidateRows(max_candidate_rows);

@@ -59,6 +59,17 @@ class GriddedDetailedPlacer : public Placer {
   /** Rank direct relocations and assignment cycles by exact HPWL gain. */
   void SetEnableBatchedAssignmentMoves(bool enable);
 
+  /**
+   * Evaluate every target-row insertion slot instead of a bounded candidate set.
+   *
+   * The bounded default only trials insertion slots near the component's
+   * optimal-region boundaries, connected-pin X locations, and its natural X
+   * order slot, which recovers most of the exhaustive gain at a fraction of the
+   * enumeration cost. Enabling this restores the exhaustive oracle used to
+   * measure the quality ceiling.
+   */
+  void SetExhaustiveInsertionPositions(bool enable);
+
   /** Set the maximum optimal-region rows considered for one component. */
   void SetMaxCandidateRows(int max_candidate_rows);
 
@@ -106,6 +117,7 @@ class GriddedDetailedPlacer : public Placer {
   static constexpr int kMaxAssignmentBatchPasses = 2;
   static constexpr int kMaxBatchedRelocationPasses = 2;
   static constexpr int kMaxInsertionRefinementPasses = 8;
+  static constexpr int kInsertionSlotWindow = 1;
   static constexpr int kMaxFinalClusteringPasses = 6;
   static constexpr double kMinClusteringRelativeImprovement = 0.0001;
   static constexpr double kMinInsertionRefinementRelativeImprovement = 0.0001;
@@ -296,11 +308,24 @@ class GriddedDetailedPlacer : public Placer {
   bool EvaluateDirectRelocation(GriddedRow* source_row, Component* component,
                                 GriddedRow* target_row, double target_lx,
                                 RelocationPlan* plan, MoveStats* stats);
-  /** Evaluate every target-row insertion slot for one direct relocation. */
+  /** Evaluate a bounded (or exhaustive) target-row insertion set for one move. */
   bool EvaluateInsertionRelocations(GriddedRow* source_row,
                                     Component* component,
                                     GriddedRow* target_row, double target_lx,
+                                    const OptimalRegion& region,
                                     RelocationPlan* plan, MoveStats* stats);
+  /**
+   * Bounded target-row insertion slots for one relocation.
+   *
+   * Returns a small deduplicated set of insertion indices near the component's
+   * clamped target X, its optimal-region boundaries, and its connected-pin X
+   * extrema, each widened by one order slot. When exhaustive insertion is
+   * enabled, callers ignore this and sweep all slots instead.
+   */
+  std::vector<int> BoundedInsertionPositions(Component* component,
+                                             GriddedRow* target_row,
+                                             double target_lx,
+                                             const OptimalRegion& region) const;
   /** Find one component's best legal direct move in the frozen placement. */
   bool FindBestDirectRelocation(GriddedRow* source_row, Component* component,
                                 RelocationPlan* plan, MoveStats* stats);
@@ -396,6 +421,7 @@ class GriddedDetailedPlacer : public Placer {
   bool enable_vertical_swap_ = true;
   bool enable_relocation_ = false;
   bool enable_batched_assignment_moves_ = false;
+  bool exhaustive_insertion_positions_ = false;
   int max_candidate_rows_ = kMaxOptimalRegionRowsPerComponent;
   size_t net_ignore_threshold_ = 100;
 };
