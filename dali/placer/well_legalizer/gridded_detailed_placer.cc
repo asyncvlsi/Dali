@@ -1709,7 +1709,11 @@ GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::RunRelocationStage(
     bool enable_ejection) {
   MoveStats total_stats;
   if (enable_relocation_ && enable_batched_assignment_moves_) {
+    ElapsedTime batch_timer;
+    batch_timer.RecordStartTime();
     total_stats.Add(RunBatchedRelocationStage());
+    batch_timer.RecordEndTime();
+    batch_relocation_wall_s_ += batch_timer.GetWallTime();
   }
   std::vector<Component*> components;
   component_rows_.clear();
@@ -1728,13 +1732,21 @@ GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::RunRelocationStage(
       enable_ejection && enable_batched_assignment_moves_
           ? &deferred_cycle_components
           : nullptr;
+  ElapsedTime sequential_timer;
+  sequential_timer.RecordStartTime();
   for (Component* component : components) {
     total_stats.Add(TryOptimalRegionMove(component_rows_.at(component),
                                          component, enable_ejection,
                                          deferred_cycles));
   }
+  sequential_timer.RecordEndTime();
+  sequential_relocation_wall_s_ += sequential_timer.GetWallTime();
   if (!deferred_cycle_components.empty()) {
+    ElapsedTime cycle_timer;
+    cycle_timer.RecordStartTime();
     total_stats.Add(RunBatchedAssignmentCycles(deferred_cycle_components));
+    cycle_timer.RecordEndTime();
+    assignment_cycle_wall_s_ += cycle_timer.GetWallTime();
   }
   component_rows_.clear();
   return total_stats;
@@ -1956,6 +1968,10 @@ bool GriddedDetailedPlacer::StartPlacement() {
 
   ElapsedTime total_timer;
   total_timer.RecordStartTime();
+  batch_relocation_wall_s_ = 0;
+  sequential_relocation_wall_s_ = 0;
+  assignment_cycle_wall_s_ = 0;
+  insertion_refinement_wall_s_ = 0;
   double relocation_wall_time = 0;
   double relocation_cpu_time = 0;
   double global_swap_wall_time = 0;
@@ -2113,6 +2129,7 @@ bool GriddedDetailedPlacer::StartPlacement() {
     MoveStats insertion_stats = RunBatchedRelocationStage(true);
     total_relocation_stats.Add(insertion_stats);
     insertion_timer.RecordEndTime();
+    insertion_refinement_wall_s_ += insertion_timer.GetWallTime();
     relocation_wall_time += insertion_timer.GetWallTime();
     relocation_cpu_time += insertion_timer.GetCpuTime();
     LogMoveStage(insertion_stats, hpwl_before_insertion_refinement);
@@ -2238,6 +2255,15 @@ bool GriddedDetailedPlacer::StartPlacement() {
                         relocation_wall_time);
   RecordPlacementMetric("time.gridded_detailed.relocation.cpu_s",
                         relocation_cpu_time);
+  RecordPlacementMetric("time.gridded_detailed.relocation.batch.wall_s",
+                        batch_relocation_wall_s_);
+  RecordPlacementMetric("time.gridded_detailed.relocation.sequential.wall_s",
+                        sequential_relocation_wall_s_);
+  RecordPlacementMetric("time.gridded_detailed.relocation.cycles.wall_s",
+                        assignment_cycle_wall_s_);
+  RecordPlacementMetric(
+      "time.gridded_detailed.relocation.insertion_refinement.wall_s",
+      insertion_refinement_wall_s_);
   RecordPlacementMetric("time.gridded_detailed.global_swap.wall_s",
                         global_swap_wall_time);
   RecordPlacementMetric("time.gridded_detailed.global_swap.cpu_s",

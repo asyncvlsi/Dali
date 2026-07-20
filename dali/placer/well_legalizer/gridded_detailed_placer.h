@@ -424,6 +424,14 @@ class GriddedDetailedPlacer : public Placer {
   bool exhaustive_insertion_positions_ = false;
   int max_candidate_rows_ = kMaxOptimalRegionRowsPerComponent;
   size_t net_ignore_threshold_ = 100;
+
+  // Diagnostic wall-time accumulators for the relocation sub-stages, so the
+  // batch cost can be attributed to direct batching, sequential/ejection moves,
+  // assignment cycles, and post-convergence insertion refinement separately.
+  double batch_relocation_wall_s_ = 0;
+  double sequential_relocation_wall_s_ = 0;
+  double assignment_cycle_wall_s_ = 0;
+  double insertion_refinement_wall_s_ = 0;
 };
 
 }  // namespace dali
