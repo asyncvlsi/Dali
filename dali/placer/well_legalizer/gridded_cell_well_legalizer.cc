@@ -1135,6 +1135,7 @@ bool GriddedCellWellLegalizer::ValidateFinalPlacement() const {
   GriddedPlacementValidationConfig config;
   config.check_component_orientation = !disable_cell_flip_;
   config.expect_well_taps = !disable_welltap_;
+  config.check_well_tap_coverage = !disable_welltap_;
   config.expect_end_caps = enable_end_cap_cell_;
   config.space_to_well_tap = space_to_well_tap_;
   if (enable_end_cap_cell_) {
@@ -1171,6 +1172,9 @@ bool GriddedCellWellLegalizer::ValidateFinalPlacement() const {
       << " / " << report.well_tap_geometry_violation_count << "\n"
       << "    tap spacing                 : "
       << report.well_tap_spacing_violation_count << "\n"
+      << "    tap coverage / worst gap    : "
+      << report.well_tap_coverage_violation_count << " / "
+      << report.max_well_tap_coverage_gap << "um\n"
       << "    missing caps / cap geometry : " << report.missing_end_cap_count
       << " / " << report.end_cap_geometry_violation_count << "\n"
       << "    cap/tap overlap / count     : "

@@ -20,6 +20,15 @@ struct GriddedPlacementValidationConfig {
   int space_to_well_tap = 0;
   int pre_end_cap_width = 0;
   int post_end_cap_width = 0;
+
+  // Pattern-agnostic latch-up coverage: verify every movable cell lies within
+  // MaxPlugDist of some well tap, independent of how taps were placed. Unlike
+  // the row-end tap-spacing check, this catches under-tapped interior regions
+  // for arbitrary tap patterns (checkerboard, every-other-row, mini-row, ...).
+  bool check_well_tap_coverage = false;
+  // Latch-up budget in microns; when <= 0, derived from the tech N-well layer's
+  // MaxPlugDist.
+  double max_plug_dist = 0.0;
 };
 
 /** Categorized violations found in a finalized gridded placement. */
@@ -43,12 +52,23 @@ struct GriddedPlacementLegalityReport {
   size_t end_cap_geometry_violation_count = 0;
   size_t end_cap_tap_overlap_count = 0;
   size_t physical_component_count_violation_count = 0;
+  size_t well_tap_coverage_violation_count = 0;
+  // Worst observed cell-to-nearest-tap distance in microns (diagnostic only;
+  // does not affect legality).
+  double max_well_tap_coverage_gap = 0.0;
 
   /** Return the total number of categorized legality violations. */
   size_t TotalViolationCount() const;
 
   /** Return true when no gridded-placement legality violation was found. */
   bool IsLegal() const { return TotalViolationCount() == 0; }
+
+  /** Return true when every movable cell is within MaxPlugDist of a well tap.
+   * Meaningful only when coverage checking was enabled; otherwise trivially
+   * true. Lets callers gate on the latch-up rule alone. */
+  bool IsWellTapCoverageLegal() const {
+    return well_tap_coverage_violation_count == 0;
+  }
 };
 
 /** Validates row ownership, geometry, orientation, and boundary-cell layout. */
@@ -62,6 +82,10 @@ class GriddedPlacementValidator {
   GriddedPlacementLegalityReport Validate() const;
 
  private:
+  /** Verify each movable cell is within MaxPlugDist of a well tap, for any
+   * tap-placement pattern. Accumulates into the report. */
+  void ValidateWellTapCoverage(GriddedPlacementLegalityReport& report) const;
+
   Circuit* circuit_ = nullptr;
   const std::vector<StripeColumn>* columns_ = nullptr;
   GriddedPlacementValidationConfig config_;

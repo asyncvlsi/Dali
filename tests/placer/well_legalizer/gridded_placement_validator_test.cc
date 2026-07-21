@@ -134,4 +134,42 @@ TEST_F(GriddedPlacementValidatorTest, ValidatesTapAndEndCapCompletion) {
   EXPECT_EQ(drifted_report.well_tap_geometry_violation_count, 1U);
 }
 
+TEST_F(GriddedPlacementValidatorTest, VerifiesWellTapCoverageAgainstMaxPlugDist) {
+  Macro* tap = circuit.GetMacroPtr("tap");
+  ASSERT_NE(tap, nullptr);
+  Row().SetBoundaryMargins(9, 11);
+  Row().LegalizeLooseX();
+
+  WellRowCompletionConfig completion;
+  completion.well_tap_macro = tap;
+  completion.space_to_well_tap = 3;
+  completion.pre_end_cap_width = 3;
+  completion.post_end_cap_width = 5;
+  WellRowCompleter(&circuit, &columns, completion).InsertWellTaps();
+  ASSERT_FALSE(Row().TapCells().empty());
+
+  // A generous latch-up budget covers every cell; the worst gap is still
+  // reported as a positive diagnostic.
+  GriddedPlacementValidationConfig covered;
+  covered.check_well_tap_coverage = true;
+  covered.max_plug_dist = 100.0;
+  const GriddedPlacementLegalityReport covered_report =
+      GriddedPlacementValidator(&circuit, &columns, covered).Validate();
+  EXPECT_TRUE(covered_report.IsLegal());
+  EXPECT_TRUE(covered_report.IsWellTapCoverageLegal());
+  EXPECT_EQ(covered_report.well_tap_coverage_violation_count, 0U);
+  EXPECT_GT(covered_report.max_well_tap_coverage_gap, 0.0);
+
+  // A tiny budget leaves interior cells under-tapped, independent of the
+  // row-end tap-spacing check.
+  GriddedPlacementValidationConfig starved;
+  starved.check_well_tap_coverage = true;
+  starved.max_plug_dist = 1.0;
+  const GriddedPlacementLegalityReport starved_report =
+      GriddedPlacementValidator(&circuit, &columns, starved).Validate();
+  EXPECT_FALSE(starved_report.IsLegal());
+  EXPECT_FALSE(starved_report.IsWellTapCoverageLegal());
+  EXPECT_GE(starved_report.well_tap_coverage_violation_count, 1U);
+}
+
 }  // namespace dali

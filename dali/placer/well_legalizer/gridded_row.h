@@ -141,6 +141,10 @@ class GriddedRow {
   Component* LeftWellTapCell() const;
   Component* RightWellTapCell() const;
 
+  /** All well-tap cells in this row, in insertion order, for any tap-placement
+   * pattern (row-end pair, checkerboard, interior mini-row, etc.). */
+  const std::vector<Component*>& TapCells() const { return tap_cells_; }
+
   void UpdateComponentLocationCompact();
 
   /**

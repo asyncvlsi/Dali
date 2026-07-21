@@ -5,6 +5,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
+#include <utility>
 #include <vector>
 
 #include "dali/common/logging.h"
@@ -219,7 +221,78 @@ GriddedPlacementLegalityReport GriddedPlacementValidator::Validate() const {
     ++report.physical_completion_violation_count;
     ++report.physical_component_count_violation_count;
   }
+
+  if (config_.check_well_tap_coverage) {
+    ValidateWellTapCoverage(report);
+  }
   return report;
+}
+
+void GriddedPlacementValidator::ValidateWellTapCoverage(
+    GriddedPlacementLegalityReport& report) const {
+  constexpr double kCoordinateTolerance = 1e-9;
+  constexpr size_t kMaxLoggedCoverageViolations = 8;
+
+  double max_plug_dist = config_.max_plug_dist;
+  if (max_plug_dist <= 0.0) {
+    max_plug_dist = circuit_->tech().NwellLayer().MaxPlugDist();
+  }
+  if (max_plug_dist <= 0.0) {
+    // No latch-up rule available; nothing to verify.
+    return;
+  }
+  const double grid_value_x = circuit_->GridValueX();
+  const double grid_value_y = circuit_->GridValueY();
+  const double budget = max_plug_dist + kCoordinateTolerance;
+
+  size_t logged = 0;
+  // Wells are continuous within a stripe column, so a cell can be covered by any
+  // tap in the same stripe regardless of which row that tap sits in. Grouping by
+  // stripe keeps the check pattern-agnostic while respecting well locality.
+  for (const StripeColumn& column : *columns_) {
+    for (const Stripe& stripe : column.stripe_list_) {
+      std::vector<std::pair<double, double>> tap_centers;  // microns
+      for (const GriddedRow& row : stripe.gridded_rows_) {
+        for (const Component* tap : row.TapCells()) {
+          if (tap == nullptr) continue;
+          tap_centers.emplace_back(
+              0.5 * (tap->LLX() + tap->URX()) * grid_value_x,
+              0.5 * (tap->LLY() + tap->URY()) * grid_value_y);
+        }
+      }
+      if (tap_centers.empty()) continue;  // missing taps flagged elsewhere
+
+      for (const GriddedRow& row : stripe.gridded_rows_) {
+        for (const Component* component : row.Components()) {
+          if (component == nullptr || !component->IsMovable()) continue;
+          const double cx =
+              0.5 * (component->LLX() + component->URX()) * grid_value_x;
+          const double cy =
+              0.5 * (component->LLY() + component->URY()) * grid_value_y;
+          double nearest = std::numeric_limits<double>::max();
+          for (const auto& tap : tap_centers) {
+            const double dx = cx - tap.first;
+            const double dy = cy - tap.second;
+            nearest = std::min(nearest, std::hypot(dx, dy));
+          }
+          report.max_well_tap_coverage_gap =
+              std::max(report.max_well_tap_coverage_gap, nearest);
+          if (nearest > budget) {
+            ++report.physical_completion_violation_count;
+            ++report.well_tap_coverage_violation_count;
+            if (logged < kMaxLoggedCoverageViolations) {
+              LOG(error) << "Well-tap coverage violation (latch-up rule): "
+                         << "component=" << component->Name() << " is "
+                         << nearest << "um from the nearest well tap, exceeding "
+                         << "MaxPlugDist=" << max_plug_dist
+                         << "um; placement is not legal\n";
+              ++logged;
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 }  // namespace dali
