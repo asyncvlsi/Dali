@@ -157,6 +157,11 @@ class GriddedCellWellLegalizer : public Placer {
     gridded_detailed_placer_.SetEnableSafePairMerge(enable);
   }
 
+  /** Weight gridded fixed-order X clustering by incident net weight. */
+  void SetDetailedWeightedClustering(bool enable) {
+    gridded_detailed_placer_.SetWeightedClustering(enable);
+  }
+
   /** Set the per-component candidate-row cap in gridded detailed placement. */
   void SetDetailedPlacementMaxCandidateRows(int max_candidate_rows) {
     gridded_detailed_placer_.SetMaxCandidateRows(max_candidate_rows);

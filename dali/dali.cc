@@ -291,6 +291,8 @@ void Dali::ShowParamsList() {
       << enable_gridded_merge_opportunity_audit_ << "\n"
       << "  enable_gridded_safe_pair_merge: "
       << enable_gridded_safe_pair_merge_ << "\n"
+      << "  enable_gridded_weighted_clustering: "
+      << enable_gridded_weighted_clustering_ << "\n"
       << "  gridded_detailed_max_candidate_rows: "
       << gridded_detailed_max_candidate_rows_ << "\n"
       << "  gridded_detailed_max_rounds: " << gridded_detailed_max_rounds_
@@ -497,6 +499,8 @@ void Dali::LoadParamsFromConfig() {
       &enable_gridded_merge_opportunity_audit_);
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_safe_pair_merge"),
                  &enable_gridded_safe_pair_merge_);
+  LoadBoolConfig(ConfigName(prefix_, "enable_gridded_weighted_clustering"),
+                 &enable_gridded_weighted_clustering_);
   LoadIntConfig(ConfigName(prefix_, "gridded_detailed_max_candidate_rows"),
                 &gridded_detailed_max_candidate_rows_);
   DaliExpects(gridded_detailed_max_candidate_rows_ >= 1 &&
@@ -754,6 +758,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       enable_gridded_exhaustive_insertion_,
       enable_gridded_merge_opportunity_audit_,
       enable_gridded_safe_pair_merge_,
+      enable_gridded_weighted_clustering_,
       gridded_detailed_max_candidate_rows_,
       gridded_detailed_max_rounds_,
       gridded_detailed_min_relative_improvement_,
@@ -1221,6 +1226,8 @@ void Dali::ConfigureWellLegalizer() {
       enable_gridded_merge_opportunity_audit_);
   well_legalizer_.SetEnableDetailedSafePairMerge(
       enable_gridded_safe_pair_merge_);
+  well_legalizer_.SetDetailedWeightedClustering(
+      enable_gridded_weighted_clustering_);
   well_legalizer_.SetDetailedPlacementMaxCandidateRows(
       gridded_detailed_max_candidate_rows_);
   well_legalizer_.SetDetailedPlacementConvergence(

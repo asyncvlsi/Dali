@@ -51,6 +51,7 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_FALSE(options.enable_gridded_exhaustive_insertion);
   EXPECT_FALSE(options.enable_gridded_merge_opportunity_audit);
   EXPECT_FALSE(options.enable_gridded_safe_pair_merge);
+  EXPECT_FALSE(options.enable_gridded_weighted_clustering);
   EXPECT_EQ(options.gridded_detailed_max_candidate_rows, 4);
   EXPECT_EQ(options.gridded_detailed_max_rounds, 6);
   EXPECT_DOUBLE_EQ(options.gridded_detailed_min_relative_improvement, 0.005);
@@ -149,6 +150,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_int("dali.enable_gridded_exhaustive_insertion", 1);
   config_set_int("dali.enable_gridded_merge_opportunity_audit", 1);
   config_set_int("dali.enable_gridded_safe_pair_merge", 1);
+  config_set_int("dali.enable_gridded_weighted_clustering", 1);
   config_set_int("dali.gridded_detailed_max_candidate_rows", 8);
   config_set_int("dali.gridded_detailed_max_rounds", 5);
   config_set_real("dali.gridded_detailed_min_relative_improvement", 0.002);
@@ -242,6 +244,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_TRUE(options.enable_gridded_exhaustive_insertion);
   EXPECT_TRUE(options.enable_gridded_merge_opportunity_audit);
   EXPECT_TRUE(options.enable_gridded_safe_pair_merge);
+  EXPECT_TRUE(options.enable_gridded_weighted_clustering);
   EXPECT_EQ(options.gridded_detailed_max_candidate_rows, 8);
   EXPECT_EQ(options.gridded_detailed_max_rounds, 5);
   EXPECT_DOUBLE_EQ(options.gridded_detailed_min_relative_improvement, 0.002);

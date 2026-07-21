@@ -140,6 +140,10 @@ void GriddedDetailedPlacer::SetEnableSafePairMerge(bool enable) {
   enable_safe_pair_merge_ = enable;
 }
 
+void GriddedDetailedPlacer::SetWeightedClustering(bool enable) {
+  weighted_clustering_ = enable;
+}
+
 void GriddedDetailedPlacer::SetMaxCandidateRows(int max_candidate_rows) {
   DaliExpects(max_candidate_rows >= 1,
               "Gridded detailed candidate-row cap must be positive");
@@ -1921,8 +1925,11 @@ bool GriddedDetailedPlacer::ClusterRowX(GriddedRow* row, bool* changed) {
   int total_width = 0;
   std::vector<double> original_lx;
   std::vector<double> transformed_targets;
+  std::vector<double> weights;
   original_lx.reserve(components.size());
   transformed_targets.reserve(components.size());
+  weights.reserve(components.size());
+  std::vector<Net>& nets = ckt_ptr_->Nets();
   for (Component* component : components) {
     original_lx.push_back(component->LLX());
     OptimalRegion region = ComputeOptimalRegion(component);
@@ -1932,6 +1939,23 @@ bool GriddedDetailedPlacer::ClusterRowX(GriddedRow* row, bool* changed) {
     }
     transformed_targets.push_back(target_lx - total_width);
     total_width += component->Width();
+
+    // Weight each cell by its incident low-fanout net weight so a merged block's
+    // legal position follows its highly connected cells. Default (unweighted)
+    // mode keeps every weight at 1.
+    double weight = 1.0;
+    if (weighted_clustering_) {
+      weight = 0.0;
+      for (int net_id : component->NetList()) {
+        Net& net = nets[net_id];
+        if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) {
+          continue;
+        }
+        weight += net.Weight();
+      }
+      if (weight <= 0) weight = 1.0;
+    }
+    weights.push_back(weight);
   }
 
   int min_transformed_lx = row->LLX() + row->LeftBoundaryMargin();
@@ -1943,21 +1967,23 @@ bool GriddedDetailedPlacer::ClusterRowX(GriddedRow* row, bool* changed) {
   struct IsotonicBlock {
     int begin = 0;
     int end = 0;
-    double target_sum = 0;
+    double weighted_sum = 0;  // sum of weight * target
+    double total_weight = 0;
 
-    int Size() const { return end - begin; }
-    double Mean() const { return target_sum / Size(); }
+    double Mean() const { return weighted_sum / total_weight; }
   };
   std::vector<IsotonicBlock> blocks;
   blocks.reserve(components.size());
   for (int i = 0; i < static_cast<int>(components.size()); ++i) {
-    blocks.push_back({i, i + 1, transformed_targets[i]});
+    blocks.push_back(
+        {i, i + 1, weights[i] * transformed_targets[i], weights[i]});
     while (blocks.size() >= 2 &&
            blocks[blocks.size() - 2].Mean() > blocks.back().Mean()) {
       IsotonicBlock right = blocks.back();
       blocks.pop_back();
       blocks.back().end = right.end;
-      blocks.back().target_sum += right.target_sum;
+      blocks.back().weighted_sum += right.weighted_sum;
+      blocks.back().total_weight += right.total_weight;
     }
   }
 

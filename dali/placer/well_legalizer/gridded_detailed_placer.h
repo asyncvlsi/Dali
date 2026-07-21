@@ -83,6 +83,18 @@ class GriddedDetailedPlacer : public Placer {
    */
   void SetEnableSafePairMerge(bool enable);
 
+  /**
+   * Weight fixed-order X clustering by each cell's incident net weight.
+   *
+   * The default clusterer minimizes unweighted squared displacement toward
+   * optimal-region X, so a cell on ten nets and a cell on one net pull a merged
+   * cluster's legal position equally. Enabling this weights each cell by the sum
+   * of its low-fanout net weights, so highly connected cells stay closer to
+   * their optimal X. Clustering still reverts any row whose exact HPWL does not
+   * improve, so this only changes which legal position is proposed.
+   */
+  void SetWeightedClustering(bool enable);
+
   /** Set the maximum optimal-region rows considered for one component. */
   void SetMaxCandidateRows(int max_candidate_rows);
 
@@ -450,6 +462,7 @@ class GriddedDetailedPlacer : public Placer {
   bool enable_batched_assignment_moves_ = false;
   bool exhaustive_insertion_positions_ = false;
   bool enable_safe_pair_merge_ = false;
+  bool weighted_clustering_ = false;
   int max_candidate_rows_ = kMaxOptimalRegionRowsPerComponent;
   size_t net_ignore_threshold_ = 100;
 

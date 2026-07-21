@@ -101,6 +101,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -enable_gridded_exhaustive_insertion       sweep every insertion slot instead of the bounded set\n"
       << "  -enable_gridded_merge_opportunity_audit    log the two-pin cell-merge opportunity size\n"
       << "  -enable_gridded_safe_pair_merge            co-locate safe two-pin cell pairs after detailed placement\n"
+      << "  -enable_gridded_weighted_clustering        weight fixed-order X clustering by incident net weight\n"
       << "  -gridded_detailed_max_candidate_rows <1..32>  candidate rows per component, default 4\n"
       << "  -gridded_detailed_max_rounds <n>           maximum gridded detailed rounds, default 6\n"
       << "  -gridded_detailed_min_relative_improvement <0..1>  convergence threshold, default 0.005\n"
@@ -497,6 +498,8 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.enable_gridded_merge_opportunity_audit");
     } else if (arg == "-enable_gridded_safe_pair_merge") {
       EnableConfigFlag("dali.enable_gridded_safe_pair_merge");
+    } else if (arg == "-enable_gridded_weighted_clustering") {
+      EnableConfigFlag("dali.enable_gridded_weighted_clustering");
     } else if (arg == "-gridded_detailed_max_candidate_rows") {
       int max_candidate_rows = 0;
       if (!TryGetValue(argc, argv, &i, &value) ||
