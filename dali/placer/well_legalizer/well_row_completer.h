@@ -17,6 +17,7 @@
 
 #include "dali/circuit/circuit.h"
 #include "dali/placer/well_legalizer/stripe.h"
+#include "dali/placer/well_legalizer/tap_placer.h"
 
 namespace dali {
 
@@ -27,6 +28,9 @@ struct WellRowCompletionConfig {
   int space_to_well_tap = 0;
   int pre_end_cap_width = 0;
   int post_end_cap_width = 0;
+  // Tap-placement strategy; when null, InsertWellTaps uses the default
+  // RowEndTapPlacer (two taps per row in the reserved margins).
+  TapPlacer* tap_placer = nullptr;
 };
 
 /**

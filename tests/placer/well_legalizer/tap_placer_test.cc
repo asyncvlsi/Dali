@@ -1,0 +1,82 @@
+/*******************************************************************************
+ * Copyright (c) 2026 Yihang Yang
+ *******************************************************************************/
+#include "dali/placer/well_legalizer/tap_placer.h"
+
+#include <gtest/gtest.h>
+
+namespace dali {
+
+class TapPlacerTest : public testing::Test {
+ protected:
+  void SetUp() override {
+    circuit.SetManufacturingGrid(1.0);
+    circuit.SetUnitsDistanceMicrons(1);
+    circuit.SetGridValue(1.0, 1.0);
+    circuit.SetDieArea(0, 0, 100, 100);
+    circuit.ReserveSpaceForDesignImp(1, 0, 0);
+    circuit.AddMacro("cell", 10, 10);
+    Macro* macro = circuit.GetMacroPtr("cell");
+    macro->AddWellRect(false, 0, 0, 10, 4);
+    macro->AddWellRect(true, 0, 4, 10, 10);
+    circuit.AddWellTapMacro("tap", 3, 10);
+    tap_macro = circuit.GetMacroPtr("tap");
+    circuit.AddComponent("mid", "cell", 45, 20, PLACED);
+
+    row.SetLLX(0);
+    row.SetWidth(100);
+    row.SetLLY(20);
+    row.UpdateWellHeightUpward(4, 6);
+    row.SetBoundaryMargins(9, 11);
+    row.AddComponent(circuit.GetComponentPtr("mid"));
+    row.SetOrient(true);
+
+    ctx.well_tap_macro = tap_macro;
+    ctx.pre_end_cap_width = 3;
+    ctx.post_end_cap_width = 5;
+    ctx.space_to_well_tap = 3;
+  }
+
+  Circuit circuit;
+  Macro* tap_macro = nullptr;
+  GriddedRow row;
+  TapPlacementContext ctx;
+};
+
+TEST_F(TapPlacerTest, RowEndPlacesTwoTapsInMargins) {
+  RowEndTapPlacer placer;
+  EXPECT_EQ(placer.Name(), "row-end");
+  placer.ValidateRow(row, ctx);  // Must not throw for a well-reserved row.
+
+  const std::vector<double> centers = placer.RowTapCenters(row, 0, ctx);
+  ASSERT_EQ(centers.size(), 2U);
+  // Left center: LLX + pre_end_cap + tap_width/2 = 0 + 3 + 1.5.
+  EXPECT_DOUBLE_EQ(centers[0], 4.5);
+  // Right center: URX - post_end_cap - tap_width/2 = 100 - 5 - 1.5.
+  EXPECT_DOUBLE_EQ(centers[1], 93.5);
+}
+
+TEST_F(TapPlacerTest, RowEndCountIsRowIndexIndependent) {
+  RowEndTapPlacer placer;
+  EXPECT_EQ(placer.RowTapCenters(row, 0, ctx).size(), 2U);
+  EXPECT_EQ(placer.RowTapCenters(row, 1, ctx).size(), 2U);
+  EXPECT_EQ(placer.RowTapCenters(row, 7, ctx).size(), 2U);
+}
+
+TEST_F(TapPlacerTest, EveryOtherRowSkipsOddRows) {
+  EveryOtherRowTapPlacer placer;
+  EXPECT_EQ(placer.Name(), "every-other-row");
+
+  // Even rows keep the row-end pair; odd rows get none.
+  EXPECT_EQ(placer.RowTapCenters(row, 0, ctx).size(), 2U);
+  EXPECT_TRUE(placer.RowTapCenters(row, 1, ctx).empty());
+  EXPECT_EQ(placer.RowTapCenters(row, 2, ctx).size(), 2U);
+  EXPECT_TRUE(placer.RowTapCenters(row, 3, ctx).empty());
+
+  // Even-row positions match the default pattern exactly.
+  const std::vector<double> even = placer.RowTapCenters(row, 0, ctx);
+  const std::vector<double> baseline = RowEndTapPlacer().RowTapCenters(row, 0, ctx);
+  EXPECT_EQ(even, baseline);
+}
+
+}  // namespace dali

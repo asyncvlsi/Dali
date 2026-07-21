@@ -210,8 +210,9 @@ GriddedPlacementLegalityReport GriddedPlacementValidator::Validate() const {
     }
   }
 
-  if (config_.expect_well_taps &&
-      circuit_->design().WellTaps().size() != 2 * row_count) {
+  if (config_.expect_well_taps && config_.check_exact_well_tap_count &&
+      circuit_->design().WellTaps().size() !=
+          static_cast<size_t>(config_.well_tap_count_per_row) * row_count) {
     ++report.physical_completion_violation_count;
     ++report.physical_component_count_violation_count;
   }

@@ -1136,6 +1136,7 @@ bool GriddedCellWellLegalizer::ValidateFinalPlacement() const {
   config.check_component_orientation = !disable_cell_flip_;
   config.expect_well_taps = !disable_welltap_;
   config.check_well_tap_coverage = !disable_welltap_;
+  config.well_tap_count_per_row = well_tap_count_per_cluster_;
   config.expect_end_caps = enable_end_cap_cell_;
   config.space_to_well_tap = space_to_well_tap_;
   if (enable_end_cap_cell_) {

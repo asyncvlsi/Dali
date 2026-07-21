@@ -27,8 +27,13 @@ WellRowCompleter::WellRowCompleter(Circuit* circuit,
 void WellRowCompleter::InsertWellTaps() {
   DaliExpects(config_.well_tap_macro != nullptr,
               "Cannot insert well taps without a well-tap macro");
-  DaliExpects(config_.well_tap_count_per_row == 2,
-              "Well row completion currently requires two taps per row");
+
+  RowEndTapPlacer default_placer;
+  const TapPlacer& placer =
+      config_.tap_placer != nullptr ? *config_.tap_placer : default_placer;
+  const TapPlacementContext ctx{config_.well_tap_macro, config_.pre_end_cap_width,
+                                config_.post_end_cap_width,
+                                config_.space_to_well_tap};
 
   auto& tap_components = circuit_->design().WellTapComponentCollection();
   tap_components.Clear();
@@ -39,32 +44,16 @@ void WellRowCompleter::InsertWellTaps() {
       row_count += stripe.gridded_rows_.size();
     }
   }
+  // Hint only; the collection grows if a pattern places more taps per row.
   tap_components.Reserve(row_count * config_.well_tap_count_per_row);
 
   int component_id = 0;
+  size_t row_index = 0;
   for (auto& column : *columns_) {
     for (auto& stripe : column.stripe_list_) {
       for (auto& row : stripe.gridded_rows_) {
-        int tap_width = config_.well_tap_macro->Width();
-        int required_left_margin =
-            config_.pre_end_cap_width + tap_width + config_.space_to_well_tap;
-        int required_right_margin =
-            config_.post_end_cap_width + tap_width + config_.space_to_well_tap;
-        DaliExpects(row.LeftBoundaryMargin() >= required_left_margin &&
-                        row.RightBoundaryMargin() >= required_right_margin,
-                    "Gridded row did not reserve enough physical-completion "
-                    "space");
-        for (const Component* component : row.Components()) {
-          DaliExpects(
-              component->LLX() >= row.LLX() + required_left_margin &&
-                  component->URX() <= row.URX() - required_right_margin,
-              "Ordinary component is outside the physical-completion interval");
-        }
-
-        const double tap_centers[] = {
-            row.LLX() + config_.pre_end_cap_width + tap_width / 2.0,
-            row.URX() - config_.post_end_cap_width - tap_width / 2.0};
-        for (double tap_center : tap_centers) {
+        placer.ValidateRow(row, ctx);
+        for (double tap_center : placer.RowTapCenters(row, row_index, ctx)) {
           std::string name = "__well_tap__" + std::to_string(component_id++);
           auto [tap, tap_id] = tap_components.CreateWithId(name);
           tap.SetPlacementStatus(PLACED);
@@ -72,13 +61,14 @@ void WellRowCompleter::InsertWellTaps() {
           tap.SetId(static_cast<int>(tap_id));
           row.InsertWellTapCell(tap, tap_center);
         }
+        ++row_index;
       }
     }
   }
 
   tap_components.Freeze();
-  LOG(info) << "Insertion complete: " << component_id
-            << " well tap cell created\n";
+  LOG(info) << "Insertion complete: " << component_id << " well tap cell created ("
+            << placer.Name() << " pattern)\n";
 }
 
 void WellRowCompleter::CreateEndCapMacros() {
