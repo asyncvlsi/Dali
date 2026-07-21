@@ -1826,6 +1826,31 @@ void GriddedCellWellLegalizer::LogMergeOpportunityAudit() {
   long long addressable_split = 0;
   long long already_adjacent = 0;
   double addressable_split_hpwl = 0;
+  long long safe_split = 0;       // merging does not increase wirelength
+  double safe_split_gain = 0;     // summed realistic gain of the safe merges
+
+  // Realistic merge gain for a split pair: relocate the lower-disruption cell to
+  // abut its partner in the partner's row and measure the exact affected-net
+  // HPWL change. This is the SafeChoice test -- the merge is safe only when the
+  // gain is positive (other nets do not lose more than the shared net saves).
+  auto affected_hpwl = [&](Component* component) {
+    double total = 0;
+    for (int net_id : component->NetList()) {
+      total += ckt_ptr_->NetWeightedHPWL(net_id);
+    }
+    return total;
+  };
+  auto merge_gain = [&](Component* mover, Component* anchor) {
+    const double before = affected_hpwl(mover);
+    const double saved_lx = mover->LLX();
+    const double saved_ly = mover->LLY();
+    mover->SetLLX(anchor->LLX() + anchor->Width());
+    mover->SetLLY(anchor->LLY());
+    const double after = affected_hpwl(mover);
+    mover->SetLLX(saved_lx);
+    mover->SetLLY(saved_ly);
+    return before - after;
+  };
 
   std::vector<Net>& nets = ckt_ptr_->Nets();
   for (Net& net : nets) {
@@ -1867,6 +1892,12 @@ void GriddedCellWellLegalizer::LogMergeOpportunityAudit() {
     if (first_row->second != second_row->second) {
       ++addressable_split;
       addressable_split_hpwl += net.WeightedHPWL();
+      const double gain =
+          std::max(merge_gain(first, second), merge_gain(second, first));
+      if (gain > 0) {
+        ++safe_split;
+        safe_split_gain += gain;
+      }
     } else {
       ++already_adjacent;
     }
@@ -1882,7 +1913,10 @@ void GriddedCellWellLegalizer::LogMergeOpportunityAudit() {
             << "      of which both isolated (=1): " << isolated << "\n"
             << "  low-degree AND split across rows:" << addressable_split << "\n"
             << "  low-degree AND already adjacent: " << already_adjacent << "\n"
-            << "  recoverable HPWL of split pairs: " << addressable_split_hpwl
+            << "  loose recoverable HPWL (bound):  " << addressable_split_hpwl
+            << "um\n"
+            << "  safe merges (WL non-increasing): " << safe_split << "\n"
+            << "  realistic gain of safe merges:   " << safe_split_gain
             << "um\n";
 }
 
