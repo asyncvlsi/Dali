@@ -72,7 +72,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -disable_detailed_place                    optional, skip post-legalization detailed placement\n"
       << "  -io_metal_layer                            metal layer number for I/O placement (optional, default 1 for m1)\n"
       << "  -well_legalization_mode <scavenge/strict>  determine whether the last column use unassigned space\n"
-      << "  -well_tap_pattern <row-end/every-other-row> well-tap placement pattern, default row-end\n"
+      << "  -well_tap_pattern <row-end/row-end-every-other/row-mid> well-tap placement pattern, default row-end\n"
       << "  -global_initializer <keep/uniform/gaussian/monte_carlo/density_aware>\n"
       << "  -global_anchor_schedule <dali/simpl>       choose global-placement anchor pseudo-net schedule\n"
       << "  -global_grid_schedule <dali/simpl>         choose look-ahead legalization grid schedule\n"

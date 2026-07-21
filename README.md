@@ -72,8 +72,8 @@ Commonly used options:
   * `-o`/`-output_name <name>.def` — output DEF (default `dali_out.def`)
   * `-d`/`-target_density <0..1>` — target placement density
   * `-well_legalization_mode <strict/scavenge>` — gridded well legalization mode
-  * `-well_tap_pattern <row-end/every-other-row>` — well-tap arrangement; see
-    [well-tap patterns](dali/placer/well_legalizer/README.md)
+  * `-well_tap_pattern <row-end/row-end-every-other/row-mid>` — well-tap
+    arrangement; see [well-tap patterns](dali/placer/well_legalizer/README.md)
   * `-metrics_file <file.json>` — per-stage HPWL and runtime metrics
   * `-net_hpwl_file <file.tsv>` — final per-net weighted HPWL
 

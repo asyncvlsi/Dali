@@ -28,14 +28,18 @@ abut at the tap; cells legalize within a segment and cannot cross the tap.
 | Pattern | `-well_tap_pattern` | Status |
 |---|---|---|
 | **row-end, every row** — two taps per row, in the margins (the default) | `row-end` | Available |
-| **row-end, every other row** — row-end taps on alternate rows; untapped rows covered by their neighbors | `every-other-row` | Selectable; full physical completion pending well-implant geometry generalization |
+| **row-end, every other row** — row-end taps on alternate rows; untapped rows covered by their neighbors | `row-end-every-other` | Planned; pending well-implant geometry generalization |
 | **row-mid, every row** — one center tap per row; the column is split into two independent segments at the seam | `row-mid` | Planned |
+
+Pattern names are `<position>` with an optional `-every-other` cadence suffix
+(default cadence is every row). `every-other-row` is accepted as a legacy alias
+for `row-end-every-other`.
 
 <img src="images/row-end_every-row.png" width="300" alt="row-end every row"><br>
 `row-end`, every row
 
 <img src="images/row-end_every-other-row.png" width="300" alt="row-end every other row"><br>
-`every-other-row`
+`row-end-every-other`
 
 <img src="images/row-mid_every-row.png" width="300" alt="row-mid every row"><br>
 `row-mid`, every row — the center tap splits each row into two segments
@@ -56,8 +60,8 @@ checkerboard — not supported for gridded
 ## Selecting a pattern
 
 ```bash
-dali ... -well_tap_pattern row-end          # default
-dali ... -well_tap_pattern every-other-row
+dali ... -well_tap_pattern row-end               # default
+dali ... -well_tap_pattern row-end-every-other
 ```
 
 ## Note on the standard-cell flow

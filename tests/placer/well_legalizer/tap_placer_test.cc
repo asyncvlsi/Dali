@@ -44,7 +44,7 @@ class TapPlacerTest : public testing::Test {
 };
 
 TEST_F(TapPlacerTest, RowEndPlacesTwoTapsInMargins) {
-  RowEndTapPlacer placer;
+  RowTapPlacer placer(TapPosition::kRowEnd, TapCadence::kEveryRow);
   EXPECT_EQ(placer.Name(), "row-end");
   placer.ValidateRow(row, ctx);  // Must not throw for a well-reserved row.
 
@@ -57,15 +57,24 @@ TEST_F(TapPlacerTest, RowEndPlacesTwoTapsInMargins) {
 }
 
 TEST_F(TapPlacerTest, RowEndCountIsRowIndexIndependent) {
-  RowEndTapPlacer placer;
+  RowTapPlacer placer(TapPosition::kRowEnd, TapCadence::kEveryRow);
   EXPECT_EQ(placer.RowTapCenters(row, 0, ctx).size(), 2U);
   EXPECT_EQ(placer.RowTapCenters(row, 1, ctx).size(), 2U);
   EXPECT_EQ(placer.RowTapCenters(row, 7, ctx).size(), 2U);
 }
 
-TEST_F(TapPlacerTest, EveryOtherRowSkipsOddRows) {
-  EveryOtherRowTapPlacer placer;
-  EXPECT_EQ(placer.Name(), "every-other-row");
+TEST_F(TapPlacerTest, RowMidPlacesOneCenteredTap) {
+  RowTapPlacer placer(TapPosition::kRowMid, TapCadence::kEveryRow);
+  EXPECT_EQ(placer.Name(), "row-mid");
+  const std::vector<double> centers = placer.RowTapCenters(row, 0, ctx);
+  ASSERT_EQ(centers.size(), 1U);
+  // Center of the row: (LLX + URX) / 2 = (0 + 100) / 2.
+  EXPECT_DOUBLE_EQ(centers[0], 50.0);
+}
+
+TEST_F(TapPlacerTest, EveryOtherCadenceSkipsOddRows) {
+  RowTapPlacer placer(TapPosition::kRowEnd, TapCadence::kEveryOtherRow);
+  EXPECT_EQ(placer.Name(), "row-end-every-other");
 
   // Even rows keep the row-end pair; odd rows get none.
   EXPECT_EQ(placer.RowTapCenters(row, 0, ctx).size(), 2U);
@@ -73,53 +82,73 @@ TEST_F(TapPlacerTest, EveryOtherRowSkipsOddRows) {
   EXPECT_EQ(placer.RowTapCenters(row, 2, ctx).size(), 2U);
   EXPECT_TRUE(placer.RowTapCenters(row, 3, ctx).empty());
 
-  // Even-row positions match the default pattern exactly.
+  // Even-row positions match the every-row pattern exactly.
   const std::vector<double> even = placer.RowTapCenters(row, 0, ctx);
-  const std::vector<double> baseline = RowEndTapPlacer().RowTapCenters(row, 0, ctx);
+  const std::vector<double> baseline =
+      RowTapPlacer(TapPosition::kRowEnd, TapCadence::kEveryRow)
+          .RowTapCenters(row, 0, ctx);
   EXPECT_EQ(even, baseline);
 }
 
 TEST(WellTapPatternTest, ParseRoundTripsCanonicalNames) {
   EXPECT_EQ(ParseWellTapPattern("row-end"), WellTapPattern::kRowEnd);
   EXPECT_EQ(ParseWellTapPattern("row_end"), WellTapPattern::kRowEnd);
+  EXPECT_EQ(ParseWellTapPattern("row-end-every-other"),
+            WellTapPattern::kRowEndEveryOther);
+  EXPECT_EQ(ParseWellTapPattern("row-mid"), WellTapPattern::kRowMid);
+  // Legacy name is still accepted as an alias.
   EXPECT_EQ(ParseWellTapPattern("every-other-row"),
-            WellTapPattern::kEveryOtherRow);
+            WellTapPattern::kRowEndEveryOther);
   EXPECT_EQ(ParseWellTapPattern("every_other_row"),
-            WellTapPattern::kEveryOtherRow);
+            WellTapPattern::kRowEndEveryOther);
   // Unknown names fall back to the safe default.
   EXPECT_EQ(ParseWellTapPattern("nonsense"), WellTapPattern::kRowEnd);
 
   EXPECT_EQ(WellTapPatternName(WellTapPattern::kRowEnd), "row-end");
-  EXPECT_EQ(WellTapPatternName(WellTapPattern::kEveryOtherRow),
-            "every-other-row");
+  EXPECT_EQ(WellTapPatternName(WellTapPattern::kRowEndEveryOther),
+            "row-end-every-other");
+  EXPECT_EQ(WellTapPatternName(WellTapPattern::kRowMid), "row-mid");
+}
+
+TEST(WellTapPatternTest, PatternDecomposesIntoAxes) {
+  EXPECT_EQ(PositionOf(WellTapPattern::kRowEnd), TapPosition::kRowEnd);
+  EXPECT_EQ(CadenceOf(WellTapPattern::kRowEnd), TapCadence::kEveryRow);
+  EXPECT_EQ(PositionOf(WellTapPattern::kRowEndEveryOther), TapPosition::kRowEnd);
+  EXPECT_EQ(CadenceOf(WellTapPattern::kRowEndEveryOther),
+            TapCadence::kEveryOtherRow);
+  EXPECT_EQ(PositionOf(WellTapPattern::kRowMid), TapPosition::kRowMid);
+  EXPECT_EQ(CadenceOf(WellTapPattern::kRowMid), TapCadence::kEveryRow);
 }
 
 TEST(WellTapPatternTest, FactoryBuildsMatchingStrategy) {
   EXPECT_EQ(CreateTapPlacer(WellTapPattern::kRowEnd)->Name(), "row-end");
-  EXPECT_EQ(CreateTapPlacer(WellTapPattern::kEveryOtherRow)->Name(),
-            "every-other-row");
+  EXPECT_EQ(CreateTapPlacer(WellTapPattern::kRowEndEveryOther)->Name(),
+            "row-end-every-other");
+  EXPECT_EQ(CreateTapPlacer(WellTapPattern::kRowMid)->Name(), "row-mid");
 }
 
-TEST(WellTapPatternTest, FixedCountOnlyForRowEnd) {
+TEST(WellTapPatternTest, FixedCountForEveryRowCadence) {
   EXPECT_TRUE(WellTapPatternHasFixedCount(WellTapPattern::kRowEnd));
-  EXPECT_FALSE(WellTapPatternHasFixedCount(WellTapPattern::kEveryOtherRow));
+  EXPECT_TRUE(WellTapPatternHasFixedCount(WellTapPattern::kRowMid));
+  EXPECT_FALSE(WellTapPatternHasFixedCount(WellTapPattern::kRowEndEveryOther));
 }
 
 TEST(WellTapPatternTest, TryParseRejectsUnknownNames) {
-  WellTapPattern pattern = WellTapPattern::kEveryOtherRow;
+  WellTapPattern pattern = WellTapPattern::kRowEndEveryOther;
   EXPECT_TRUE(TryParseWellTapPattern("row-end", &pattern));
   EXPECT_EQ(pattern, WellTapPattern::kRowEnd);
   // Unknown names leave the out-param untouched and report failure.
-  EXPECT_FALSE(TryParseWellTapPattern("row-mid", &pattern));
+  EXPECT_FALSE(TryParseWellTapPattern("checkerboard", &pattern));
   EXPECT_EQ(pattern, WellTapPattern::kRowEnd);
   EXPECT_FALSE(TryParseWellTapPattern("nonsense", &pattern));
 }
 
 TEST(WellTapPatternTest, SupportReflectsEndToEndReadiness) {
-  // "Supported" is independent of tap count: row-end runs today, the sparse
-  // pattern is known but not yet end-to-end.
+  // "Supported" is independent of tap count: row-end runs today; the other
+  // known patterns are planned but not yet end-to-end.
   EXPECT_TRUE(IsWellTapPatternSupported(WellTapPattern::kRowEnd));
-  EXPECT_FALSE(IsWellTapPatternSupported(WellTapPattern::kEveryOtherRow));
+  EXPECT_FALSE(IsWellTapPatternSupported(WellTapPattern::kRowEndEveryOther));
+  EXPECT_FALSE(IsWellTapPatternSupported(WellTapPattern::kRowMid));
 }
 
 TEST(WellTapPatternTest, RegistryListsAreConsistent) {

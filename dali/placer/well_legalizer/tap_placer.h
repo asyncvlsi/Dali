@@ -52,42 +52,56 @@ class TapPlacer {
       const TapPlacementContext& ctx) const = 0;
 };
 
+/** Where taps sit within a row. */
+enum class TapPosition {
+  kRowEnd,  // One tap in each reserved row-end margin (two per row).
+  kRowMid,  // One tap at the row center, splitting the row into two segments.
+};
+
+/** Which rows carry taps. */
+enum class TapCadence {
+  kEveryRow,        // Every row gets its taps.
+  kEveryOtherRow,   // Even rows only; odd rows rely on neighbors' taps.
+};
+
 /**
- * Default pattern: exactly two taps, one in each reserved row-end margin, just
- * inside the end caps. Reproduces Dali's historical well-tap placement, which
- * relies on the stripe width being about twice MaxPlugDist so the two row-end
- * taps cover the row interior.
+ * Row-based tap placer, parameterized by the two orthogonal axes of the
+ * taxonomy: intra-row position and row cadence. row-end taps go in the reserved
+ * boundary margins; a row-mid tap goes at the row center. An even/other cadence
+ * leaves odd rows untapped, relying on the abutting rows' taps -- the coverage
+ * verifier is the guard for that. Checkerboard, being a 2-D staggered lattice
+ * rather than a position x cadence, is intentionally a separate placer.
  */
-class RowEndTapPlacer : public TapPlacer {
+class RowTapPlacer : public TapPlacer {
  public:
-  std::string Name() const override { return "row-end"; }
+  RowTapPlacer(TapPosition position, TapCadence cadence)
+      : position_(position), cadence_(cadence) {}
+
+  std::string Name() const override;
   void ValidateRow(const GriddedRow& row,
                    const TapPlacementContext& ctx) const override;
   std::vector<double> RowTapCenters(
       const GriddedRow& row, std::size_t row_index,
       const TapPlacementContext& ctx) const override;
+
+ private:
+  TapPosition position_;
+  TapCadence cadence_;
 };
 
-/**
- * Sparse pattern: taps only on even-indexed rows (at the same row-end
- * positions), leaving odd rows untapped. Halves the tap count and area. Only
- * legal when the well is continuous across abutting rows and the vertical reach
- * to a neighboring row's taps stays within MaxPlugDist -- the coverage verifier
- * is the guard for that.
- */
-class EveryOtherRowTapPlacer : public RowEndTapPlacer {
- public:
-  std::string Name() const override { return "every-other-row"; }
-  std::vector<double> RowTapCenters(
-      const GriddedRow& row, std::size_t row_index,
-      const TapPlacementContext& ctx) const override;
-};
-
-/** Selectable well-tap placement patterns, exposed via -well_tap_pattern. */
+/** Selectable well-tap placement patterns, exposed via -well_tap_pattern. Each
+ * is a curated (position, cadence) combination the gridded flow stands behind;
+ * combinations that are not offered (e.g. row-mid every-other-row) are simply
+ * absent. */
 enum class WellTapPattern {
-  kRowEnd,         // Two taps per row in the reserved margins (default).
-  kEveryOtherRow,  // Row-end taps on even rows only; odd rows rely on neighbors.
+  kRowEnd,            // row-end, every row (default).
+  kRowEndEveryOther,  // row-end, every other row.
+  kRowMid,            // row-mid, every row.
 };
+
+/** Decompose a pattern into its two taxonomy axes. */
+TapPosition PositionOf(WellTapPattern pattern);
+TapCadence CadenceOf(WellTapPattern pattern);
 
 /** Whether a pattern places the same number of taps in every row (row-end) or a
  * per-row-varying number (sparse patterns rely on the coverage check instead of
