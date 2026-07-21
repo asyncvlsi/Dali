@@ -102,7 +102,6 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_EQ(options.detailed_max_move_candidates, 1000);
   EXPECT_FALSE(options.save_intermediate_result);
   EXPECT_EQ(options.output_name, "dali_out");
-  EXPECT_EQ(options.visualization_dir, "");
   EXPECT_FALSE(options.gui_debug);
   EXPECT_EQ(options.gui_pause, "every_snapshot");
 
@@ -192,7 +191,6 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_int("dali.detailed_max_move_candidates", 500);
   config_set_int("dali.save_intermediate_result", 1);
   config_set_string("dali.output_name", "placed");
-  config_set_string("dali.visualization_dir", "dali_snapshots");
   config_set_int("dali.gui_debug", 1);
   config_set_string("dali.gui_pause", "off");
   config_set_real("dali.debug_placement_region_scale", 1.1);
@@ -286,7 +284,6 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_EQ(options.detailed_max_move_candidates, 500);
   EXPECT_TRUE(options.save_intermediate_result);
   EXPECT_EQ(options.output_name, "placed");
-  EXPECT_EQ(options.visualization_dir, "dali_snapshots");
   EXPECT_TRUE(options.gui_debug);
   EXPECT_EQ(options.gui_pause, "off");
   EXPECT_DOUBLE_EQ(options.debug_placement_region_scale, 1.1);

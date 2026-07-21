@@ -79,23 +79,16 @@ Run `dali` with no arguments to print the full option list.
 
 ### Visualizing the placement flow
 
-Dali can emit a snapshot of the placement at every stage: global-placement
-iterations, gridded stripe partitioning, component clustering, orientation,
-row-location and detailed-placement steps, and physical completion (well taps
-and end caps).
-
-Write snapshots to disk (works without Qt):
-
-    $ dali ... -visualization_dir dali_viz
-
-This produces numbered snapshots and a `manifest.json` under `dali_viz/`.
-
-Step through the flow live in the Qt GUI (requires a Qt-enabled build):
+Dali can step through the placement live in a Qt GUI, showing a snapshot at
+every stage: global-placement iterations, gridded stripe partitioning, component
+clustering, orientation, row-location and detailed-placement steps, and physical
+completion (well taps and end caps). The GUI requires a Qt-enabled build:
 
     $ dali ... -gui_debug -gui_pause every_snapshot
 
-The GUI pauses at each checkpoint so intermediate states — including the gridded
-row structure, wells, taps, and end caps — can be inspected.
+It pauses at each checkpoint so intermediate states — including the gridded row
+structure, wells, taps, and end caps — can be inspected, and plots per-stage
+HPWL curves for the stages the run will execute.
 
 ### Run tests
 After configuring and building from the `build/` directory, run:

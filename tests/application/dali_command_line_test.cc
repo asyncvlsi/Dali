@@ -51,7 +51,6 @@ TEST_F(DaliCommandLineTest, ParsesRequiredInputsAndKeepsDefaults) {
   EXPECT_EQ(options.def_file_name, "input.def");
   EXPECT_EQ(options.output_name, "dali_out");
   EXPECT_EQ(options.metrics_file_name, "dali_metrics.json");
-  EXPECT_EQ(options.visualization_dir, "");
   EXPECT_EQ(options.verbose_level, dali::severity::info);
 }
 
@@ -143,8 +142,6 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "net_hpwl.tsv",
                      "-target_density",
                      "0.72",
-                     "-visualization_dir",
-                     "dali_snapshots",
                      "-num_threads",
                      "8",
                      "-net_ignore_threshold",
@@ -257,9 +254,7 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_EQ(options.output_name, "placed");
   EXPECT_EQ(options.metrics_file_name, "metrics.json");
   EXPECT_EQ(options.net_hpwl_file_name, "net_hpwl.tsv");
-  EXPECT_EQ(options.visualization_dir, "dali_snapshots");
   EXPECT_DOUBLE_EQ(config_get_real("dali.target_density"), 0.72);
-  EXPECT_STREQ(config_get_string("dali.visualization_dir"), "dali_snapshots");
   EXPECT_EQ(config_get_int("dali.num_threads"), 8);
   EXPECT_EQ(config_get_int("dali.net_ignore_threshold"), 300);
   EXPECT_EQ(config_get_int("dali.io_metal_layer"), 2);

@@ -130,8 +130,6 @@ add_library(
     STATIC
     ${SOURCES}
     dali/common/named_instance_registry.h
-    dali/common/placement_snapshot_writer.cc
-    dali/common/placement_snapshot_writer.h
 )
 add_dependencies(dalilib dali_git_version)
 

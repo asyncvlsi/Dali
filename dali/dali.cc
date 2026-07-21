@@ -383,7 +383,6 @@ void Dali::ShowParamsList() {
       << "\n"
       << "  save_intermediate_result: " << save_intermediate_result_ << "\n"
       << "  output_name: " << output_name_ << "\n"
-      << "  visualization_dir: " << visualization_dir_ << "\n"
       << "  gui_debug: " << gui_debug_ << "\n"
       << "  gui_pause: " << gui_pause_ << "\n"
       << "  debug_placement_region_scale: " << debug_placement_region_scale_
@@ -683,8 +682,6 @@ void Dali::LoadParamsFromConfig() {
   LoadBoolConfig(ConfigName(prefix_, "save_intermediate_result"),
                  &save_intermediate_result_);
   LoadStringConfig(ConfigName(prefix_, "output_name"), &output_name_);
-  LoadStringConfig(ConfigName(prefix_, "visualization_dir"),
-                   &visualization_dir_);
   LoadBoolConfig(ConfigName(prefix_, "gui_debug"), &gui_debug_);
   LoadStringConfig(ConfigName(prefix_, "gui_pause"), &gui_pause_);
   LoadRealConfig(ConfigName(prefix_, "debug_placement_region_scale"),
@@ -797,7 +794,6 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       detailed_max_move_candidates_,
       save_intermediate_result_,
       output_name_,
-      visualization_dir_,
       gui_debug_,
       gui_pause_,
       debug_placement_region_scale_,
@@ -1378,7 +1374,14 @@ std::vector<PlacementSnapshotStage> Dali::ExpectedSnapshotStages() const {
 }
 
 void Dali::InitializeVisualizationSnapshots() {
-  if (visualization_dir_.empty() && !gui_debug_) {
+  if (!gui_debug_) {
+    snapshot_sink_.reset();
+    return;
+  }
+  if (!gui_snapshot_sink_factory_) {
+    LOG(error) << "GUI debug mode requested, but this Dali executable does "
+                  "not include a GUI snapshot sink. Rebuild with Qt6 "
+                  "available, or configure with -DDALI_GUI=ON to require it.\n";
     snapshot_sink_.reset();
     return;
   }
@@ -1391,33 +1394,15 @@ void Dali::InitializeVisualizationSnapshots() {
     design_name = "unknown";
   }
   PlacementSnapshotRunMetadata run_metadata;
-  run_metadata.output_dir = visualization_dir_;
   run_metadata.design_name = design_name;
   run_metadata.database_microns = circuit_.DistanceMicrons();
   run_metadata.git_commit = get_git_version_short();
   run_metadata.pause_at_every_snapshot = gui_pause_ != "off";
   run_metadata.stages = ExpectedSnapshotStages();
 
-  if (gui_debug_) {
-    if (!gui_snapshot_sink_factory_) {
-      LOG(error)
-          << "GUI debug mode requested, but this Dali executable does "
-             "not include a GUI snapshot sink. Rebuild with Qt6 "
-             "available, or configure with -DDALI_GUI=ON to require it.\n";
-      snapshot_sink_.reset();
-      return;
-    }
-    auto gui_sink = gui_snapshot_sink_factory_();
-    gui_sink->StartRun(run_metadata);
-    snapshot_sink_ = std::move(gui_sink);
-    return;
-  }
-
-  auto snapshot_writer = std::make_unique<PlacementSnapshotWriter>();
-  snapshot_writer->StartRun(run_metadata);
-  snapshot_sink_ = std::move(snapshot_writer);
-  LOG(info) << "Writing placement visualization snapshots to "
-            << visualization_dir_ << "\n";
+  auto gui_sink = gui_snapshot_sink_factory_();
+  gui_sink->StartRun(run_metadata);
+  snapshot_sink_ = std::move(gui_sink);
 }
 
 void Dali::WriteVisualizationSnapshot(

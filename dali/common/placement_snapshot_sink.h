@@ -11,7 +11,6 @@
 #ifndef DALI_COMMON_PLACEMENT_SNAPSHOT_SINK_H_
 #define DALI_COMMON_PLACEMENT_SNAPSHOT_SINK_H_
 
-#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -44,7 +43,6 @@ struct PlacementSnapshotStage {
 
 /** Run-level metadata shared by placement snapshot consumers. */
 struct PlacementSnapshotRunMetadata {
-  std::filesystem::path output_dir;
   std::string design_name;
   int database_microns = 0;
   std::string git_commit;

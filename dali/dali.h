@@ -30,7 +30,6 @@
 
 #include "dali/circuit/circuit.h"
 #include "dali/common/placement_snapshot_sink.h"
-#include "dali/common/placement_snapshot_writer.h"
 #include "dali/placer.h"
 #include "dali/placer/detailed_placer/detailed_placer.h"
 #include "dali/placer/global_placer/placement_initializer.h"
@@ -146,7 +145,6 @@ class Dali {
     int detailed_max_move_candidates = 1000;
     bool save_intermediate_result = false;
     std::string output_name = "dali_out";
-    std::string visualization_dir;
     bool gui_debug = false;
     std::string gui_pause = "every_snapshot";
     double debug_placement_region_scale = 1.0;
@@ -325,7 +323,6 @@ class Dali {
   int detailed_max_move_candidates_ = 1000;
   bool save_intermediate_result_ = false;
   std::string output_name_ = "dali_out";
-  std::string visualization_dir_;
   bool gui_debug_ = false;
   std::string gui_pause_ = "every_snapshot";
   double debug_placement_region_scale_ = 1.0;
