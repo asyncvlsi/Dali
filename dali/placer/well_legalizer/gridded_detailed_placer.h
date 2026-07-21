@@ -71,6 +71,18 @@ class GriddedDetailedPlacer : public Placer {
    */
   void SetExhaustiveInsertionPositions(bool enable);
 
+  /**
+   * Co-locate safe two-pin-connected cell pairs after detailed placement.
+   *
+   * Experimental probe for the SafeChoice merge idea: for each low-degree,
+   * well-compatible pair joined by a two-pin net that is currently split across
+   * rows, try to relocate one cell to abut its partner. The move is committed
+   * only when it is legal and strictly improves affected-net HPWL, so the pass
+   * realizes exactly the subset of the audited safe-merge gain that survives
+   * legality.
+   */
+  void SetEnableSafePairMerge(bool enable);
+
   /** Set the maximum optimal-region rows considered for one component. */
   void SetMaxCandidateRows(int max_candidate_rows);
 
@@ -397,6 +409,8 @@ class GriddedDetailedPlacer : public Placer {
       const std::vector<Component*>& deferred_components);
   /** Rank frozen direct-move proposals and revalidate them before commit. */
   MoveStats RunBatchedRelocationStage(bool insertion_aware = false);
+  /** Co-locate safe two-pin cell pairs; commit only legal HPWL improvements. */
+  void RunSafePairMerge();
   /** Run relocation, optionally including the more expensive ejection search.
    */
   MoveStats RunRelocationStage(bool enable_ejection);
@@ -435,6 +449,7 @@ class GriddedDetailedPlacer : public Placer {
   bool enable_relocation_ = false;
   bool enable_batched_assignment_moves_ = false;
   bool exhaustive_insertion_positions_ = false;
+  bool enable_safe_pair_merge_ = false;
   int max_candidate_rows_ = kMaxOptimalRegionRowsPerComponent;
   size_t net_ignore_threshold_ = 100;
 

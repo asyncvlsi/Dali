@@ -136,6 +136,10 @@ void GriddedDetailedPlacer::SetExhaustiveInsertionPositions(bool enable) {
   exhaustive_insertion_positions_ = enable;
 }
 
+void GriddedDetailedPlacer::SetEnableSafePairMerge(bool enable) {
+  enable_safe_pair_merge_ = enable;
+}
+
 void GriddedDetailedPlacer::SetMaxCandidateRows(int max_candidate_rows) {
   DaliExpects(max_candidate_rows >= 1,
               "Gridded detailed candidate-row cap must be positive");
@@ -1776,6 +1780,81 @@ GriddedDetailedPlacer::RunBatchedRelocationStage(bool insertion_aware) {
   return total_stats;
 }
 
+void GriddedDetailedPlacer::RunSafePairMerge() {
+  component_rows_.clear();
+  for (GriddedRow* row : rows_) {
+    for (Component* component : row->Components()) {
+      component_rows_[component] = row;
+    }
+  }
+
+  std::vector<Component*> movers;
+  for (GriddedRow* row : rows_) {
+    movers.insert(movers.end(), row->Components().begin(),
+                  row->Components().end());
+  }
+  std::sort(movers.begin(), movers.end(),
+            [](const Component* lhs, const Component* rhs) {
+              return lhs->Id() < rhs->Id();
+            });
+
+  std::vector<Net>& nets = ckt_ptr_->Nets();
+  int attempted = 0;
+  int merged = 0;
+  for (Component* mover : movers) {
+    if (mover->NetList().size() > 3) continue;  // low-degree only
+    auto mover_row = component_rows_.find(mover);
+    if (mover_row == component_rows_.end()) continue;
+    for (int net_id : mover->NetList()) {
+      Net& net = nets[net_id];
+      if (net.PinCnt() != 2) continue;
+      Component* partner = nullptr;
+      for (NetPin& pin : net.ComponentPins()) {
+        if (pin.ComponentPtr() != nullptr && pin.ComponentPtr() != mover) {
+          partner = pin.ComponentPtr();
+          break;
+        }
+      }
+      if (partner == nullptr || !partner->IsMovable()) continue;
+      if (partner->NetList().size() > 3) continue;
+      Macro* mover_macro = mover->MacroPtr();
+      Macro* partner_macro = partner->MacroPtr();
+      if (mover_macro->FirstPwellHeight() != partner_macro->FirstPwellHeight() ||
+          mover_macro->FirstNwellHeight() != partner_macro->FirstNwellHeight()) {
+        continue;
+      }
+      auto partner_row = component_rows_.find(partner);
+      if (partner_row == component_rows_.end()) continue;
+      GriddedRow* source_row = mover_row->second;
+      GriddedRow* target_row = partner_row->second;
+      if (source_row == target_row) continue;  // already co-located
+
+      // Insert the mover immediately after its partner in the target row's X
+      // order; TryMove repacks the row and keeps the move only if it is legal
+      // and improves affected-net HPWL.
+      int insertion_position = 0;
+      for (Component* target_component : target_row->Components()) {
+        if (target_component->LLX() < partner->LLX() ||
+            (target_component->LLX() == partner->LLX() &&
+             target_component->Id() <= partner->Id())) {
+          ++insertion_position;
+        }
+      }
+      const double target_lx = partner->LLX() + partner->Width();
+      ++attempted;
+      MoveStats commit_stats;
+      if (TryMove(source_row, mover, target_row, target_lx, &commit_stats,
+                  insertion_position)) {
+        ++merged;
+        break;  // mover is placed; move on to the next mover
+      }
+    }
+  }
+  LOG(info) << "  safe-pair merge: attempted=" << attempted
+            << ", merged=" << merged << "\n";
+  component_rows_.clear();
+}
+
 GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::RunRelocationStage(
     bool enable_ejection) {
   MoveStats total_stats;
@@ -2216,6 +2295,18 @@ bool GriddedDetailedPlacer::StartPlacement() {
     EmitSnapshot("gridded.insertion_refinement",
                  "Gridded Detailed Insertion Refinement",
                  "insertion_refinement", iteration_count);
+  }
+
+  if (enable_safe_pair_merge_) {
+    double hpwl_before_merge = WeightedHPWL();
+    ElapsedTime merge_timer;
+    merge_timer.RecordStartTime();
+    RunSafePairMerge();
+    merge_timer.RecordEndTime();
+    LOG(info) << "  safe-pair merge: HPWL " << hpwl_before_merge << " -> "
+              << WeightedHPWL() << "um, wall=" << merge_timer.GetWallTime()
+              << "s\n";
+    RecordPlacementHpwlMetrics("gridded_detailed.safe_pair_merge", *ckt_ptr_);
   }
 
   for (int pass = 0; pass < kMaxFinalClusteringPasses; ++pass) {

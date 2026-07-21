@@ -152,6 +152,11 @@ class GriddedCellWellLegalizer : public Placer {
     merge_opportunity_audit_ = enable;
   }
 
+  /** Co-locate safe two-pin cell pairs during gridded detailed placement. */
+  void SetEnableDetailedSafePairMerge(bool enable) {
+    gridded_detailed_placer_.SetEnableSafePairMerge(enable);
+  }
+
   /** Set the per-component candidate-row cap in gridded detailed placement. */
   void SetDetailedPlacementMaxCandidateRows(int max_candidate_rows) {
     gridded_detailed_placer_.SetMaxCandidateRows(max_candidate_rows);
