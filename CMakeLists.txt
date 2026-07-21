@@ -119,9 +119,13 @@ file(
     dali/dali.cc
     dali/application/dali_command_line.cc
     dali/circuit/*.cc
+    dali/circuit/*.h
     dali/common/*.cc
+    dali/common/*.h
     dali/placer/*.cc
+    dali/placer/*.h
     dali/timing/*.cc
+    dali/timing/*.h
 )
 
 # Create the dalilib static library
@@ -129,7 +133,6 @@ add_library(
     dalilib
     STATIC
     ${SOURCES}
-    dali/common/named_instance_registry.h
 )
 add_dependencies(dalilib dali_git_version)
 
@@ -158,11 +161,11 @@ target_link_libraries(
 )
 
 if (DALI_HAS_QT_GUI)
+    file(GLOB_RECURSE GUI_SOURCES dali/gui/*.cc dali/gui/*.h)
     add_library(
         daligui
         STATIC
-        dali/gui/qt_placement_snapshot_sink.cc
-        dali/gui/qt_placement_snapshot_sink.h
+        ${GUI_SOURCES}
     )
     target_link_libraries(daligui PUBLIC dalilib Qt6::Widgets)
     target_compile_definitions(daligui PUBLIC DALI_HAS_QT_GUI QT_NO_KEYWORDS)
