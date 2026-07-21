@@ -437,11 +437,10 @@ void Dali::LoadParamsFromConfig() {
     well_tap_pattern_ = ParseWellTapPattern(config_get_string(param_name.c_str()));
   }
   DaliExpects(
-      disable_welltap_ || WellTapPatternHasFixedCount(well_tap_pattern_),
+      disable_welltap_ || IsWellTapPatternSupported(well_tap_pattern_),
       "well_tap_pattern '" + WellTapPatternName(well_tap_pattern_) +
-          "' is not yet supported end-to-end: the well-implant geometry "
-          "builder requires a tap in every row. Use -well_tap_pattern row-end "
-          "for now.");
+          "' is not yet supported end-to-end. Supported patterns: " +
+          SupportedWellTapPatternList() + ".");
   LoadBoolConfig(ConfigName(prefix_, "disable_cell_flip"), &disable_cell_flip_);
   LoadRealConfig(ConfigName(prefix_, "max_row_width"), &max_row_width_);
   LoadBoolConfig(ConfigName(prefix_, "enable_adaptive_stripe_boundaries"),

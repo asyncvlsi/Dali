@@ -15,6 +15,7 @@
 
 #include "dali/common/act_config.h"
 #include "dali/common/helper.h"
+#include "dali/placer/well_legalizer/tap_placer.h"
 
 namespace dali {
 
@@ -396,9 +397,14 @@ bool ParseDaliCommandLine(int argc, char* argv[],
         error_output << "Invalid well tap pattern!\n";
         return false;
       }
-      if (value != "row-end" && value != "every-other-row") {
-        error_output << "Invalid well tap pattern! "
-                        "(expected row-end or every-other-row)\n";
+      WellTapPattern parsed_pattern;
+      if (!TryParseWellTapPattern(value, &parsed_pattern)) {
+        error_output << "Unknown well_tap_pattern '" << value
+                     << "'; known patterns:";
+        for (const std::string& name : KnownWellTapPatternNames()) {
+          error_output << " " << name;
+        }
+        error_output << "\n";
         return false;
       }
       config_set_string("dali.well_tap_pattern", value.c_str());

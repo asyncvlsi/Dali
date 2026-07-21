@@ -105,4 +105,33 @@ TEST(WellTapPatternTest, FixedCountOnlyForRowEnd) {
   EXPECT_FALSE(WellTapPatternHasFixedCount(WellTapPattern::kEveryOtherRow));
 }
 
+TEST(WellTapPatternTest, TryParseRejectsUnknownNames) {
+  WellTapPattern pattern = WellTapPattern::kEveryOtherRow;
+  EXPECT_TRUE(TryParseWellTapPattern("row-end", &pattern));
+  EXPECT_EQ(pattern, WellTapPattern::kRowEnd);
+  // Unknown names leave the out-param untouched and report failure.
+  EXPECT_FALSE(TryParseWellTapPattern("row-mid", &pattern));
+  EXPECT_EQ(pattern, WellTapPattern::kRowEnd);
+  EXPECT_FALSE(TryParseWellTapPattern("nonsense", &pattern));
+}
+
+TEST(WellTapPatternTest, SupportReflectsEndToEndReadiness) {
+  // "Supported" is independent of tap count: row-end runs today, the sparse
+  // pattern is known but not yet end-to-end.
+  EXPECT_TRUE(IsWellTapPatternSupported(WellTapPattern::kRowEnd));
+  EXPECT_FALSE(IsWellTapPatternSupported(WellTapPattern::kEveryOtherRow));
+}
+
+TEST(WellTapPatternTest, RegistryListsAreConsistent) {
+  const std::vector<std::string>& known = KnownWellTapPatternNames();
+  // Every known name round-trips through the parser.
+  for (const std::string& name : known) {
+    WellTapPattern pattern;
+    EXPECT_TRUE(TryParseWellTapPattern(name, &pattern)) << name;
+    EXPECT_EQ(WellTapPatternName(pattern), name);
+  }
+  // The supported list is the subset of known names that run end-to-end.
+  EXPECT_EQ(SupportedWellTapPatternList(), "row-end");
+}
+
 }  // namespace dali

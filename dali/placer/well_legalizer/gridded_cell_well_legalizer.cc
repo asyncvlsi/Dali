@@ -2640,16 +2640,15 @@ void GriddedCellWellLegalizer::EmitSnapshot(const std::string& id,
 bool GriddedCellWellLegalizer::StartPlacement() {
   PrintStartStatement("standard cluster well legalization");
 
-  // Sparse tap patterns (some rows untapped) place and legalize, but the
-  // well-implant geometry builder (WellGeometryBuilder::CollectTapEdges) still
-  // assumes one tap per row. Fail fast with an actionable message rather than
-  // reaching that deeper fatal.
+  // Backstop for callers that bypass CLI/config validation: some patterns place
+  // and legalize but are not yet handled by later stages (e.g. every-other-row
+  // and the well-implant geometry builder). Fail fast with an actionable message
+  // rather than reaching a deeper fatal.
   DaliExpects(
-      disable_welltap_ || WellTapPatternHasFixedCount(well_tap_pattern_),
+      disable_welltap_ || IsWellTapPatternSupported(well_tap_pattern_),
       "well_tap_pattern '" + WellTapPatternName(well_tap_pattern_) +
-          "' is not yet supported end-to-end: the well-implant geometry "
-          "builder requires a tap in every row. Use -well_tap_pattern row-end "
-          "for now.");
+          "' is not yet supported end-to-end. Supported patterns: " +
+          SupportedWellTapPatternList() + ".");
 
   snapshot_attempt_ = 0;
   SaveInitialComponentLocation();

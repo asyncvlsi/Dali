@@ -59,6 +59,40 @@ bool WellTapPatternHasFixedCount(WellTapPattern pattern) {
   return true;
 }
 
+bool IsWellTapPatternSupported(WellTapPattern pattern) {
+  switch (pattern) {
+    case WellTapPattern::kRowEnd:
+      return true;
+    // every-other-row places and legalizes but is not yet handled by the
+    // well-implant geometry builder; keep it known-but-unsupported until that
+    // work lands.
+    case WellTapPattern::kEveryOtherRow:
+      return false;
+  }
+  return false;
+}
+
+const std::vector<std::string>& KnownWellTapPatternNames() {
+  static const std::vector<std::string> names = {
+      WellTapPatternName(WellTapPattern::kRowEnd),
+      WellTapPatternName(WellTapPattern::kEveryOtherRow),
+  };
+  return names;
+}
+
+std::string SupportedWellTapPatternList() {
+  std::string list;
+  for (const std::string& name : KnownWellTapPatternNames()) {
+    WellTapPattern pattern;
+    if (TryParseWellTapPattern(name, &pattern) &&
+        IsWellTapPatternSupported(pattern)) {
+      if (!list.empty()) list += ", ";
+      list += name;
+    }
+  }
+  return list;
+}
+
 std::unique_ptr<TapPlacer> CreateTapPlacer(WellTapPattern pattern) {
   switch (pattern) {
     case WellTapPattern::kEveryOtherRow:
@@ -69,16 +103,25 @@ std::unique_ptr<TapPlacer> CreateTapPlacer(WellTapPattern pattern) {
   return std::make_unique<RowEndTapPlacer>();
 }
 
-WellTapPattern ParseWellTapPattern(const std::string& name) {
+bool TryParseWellTapPattern(const std::string& name, WellTapPattern* pattern) {
   if (name == "row-end" || name == "row_end") {
-    return WellTapPattern::kRowEnd;
+    *pattern = WellTapPattern::kRowEnd;
+    return true;
   }
   if (name == "every-other-row" || name == "every_other_row") {
-    return WellTapPattern::kEveryOtherRow;
+    *pattern = WellTapPattern::kEveryOtherRow;
+    return true;
   }
-  std::cout << "Ignore unknown well_tap_pattern: " << name
-            << " (using row-end)\n";
-  return WellTapPattern::kRowEnd;
+  return false;
+}
+
+WellTapPattern ParseWellTapPattern(const std::string& name) {
+  WellTapPattern pattern = WellTapPattern::kRowEnd;
+  if (!TryParseWellTapPattern(name, &pattern)) {
+    std::cout << "Ignore unknown well_tap_pattern: " << name
+              << " (using row-end)\n";
+  }
+  return pattern;
 }
 
 std::string WellTapPatternName(WellTapPattern pattern) {
