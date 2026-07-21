@@ -79,4 +79,30 @@ TEST_F(TapPlacerTest, EveryOtherRowSkipsOddRows) {
   EXPECT_EQ(even, baseline);
 }
 
+TEST(WellTapPatternTest, ParseRoundTripsCanonicalNames) {
+  EXPECT_EQ(ParseWellTapPattern("row-end"), WellTapPattern::kRowEnd);
+  EXPECT_EQ(ParseWellTapPattern("row_end"), WellTapPattern::kRowEnd);
+  EXPECT_EQ(ParseWellTapPattern("every-other-row"),
+            WellTapPattern::kEveryOtherRow);
+  EXPECT_EQ(ParseWellTapPattern("every_other_row"),
+            WellTapPattern::kEveryOtherRow);
+  // Unknown names fall back to the safe default.
+  EXPECT_EQ(ParseWellTapPattern("nonsense"), WellTapPattern::kRowEnd);
+
+  EXPECT_EQ(WellTapPatternName(WellTapPattern::kRowEnd), "row-end");
+  EXPECT_EQ(WellTapPatternName(WellTapPattern::kEveryOtherRow),
+            "every-other-row");
+}
+
+TEST(WellTapPatternTest, FactoryBuildsMatchingStrategy) {
+  EXPECT_EQ(CreateTapPlacer(WellTapPattern::kRowEnd)->Name(), "row-end");
+  EXPECT_EQ(CreateTapPlacer(WellTapPattern::kEveryOtherRow)->Name(),
+            "every-other-row");
+}
+
+TEST(WellTapPatternTest, FixedCountOnlyForRowEnd) {
+  EXPECT_TRUE(WellTapPatternHasFixedCount(WellTapPattern::kRowEnd));
+  EXPECT_FALSE(WellTapPatternHasFixedCount(WellTapPattern::kEveryOtherRow));
+}
+
 }  // namespace dali

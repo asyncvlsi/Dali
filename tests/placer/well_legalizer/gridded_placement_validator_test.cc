@@ -134,6 +134,25 @@ TEST_F(GriddedPlacementValidatorTest, ValidatesTapAndEndCapCompletion) {
   EXPECT_EQ(drifted_report.well_tap_geometry_violation_count, 1U);
 }
 
+TEST_F(GriddedPlacementValidatorTest, SparsePatternAllowsUntappedRows) {
+  // The row carries no taps. The strict (row-end) expectation flags it as
+  // missing taps; a sparse pattern that relies on coverage does not.
+  GriddedPlacementValidationConfig strict;
+  strict.expect_well_taps = true;
+  const GriddedPlacementLegalityReport strict_report =
+      GriddedPlacementValidator(&circuit, &columns, strict).Validate();
+  EXPECT_GE(strict_report.missing_well_tap_count, 1U);
+
+  GriddedPlacementValidationConfig sparse;
+  sparse.expect_well_taps = true;
+  sparse.require_taps_every_row = false;
+  sparse.check_exact_well_tap_count = false;
+  const GriddedPlacementLegalityReport sparse_report =
+      GriddedPlacementValidator(&circuit, &columns, sparse).Validate();
+  EXPECT_EQ(sparse_report.missing_well_tap_count, 0U);
+  EXPECT_EQ(sparse_report.physical_component_count_violation_count, 0U);
+}
+
 TEST_F(GriddedPlacementValidatorTest, VerifiesWellTapCoverageAgainstMaxPlugDist) {
   Macro* tap = circuit.GetMacroPtr("tap");
   ASSERT_NE(tap, nullptr);

@@ -71,6 +71,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -disable_detailed_place                    optional, skip post-legalization detailed placement\n"
       << "  -io_metal_layer                            metal layer number for I/O placement (optional, default 1 for m1)\n"
       << "  -well_legalization_mode <scavenge/strict>  determine whether the last column use unassigned space\n"
+      << "  -well_tap_pattern <row-end/every-other-row> well-tap placement pattern, default row-end\n"
       << "  -global_initializer <keep/uniform/gaussian/monte_carlo/density_aware>\n"
       << "  -global_anchor_schedule <dali/simpl>       choose global-placement anchor pseudo-net schedule\n"
       << "  -global_grid_schedule <dali/simpl>         choose look-ahead legalization grid schedule\n"
@@ -390,6 +391,17 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.enable_adaptive_stripe_boundaries");
     } else if (arg == "-disable_welltap") {
       EnableConfigFlag("dali.disable_welltap");
+    } else if (arg == "-well_tap_pattern") {
+      if (!TryGetValue(argc, argv, &i, &value)) {
+        error_output << "Invalid well tap pattern!\n";
+        return false;
+      }
+      if (value != "row-end" && value != "every-other-row") {
+        error_output << "Invalid well tap pattern! "
+                        "(expected row-end or every-other-row)\n";
+        return false;
+      }
+      config_set_string("dali.well_tap_pattern", value.c_str());
     } else if (arg == "-disable_cell_flip") {
       EnableConfigFlag("dali.disable_cell_flip");
     } else if (arg == "-disable_io_place") {

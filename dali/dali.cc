@@ -248,6 +248,7 @@ void Dali::ShowParamsList() {
       << "  io_metal_layer: " << io_metal_layer_ << "\n"
       << "  export_well_cluster_matlab: " << export_well_cluster_matlab_ << "\n"
       << "  disable_welltap: " << disable_welltap_ << "\n"
+      << "  well_tap_pattern: " << WellTapPatternName(well_tap_pattern_) << "\n"
       << "  disable_cell_flip: " << disable_cell_flip_ << "\n"
       << "  max_row_width: " << max_row_width_ << "\n"
       << "  enable_adaptive_stripe_boundaries: "
@@ -431,6 +432,16 @@ void Dali::LoadParamsFromConfig() {
   LoadBoolConfig(ConfigName(prefix_, "export_well_cluster_matlab"),
                  &export_well_cluster_matlab_);
   LoadBoolConfig(ConfigName(prefix_, "disable_welltap"), &disable_welltap_);
+  param_name = ConfigName(prefix_, "well_tap_pattern");
+  if (ConfigExists(param_name)) {
+    well_tap_pattern_ = ParseWellTapPattern(config_get_string(param_name.c_str()));
+  }
+  DaliExpects(
+      disable_welltap_ || WellTapPatternHasFixedCount(well_tap_pattern_),
+      "well_tap_pattern '" + WellTapPatternName(well_tap_pattern_) +
+          "' is not yet supported end-to-end: the well-implant geometry "
+          "builder requires a tap in every row. Use -well_tap_pattern row-end "
+          "for now.");
   LoadBoolConfig(ConfigName(prefix_, "disable_cell_flip"), &disable_cell_flip_);
   LoadRealConfig(ConfigName(prefix_, "max_row_width"), &max_row_width_);
   LoadBoolConfig(ConfigName(prefix_, "enable_adaptive_stripe_boundaries"),
@@ -718,6 +729,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       io_metal_layer_,
       export_well_cluster_matlab_,
       disable_welltap_,
+      well_tap_pattern_,
       disable_cell_flip_,
       max_row_width_,
       enable_adaptive_stripe_boundaries_,
@@ -1182,6 +1194,7 @@ bool Dali::RunDetailedPlacement() {
 void Dali::ConfigureWellLegalizer() {
   well_legalizer_.CopyPlacementContextFrom(&gb_placer_);
   well_legalizer_.disable_welltap_ = disable_welltap_;
+  well_legalizer_.SetWellTapPattern(well_tap_pattern_);
   well_legalizer_.disable_cell_flip_ = disable_cell_flip_;
   well_legalizer_.enable_end_cap_cell_ = enable_end_cap_cell_;
   well_legalizer_.SetMaxRowWidth(max_row_width_);

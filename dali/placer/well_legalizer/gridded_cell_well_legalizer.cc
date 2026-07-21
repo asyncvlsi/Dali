@@ -603,6 +603,7 @@ WellRowCompletionConfig GriddedCellWellLegalizer::BuildRowCompletionConfig()
   WellRowCompletionConfig config;
   config.well_tap_macro = well_tap_macro_;
   config.well_tap_count_per_row = well_tap_count_per_cluster_;
+  config.tap_placer = tap_placer_.get();
   config.space_to_well_tap = space_to_well_tap_;
   if (enable_end_cap_cell_) {
     config.pre_end_cap_width = pre_end_cap_min_width_;
@@ -1137,6 +1138,9 @@ bool GriddedCellWellLegalizer::ValidateFinalPlacement() const {
   config.expect_well_taps = !disable_welltap_;
   config.check_well_tap_coverage = !disable_welltap_;
   config.well_tap_count_per_row = well_tap_count_per_cluster_;
+  const bool fixed_count = WellTapPatternHasFixedCount(well_tap_pattern_);
+  config.check_exact_well_tap_count = fixed_count;
+  config.require_taps_every_row = fixed_count;
   config.expect_end_caps = enable_end_cap_cell_;
   config.space_to_well_tap = space_to_well_tap_;
   if (enable_end_cap_cell_) {
@@ -2635,6 +2639,17 @@ void GriddedCellWellLegalizer::EmitSnapshot(const std::string& id,
 
 bool GriddedCellWellLegalizer::StartPlacement() {
   PrintStartStatement("standard cluster well legalization");
+
+  // Sparse tap patterns (some rows untapped) place and legalize, but the
+  // well-implant geometry builder (WellGeometryBuilder::CollectTapEdges) still
+  // assumes one tap per row. Fail fast with an actionable message rather than
+  // reaching that deeper fatal.
+  DaliExpects(
+      disable_welltap_ || WellTapPatternHasFixedCount(well_tap_pattern_),
+      "well_tap_pattern '" + WellTapPatternName(well_tap_pattern_) +
+          "' is not yet supported end-to-end: the well-implant geometry "
+          "builder requires a tap in every row. Use -well_tap_pattern row-end "
+          "for now.");
 
   snapshot_attempt_ = 0;
   SaveInitialComponentLocation();

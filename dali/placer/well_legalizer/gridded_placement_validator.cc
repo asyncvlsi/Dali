@@ -109,8 +109,12 @@ GriddedPlacementLegalityReport GriddedPlacementValidator::Validate() const {
           const Component* left_tap = row.LeftWellTapCell();
           const Component* right_tap = row.RightWellTapCell();
           if (left_tap == nullptr || right_tap == nullptr) {
-            ++report.physical_completion_violation_count;
-            ++report.missing_well_tap_count;
+            // A sparse pattern may leave a row intentionally untapped; the
+            // MaxPlugDist coverage check then guards that row's cells.
+            if (config_.require_taps_every_row) {
+              ++report.physical_completion_violation_count;
+              ++report.missing_well_tap_count;
+            }
           } else {
             const ComponentOrient expected_orientation =
                 row.IsOrientN() ? N : FS;

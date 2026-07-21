@@ -25,6 +25,10 @@ struct GriddedPlacementValidationConfig {
   // for patterns whose per-row tap count varies (rely on coverage instead).
   bool check_exact_well_tap_count = true;
   int well_tap_count_per_row = 2;
+  // Require every row to carry taps. True for the row-end pattern; false for
+  // sparse patterns (e.g. every-other-row) where some rows are intentionally
+  // untapped and the MaxPlugDist coverage check guards correctness instead.
+  bool require_taps_every_row = true;
 
   // Pattern-agnostic latch-up coverage: verify every movable cell lies within
   // MaxPlugDist of some well tap, independent of how taps were placed. Unlike

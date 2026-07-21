@@ -56,6 +56,7 @@ class Dali {
     int io_metal_layer = 0;
     bool export_well_cluster_matlab = false;
     bool disable_welltap = false;
+    WellTapPattern well_tap_pattern = WellTapPattern::kRowEnd;
     bool disable_cell_flip = false;
     double max_row_width = 0;
     bool enable_adaptive_stripe_boundaries = false;
@@ -241,6 +242,7 @@ class Dali {
   int io_metal_layer_ = 0;
   bool export_well_cluster_matlab_ = false;
   bool disable_welltap_ = false;
+  WellTapPattern well_tap_pattern_ = WellTapPattern::kRowEnd;
   bool disable_cell_flip_ = false;
   double max_row_width_ = 0;
   bool enable_adaptive_stripe_boundaries_ = false;

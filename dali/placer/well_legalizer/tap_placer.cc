@@ -3,6 +3,8 @@
  *******************************************************************************/
 #include "dali/placer/well_legalizer/tap_placer.h"
 
+#include <iostream>
+
 #include "dali/common/logging.h"
 
 namespace dali {
@@ -45,6 +47,48 @@ std::vector<double> EveryOtherRowTapPlacer::RowTapCenters(
     return {};  // Odd rows rely on taps in the abutting even rows.
   }
   return RowEndTapPlacer::RowTapCenters(row, row_index, ctx);
+}
+
+bool WellTapPatternHasFixedCount(WellTapPattern pattern) {
+  switch (pattern) {
+    case WellTapPattern::kEveryOtherRow:
+      return false;
+    case WellTapPattern::kRowEnd:
+      return true;
+  }
+  return true;
+}
+
+std::unique_ptr<TapPlacer> CreateTapPlacer(WellTapPattern pattern) {
+  switch (pattern) {
+    case WellTapPattern::kEveryOtherRow:
+      return std::make_unique<EveryOtherRowTapPlacer>();
+    case WellTapPattern::kRowEnd:
+      return std::make_unique<RowEndTapPlacer>();
+  }
+  return std::make_unique<RowEndTapPlacer>();
+}
+
+WellTapPattern ParseWellTapPattern(const std::string& name) {
+  if (name == "row-end" || name == "row_end") {
+    return WellTapPattern::kRowEnd;
+  }
+  if (name == "every-other-row" || name == "every_other_row") {
+    return WellTapPattern::kEveryOtherRow;
+  }
+  std::cout << "Ignore unknown well_tap_pattern: " << name
+            << " (using row-end)\n";
+  return WellTapPattern::kRowEnd;
+}
+
+std::string WellTapPatternName(WellTapPattern pattern) {
+  switch (pattern) {
+    case WellTapPattern::kEveryOtherRow:
+      return "every-other-row";
+    case WellTapPattern::kRowEnd:
+      return "row-end";
+  }
+  return "row-end";
 }
 
 }  // namespace dali

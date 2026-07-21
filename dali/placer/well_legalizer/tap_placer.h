@@ -5,6 +5,7 @@
 #define DALI_PLACER_WELL_LEGALIZER_TAP_PLACER_H_
 
 #include <cstddef>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -81,6 +82,26 @@ class EveryOtherRowTapPlacer : public RowEndTapPlacer {
       const GriddedRow& row, std::size_t row_index,
       const TapPlacementContext& ctx) const override;
 };
+
+/** Selectable well-tap placement patterns, exposed via -well_tap_pattern. */
+enum class WellTapPattern {
+  kRowEnd,         // Two taps per row in the reserved margins (default).
+  kEveryOtherRow,  // Row-end taps on even rows only; odd rows rely on neighbors.
+};
+
+/** Whether a pattern places the same number of taps in every row (row-end) or a
+ * per-row-varying number (sparse patterns rely on the coverage check instead of
+ * an exact tap count / taps-in-every-row invariant). */
+bool WellTapPatternHasFixedCount(WellTapPattern pattern);
+
+/** Construct the TapPlacer implementing a pattern. */
+std::unique_ptr<TapPlacer> CreateTapPlacer(WellTapPattern pattern);
+
+/** Parse a CLI pattern name; unknown names fall back to row-end with a note. */
+WellTapPattern ParseWellTapPattern(const std::string& name);
+
+/** Canonical CLI name for a pattern. */
+std::string WellTapPatternName(WellTapPattern pattern);
 
 }  // namespace dali
 

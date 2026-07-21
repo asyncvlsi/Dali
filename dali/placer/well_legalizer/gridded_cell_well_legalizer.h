@@ -22,6 +22,7 @@
 #define DALI_PLACER_WELL_LEGALIZER_GRIDDED_CELL_WELL_LEGALIZER_H_
 
 #include <functional>
+#include <memory>
 #include <string>
 
 #include "component_segment.h"
@@ -106,6 +107,12 @@ class GriddedCellWellLegalizer : public Placer {
 
   /** Set stripe partitioning mode. */
   void SetStripePartitionMode(int mode) { stripe_mode_ = mode; }
+
+  /** Select the well-tap placement pattern and build its strategy. */
+  void SetWellTapPattern(WellTapPattern pattern) {
+    well_tap_pattern_ = pattern;
+    tap_placer_ = CreateTapPlacer(pattern);
+  }
 
   /** Enable capacity-aware reassignment between neighboring stripes. */
   void SetEnableStripeBalancing(bool enable) {
@@ -562,6 +569,11 @@ class GriddedCellWellLegalizer : public Placer {
   /**** well parameters ****/
   bool disable_welltap_ = false;
   int well_tap_count_per_cluster_ = 2;
+  WellTapPattern well_tap_pattern_ = WellTapPattern::kRowEnd;
+  // Strategy realizing well_tap_pattern_; null keeps WellRowCompleter's default
+  // (row-end). Owned here so BuildRowCompletionConfig can hand out a stable
+  // pointer.
+  std::unique_ptr<TapPlacer> tap_placer_;
   int max_unplug_length_;
   int well_tap_width_;
   int well_spacing_;
