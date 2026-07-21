@@ -147,20 +147,6 @@ class GriddedCellWellLegalizer : public Placer {
     gridded_detailed_placer_.SetExhaustiveInsertionPositions(enable);
   }
 
-  /** Log the two-pin cell-merge opportunity after detailed placement. */
-  void SetMergeOpportunityAudit(bool enable) {
-    merge_opportunity_audit_ = enable;
-  }
-
-  /** Co-locate safe two-pin cell pairs during gridded detailed placement. */
-  void SetEnableDetailedSafePairMerge(bool enable) {
-    gridded_detailed_placer_.SetEnableSafePairMerge(enable);
-  }
-
-  /** Weight gridded fixed-order X clustering by incident net weight. */
-  void SetDetailedWeightedClustering(bool enable) {
-    gridded_detailed_placer_.SetWeightedClustering(enable);
-  }
 
   /** Set the per-component candidate-row cap in gridded detailed placement. */
   void SetDetailedPlacementMaxCandidateRows(int max_candidate_rows) {
@@ -565,8 +551,6 @@ class GriddedCellWellLegalizer : public Placer {
   /** Log estimated gridded-row demand before component clustering. */
   void LogEstimatedGriddedCapacity();
 
-  /** Log how many two-pin cell pairs are safely mergeable and still split. */
-  void LogMergeOpportunityAudit();
 
   /** Log actual gridded-row area after component clustering. */
   void LogActualGriddedUtilization() const;
@@ -603,7 +587,6 @@ class GriddedCellWellLegalizer : public Placer {
   std::vector<int> stripe_boundaries_override_;
   bool enable_local_reorder_ = false;
   bool enable_detailed_placement_ = false;
-  bool merge_opportunity_audit_ = false;
   int detailed_placement_max_rounds_ = 6;
   bool enable_row_location_optimization_ = false;
   bool enable_ortools_row_optimization_ = false;

@@ -187,9 +187,6 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "-enable_gridded_detailed_relocation",
                      "-enable_gridded_assignment_batch",
                      "-enable_gridded_exhaustive_insertion",
-                     "-enable_gridded_merge_opportunity_audit",
-                     "-enable_gridded_safe_pair_merge",
-                     "-enable_gridded_weighted_clustering",
                      "-gridded_detailed_max_candidate_rows",
                      "8",
                      "-gridded_detailed_max_rounds",
@@ -294,9 +291,6 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_EQ(config_get_int("dali.enable_gridded_detailed_relocation"), 1);
   EXPECT_EQ(config_get_int("dali.enable_gridded_assignment_batch"), 1);
   EXPECT_EQ(config_get_int("dali.enable_gridded_exhaustive_insertion"), 1);
-  EXPECT_EQ(config_get_int("dali.enable_gridded_merge_opportunity_audit"), 1);
-  EXPECT_EQ(config_get_int("dali.enable_gridded_safe_pair_merge"), 1);
-  EXPECT_EQ(config_get_int("dali.enable_gridded_weighted_clustering"), 1);
   EXPECT_EQ(config_get_int("dali.gridded_detailed_max_candidate_rows"), 8);
   EXPECT_EQ(config_get_int("dali.gridded_detailed_max_rounds"), 5);
   EXPECT_DOUBLE_EQ(

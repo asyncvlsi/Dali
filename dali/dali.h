@@ -80,9 +80,6 @@ class Dali {
     bool enable_gridded_detailed_relocation = false;
     bool enable_gridded_assignment_batch = false;
     bool enable_gridded_exhaustive_insertion = false;
-    bool enable_gridded_merge_opportunity_audit = false;
-    bool enable_gridded_safe_pair_merge = false;
-    bool enable_gridded_weighted_clustering = false;
     int gridded_detailed_max_candidate_rows = 4;
     int gridded_detailed_max_rounds = 6;
     double gridded_detailed_min_relative_improvement = 0.005;
@@ -269,9 +266,6 @@ class Dali {
   bool enable_gridded_detailed_relocation_ = false;
   bool enable_gridded_assignment_batch_ = false;
   bool enable_gridded_exhaustive_insertion_ = false;
-  bool enable_gridded_merge_opportunity_audit_ = false;
-  bool enable_gridded_safe_pair_merge_ = false;
-  bool enable_gridded_weighted_clustering_ = false;
   int gridded_detailed_max_candidate_rows_ = 4;
   int gridded_detailed_max_rounds_ = 6;
   double gridded_detailed_min_relative_improvement_ = 0.005;
