@@ -1,6 +1,13 @@
 # Dali
 ## Gridded Cell Placement Flow
 
+Dali is a standard-cell placer for gridded-cell, well-aware technologies. It runs
+analytical global placement, then legalizes cells into gridded rows with
+N/P-well-aware clustering, row orientation, row-location and detailed-placement
+optimization, and finally completes each row with well taps and end caps before
+writing a legal DEF. Every stage can be stepped through in a live Qt GUI or
+exported as visualization snapshots.
+
 ### Recommended compilation toolchain
   * Ubuntu >= 18.04
   * GNU Compiler Collection (GCC), version >= 4.8.5
@@ -52,6 +59,43 @@ when configuration should fail if Qt is unavailable, or `-DDALI_GUI=OFF` to
 force a non-GUI build:
 
     $ cmake .. -DDALI_GUI=ON
+
+### Running Dali
+
+A placement run needs a LEF and a DEF. Providing a `-cell` file triggers the
+gridded well-placement flow:
+
+    $ dali -lef design.lef -def design.def -cell design.cell \
+           -target_density 0.7 -output_name placed.def
+
+Commonly used options:
+  * `-o`/`-output_name <name>.def` — output DEF (default `dali_out.def`)
+  * `-d`/`-target_density <0..1>` — target placement density
+  * `-well_legalization_mode <strict/scavenge>` — gridded well legalization mode
+  * `-metrics_file <file.json>` — per-stage HPWL and runtime metrics
+  * `-net_hpwl_file <file.tsv>` — final per-net weighted HPWL
+
+Run `dali` with no arguments to print the full option list.
+
+### Visualizing the placement flow
+
+Dali can emit a snapshot of the placement at every stage: global-placement
+iterations, gridded stripe partitioning, component clustering, orientation,
+row-location and detailed-placement steps, and physical completion (well taps
+and end caps).
+
+Write snapshots to disk (works without Qt):
+
+    $ dali ... -visualization_dir dali_viz
+
+This produces numbered snapshots and a `manifest.json` under `dali_viz/`.
+
+Step through the flow live in the Qt GUI (requires a Qt-enabled build):
+
+    $ dali ... -gui_debug -gui_pause every_snapshot
+
+The GUI pauses at each checkpoint so intermediate states — including the gridded
+row structure, wells, taps, and end caps — can be inspected.
 
 ### Run tests
 After configuring and building from the `build/` directory, run:

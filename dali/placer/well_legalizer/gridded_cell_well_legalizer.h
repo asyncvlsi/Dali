@@ -76,11 +76,13 @@ struct ProvisionalGriddedPlacementResult {
 /**
  * Standard cluster-based well legalizer and DEF/well-shape emitter.
  *
- * The movable-cell path clusters components into gridded rows, assigns row
- * orientation, and optionally performs local reordering to reduce wirelength.
- * Physical completion then inserts well taps and end caps before the well/PPNP
- * geometry is emitted. Fixed-only designs can reuse the physical completion
- * stages without running movable-cell legalization.
+ * The movable-cell path partitions the region into gridded stripes/rows,
+ * clusters components into those rows, assigns row orientation, optimizes row-Y
+ * locations, and runs gridded detailed placement (cross-row relocation, swaps,
+ * and local reordering) to reduce wirelength. Physical completion then inserts
+ * well taps and end caps before the well/PPNP geometry is emitted. Fixed-only
+ * designs can reuse the physical completion stages without running movable-cell
+ * legalization. Each stage publishes a snapshot for the optional visualization.
  */
 class GriddedCellWellLegalizer : public Placer {
   friend class Dali;
