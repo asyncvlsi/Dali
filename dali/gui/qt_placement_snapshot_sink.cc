@@ -544,28 +544,20 @@ class HpwlHistoryPanel : public QWidget {
     painter.setPen(QColor(31, 41, 55));
     painter.drawText(QPointF(16, 24), "HPWL over time");
 
+    // Pre-allocate every stage chart in execution-time order so the layout is
+    // stable: each stage's curve fills into its own reserved slot as snapshots
+    // arrive, instead of charts popping in and reordering. The flow runs global
+    // placement, then legalization, then detailed placement.
     std::vector<ChartSection> sections;
-    if (!global_lower_.empty() || !global_upper_.empty()) {
-      sections.push_back(
-          {"Global placement",
-           {Series{"lower bound", global_lower_, QColor(37, 99, 235)},
-            Series{"upper bound", global_upper_, QColor(220, 38, 38)}}});
-    }
-    if (!detailed_.empty()) {
-      sections.push_back({"Detailed placement",
-                          {Series{"HPWL", detailed_, QColor(22, 163, 74)}}});
-    }
-    if (!legalization_.empty()) {
-      sections.push_back(
-          {"Legalization",
-           {Series{"HPWL", legalization_, QColor(147, 51, 234)}}});
-    }
-    if (sections.empty()) {
-      painter.setPen(QColor(107, 114, 128));
-      painter.drawText(QRectF(16, 48, width() - 32, 80), Qt::TextWordWrap,
-                       "Charts appear as placement snapshots arrive.");
-      return;
-    }
+    sections.push_back(
+        {"Global placement",
+         {Series{"lower bound", global_lower_, QColor(37, 99, 235)},
+          Series{"upper bound", global_upper_, QColor(220, 38, 38)}}});
+    sections.push_back(
+        {"Legalization",
+         {Series{"HPWL", legalization_, QColor(147, 51, 234)}}});
+    sections.push_back({"Detailed placement",
+                        {Series{"HPWL", detailed_, QColor(22, 163, 74)}}});
 
     const int top = 42;
     const int gap = 12;
@@ -635,6 +627,13 @@ class HpwlHistoryPanel : public QWidget {
     double max_hpwl = 0;
     if (!CollectBounds(section, &min_iteration, &max_iteration, &min_hpwl,
                        &max_hpwl)) {
+      // Reserved but not yet populated: label the empty slot so the viewer sees
+      // the stage is pending rather than an unexplained blank box.
+      painter->setPen(QColor(156, 163, 175));
+      painter->drawText(
+          QRectF(area.left() + 10, area.top() + 26, area.width() - 20,
+                 area.height() - 34),
+          Qt::AlignCenter, "Waiting for snapshots…");
       return;
     }
     if (min_iteration == max_iteration) {
