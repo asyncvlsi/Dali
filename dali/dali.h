@@ -393,6 +393,7 @@ class Dali {
   bool RunPostPlacementCompletionStages();
   bool RunFillerCellPlacement();
   bool RunIoPinPlacementStage();
+  std::vector<PlacementSnapshotStage> ExpectedSnapshotStages() const;
   void InitializeVisualizationSnapshots();
   void WriteVisualizationSnapshot(
       const std::string& id, const std::string& label, const std::string& group,

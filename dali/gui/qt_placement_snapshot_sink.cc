@@ -516,6 +516,12 @@ class HpwlHistoryPanel : public QWidget {
     setAutoFillBackground(true);
   }
 
+  /** Declare which stages will run so their chart slots are reserved up front. */
+  void SetStages(std::vector<PlacementSnapshotStage> stages) {
+    stages_ = std::move(stages);
+    update();
+  }
+
   void AddSnapshot(Circuit* circuit,
                    const PlacementSnapshotMetadata& metadata) {
     if (circuit == nullptr) {
@@ -544,20 +550,32 @@ class HpwlHistoryPanel : public QWidget {
     painter.setPen(QColor(31, 41, 55));
     painter.drawText(QPointF(16, 24), "HPWL over time");
 
-    // Pre-allocate every stage chart in execution-time order so the layout is
-    // stable: each stage's curve fills into its own reserved slot as snapshots
-    // arrive, instead of charts popping in and reordering. The flow runs global
-    // placement, then legalization, then detailed placement.
+    // Reserve one chart slot per stage the run declared it will execute, in
+    // execution order, so each stage's curve fills into its own fixed slot as
+    // snapshots arrive instead of charts popping in and reordering. The stage
+    // list is configured by Dali from its options (see ExpectedSnapshotStages).
     std::vector<ChartSection> sections;
-    sections.push_back(
-        {"Global placement",
-         {Series{"lower bound", global_lower_, QColor(37, 99, 235)},
-          Series{"upper bound", global_upper_, QColor(220, 38, 38)}}});
-    sections.push_back(
-        {"Legalization",
-         {Series{"HPWL", legalization_, QColor(147, 51, 234)}}});
-    sections.push_back({"Detailed placement",
-                        {Series{"HPWL", detailed_, QColor(22, 163, 74)}}});
+    for (const PlacementSnapshotStage& stage : stages_) {
+      const QString title = QString::fromStdString(stage.title);
+      if (stage.group == "global_placement") {
+        sections.push_back(
+            {title,
+             {Series{"lower bound", global_lower_, QColor(37, 99, 235)},
+              Series{"upper bound", global_upper_, QColor(220, 38, 38)}}});
+      } else if (stage.group == "legalization") {
+        sections.push_back(
+            {title, {Series{"HPWL", legalization_, QColor(147, 51, 234)}}});
+      } else if (stage.group == "detailed_placement") {
+        sections.push_back(
+            {title, {Series{"HPWL", detailed_, QColor(22, 163, 74)}}});
+      }
+    }
+    if (sections.empty()) {
+      painter.setPen(QColor(107, 114, 128));
+      painter.drawText(QRectF(16, 48, width() - 32, 80), Qt::TextWordWrap,
+                       "Charts appear as placement snapshots arrive.");
+      return;
+    }
 
     const int top = 42;
     const int gap = 12;
@@ -714,6 +732,7 @@ class HpwlHistoryPanel : public QWidget {
   std::vector<HpwlSample> global_upper_;
   std::vector<HpwlSample> detailed_;
   std::vector<HpwlSample> legalization_;
+  std::vector<PlacementSnapshotStage> stages_;
 };
 
 class QtPlacementWindow : public QWidget {
@@ -771,6 +790,10 @@ class QtPlacementWindow : public QWidget {
 
   void SetPauseAtEverySnapshot(bool pause) {
     pause_checkbox_->setChecked(pause);
+  }
+
+  void SetStages(std::vector<PlacementSnapshotStage> stages) {
+    hpwl_panel_->SetStages(std::move(stages));
   }
 
   void SetSnapshot(Circuit* circuit,
@@ -866,6 +889,7 @@ void QtPlacementSnapshotSink::StartRun(
 
   window_ = std::make_unique<QtPlacementWindow>();
   window_->SetPauseAtEverySnapshot(metadata.pause_at_every_snapshot);
+  window_->SetStages(metadata.stages);
   window_->resize(1100, 760);
   window_->show();
   enabled_ = true;

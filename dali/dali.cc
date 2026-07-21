@@ -1356,6 +1356,27 @@ bool Dali::RunPostPlacementCompletionStages() {
   return RunFillerCellPlacement() && RunIoPinPlacementStage();
 }
 
+std::vector<PlacementSnapshotStage> Dali::ExpectedSnapshotStages() const {
+  // Declare the stages that will actually run this configuration, in execution
+  // order, so consumers (the live GUI) reserve exactly those chart slots.
+  std::vector<PlacementSnapshotStage> stages;
+  stages.push_back({"global_placement", "Global placement"});
+  if (!disable_legalization_) {
+    stages.push_back({"legalization", "Legalization"});
+    // Detailed placement produces a curve only when it actually runs, which
+    // differs between the standard-cell and gridded-cell flows.
+    const bool has_detailed =
+        is_standard_cell_
+            ? !disable_detailed_place_
+            : (enable_gridded_detailed_placement_ ||
+               enable_gridded_local_reorder_);
+    if (has_detailed) {
+      stages.push_back({"detailed_placement", "Detailed placement"});
+    }
+  }
+  return stages;
+}
+
 void Dali::InitializeVisualizationSnapshots() {
   if (visualization_dir_.empty() && !gui_debug_) {
     snapshot_sink_.reset();
@@ -1375,6 +1396,7 @@ void Dali::InitializeVisualizationSnapshots() {
   run_metadata.database_microns = circuit_.DistanceMicrons();
   run_metadata.git_commit = get_git_version_short();
   run_metadata.pause_at_every_snapshot = gui_pause_ != "off";
+  run_metadata.stages = ExpectedSnapshotStages();
 
   if (gui_debug_) {
     if (!gui_snapshot_sink_factory_) {

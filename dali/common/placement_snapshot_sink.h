@@ -36,6 +36,12 @@ struct PlacementWellRect {
   PlacementWellLayer layer = PlacementWellLayer::kPwell;
 };
 
+/** One placement stage expected to produce snapshots this run. */
+struct PlacementSnapshotStage {
+  std::string group;  // snapshot group id, e.g. "global_placement"
+  std::string title;  // human-readable chart title, e.g. "Global placement"
+};
+
 /** Run-level metadata shared by placement snapshot consumers. */
 struct PlacementSnapshotRunMetadata {
   std::filesystem::path output_dir;
@@ -43,6 +49,9 @@ struct PlacementSnapshotRunMetadata {
   int database_microns = 0;
   std::string git_commit;
   bool pause_at_every_snapshot = true;
+  /** Stages that will run this configuration, in execution order. Consumers
+   *  (e.g. the live GUI) can reserve a chart slot per stage up front. */
+  std::vector<PlacementSnapshotStage> stages;
 };
 
 /** Checkpoint metadata for one placement state. */
