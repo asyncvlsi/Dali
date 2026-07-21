@@ -331,6 +331,8 @@ void GriddedCellWellLegalizer::InitializeWellLegalizer(
     RecordPlacementMetric(
         "well_legalization.banded_assignment.maximum_column_displacement",
         result.maximum_column_displacement);
+    EmitSnapshot("banded_assignment", "After Banded Stripe Assignment",
+                 "legalization", "banded_assignment");
   }
 
   index_loc_list_.resize(ckt_ptr_->Components().size());
@@ -1458,6 +1460,11 @@ bool GriddedCellWellLegalizer::WellLegalize() {
 }
 
 bool GriddedCellWellLegalizer::RunComponentClusteringStage() {
+  // The stripe/row grid was created by InitializeWellLegalizer; capture that
+  // structure here, in the final-legalization-only stage, rather than in the
+  // low-level init that provisional rough legalization also calls.
+  EmitSnapshot("stripe_partition", "After Stripe Partitioning", "legalization",
+               "stripe_partition");
   LOG(info) << "Form component clustering\n";
   bool is_success = ComponentClusteringLoose();
   ReportHPWL();
@@ -2575,6 +2582,8 @@ bool GriddedCellWellLegalizer::RetryMovableCellLegalizationWithBalancing() {
     }
     previous_overflow = result.overflow_area_before;
     ++snapshot_attempt_;
+    EmitSnapshot("stripe_balancing", "After Stripe Balancing", "legalization",
+                 "stripe_balancing");
     if (RunMovableCellLegalizationStages()) return true;
   }
   return false;
