@@ -1006,8 +1006,13 @@ std::vector<int> GriddedDetailedPlacer::BoundedInsertionPositions(
   }
 
   // Map each anchor to its natural X-order slot and widen by one slot so a
-  // slightly better neighboring order is still reachable.
+  // slightly better neighboring order is still reachable. Always include the two
+  // extreme slots: prepending or appending disturbs the existing cells on only
+  // one side, which is the best insertion when the target row holds cells
+  // anchored by heavier nets than the moved cell's own.
   std::set<int> positions;
+  positions.insert(0);
+  positions.insert(slot_count);
   for (double anchor : anchors) {
     const double clamped = std::clamp(anchor, min_lx, max_lx);
     const int slot = static_cast<int>(
