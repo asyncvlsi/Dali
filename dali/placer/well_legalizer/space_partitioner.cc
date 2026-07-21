@@ -341,10 +341,13 @@ bool WellSpacePartitioner::StartPartitioning() {
     LOG(info) << "Using default gridded row width: 2*max_unplug_length_\n";
     stripe_width_ = (int)std::round(max_unplug_length_ * stripe_width_factor_);
   } else {
-    DaliWarns(cluster_width_ < max_unplug_length_,
-              "Specified gridded row width is smaller than max_unplug_length_, "
-              "space is wasted, may not be able to successfully complete well "
-              "legalization");
+    // A row narrower than MaxPlugDist is fine -- even preferred -- for latch-up
+    // coverage (row-end taps then over-satisfy the rule, and the coverage
+    // verifier checks it geometrically). The only width that can actually block
+    // legalization is one smaller than the widest movable cell.
+    DaliWarns(cluster_width_ < max_component_width_,
+              "Specified gridded row width is smaller than the widest movable "
+              "cell and cannot legalize it into a row this narrow");
     stripe_width_ = cluster_width_;
   }
   stripe_width_ = stripe_width_ + well_spacing_;
