@@ -72,8 +72,22 @@ class RowSegment {
   void LocalReorder(std::vector<ComponentDisplacementVariable>& vars,
                     int range = 3, int omit = 0, bool is_linear = false);
   void LocalReorder2(std::vector<ComponentDisplacementVariable>& vars);
+  /**
+   * Place this segment's components to minimize displacement from where they
+   * sat before legalization.
+   *
+   * Components are sorted by current X and solved in that order, so the result
+   * keeps the relative ordering the placement already had. `lambda` trades
+   * anchor pull against displacement cost. With `is_weighted_anchor`, a
+   * multi-region cell whose sub-locations disagree is weighted up in
+   * proportion to that disagreement, measured against the segment's average --
+   * pulling the halves of a split cell back together. `is_reorder` allows a
+   * final bounded local reordering pass.
+   */
   std::vector<ComponentDisplacementVariable> OptimizeQuadraticDisplacement(
       double lambda, bool is_weighted_anchor, bool is_reorder);
+
+  /** Linear-cost counterpart of OptimizeQuadraticDisplacement. */
   std::vector<ComponentDisplacementVariable> OptimizeLinearDisplacement(
       double lambda, bool is_weighted_anchor, bool is_reorder);
 

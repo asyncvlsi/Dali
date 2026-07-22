@@ -88,10 +88,8 @@ void RowSegment::MinDisplacementLegalization(bool use_init_loc) {
     }
   }
 
-  // get optimized locations and store them in vars
   MinimizeQuadraticDisplacement(vars, LLX(), URX());
 
-  // set component locations from vars
   for (auto& var : vars) {
     var.UpdateComponentLocation();
   }
@@ -262,7 +260,6 @@ RowSegment::OptimizeQuadraticDisplacement(double lambda,
   std::vector<ComponentDisplacementVariable> vars;
   if (component_regions_.empty()) return vars;
 
-  // sort cells based on their lower x location
   std::sort(component_regions_.begin(), component_regions_.end(),
             [](const ComponentRegion& br0, const ComponentRegion& br1) {
               return (br0.component->LLX() < br1.component->LLX()) ||
@@ -270,7 +267,6 @@ RowSegment::OptimizeQuadraticDisplacement(double lambda,
                       (br0.component->Id() < br1.component->Id()));
             });
 
-  // compute average discrepancy
   double ave_discrepancy = 1;
   if (is_weighted_anchor) {
     int sub_cell_cnt = 0;
@@ -291,9 +287,6 @@ RowSegment::OptimizeQuadraticDisplacement(double lambda,
     }
   }
 
-  // vars.reserve(component_regions_.size() + 2);
-  // vars.emplace_back(0, LLX(), 0);
-  // double max_weight = 0;
   vars.reserve(component_regions_.size());
   for (auto& component_region : component_regions_) {
     Component* component_ptr = component_region.component;
@@ -310,26 +303,16 @@ RowSegment::OptimizeQuadraticDisplacement(double lambda,
       double average_loc = aux_ptr->AverageLoc();
       double tmp_discrepancy = std::fabs(average_loc - sub_loc);
       weight_discrepancy = pow(1 + tmp_discrepancy / ave_discrepancy, 2.0);
-      // weight_discrepancy = exp(tmp_discrepancy / ave_discrepancy);
     }
     double weight = (1 - lambda) * weight_discrepancy;
-    // max_weight = std::max(weight, max_weight);
-    vars.back().SetAnchor(aux_ptr->AverageLoc(),
-                          weight  // / region_cnt
-    );
+    vars.back().SetAnchor(aux_ptr->AverageLoc(), weight);
   }
-  // vars.emplace_back(0, URX(), max_weight * 100);
-  // vars[0].SetWeight(max_weight * 100);
-
-  // MinimizeQuadraticDisplacement(vars, LLX(), URX());
-  // MinimizeQuadraticDisplacement(vars);
   AbacusPlaceRow(vars);
 
   if (is_weighted_anchor) {
     FitInRange(vars);
     if (is_reorder) {
       LocalReorder(vars, 3, 0, false);
-      // LocalReorder2(vars);
     }
   }
 
@@ -342,7 +325,6 @@ RowSegment::OptimizeLinearDisplacement(double lambda, bool is_weighted_anchor,
   std::vector<ComponentDisplacementVariable> vars;
   if (component_regions_.empty()) return vars;
 
-  // sort cells based on their lower x location
   std::sort(component_regions_.begin(), component_regions_.end(),
             [](const ComponentRegion& br0, const ComponentRegion& br1) {
               return (br0.component->LLX() < br1.component->LLX()) ||
@@ -350,7 +332,6 @@ RowSegment::OptimizeLinearDisplacement(double lambda, bool is_weighted_anchor,
                       (br0.component->Id() < br1.component->Id()));
             });
 
-  // compute average discrepancy
   double ave_discrepancy = 1;
   if (is_weighted_anchor) {
     int sub_cell_cnt = 0;
@@ -359,7 +340,6 @@ RowSegment::OptimizeLinearDisplacement(double lambda, bool is_weighted_anchor,
       Component* component_ptr = component_region.component;
       auto aux_ptr =
           static_cast<ComponentLegalizationState*>(component_ptr->AuxPtr());
-      // int region_cnt = component_ptr->MacroPtr()->WellPtr()->RegionCount();
       double average_loc = aux_ptr->AverageLoc();
       double sub_loc = aux_ptr->SubLocs()[component_region.region_id];
       double tmp_discrepancy = std::fabs(average_loc - sub_loc);
@@ -372,7 +352,6 @@ RowSegment::OptimizeLinearDisplacement(double lambda, bool is_weighted_anchor,
     }
   }
 
-  // create variables
   vars.reserve(component_regions_.size());
   for (auto& component_region : component_regions_) {
     Component* component_ptr = component_region.component;
@@ -395,7 +374,6 @@ RowSegment::OptimizeLinearDisplacement(double lambda, bool is_weighted_anchor,
     );
   }
 
-  // MinimizeLinearDisplacement(vars, LLX(), URX());
   MinimizeLinearDisplacement(vars);
 
   if (is_weighted_anchor) {
