@@ -798,21 +798,21 @@ bool GlobalPlacer::HasUpperBoundHpwlStalled(
 /**
  * @brief Whether global placement has stopped making progress.
  *
- * Criterion 1 (default): the best upper-bound HPWL has not improved
- * meaningfully for `upper_bound_improvement_patience_` iterations. That is what
- * convergence means here -- further iterations are not buying anything.
+ * Two tests are selectable through `convergence_criteria_`:
  *
- * Criterion 2 (POLAR): the lower/upper HPWL gap is below
- * `polar_converge_criterion_`.
+ *   1. (default) the upper-bound HPWL has stopped trending downward, measured
+ *      over `upper_bound_improvement_patience_` iterations. Further iterations
+ *      are not buying anything, which is what convergence means here.
+ *   2. the lower/upper HPWL gap has fallen below `convergence_gap_threshold_`.
  *
- * Criterion 1 deliberately does not also require a small lower/upper gap. That
- * gap measures how much legalization costs for the flow in use, not whether the
+ * Test 1 deliberately does not also require a small lower/upper gap. That gap
+ * measures how much legalization costs for the flow in use, not whether the
  * optimization has converged, and it does not shrink with iterations: in the
- * gridded well flow the upper bound is a rough gridded legalization and the gap
- * plateaus near 30%, far above the POLAR threshold. Requiring both conditions
- * made criterion 1 unsatisfiable for gridded designs, so global placement always
- * ran to `-global_max_iterations` and the cap, not convergence, decided when it
- * stopped.
+ * gridded well flow the upper bound comes from a rough gridded legalization and
+ * the gap plateaus near 30%, well above the threshold test 2 uses. Requiring
+ * both left test 1 unsatisfiable for gridded designs, so global placement ran to
+ * `-global_max_iterations` every time and the cap, not convergence, decided when
+ * it stopped.
  */
 bool GlobalPlacer::IsPlacementConverged() {
   if (cur_iter_ + 1 < min_iter_) return false;
@@ -830,7 +830,7 @@ bool GlobalPlacer::IsPlacementConverged() {
       double lower_bound = lower_bound_hpwl.back();
       double upper_bound = upper_bound_hpwl.back();
       res = (lower_bound > 1e-10) && (lower_bound < upper_bound) &&
-            (upper_bound / lower_bound - 1 < polar_converge_criterion_);
+            (upper_bound / lower_bound - 1 < convergence_gap_threshold_);
     }
   } else {
     DaliExpects(false, "Unknown Convergence Criteria!");

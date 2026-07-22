@@ -437,8 +437,8 @@ bool SpreadingRegion::update_cut_index_white_space(
     }
 
     // Prefer obstacle-aligned cuts when they are close to a balanced
-    // whitespace split. This preserves SimPL's idea of using macro edges as
-    // natural stripe boundaries without forcing pathological tiny regions.
+    // whitespace split: a macro edge is already a natural boundary, so cutting
+    // there costs little and avoids forcing pathological tiny regions.
     double macro_cut_extra_tolerance =
         macro_boundary_mode == GlobalLalMacroBoundaryMode::kPreferred ? 0.10
                                                                       : 0.0;

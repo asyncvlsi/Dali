@@ -122,7 +122,7 @@ class GlobalPlacer : public Placer {
   int cur_iter_ = 0;
   int max_iter_ = 100;
   int min_iter_ = 10;
-  double polar_converge_criterion_ = 0.08;
+  double convergence_gap_threshold_ = 0.08;
   int convergence_criteria_ = 1;
   // Stop only after best legalized HPWL has not improved by at least 0.2%
   // for several iterations while the lower/upper gap is already small.

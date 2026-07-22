@@ -1070,9 +1070,9 @@ void LookAheadSpreader::PlaceComponentInBox(SpreadingRegion& box) {
     grid_bin.component_area += component_ptr->Area();
   }
 
-  // Preserve the lower-bound placement geometry when possible. SimPL's
-  // look-ahead legalization spreads cells by scaling local coordinates; fully
-  // repacking every leaf by sorted width/height discards wirelength structure.
+  // Preserve the lower-bound placement geometry when possible: spreading by
+  // scaling local coordinates keeps the relative arrangement, whereas repacking
+  // every leaf by sorted width/height discards the wirelength structure.
   ScaleComponentCenters(index_loc_list_x, box.left, box.right,
                         /*scale_x=*/true, affine_scaling_weight_);
   ScaleComponentCenters(index_loc_list_y, box.bottom, box.top,
