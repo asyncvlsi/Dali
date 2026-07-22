@@ -18,6 +18,27 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Top-level placement flow orchestration.
+ *
+ * `StartPlacement` resolves configuration, then runs the core stages -- global
+ * placement followed by legalization -- and the post-placement completion
+ * stages, filler cells and I/O pins. Which legalizer runs is the fork between
+ * the two supported flows: `-is_standard_cell` takes the standard-cell
+ * legalizer, otherwise a `-cell` file selects gridded well legalization, whose
+ * physical completion also inserts well taps and end caps.
+ *
+ * Configuration reaches this class as named entries loaded from the ACT
+ * configuration system rather than as constructor arguments, so each option
+ * appears three times: a member with its default, a Load*Config call, and a
+ * line in the reporting block. Adding an option means touching all three.
+ *
+ * Stages publish snapshots through PlacementSnapshotSink. `ExpectedSnapshotStages`
+ * declares up front which stages this configuration will actually execute, so
+ * the GUI can reserve exactly those chart slots instead of discovering them.
+ */
 #include "dali.h"
 
 #include <algorithm>

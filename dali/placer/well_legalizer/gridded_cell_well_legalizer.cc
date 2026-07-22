@@ -18,6 +18,25 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Gridded, well-aware legalization: the main legalizer for the `-cell` flow.
+ *
+ * The region is first partitioned into stripe columns, each its own well
+ * region. Components are clustered into gridded rows whose heights follow the
+ * cells they hold, rows are oriented so abutting rows share a well type, row Y
+ * locations are optimized, and the result is refined by gridded detailed
+ * placement.
+ *
+ * Legalization is attempted rather than assumed: a stripe whose used height
+ * exceeds its available height has failed, and the flow reports which stripes
+ * failed instead of emitting an illegal placement. Provisional passes exist so
+ * global placement can be steered by a rough legalization of each iteration --
+ * `ApplyProvisionalRowOrientations` and `RefineProvisionalRowLocations` produce
+ * that estimate, and `TryBalanceProvisionalPlacement` rebalances stripes that
+ * did not fit.
+ */
 #include "gridded_cell_well_legalizer.h"
 
 #include <algorithm>
