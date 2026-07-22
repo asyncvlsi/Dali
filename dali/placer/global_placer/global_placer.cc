@@ -857,8 +857,9 @@ void GlobalPlacer::PrintHpwl() const {
   std::string buffer(buffer_size, '\0');
   int written_length =
       snprintf(&buffer[0], buffer_size,
-               "  iter-%-3d: lower %.4e, upper %.4e, gap %.4e (%.2f%%)\n",
-               cur_iter_, lo_hpwl, hi_hpwl, hpwl_gap, hpwl_gap_percent);
+               "  iter-%-3d: lower %.4e, upper %.4e, gap %.4e (%.2f%%) %s\n",
+               cur_iter_, lo_hpwl, hi_hpwl, hpwl_gap, hpwl_gap_percent,
+               current_upper_bound_is_physical_ ? "rough-legal" : "spread");
   buffer.resize(written_length);
   LOG(info) << buffer;
   LOG(info) << "            lower X/Y " << optimizer_->GetHpwlsX().back()
