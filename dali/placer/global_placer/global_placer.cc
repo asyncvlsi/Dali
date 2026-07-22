@@ -764,36 +764,56 @@ double GlobalPlacer::RelativeImprovement(double old_value, double new_value) {
   return (old_value - new_value) / old_value;
 }
 
+/**
+ * @brief Whether the upper-bound HPWL has stopped trending downward.
+ *
+ * Compares the mean of the last `upper_bound_improvement_patience_` iterations
+ * against the mean of the window before it, and reports a stall when the two
+ * differ by less than `upper_bound_min_improvement_`.
+ *
+ * Means over windows, rather than the best value seen so far, because the
+ * upper bound is noisy: it comes from a rough legalization whose result can
+ * jump by tens of percent between iterations. A single lucky iteration would
+ * otherwise become a best that nothing beats for a long time, freezing the
+ * detector on it and reporting a stall while the placement was still improving
+ * steadily. Comparing windows tracks the trend and rides out one-off outliers.
+ */
 bool GlobalPlacer::HasUpperBoundHpwlStalled(
     const std::vector<double>& upper_bound_hpwl) const {
-  int series_size = static_cast<int>(upper_bound_hpwl.size());
-  if (series_size <= upper_bound_improvement_patience_) return false;
+  const int series_size = static_cast<int>(upper_bound_hpwl.size());
+  const int window = upper_bound_improvement_patience_;
+  if (series_size < 2 * window) return false;
 
-  double best_upper_bound_hpwl = upper_bound_hpwl.front();
-  int last_meaningful_improvement_iter = 0;
-  for (int i = 1; i < series_size; ++i) {
-    double improvement =
-        RelativeImprovement(best_upper_bound_hpwl, upper_bound_hpwl[i]);
-    if (improvement >= upper_bound_min_improvement_) {
-      best_upper_bound_hpwl = upper_bound_hpwl[i];
-      last_meaningful_improvement_iter = i;
-    }
-  }
-  return series_size - 1 - last_meaningful_improvement_iter >=
-         upper_bound_improvement_patience_;
+  auto window_mean = [&](int begin) {
+    double sum = 0.0;
+    for (int i = begin; i < begin + window; ++i) sum += upper_bound_hpwl[i];
+    return sum / window;
+  };
+
+  const double previous = window_mean(series_size - 2 * window);
+  const double recent = window_mean(series_size - window);
+  return RelativeImprovement(previous, recent) < upper_bound_min_improvement_;
 }
 
-/****
- * @brief Returns true or false indicating the convergence of the global
- * placement.
+/**
+ * @brief Whether global placement has stopped making progress.
  *
- * Stopping criteria (SimPL, option 1):
- *    the current lower/upper gap is small and the best upper-bound HPWL has
- *    not improved meaningfully for several iterations
- * Stopping criteria (POLAR, option 2):
- *    the gap between lower bound wire-length and upper bound wire-length is
- *    less than 8%
- * ****/
+ * Criterion 1 (default): the best upper-bound HPWL has not improved
+ * meaningfully for `upper_bound_improvement_patience_` iterations. That is what
+ * convergence means here -- further iterations are not buying anything.
+ *
+ * Criterion 2 (POLAR): the lower/upper HPWL gap is below
+ * `polar_converge_criterion_`.
+ *
+ * Criterion 1 deliberately does not also require a small lower/upper gap. That
+ * gap measures how much legalization costs for the flow in use, not whether the
+ * optimization has converged, and it does not shrink with iterations: in the
+ * gridded well flow the upper bound is a rough gridded legalization and the gap
+ * plateaus near 30%, far above the POLAR threshold. Requiring both conditions
+ * made criterion 1 unsatisfiable for gridded designs, so global placement always
+ * ran to `-global_max_iterations` and the cap, not convergence, decided when it
+ * stopped.
+ */
 bool GlobalPlacer::IsPlacementConverged() {
   if (cur_iter_ + 1 < min_iter_) return false;
   if (!HasCurrentConvergenceUpperBound()) return false;
@@ -802,16 +822,7 @@ bool GlobalPlacer::IsPlacementConverged() {
   auto& lower_bound_hpwl = optimizer_->GetHpwls();
   auto& upper_bound_hpwl = accepted_upper_bound_hpwl_;
   if (convergence_criteria_ == 1) {
-    if (lower_bound_hpwl.empty() || upper_bound_hpwl.empty()) {
-      res = false;
-    } else {
-      double lower_bound = lower_bound_hpwl.back();
-      double upper_bound = upper_bound_hpwl.back();
-      bool small_gap =
-          !IsPositive(lower_bound) ||
-          (upper_bound / lower_bound - 1 < polar_converge_criterion_);
-      res = small_gap && HasUpperBoundHpwlStalled(upper_bound_hpwl);
-    }
+    res = !upper_bound_hpwl.empty() && HasUpperBoundHpwlStalled(upper_bound_hpwl);
   } else if (convergence_criteria_ == 2) {
     if (lower_bound_hpwl.empty()) {
       res = false;

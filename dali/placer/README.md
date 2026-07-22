@@ -107,19 +107,13 @@ to spread.
 
 ## Iteration control
 
-`-global_max_iterations <n>` caps global-placement iterations, default 100.
-Global placement runs to whichever cap is set — on every design measured the
-convergence criterion does not fire first, so this behaves as a fixed iteration
-count rather than a limit.
+Global placement stops when its upper-bound wirelength stops trending downward,
+so the iteration count adapts to the design and normally needs no attention.
 
-The default is not obviously the right count, and which count is best depends on
-the design. On the largest design measured, 40 iterations finished both faster
-and marginally better than 100 (0.12% lower HPWL in 142s against 182s); on a
-smaller one, 100 was better than 40 by a similar margin. A cap that has to be
-re-picked per design is the wrong mechanism — having the schedule stop on
-convergence instead is open work.
-
-`-global_min_iterations <n>` sets the floor below which it will not stop.
+  * `-global_max_iterations <n>` — upper limit, default 100. Reach for it only
+    to bound runtime on a design that would otherwise run long.
+  * `-global_min_iterations <n>` — floor below which it will not stop, default
+    10.
 
 ## Experimental: CP-SAT legalization
 
