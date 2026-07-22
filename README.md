@@ -112,11 +112,13 @@ What each group does:
   * `-well_legalization_mode strict` refuses to spill into space the stripe
     planner did not assign; `scavenge` lets the last column use leftover space,
     which packs better but weakens the well guarantees.
-  * Gridded row width is left to the legalizer, which derives it from the
+  * Gridded row width is omitted above, so the legalizer derives it from the
     technology's MaxPlugDist as `2 * max_unplug_length` — every transistor has
     to sit within MaxPlugDist of a compatible-well tap, and that is what bounds
-    the width. `-max_row_width <um>` overrides the derived value when a specific
-    width has to be forced; prefer leaving it alone.
+    the width. The derived width is not yet as good as a tuned one: on a test
+    design it costs roughly 5% final HPWL. Set `-max_row_width <um>` when that
+    matters and a good value for the design is known; closing the gap so the
+    derived width is competitive is open work.
   * The two `upper_bound` flags roughly legalize every global-placement
     iteration and rebalance stripes that fail, so global placement optimizes
     against a legal-ish picture instead of an idealized one.
