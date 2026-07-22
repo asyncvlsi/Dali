@@ -115,6 +115,26 @@ hand-picked cap is open work.
 
 `-global_min_iterations <n>` sets the floor below which it will not stop.
 
+## Experimental: CP-SAT legalization
+
+Not used by any production flow yet. Dali can optionally solve bounded
+legalization sub-problems exactly with OR-Tools CP-SAT, exposed through
+`-enable_ortools_row_optimization`, the `-analyze_exact_gridded_*` /
+`-solve_exact_gridded_*` family, and the exact stripe and boundary refiners.
+These are research switches: they trade large amounts of runtime for small
+placement gains and are off by default.
+
+They are only available when the build found OR-Tools 9.15.x. Detection defaults
+to `AUTO`, so a normal `cmake ..` picks it up if present and silently builds
+without it otherwise. To install it: `brew install or-tools pkgconf` on macOS,
+or the official 9.15 C++ binary distribution on Ubuntu. If it lives outside a
+standard prefix, point CMake at it:
+
+    $ ORTOOLS_ROOT=/path/to/or-tools-9.15 cmake ..
+
+Use `-DDALI_OR_TOOLS=ON` to make configuration fail when it is missing, or
+`-DDALI_OR_TOOLS=OFF` to ignore an installed copy.
+
 ## Useful in either flow
 
   * `-num_threads <n>` — threads for the OpenMP paths
