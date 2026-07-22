@@ -32,6 +32,16 @@
 namespace dali {
 
 /** Legalized row/cluster with gridded N/P-well structure. */
+/**
+ * One gridded row: a band of uniform well structure inside a stripe.
+ *
+ * Row height is set by the tallest cell the row holds, so rows are not on a
+ * fixed pitch and their height is recomputed as cells are assigned. The row
+ * owns its components and, once legalized in X, the row segments those
+ * components are distributed across. Well taps are tracked separately in
+ * `tap_cells_` because physical completion inserts them rather than the
+ * assignment passes placing them.
+ */
 class GriddedRow {
   // clang-format off
   /*

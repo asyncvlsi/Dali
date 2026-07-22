@@ -32,6 +32,14 @@
 
 namespace dali {
 
+/**
+ * A contiguous run of usable whitespace within a gridded row.
+ *
+ * Blockages, and any taps already placed in the row, break the row into
+ * segments. Each segment is legalized in X on its own, which is what lets the
+ * displacement optimizers treat a row as several small ordered problems instead
+ * of one wide one.
+ */
 class RowSegment {
  public:
   RowSegment() = default;

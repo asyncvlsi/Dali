@@ -30,6 +30,18 @@ namespace dali {
 
 /** Vertical legalization stripe containing gridded rows and assigned
  * components. */
+/**
+ * One well-legalization region: a vertical slice of a stripe column.
+ *
+ * A stripe owns the gridded rows stacked inside it (`gridded_rows_`) and is the
+ * unit that legalization succeeds or fails on. Rows grow from a contour that
+ * advances as clusters are added, so `contour_` and `used_height_` track how
+ * much of the stripe height has been consumed; `used_height_` exceeding
+ * `Height()` is the signal that this stripe could not be legalized.
+ *
+ * Containment runs StripeColumn -> Stripe -> GriddedRow -> RowSegment ->
+ * Component.
+ */
 class Stripe {
  public:
   int lx_;
@@ -153,6 +165,17 @@ class Stripe {
 
 /** Column-like collection of legalization stripes and their assigned
  * components. */
+/**
+ * A full-height column of the placement region, and its own well region.
+ *
+ * Column boundaries are chosen by the space partitioner so that neighbouring
+ * columns are separated by `well_spacing`, which is what makes each column an
+ * independent well region. A column is cut vertically into stripes, and those
+ * stripes hold the gridded rows.
+ *
+ * Row heights are content-dependent, so the P/N boundaries of adjacent columns
+ * do not line up; nothing here may assume a row grid shared across columns.
+ */
 struct StripeColumn {
   int lx_;
   int width_;

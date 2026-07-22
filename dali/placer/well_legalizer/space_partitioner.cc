@@ -18,6 +18,21 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Divides the placement region into stripe columns before well legalization.
+ *
+ * Column width is driven by MaxPlugDist: every transistor must sit within that
+ * distance of a compatible-well tap, which bounds how wide a row may be.
+ * Neighbouring columns are then separated by `well_spacing`, so each column
+ * becomes an independent well region. `StartPartitioning` fetches the well
+ * parameters, chooses column boundaries, assigns components to columns by
+ * available whitespace, and finally cuts each column into stripes.
+ *
+ * In scavenge mode the last column absorbs whatever space is left over rather
+ * than stopping at its nominal boundary; strict mode leaves that space unused.
+ */
 #include "space_partitioner.h"
 
 #include <algorithm>

@@ -1,6 +1,21 @@
 /*******************************************************************************
  * Copyright (c) 2026 Yihang Yang
  *******************************************************************************/
+
+/**
+ * @file
+ * Checks a finished gridded placement against the rules the flow must satisfy.
+ *
+ * `Validate` runs the structural checks -- rows within their stripe, components
+ * within their row, no overlaps, orientation and Y consistency -- and reports
+ * them together with the physical-completion checks for well taps and end caps.
+ *
+ * Well-tap coverage is pattern-agnostic on purpose: rather than assuming taps
+ * sit at row ends or on any particular cadence, it measures the actual gap from
+ * each cell to the nearest compatible tap and compares that against
+ * MaxPlugDist. That is what lets a new tap pattern be validated without
+ * teaching the validator about it.
+ */
 #include "dali/placer/well_legalizer/gridded_placement_validator.h"
 
 #include <algorithm>
