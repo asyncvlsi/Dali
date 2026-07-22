@@ -65,14 +65,23 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -gui_debug                                 show live placement debug GUI when built with Qt\n"
       << "  -gui_pause <every_snapshot/off>            GUI pause policy, default every_snapshot\n"
       << "  -g/-grid <grid_value_x> <grid_value_y>     (optional, default metal1 and metal2 pitch values)\n"
+      << "  -enable_shrink_off_grid_die_area           shrink a die area whose edges are off the placement grid\n"
       << "  -d/-target_density <density>               (optional, value interval (0,1], default max(space_utility, 0.7))\n"
       << "  -net_ignore_threshold <100..1000>          ignore nets at or above this pin count in placement models, default 100\n"
       << "  -net_hpwl_file <file.tsv>                  write final per-net weighted HPWL metrics\n"
       << "  -disable_legalization                      optional, if this flag is present, then legalization is skipped\n"
       << "  -disable_detailed_place                    optional, skip post-legalization detailed placement\n"
+      << "  -disable_global_place                      optional, skip global placement\n"
+      << "  -disable_io_place                          optional, skip I/O pin placement\n"
+      << "  -disable_cell_flip                         optional, keep cell orientations as read\n"
+      << "  -is_standard_cell                          run the standard-cell flow instead of gridded well placement\n"
       << "  -io_metal_layer                            metal layer number for I/O placement (optional, default 1 for m1)\n"
       << "  -well_legalization_mode <scavenge/strict>  determine whether the last column use unassigned space\n"
       << "  -well_tap_pattern <row-end/row-end-every-other> well-tap placement pattern, default row-end\n"
+      << "  -disable_welltap                           optional, do not insert well-tap cells\n"
+      << "  -enable_end_cap_cell                       insert end-cap cells at gridded row ends\n"
+      << "  -enable_filler_cell                        insert filler cells to keep implant continuous\n"
+      << "  -max_row_width <um>                        maximum gridded row width, 0 means unlimited\n"
       << "  -global_initializer <keep/uniform/gaussian/monte_carlo/density_aware>\n"
       << "  -global_lal_expansion <symmetric/best_neighbor>\n"
       << "  -global_lal_hotspot <area/overflow/overflow_ratio>\n"
@@ -144,6 +153,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -num_threads <n>                           number of OpenMP threads to use\n"
       << "  -v                                         verbosity_level (optional, 0-5, default 1)\n"
       << "  -disable_log_prefix                        optional, if this flag is present, then only messages will be saved to the log file\n"
+      << "  -log_file_name <file.log>                  write the run log to this file\n"
       << "(flag order does not matter)"
       << "\033[0m\n";
   // clang-format on
@@ -171,6 +181,8 @@ bool ParseDaliCommandLine(int argc, char* argv[],
         error_output << "Invalid input cell file!\n";
         return false;
       }
+    // Deliberately absent from ReportDaliUsage: accepted so existing scripts
+    // keep running, but it does nothing and should not be advertised.
     } else if (arg == "-mcell") {
       if (!TryGetValue(argc, argv, &i, &options->ignored_mcell_file_name)) {
         error_output << "Invalid input mcell file!\n";
