@@ -315,10 +315,15 @@ void LookAheadSpreader::InitGridBins() {
   }
 }
 
+/**
+ * Components per density bin for the current iteration, coarse to fine.
+ *
+ * A coarse grid gives early iterations a smoother spreading force; the finer
+ * grid later exposes local congestion before legalization. `iteration_` is
+ * supplied by GlobalPlacer::RunPlacementIterations via SetIteration() before
+ * each Spread() call.
+ */
 int LookAheadSpreader::TargetComponentCountPerBin() const {
-  // SimPL uses coarse-to-fine density grids. A coarse grid gives early
-  // iterations a smoother spreading force, then the finer default grid exposes
-  // local congestion before final legalization.
   if (iteration_ < 5) return 100;
   if (iteration_ < 15) return 60;
   return 30;
