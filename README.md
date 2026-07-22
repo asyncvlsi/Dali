@@ -85,97 +85,20 @@ Run `dali` with no arguments to print the full option list.
 
 ### Production configurations
 
-The option list is long because most flags exist to isolate one stage during
-development. Two combinations are the ones actually used for real runs; start
-from whichever matches the design and change one thing at a time.
-
-**Gridded well placement.** This is the flow a `-cell` file selects:
-
-    $ dali \
-        -lef design.lef \
-        -def design.def \
-        -cell design.cell \
-        -well_legalization_mode strict \
-        -target_density 0.65 \
-        -global_max_iterations 40 \
-        -enable_gridded_upper_bound_refiner \
-        -enable_gridded_upper_bound_balancing \
-        -gridded_legalization_feedback y_row_transactional_coherent \
-        -enable_gridded_row_y_optimization \
-        -enable_gridded_detailed_placement \
-        -enable_gridded_detailed_relocation \
-        -enable_end_cap_cell \
-        -metrics_file dali_metrics.json
-
-What each group does:
-
-  * `-well_legalization_mode strict` refuses to spill into space the stripe
-    planner did not assign; `scavenge` lets the last column use leftover space,
-    which packs better but weakens the well guarantees.
-  * Gridded row width is omitted above, so the legalizer derives it from the
-    technology's MaxPlugDist as `2 * max_unplug_length` — every transistor has
-    to sit within MaxPlugDist of a compatible-well tap, and that is what bounds
-    the width. The derived width is not yet as good as a tuned one: on a test
-    design it costs roughly 5% final HPWL. Set `-max_row_width <um>` when that
-    matters and a good value for the design is known; closing the gap so the
-    derived width is competitive is open work.
-  * The two `upper_bound` flags roughly legalize every global-placement
-    iteration and rebalance stripes that fail, so global placement optimizes
-    against a legal-ish picture instead of an idealized one.
-  * `-gridded_legalization_feedback` selects how much of that rough-legal result
-    is fed back. `y_row_transactional_coherent` is the most conservative mode
-    that still helps; `none` disables feedback entirely.
-  * The three `gridded_detailed` / `row_y` flags are the post-legalization
-    optimizers: row-group Y placement, then relocation into row whitespace,
-    then swaps and local reordering.
-  * `-enable_end_cap_cell` adds end caps at row ends. Add `-enable_filler_cell`
-    when the implant layers must be continuous across the whole row.
-
-**Standard cells.** No `-cell` file, and no well legalization:
-
-    $ dali \
-        -lef design.lef \
-        -def design.def \
-        -is_standard_cell \
-        -global_initializer density_aware \
-        -target_density 1 \
-        -metrics_file dali_metrics.json
-
-`-target_density 1` suits designs that are already close to fully utilized,
-where asking for spare whitespace only distorts the result; lower it when the
-design has room to spread.
-
-Useful additions to either configuration: `-num_threads <n>` for the OpenMP
-paths, `-v 3` with `-disable_log_prefix` and `-log_file_name` for a readable
-log, and `-net_hpwl_file` for a per-net HPWL breakdown.
+Two flag combinations are the ones used for real runs — the gridded well flow a
+`-cell` file selects, and the standard-cell flow `-is_standard_cell` selects.
+Both, with an explanation of what each flag buys and when to change it, are in
+[placer options](dali/placer/README.md).
 
 ### Visualizing the placement flow
 
-Dali can step through the placement live in a Qt GUI, showing a snapshot at
-every stage: global-placement iterations, gridded stripe partitioning, component
-clustering, orientation, row-location and detailed-placement steps, and physical
-completion (well taps and end caps). The GUI requires a Qt-enabled build:
+Dali can step through a placement live in a Qt window, pausing at every stage so
+intermediate state can be inspected, with per-stage HPWL curves and displacement
+overlays:
 
     $ dali ... -gui_debug -gui_pause every_snapshot
 
-It pauses at each checkpoint so intermediate states — including the gridded row
-structure, wells, taps, and end caps — can be inspected, and plots per-stage
-HPWL curves for the stages the run will execute.
-
-Two independent displacement toggles, both off by default, overlay an arrow per
-movable cell drawn from where that cell sat in an earlier placement to where it
-sits now. Enable either or both:
-
-  * *Displacement vs global* (red) — total movement since global placement
-    finished, i.e. what legalization and detailed placement cost overall. This
-    overlay is empty while global placement is still running, since there is no
-    global placement result to compare against yet.
-  * *Displacement vs previous* (blue) — movement contributed by the current
-    stage alone
-
-Arrows are drawn to scale, so late detailed-placement stages that move cells by
-a fraction of a row are close to invisible at fit-to-view zoom. Zoom in to
-inspect them.
+Requires a Qt-enabled build. See [the live placement GUI](dali/gui/README.md).
 
 ### Run tests
 After configuring and building from the `build/` directory, run:
