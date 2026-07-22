@@ -144,10 +144,10 @@ TEST(WellTapPatternTest, TryParseRejectsUnknownNames) {
 }
 
 TEST(WellTapPatternTest, SupportReflectsEndToEndReadiness) {
-  // "Supported" is independent of tap count: row-end runs today; the other
-  // known patterns are planned but not yet end-to-end.
+  // "Supported" is independent of tap count: both row-end cadences run today,
+  // while row-mid still needs the row-splitting work.
   EXPECT_TRUE(IsWellTapPatternSupported(WellTapPattern::kRowEnd));
-  EXPECT_FALSE(IsWellTapPatternSupported(WellTapPattern::kRowEndEveryOther));
+  EXPECT_TRUE(IsWellTapPatternSupported(WellTapPattern::kRowEndEveryOther));
   EXPECT_FALSE(IsWellTapPatternSupported(WellTapPattern::kRowMid));
 }
 
@@ -160,7 +160,7 @@ TEST(WellTapPatternTest, RegistryListsAreConsistent) {
     EXPECT_EQ(WellTapPatternName(pattern), name);
   }
   // The supported list is the subset of known names that run end-to-end.
-  EXPECT_EQ(SupportedWellTapPatternList(), "row-end");
+  EXPECT_EQ(SupportedWellTapPatternList(), "row-end, row-end-every-other");
 }
 
 }  // namespace dali

@@ -11,6 +11,7 @@
 #ifndef DALI_PLACER_WELL_LEGALIZER_WELL_GEOMETRY_H_
 #define DALI_PLACER_WELL_LEGALIZER_WELL_GEOMETRY_H_
 
+#include <utility>
 #include <vector>
 
 #include "dali/common/misc.h"
@@ -56,8 +57,14 @@ class WellGeometryBuilder {
   /** Return alternating P/N boundary edges in ascending Y order. */
   std::vector<int> CollectPnEdges(const Stripe& stripe) const;
 
-  /** Return tap-cell vertical edges in ascending Y traversal order. */
-  std::vector<int> CollectTapEdges(const Stripe& stripe) const;
+  /**
+   * Return the Y intervals of the tap columns already covered by tap cells,
+   * sorted ascending and merged. Tap macros carry their own implant, so the
+   * builder only fills what these intervals leave uncovered. Rows without a tap
+   * contribute nothing, which is what makes sparse patterns fillable.
+   */
+  std::vector<std::pair<int, int>> CollectTapCoverage(
+      const Stripe& stripe) const;
 
   const std::vector<StripeColumn>& columns_;
   int region_bottom_ = 0;

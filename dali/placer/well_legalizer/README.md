@@ -6,8 +6,24 @@ sits within `MaxPlugDist` of a compatible-well tap — the latch-up rule. The
 
 Whatever the pattern, a **pattern-agnostic coverage check**
 (`GriddedPlacementValidator`) verifies the `MaxPlugDist` rule geometrically, so
-correctness never depends on a pattern's own bookkeeping. Legend for the
-diagrams below: **orange = well-tap cell**, **blue = ordinary cell**.
+correctness never depends on a pattern's own bookkeeping.
+
+Legend for the diagrams below:
+
+| Colour | Meaning |
+|---|---|
+| pale blue band | N-well |
+| pale yellow band | P-well |
+| grey outline | ordinary cell |
+| solid orange | well-tap cell |
+| light orange | tap column with **no** tap cell — the P+/N+ select layer is still filled here |
+
+Adjacent rows are flipped so like wells abut, which is why the well bands read as
+double-height stripes. The light-orange fill matters: the N-well and P+/N+ select
+layers must stay **continuous** across a row (a fab/mask constraint — a gap
+causes implant-area and well-spacing DRC violations), so where a sparse pattern
+leaves a row untapped, the select layer is filled anyway, following the well
+banding.
 
 ## Taxonomy
 
@@ -28,7 +44,7 @@ abut at the tap; cells legalize within a segment and cannot cross the tap.
 | Pattern | `-well_tap_pattern` | Status |
 |---|---|---|
 | **row-end, every row** — two taps per row, in the margins (the default) | `row-end` | Available |
-| **row-end, every other row** — row-end taps on alternate rows; untapped rows covered by their neighbors | `row-end-every-other` | Planned; pending well-implant geometry generalization |
+| **row-end, every other row** — row-end taps on alternate rows; untapped rows covered by their neighbours | `row-end-every-other` | Available |
 | **row-mid, every row** — one center tap per row; the column is split into two independent segments at the seam | `row-mid` | Planned |
 
 Pattern names are `<position>` with an optional `-every-other` cadence suffix
@@ -63,6 +79,20 @@ checkerboard — not supported for gridded
 dali ... -well_tap_pattern row-end               # default
 dali ... -well_tap_pattern row-end-every-other
 ```
+
+On `test_case_3`, `row-end-every-other` halves the tap count at no wirelength
+cost, and the coverage check confirms the latch-up rule still holds:
+
+| | `row-end` | `row-end-every-other` |
+|---|---:|---:|
+| well-tap cells | 21402 | 10702 |
+| final HPWL | 2.77869e6 | 2.77869e6 |
+| coverage violations | 0 | 0 |
+| worst cell-to-tap gap (75 µm budget) | 32.41 µm | 32.75 µm |
+
+Note that the row-end margins are still reserved on untapped rows, so this saves
+tap cells rather than row width; reclaiming that space would be a separate
+change.
 
 ## Note on the standard-cell flow
 

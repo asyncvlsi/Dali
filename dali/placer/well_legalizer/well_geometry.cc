@@ -12,6 +12,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
+#include <vector>
 
 #include "dali/placer/well_legalizer/stripe_helper.h"
 
@@ -70,29 +72,56 @@ std::vector<int> WellGeometryBuilder::CollectPnEdges(
   return edges;
 }
 
-std::vector<int> WellGeometryBuilder::CollectTapEdges(
+std::vector<std::pair<int, int>> WellGeometryBuilder::CollectTapCoverage(
     const Stripe& stripe) const {
-  std::vector<int> edges;
-  edges.reserve(stripe.gridded_rows_.size() * 2 + 2);
-  edges.push_back(stripe.is_bottom_up_ ? region_bottom_ : region_top_);
+  std::vector<std::pair<int, int>> covered;
+  covered.reserve(stripe.gridded_rows_.size());
   for (const auto& row : stripe.gridded_rows_) {
-    Component* tap = row.WellTapCell();
-    DaliExpects(tap != nullptr,
-                "Cannot build implant geometry without row well taps");
-    if (stripe.is_bottom_up_) {
-      edges.push_back(static_cast<int>(std::round(tap->LLY())));
-      edges.push_back(static_cast<int>(std::round(tap->URY())));
-    } else {
-      edges.push_back(static_cast<int>(std::round(tap->URY())));
-      edges.push_back(static_cast<int>(std::round(tap->LLY())));
+    for (const Component* tap : row.TapCells()) {
+      if (tap == nullptr) continue;
+      const int lo = static_cast<int>(std::round(tap->LLY()));
+      const int hi = static_cast<int>(std::round(tap->URY()));
+      if (hi > lo) covered.emplace_back(lo, hi);
     }
   }
-  edges.push_back(stripe.is_bottom_up_ ? region_top_ : region_bottom_);
-  if (!stripe.is_bottom_up_) {
-    std::reverse(edges.begin(), edges.end());
+  std::sort(covered.begin(), covered.end());
+
+  std::vector<std::pair<int, int>> merged;
+  for (const auto& interval : covered) {
+    if (!merged.empty() && interval.first <= merged.back().second) {
+      merged.back().second = std::max(merged.back().second, interval.second);
+    } else {
+      merged.push_back(interval);
+    }
   }
-  return edges;
+  return merged;
 }
+
+namespace {
+
+/**
+ * Return the sub-intervals of [lo, hi) left uncovered by `covered`, which must
+ * be sorted ascending and non-overlapping. Used to find the parts of a well
+ * band whose tap column holds no tap cell and therefore still needs implant.
+ */
+std::vector<std::pair<int, int>> UncoveredSpans(
+    int lo, int hi, const std::vector<std::pair<int, int>>& covered) {
+  std::vector<std::pair<int, int>> spans;
+  int cursor = lo;
+  for (const auto& interval : covered) {
+    if (interval.second <= cursor) continue;
+    if (interval.first >= hi) break;
+    if (interval.first > cursor) {
+      spans.emplace_back(cursor, std::min(interval.first, hi));
+    }
+    cursor = std::max(cursor, interval.second);
+    if (cursor >= hi) break;
+  }
+  if (cursor < hi) spans.emplace_back(cursor, hi);
+  return spans;
+}
+
+}  // namespace
 
 void WellGeometryBuilder::AppendImplantRects(
     std::vector<WellGeometryRect>* geometry) const {
@@ -103,16 +132,25 @@ void WellGeometryBuilder::AppendImplantRects(
         continue;
       }
 
-      const GriddedRow& reference_row = stripe.gridded_rows_.front();
-      Component* left_tap = reference_row.LeftWellTapCell();
-      Component* right_tap = reference_row.RightWellTapCell();
-      DaliExpects(left_tap != nullptr && right_tap != nullptr,
+      const GriddedRow* reference_row = nullptr;
+      for (const auto& row : stripe.gridded_rows_) {
+        if (row.LeftWellTapCell() != nullptr &&
+            row.RightWellTapCell() != nullptr) {
+          reference_row = &row;
+          break;
+        }
+      }
+      DaliExpects(reference_row != nullptr,
                   "Cannot build implant geometry without boundary well taps");
 
-      int left_tap_lx = static_cast<int>(std::round(left_tap->LLX()));
-      int left_tap_ux = static_cast<int>(std::round(left_tap->URX()));
-      int right_tap_lx = static_cast<int>(std::round(right_tap->LLX()));
-      int right_tap_ux = static_cast<int>(std::round(right_tap->URX()));
+      int left_tap_lx =
+          static_cast<int>(std::round(reference_row->LeftWellTapCell()->LLX()));
+      int left_tap_ux =
+          static_cast<int>(std::round(reference_row->LeftWellTapCell()->URX()));
+      int right_tap_lx =
+          static_cast<int>(std::round(reference_row->RightWellTapCell()->LLX()));
+      int right_tap_ux =
+          static_cast<int>(std::round(reference_row->RightWellTapCell()->URX()));
 
       std::vector<int> pn_edges = CollectPnEdges(stripe);
       bool is_p_well = stripe.is_first_row_orient_N_;
@@ -127,20 +165,18 @@ void WellGeometryBuilder::AppendImplantRects(
         is_p_well = !is_p_well;
       }
 
-      std::vector<int> tap_edges = CollectTapEdges(stripe);
-      DaliExpects(tap_edges.size() % 2 == 0,
-                  "Tap geometry requires paired vertical edges");
+      const std::vector<std::pair<int, int>> covered = CollectTapCoverage(stripe);
       is_p_well = stripe.is_first_row_orient_N_;
-      for (size_t i = 0; i + 1 < tap_edges.size(); i += 2) {
+      for (size_t i = 0; i + 1 < pn_edges.size(); ++i) {
         WellGeometryLayer layer =
             is_p_well ? WellGeometryLayer::kPplus : WellGeometryLayer::kNplus;
-        if (tap_edges[i + 1] > tap_edges[i]) {
+        for (const auto& span :
+             UncoveredSpans(pn_edges[i], pn_edges[i + 1], covered)) {
           geometry->push_back(
-              {RectI(left_tap_lx, tap_edges[i], left_tap_ux, tap_edges[i + 1]),
+              {RectI(left_tap_lx, span.first, left_tap_ux, span.second), layer});
+          geometry->push_back(
+              {RectI(right_tap_lx, span.first, right_tap_ux, span.second),
                layer});
-          geometry->push_back({RectI(right_tap_lx, tap_edges[i], right_tap_ux,
-                                     tap_edges[i + 1]),
-                               layer});
         }
         is_p_well = !is_p_well;
       }

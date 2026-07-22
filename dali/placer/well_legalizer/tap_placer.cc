@@ -90,11 +90,11 @@ bool WellTapPatternHasFixedCount(WellTapPattern pattern) {
 bool IsWellTapPatternSupported(WellTapPattern pattern) {
   switch (pattern) {
     case WellTapPattern::kRowEnd:
-      return true;
-    // Known and planned, but not yet handled end-to-end by later stages
-    // (every-other-row and row-mid both need the well-implant geometry / row
-    // splitting work). Keep them known-but-unsupported until that lands.
     case WellTapPattern::kRowEndEveryOther:
+      return true;
+    // Known and planned, but not yet handled end-to-end: a row-mid tap splits
+    // the row into two segments, which the space partitioner does not yet
+    // produce. Keep it known-but-unsupported until that lands.
     case WellTapPattern::kRowMid:
       return false;
   }
