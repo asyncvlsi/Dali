@@ -14,6 +14,7 @@
 #include <QCheckBox>
 #include <QDir>
 #include <QFileDialog>
+#include <QFont>
 #include <QFileInfo>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -166,6 +167,18 @@ class PlacementCanvas : public QWidget {
     setMouseTracking(true);
   }
 
+  /** Draw arrows from where each cell sat when global placement finished. */
+  void SetShowDisplacementFromGlobal(bool show) {
+    show_displacement_from_global_ = show;
+    update();
+  }
+
+  /** Draw arrows from where each cell sat in the previous snapshot. */
+  void SetShowDisplacementFromPrevious(bool show) {
+    show_displacement_from_previous_ = show;
+    update();
+  }
+
   void SetSnapshot(Circuit* circuit,
                    const PlacementSnapshotMetadata& metadata) {
     components_.clear();
@@ -206,6 +219,17 @@ class PlacementCanvas : public QWidget {
       view_lly_ = std::min(view_lly_, static_cast<double>(well_rect.ly));
       view_urx_ = std::max(view_urx_, static_cast<double>(well_rect.ux));
       view_ury_ = std::max(view_ury_, static_cast<double>(well_rect.uy));
+    }
+
+    previous_centers_ = std::move(current_centers_);
+    current_centers_ = CollectMovableCenters(circuit);
+    // Track the running global-placement state so that once global placement
+    // ends this holds its final result, which is the reference the "vs global"
+    // overlay measures against. While global placement is still running the
+    // reference is the current snapshot itself, so that overlay is empty until
+    // legalization starts -- there is no "global placement result" yet.
+    if (metadata.group == "global_placement") {
+      global_centers_ = current_centers_;
     }
 
     snapshot_label_ = metadata.id;
@@ -278,6 +302,7 @@ class PlacementCanvas : public QWidget {
         }
       }
     }
+    DrawDisplacement(&painter);
     for (const SnapshotComponent& component : components_) {
       if (component.kind != SnapshotComponentKind::kOrdinary) {
         DrawComponent(&painter, component);
@@ -352,6 +377,70 @@ class PlacementCanvas : public QWidget {
     painter->drawText(QRectF(0, band.top() + 26, width() - 16, 18),
                       Qt::AlignRight | Qt::AlignVCenter,
                       QString("zoom %1 px/um").arg(scale_, 0, 'g', 4));
+  }
+
+  /**
+   * Centre of every movable, non-I/O component, in circuit order.
+   *
+   * The component list does not change during placement, so the same index
+   * refers to the same cell in every snapshot and displacement can be measured
+   * by position in this vector.
+   */
+  static std::vector<QPointF> CollectMovableCenters(Circuit* circuit) {
+    std::vector<QPointF> centers;
+    centers.reserve(circuit->Components().size());
+    for (Component& component : circuit->Components()) {
+      if (component.MacroPtr() == circuit->tech().IoDummyMacroPtr()) continue;
+      if (component.IsFixed()) continue;
+      centers.emplace_back(
+          (component.LLX() + component.Width() / 2.0) * circuit->GridValueX(),
+          (component.LLY() + component.Height() / 2.0) * circuit->GridValueY());
+    }
+    return centers;
+  }
+
+  /**
+   * Draw one arrow per moved cell, from where it sat in `origin` to where it
+   * sits now. Sub-pixel moves are skipped so a stage that barely perturbs the
+   * placement stays readable. Both references can be shown at once, so each
+   * carries its own colour.
+   */
+  static constexpr double kMinArrowPixels = 0.4;
+
+  void DrawDisplacementFrom(QPainter* painter,
+                            const std::vector<QPointF>& origin,
+                            const QColor& color) const {
+    if (origin.size() != current_centers_.size()) return;
+
+    painter->setBrush(Qt::NoBrush);
+    painter->setPen(QPen(color, 1));
+    for (size_t i = 0; i < current_centers_.size(); ++i) {
+      const QPointF from(origin[i]);
+      const QPointF to(current_centers_[i]);
+      const QPointF tail(WorldToScreenX(from.x()), WorldToScreenY(from.y()));
+      const QPointF head(WorldToScreenX(to.x()), WorldToScreenY(to.y()));
+      const double dx = head.x() - tail.x();
+      const double dy = head.y() - tail.y();
+      const double length = std::sqrt(dx * dx + dy * dy);
+      if (length < kMinArrowPixels) continue;
+      painter->drawLine(tail, head);
+      const double ux = dx / length;
+      const double uy = dy / length;
+      const double barb = std::min(4.0, length * 0.35);
+      painter->drawLine(head, QPointF(head.x() - barb * (ux + uy * 0.5),
+                                      head.y() - barb * (uy - ux * 0.5)));
+      painter->drawLine(head, QPointF(head.x() - barb * (ux - uy * 0.5),
+                                      head.y() - barb * (uy + ux * 0.5)));
+    }
+  }
+
+  void DrawDisplacement(QPainter* painter) const {
+    if (show_displacement_from_global_) {
+      DrawDisplacementFrom(painter, global_centers_, QColor(196, 62, 44));
+    }
+    if (show_displacement_from_previous_) {
+      DrawDisplacementFrom(painter, previous_centers_, QColor(46, 106, 178));
+    }
   }
 
   QRectF VisiblePlacementArea() const {
@@ -483,6 +572,11 @@ class PlacementCanvas : public QWidget {
   double ScreenToWorldY(double y) const { return (pan_y_ - y) / scale_; }
 
   std::vector<SnapshotComponent> components_;
+  std::vector<QPointF> current_centers_;
+  std::vector<QPointF> previous_centers_;
+  std::vector<QPointF> global_centers_;
+  bool show_displacement_from_global_ = false;
+  bool show_displacement_from_previous_ = false;
   std::vector<SnapshotWellRect> well_rects_;
   std::string snapshot_label_ = "Waiting for first placement snapshot";
   std::string hpwl_label_;
@@ -749,6 +843,10 @@ class QtPlacementWindow : public QWidget {
     pause_checkbox_ = new QCheckBox("Pause at every snapshot", this);
     pause_checkbox_->setChecked(true);
     movable_dot_checkbox_ = new QCheckBox("Movable dots", this);
+    displacement_global_checkbox_ =
+        new QCheckBox("Displacement vs global", this);
+    displacement_previous_checkbox_ =
+        new QCheckBox("Displacement vs previous", this);
     movable_dot_checkbox_->setChecked(true);
     step_button_ = new QPushButton("Step", this);
     continue_button_ = new QPushButton("Continue", this);
@@ -756,14 +854,21 @@ class QtPlacementWindow : public QWidget {
     save_button_ = new QPushButton("Save PNG", this);
     hpwl_panel_ = new HpwlHistoryPanel(this);
 
-    auto* controls = new QHBoxLayout();
-    controls->addWidget(pause_checkbox_);
-    controls->addWidget(movable_dot_checkbox_);
-    controls->addWidget(step_button_);
-    controls->addWidget(continue_button_);
-    controls->addWidget(fit_button_);
-    controls->addWidget(save_button_);
-    controls->addStretch();
+    auto* run_controls = new QHBoxLayout();
+    run_controls->addWidget(MakeGroupLabel("Run:"));
+    run_controls->addWidget(pause_checkbox_);
+    run_controls->addWidget(step_button_);
+    run_controls->addWidget(continue_button_);
+    run_controls->addStretch();
+    run_controls->addWidget(save_button_);
+
+    auto* view_controls = new QHBoxLayout();
+    view_controls->addWidget(MakeGroupLabel("View:"));
+    view_controls->addWidget(movable_dot_checkbox_);
+    view_controls->addWidget(displacement_global_checkbox_);
+    view_controls->addWidget(displacement_previous_checkbox_);
+    view_controls->addStretch();
+    view_controls->addWidget(fit_button_);
 
     auto* content = new QHBoxLayout();
     content->addWidget(canvas_, 1);
@@ -771,7 +876,8 @@ class QtPlacementWindow : public QWidget {
 
     layout->addWidget(status_label_);
     layout->addLayout(content, 1);
-    layout->addLayout(controls);
+    layout->addLayout(run_controls);
+    layout->addLayout(view_controls);
 
     QObject::connect(step_button_, &QPushButton::clicked, this,
                      [this]() { step_requested_ = true; });
@@ -784,6 +890,14 @@ class QtPlacementWindow : public QWidget {
     QObject::connect(
         movable_dot_checkbox_, &QCheckBox::toggled, this,
         [this](bool checked) { canvas_->SetMovableDotMode(checked); });
+    QObject::connect(displacement_global_checkbox_, &QCheckBox::toggled, this,
+                     [this](bool checked) {
+                       canvas_->SetShowDisplacementFromGlobal(checked);
+                     });
+    QObject::connect(displacement_previous_checkbox_, &QCheckBox::toggled, this,
+                     [this](bool checked) {
+                       canvas_->SetShowDisplacementFromPrevious(checked);
+                     });
     QObject::connect(save_button_, &QPushButton::clicked, this,
                      [this]() { SaveCurrentImages(); });
   }
@@ -816,8 +930,11 @@ class QtPlacementWindow : public QWidget {
     status_label_->setText(current_snapshot_label_);
     canvas_->SetSnapshot(circuit, metadata);
     hpwl_panel_->AddSnapshot(circuit, metadata);
-    raise();
-    activateWindow();
+    if (!has_shown_a_snapshot_) {
+      has_shown_a_snapshot_ = true;
+      raise();
+      activateWindow();
+    }
   }
 
   bool ShouldPause() const { return pause_checkbox_->isChecked(); }
@@ -828,6 +945,15 @@ class QtPlacementWindow : public QWidget {
   }
 
  private:
+  /** Bold row prefix naming what the controls that follow it act on. */
+  QLabel* MakeGroupLabel(const QString& text) {
+    auto* label = new QLabel(text, this);
+    QFont font = label->font();
+    font.setBold(true);
+    label->setFont(font);
+    return label;
+  }
+
   void SaveCurrentImages() {
     const QString start_dir =
         last_export_dir_.isEmpty() ? QDir::currentPath() : last_export_dir_;
@@ -864,6 +990,9 @@ class QtPlacementWindow : public QWidget {
   HpwlHistoryPanel* hpwl_panel_ = nullptr;
   QCheckBox* pause_checkbox_ = nullptr;
   QCheckBox* movable_dot_checkbox_ = nullptr;
+  bool has_shown_a_snapshot_ = false;
+  QCheckBox* displacement_global_checkbox_ = nullptr;
+  QCheckBox* displacement_previous_checkbox_ = nullptr;
   QPushButton* step_button_ = nullptr;
   QPushButton* continue_button_ = nullptr;
   QPushButton* fit_button_ = nullptr;

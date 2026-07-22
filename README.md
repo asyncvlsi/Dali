@@ -92,6 +92,21 @@ It pauses at each checkpoint so intermediate states — including the gridded ro
 structure, wells, taps, and end caps — can be inspected, and plots per-stage
 HPWL curves for the stages the run will execute.
 
+Two independent displacement toggles, both off by default, overlay an arrow per
+movable cell drawn from where that cell sat in an earlier placement to where it
+sits now. Enable either or both:
+
+  * *Displacement vs global* (red) — total movement since global placement
+    finished, i.e. what legalization and detailed placement cost overall. This
+    overlay is empty while global placement is still running, since there is no
+    global placement result to compare against yet.
+  * *Displacement vs previous* (blue) — movement contributed by the current
+    stage alone
+
+Arrows are drawn to scale, so late detailed-placement stages that move cells by
+a fraction of a row are close to invisible at fit-to-view zoom. Zoom in to
+inspect them.
+
 ### Run tests
 After configuring and building from the `build/` directory, run:
 
