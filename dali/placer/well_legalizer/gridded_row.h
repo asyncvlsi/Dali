@@ -196,10 +196,6 @@ class GriddedRow {
   /** Count overlapping component rectangles in this row. */
   size_t CountComponentOverlaps() const;
 
-  void GenSubCellTable(std::ofstream& ost_cluster, std::ofstream& ost_sub_cell,
-                       std::ofstream& ost_discrepancy,
-                       std::ofstream& ost_displacement);
-
   void UpdateCommonSegment(std::vector<SegI>& avail_spaces, int width,
                            double density);
   void AddStandardCell(Component* component, int region_id, SegI range);

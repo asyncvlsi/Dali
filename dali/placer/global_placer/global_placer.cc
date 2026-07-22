@@ -74,18 +74,6 @@ void GlobalPlacer::SetMinIteration(int min_iter) {
   min_iter_ = min_iter;
 }
 
-/****
- * @brief Set an internal boolean variable to save or not save intermediate
- * results.
- *
- * @param should_save_intermediate_result : if true, intermediate results will
- * be saved; otherwise, not.
- */
-void GlobalPlacer::SetShouldSaveIntermediateResult(
-    bool should_save_intermediate_result) {
-  should_save_intermediate_result_ = should_save_intermediate_result;
-}
-
 void GlobalPlacer::SetSnapshotCallback(SnapshotCallback snapshot_callback) {
   snapshot_callback_ = std::move(snapshot_callback);
 }
@@ -162,7 +150,6 @@ void GlobalPlacer::InitializePlacementEngines() {
       std::make_unique<BoundToBoundHpwlOptimizer>(ckt_ptr_, num_threads_);
   optimizer_->SetAnchorSchedule(anchor_schedule_);
   optimizer_->SetNetIgnoreThreshold(net_ignore_threshold_);
-  optimizer_->SetShouldSaveIntermediateResult(should_save_intermediate_result_);
   optimizer_->Initialize();
 
   auto look_ahead_spreader =
@@ -172,8 +159,6 @@ void GlobalPlacer::InitializePlacementEngines() {
   look_ahead_spreader->SetHotspotMode(lal_hotspot_mode_);
   look_ahead_spreader->SetAffineScalingWeight(lal_affine_scaling_weight_);
   look_ahead_spreader->SetMacroBoundaryMode(lal_macro_boundary_mode_);
-  look_ahead_spreader->SetShouldSaveIntermediateResult(
-      should_save_intermediate_result_);
   look_ahead_spreader->Initialize(PlacementDensity());
   spreader_ = std::move(look_ahead_spreader);
   auto pressure_model =
@@ -249,8 +234,6 @@ void GlobalPlacer::InitializeComponentLocation() {
       DaliFatal("Unknown random initializer type");
     }
   }
-  initializer->SetShouldSaveIntermediateResult(
-      should_save_intermediate_result_);
   initializer->InitializeLocations();
 }
 

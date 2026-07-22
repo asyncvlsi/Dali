@@ -1171,7 +1171,6 @@ bool ExtendedTetrisLegalizer::StartPlacement() {
     }
     legalize_from_left_ = !legalize_from_left_;
     UpdateLeftLimitFactor();
-    // GenMATLABTable("lg" + std::to_string(cur_iter_) + "_result.txt");
     ReportHPWL();
     if (is_success) {
       break;

@@ -54,7 +54,6 @@ class Dali {
     double target_density = -1;
     int net_ignore_threshold = 100;
     int io_metal_layer = 0;
-    bool export_well_cluster_matlab = false;
     bool disable_welltap = false;
     WellTapPattern well_tap_pattern = WellTapPattern::kRowEnd;
     bool disable_cell_flip = false;
@@ -144,7 +143,6 @@ class Dali {
         StandardCellLegalizerCostMode::kDisplacement;
     int detailed_max_rounds = 1;
     int detailed_max_move_candidates = 1000;
-    bool save_intermediate_result = false;
     std::string output_name = "dali_out";
     bool gui_debug = false;
     std::string gui_pause = "every_snapshot";
@@ -240,7 +238,6 @@ class Dali {
   double target_density_ = -1;
   int net_ignore_threshold_ = 100;
   int io_metal_layer_ = 0;
-  bool export_well_cluster_matlab_ = false;
   bool disable_welltap_ = false;
   WellTapPattern well_tap_pattern_ = WellTapPattern::kRowEnd;
   bool disable_cell_flip_ = false;
@@ -323,7 +320,6 @@ class Dali {
       StandardCellLegalizerCostMode::kDisplacement;
   int detailed_max_rounds_ = 1;
   int detailed_max_move_candidates_ = 1000;
-  bool save_intermediate_result_ = false;
   std::string output_name_ = "dali_out";
   bool gui_debug_ = false;
   std::string gui_pause_ = "every_snapshot";

@@ -100,7 +100,6 @@ class HpwlOptimizer {
   std::vector<double>& GetHpwlsY() { return lower_bound_hpwl_y_; }
 
   /** Enable or disable intermediate placement dumps. */
-  void SetShouldSaveIntermediateResult(bool should_save_intermediate_result);
 
  protected:
   Circuit* ckt_ptr_ = nullptr;
@@ -115,7 +114,6 @@ class HpwlOptimizer {
   double net_model_update_stop_criterion_ = 0.01;
 
   // Save intermediate result for debugging and/or visualization.
-  bool should_save_intermediate_result_ = false;
   GlobalAnchorSchedule anchor_schedule_ = GlobalAnchorSchedule::kDali;
   size_t net_ignore_threshold_ = 100;
   std::vector<RelativeYConstraint> relative_y_constraints_;

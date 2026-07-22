@@ -223,22 +223,6 @@ void Placer::CopyPlacementContextFrom(Placer* placer) {
   ckt_ptr_ = placer->ckt_ptr_;
 }
 
-void Placer::GenMATLABScriptPlaced(std::string const& name_of_file) {
-  std::ofstream ost(name_of_file.c_str());
-  DaliExpects(ost.is_open(), "Cannot open output file: " << name_of_file);
-  ost << RegionLeft() << " " << RegionBottom() << " "
-      << RegionRight() - RegionLeft() << " " << RegionTop() - RegionBottom()
-      << "\n";
-  auto& components = ckt_ptr_->Components();
-  for (auto& component : components) {
-    if (component.IsPlaced()) {
-      ost << component.LLX() << " " << component.LLY() << " "
-          << component.Width() << " " << component.Height() << "\n";
-    }
-  }
-  ost.close();
-}
-
 bool Placer::SaveNodeTerminal(std::string const& terminal_file,
                               std::string const& node_file) {
   std::ofstream ost(terminal_file.c_str());

@@ -406,39 +406,4 @@ RowSegment::OptimizeLinearDisplacement(double lambda, bool is_weighted_anchor,
   return vars;
 }
 
-void RowSegment::GenSubCellTable(std::ofstream& ost_cluster,
-                                 std::ofstream& ost_sub_cell,
-                                 std::ofstream& ost_discrepancy,
-                                 std::ofstream& ost_displacement, double row_ly,
-                                 double row_uy) {
-  SaveMatlabPatchRect(ost_cluster, static_cast<double>(LLX()), row_ly,
-                      static_cast<double>(URX()), row_uy, false, 0, 0, 0);
-
-  for (auto& component_region : component_regions_) {
-    Component* component_ptr = component_region.component;
-    auto aux_ptr =
-        static_cast<ComponentLegalizationState*>(component_ptr->AuxPtr());
-    double ly = std::max(component_ptr->LLY(), row_ly);
-    double uy = std::min(component_ptr->URY(), row_uy);
-    double sub_x = aux_ptr->SubLocs()[component_region.region_id];
-    double sub_y = ly;
-    SaveMatlabPatchRect(ost_sub_cell, sub_x, ly, sub_x + component_ptr->Width(),
-                        uy, true, 0, 1, 1);
-
-    double disc_x = aux_ptr->AverageLoc() - sub_x;
-    double disc_y = 0;
-    ost_discrepancy << sub_x << "  " << sub_y << "  " << disc_x << "  "
-                    << disc_y << "\n";
-
-    double init_x = aux_ptr->InitLoc().x;
-    double init_y = aux_ptr->InitLoc().y;
-    if (component_region.region_id == 0) {
-      double disp_x = component_ptr->LLX() - init_x;
-      double disp_y = component_ptr->LLY() - init_y;
-      ost_displacement << init_x << "  " << init_y << "  " << disp_x << "  "
-                       << disp_y << "\n";
-    }
-  }
-}
-
 }  // namespace dali

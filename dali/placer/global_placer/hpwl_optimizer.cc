@@ -36,11 +36,6 @@ HpwlOptimizer::HpwlOptimizer(Circuit* ckt_ptr, int num_threads) {
   num_threads_ = num_threads;
 }
 
-void HpwlOptimizer::SetShouldSaveIntermediateResult(
-    bool should_save_intermediate_result) {
-  should_save_intermediate_result_ = should_save_intermediate_result;
-}
-
 void HpwlOptimizer::SetNetIgnoreThreshold(int net_ignore_threshold) {
   DaliExpects(net_ignore_threshold > 1,
               "Net ignore threshold must be greater than one");
@@ -839,9 +834,6 @@ double BoundToBoundHpwlOptimizer::OptimizeHpwl() {
   elapsed_time.RecordEndTime();
   tot_cg_time += elapsed_time.GetWallTime();
 
-  if (should_save_intermediate_result_) {
-    ckt_ptr_->GenMATLABTable("cg_result_" + std::to_string(cur_iter_) + ".txt");
-  }
   BackUpComponentLocation();
   relative_y_constraints_.clear();
   lower_bound_hpwl_.push_back(lower_bound_hpwl_x_.back() +

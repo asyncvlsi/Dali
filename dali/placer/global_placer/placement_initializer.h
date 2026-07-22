@@ -53,7 +53,6 @@ class PlacementInitializer {
       std::unordered_map<std::string, std::string>& params_dict);
 
   /** Enable or disable intermediate placement dumps. */
-  void SetShouldSaveIntermediateResult(bool should_save_intermediate_result);
 
   /** Assign initial component locations. */
   virtual void InitializeLocations() = 0;
@@ -65,7 +64,6 @@ class PlacementInitializer {
   uint32_t random_seed_ = 1;
 
   // Save intermediate result for debugging and/or visualization.
-  bool should_save_intermediate_result_ = false;
 
   ElapsedTime elapsed_time_;
   std::string initializer_name_;

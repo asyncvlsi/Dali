@@ -409,10 +409,6 @@ class GriddedCellWellLegalizer : public Placer {
 
   bool StartPlacement() override;
 
-  /****member function for file IO****/
-  void GenMatlabClusterTable(std::string const& name_of_file);
-  void GenMATLABWellTable(std::string const& name_of_file,
-                          int well_emit_mode) override;
   void GenPPNP(std::string const& name_of_file);
   void EmitDEFWellFile(std::string const& name_of_file, int well_emit_mode,
                        bool enable_emitting_cluster = true) override;
@@ -658,8 +654,6 @@ class GriddedCellWellLegalizer : public Placer {
   std::vector<ComponentPlacementSnapshot> component_init_locations_;
 
   // dump result
-  bool is_dump = false;
-  int dump_count = 0;
 };
 
 }  // namespace dali

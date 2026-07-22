@@ -1350,12 +1350,6 @@ double LookAheadSpreader::Spread() {
   elapsed_time.RecordEndTime();
   tot_lal_time += elapsed_time.GetWallTime();
 
-  if (should_save_intermediate_result_) {
-    std::string file_name = "lal_result_" + std::to_string(iteration_) + ".txt";
-    ++iteration_;
-    circuit_->GenMATLABTable(file_name);
-    // DumpLookAheadDisplacement("displace_" + std::to_string(iteration_), 1);
-  }
 
   LOG(debug) << "(UpdateGridBinState time: " << update_grid_bin_state_time_
              << "s)\n";

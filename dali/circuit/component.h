@@ -232,8 +232,6 @@ class Component {
   /** Log the nets connected to this component. */
   void ReportNet();
 
-  /** Write this component's well geometry as MATLAB patch rectangles. */
-  void ExportWellToMatlabPatchRect(std::ofstream& ost);
 
  protected:
   Macro* macro_ptr_ = nullptr;

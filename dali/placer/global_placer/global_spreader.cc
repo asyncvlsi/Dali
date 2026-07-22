@@ -18,8 +18,4 @@ GlobalSpreader::GlobalSpreader(Circuit* circuit) : circuit_(circuit) {
   DaliExpects(circuit_ != nullptr, "Global spreader requires a circuit");
 }
 
-void GlobalSpreader::SetShouldSaveIntermediateResult(bool should_save) {
-  should_save_intermediate_result_ = should_save;
-}
-
 }  // namespace dali

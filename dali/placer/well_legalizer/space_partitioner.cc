@@ -239,9 +239,6 @@ void WellSpacePartitioner::DecomposeSpaceToSimpleStripes() {
       stripe.height_ -= row_height_;
     }
   }*/
-
-  // PlotSimpleStripes();
-  // PlotAvailSpaceInCols();
 }
 
 void WellSpacePartitioner::AssignComponentToColBasedOnWhiteSpace() {
@@ -389,65 +386,6 @@ bool WellSpacePartitioner::StartPartitioning() {
   AssignComponentToColBasedOnWhiteSpace();
 
   return true;
-}
-
-void WellSpacePartitioner::PlotAvailSpace(std::string const& name_of_file) {
-  std::ofstream ost(name_of_file.c_str());
-  DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
-  SaveMatlabPatchRect(ost, Left(), Bottom(), Right(), Top(), true, 1, 1, 1);
-  for (int i = 0; i < tot_num_rows_; ++i) {
-    auto& row = white_space_in_rows_[i];
-    for (auto& seg : row) {
-      SaveMatlabPatchRect(ost, seg.lo, i * row_height_ + Bottom(), seg.hi,
-                          (i + 1) * row_height_ + Bottom(), true, 1, 1, 1);
-    }
-  }
-
-  for (auto& component : circuit_->Components()) {
-    if (component.IsMovable()) continue;
-    SaveMatlabPatchRect(ost, component.LLX(), component.LLY(), component.URX(),
-                        component.URY(), true, 1, 1, 1);
-  }
-}
-
-void WellSpacePartitioner::PlotAvailSpaceInCols(
-    std::string const& name_of_file) {
-  std::ofstream ost(name_of_file.c_str());
-  DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
-  SaveMatlabPatchRect(ost, Left(), Bottom(), Right(), Top(), true, 1, 1, 1);
-  for (auto& col : *output_stripes_) {
-    for (int i = 0; i < tot_num_rows_; ++i) {
-      auto& row = col.white_space_[i];
-      for (auto& seg : row) {
-        SaveMatlabPatchRect(ost, seg.lo, i * row_height_ + Bottom(), seg.hi,
-                            (i + 1) * row_height_ + Bottom(), true, 0, 1, 1);
-      }
-    }
-  }
-
-  for (auto& component : circuit_->Components()) {
-    if (component.IsMovable()) continue;
-    SaveMatlabPatchRect(ost, component.LLX(), component.LLY(), component.URX(),
-                        component.URY(), true, 0, 1, 1);
-  }
-}
-
-void WellSpacePartitioner::PlotSimpleStripes(std::string const& name_of_file) {
-  std::ofstream ost(name_of_file.c_str());
-  DaliExpects(ost.is_open(), "Cannot open output file: " + name_of_file);
-  SaveMatlabPatchRect(ost, Left(), Bottom(), Right(), Top(), true, 1, 1, 1);
-  for (auto& col : *output_stripes_) {
-    for (auto& stripe : col.stripe_list_) {
-      SaveMatlabPatchRect(ost, stripe.LLX(), stripe.LLY(), stripe.URX(),
-                          stripe.URY(), true, 0.8, 0.8, 0.8);
-    }
-  }
-
-  for (auto& component : circuit_->Components()) {
-    if (component.IsMovable()) continue;
-    SaveMatlabPatchRect(ost, component.LLX(), component.LLY(), component.URX(),
-                        component.URY(), true, 0, 1, 1);
-  }
 }
 
 int WellSpacePartitioner::Left() const {

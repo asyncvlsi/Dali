@@ -481,7 +481,6 @@ bool GriddedRowLegalizer::StartPlacement() {
   if (is_success) {
     RestoreInitialLocX();
     IterativeDisplacementOptimization();
-    GenSubCellTable("subcell");
     ReportHPWL();
     SaveConsensusLoc();
     ReportOutOfBoundCell();
@@ -572,7 +571,6 @@ bool GriddedRowLegalizer::StartStandardLegalization() {
   IterativeDisplacementOptimization();
   ReportHPWL();
   ReportBoundingBox();
-  GenSubCellTable("subcell");
   return true;
 }
 
@@ -584,76 +582,6 @@ void GriddedRowLegalizer::ReportOutOfBoundCell() {
     }
   }
   LOG(info) << cnt << " cells out of the corresponding cluster boundary!\n";
-}
-
-void GriddedRowLegalizer::GenMatlabClusterTable(
-    std::string const& name_of_file) {
-  std::string frame_file = name_of_file + "_outline.txt";
-  ckt_ptr_->GenMATLABTable(frame_file);
-  GenClusterTable(name_of_file, col_list_);
-}
-
-void GriddedRowLegalizer::GenMATLABWellTable(std::string const& name_of_file,
-                                             int well_emit_mode) {
-  std::string frame_file = name_of_file + "_outline.txt";
-  ckt_ptr_->GenMATLABWellTable(name_of_file, false);
-  GenMATLABWellFillingTable(name_of_file, col_list_, RegionBottom(),
-                            RegionTop(), well_emit_mode);
-  GenClusterTable(name_of_file, col_list_);
-}
-
-void GriddedRowLegalizer::GenSubCellTable(std::string const& name_of_file) {
-  std::string cluster_file = name_of_file + "_cluster.txt";
-  std::ofstream ost_cluster(cluster_file.c_str());
-  DaliExpects(ost_cluster.is_open(),
-              "Cannot open output file: " + name_of_file);
-
-  std::string sub_cell_file = name_of_file + "_result.txt";
-  std::ofstream ost_sub_cell(sub_cell_file.c_str());
-  DaliExpects(ost_sub_cell.is_open(),
-              "Cannot open output file: " + name_of_file);
-
-  std::string discrepancy_file = name_of_file + "_disc.txt";
-  std::ofstream ost_discrepancy(discrepancy_file.c_str());
-  DaliExpects(ost_discrepancy.is_open(),
-              "Cannot open output file: " + name_of_file);
-
-  std::string displacement_file = name_of_file + "_disp.txt";
-  std::ofstream ost_displacement(displacement_file.c_str());
-  DaliExpects(ost_displacement.is_open(),
-              "Cannot open output file: " + name_of_file);
-
-  for (auto& col : col_list_) {
-    for (auto& stripe : col.stripe_list_) {
-      for (auto& row : stripe.gridded_rows_) {
-        row.GenSubCellTable(ost_cluster, ost_sub_cell, ost_discrepancy,
-                            ost_displacement);
-      }
-    }
-  }
-}
-
-void GriddedRowLegalizer::GenDisplacement(std::string const& name_of_file) {
-  std::ofstream ost_displacement(name_of_file.c_str());
-  DaliExpects(ost_displacement.is_open(),
-              "Cannot open output file: " + name_of_file);
-
-  std::vector<Component>& component_list = ckt_ptr_->Components();
-  for (auto& component : component_list) {
-    if (IsDummyComponent(component)) continue;
-    if (component.AuxPtr() == nullptr) {
-      LOG(warning) << "Component " << component.Name()
-                   << " has not AuxPtr, cannot generate displacement vector\n";
-      continue;
-    }
-    auto aux_ptr = static_cast<ComponentLegalizationState*>(component.AuxPtr());
-    double init_x = aux_ptr->InitLoc().x;
-    double init_y = aux_ptr->InitLoc().y;
-    double disp_x = component.LLX() - init_x;
-    double disp_y = component.LLY() - init_y;
-    ost_displacement << init_x << "  " << init_y << "  " << disp_x << "  "
-                     << disp_y << "\n";
-  }
 }
 
 void GriddedRowLegalizer::ReportEffectiveDensity() {

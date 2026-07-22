@@ -246,7 +246,6 @@ void Dali::ShowParamsList() {
       << "  target_density: " << target_density_ << "\n"
       << "  net_ignore_threshold: " << net_ignore_threshold_ << "\n"
       << "  io_metal_layer: " << io_metal_layer_ << "\n"
-      << "  export_well_cluster_matlab: " << export_well_cluster_matlab_ << "\n"
       << "  disable_welltap: " << disable_welltap_ << "\n"
       << "  well_tap_pattern: " << WellTapPatternName(well_tap_pattern_) << "\n"
       << "  disable_cell_flip: " << disable_cell_flip_ << "\n"
@@ -382,7 +381,6 @@ void Dali::ShowParamsList() {
       << "  detailed_max_rounds: " << detailed_max_rounds_ << "\n"
       << "  detailed_max_move_candidates: " << detailed_max_move_candidates_
       << "\n"
-      << "  save_intermediate_result: " << save_intermediate_result_ << "\n"
       << "  output_name: " << output_name_ << "\n"
       << "  gui_debug: " << gui_debug_ << "\n"
       << "  gui_pause: " << gui_pause_ << "\n"
@@ -429,8 +427,6 @@ void Dali::LoadParamsFromConfig() {
   DaliExpects(net_ignore_threshold_ >= 100 && net_ignore_threshold_ <= 1000,
               "net_ignore_threshold must be in [100, 1000]");
   LoadIntConfig(ConfigName(prefix_, "io_metal_layer"), &io_metal_layer_);
-  LoadBoolConfig(ConfigName(prefix_, "export_well_cluster_matlab"),
-                 &export_well_cluster_matlab_);
   LoadBoolConfig(ConfigName(prefix_, "disable_welltap"), &disable_welltap_);
   param_name = ConfigName(prefix_, "well_tap_pattern");
   if (ConfigExists(param_name)) {
@@ -689,8 +685,6 @@ void Dali::LoadParamsFromConfig() {
                 &detailed_max_move_candidates_);
   DaliExpects(detailed_max_move_candidates_ >= 0,
               "detailed_max_move_candidates must be non-negative");
-  LoadBoolConfig(ConfigName(prefix_, "save_intermediate_result"),
-                 &save_intermediate_result_);
   LoadStringConfig(ConfigName(prefix_, "output_name"), &output_name_);
   LoadBoolConfig(ConfigName(prefix_, "gui_debug"), &gui_debug_);
   LoadStringConfig(ConfigName(prefix_, "gui_pause"), &gui_pause_);
@@ -726,7 +720,6 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       target_density_,
       net_ignore_threshold_,
       io_metal_layer_,
-      export_well_cluster_matlab_,
       disable_welltap_,
       well_tap_pattern_,
       disable_cell_flip_,
@@ -803,7 +796,6 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       standard_cell_legalizer_cost_mode_,
       detailed_max_rounds_,
       detailed_max_move_candidates_,
-      save_intermediate_result_,
       output_name_,
       gui_debug_,
       gui_pause_,
@@ -1025,7 +1017,6 @@ bool Dali::RunGlobalPlacementStage() {
   stage_timer.RecordStartTime();
   gb_placer_.SetCircuit(&circuit_);
   gb_placer_.SetNumThreads(num_threads_);
-  gb_placer_.SetShouldSaveIntermediateResult(save_intermediate_result_);
   gb_placer_.SetSnapshotCallback(
       [this](const std::string& id, const std::string& label,
              const std::string& subgroup, int iteration) {
@@ -1103,9 +1094,6 @@ bool Dali::RunGlobalPlacementStage() {
       LOG(error) << "Global placement failed\n";
       return false;
     }
-  }
-  if (export_well_cluster_matlab_) {
-    circuit_.GenMATLABTable("gb_result.txt");
   }
   WriteVisualizationSnapshot("global_placement.final", "After Global Placement",
                              "global_placement");
@@ -1292,13 +1280,6 @@ bool Dali::RunWellLegalization() {
   } else {
     RunFixedOnlyWellCompletion();
   }
-  if (export_well_cluster_matlab_ && has_movable_components) {
-    well_legalizer_.GenMatlabClusterTable("sc_result");
-    well_legalizer_.GenMATLABWellTable("scw", 0);
-  } else if (export_well_cluster_matlab_) {
-    LOG(info)
-        << "Skip well-cluster MATLAB export: no movable clusters to report\n";
-  }
   well_legalizer_.EmitDEFWellFile(output_name_, 1);
   return true;
 }
@@ -1312,9 +1293,6 @@ bool Dali::RunLegalizationStage() {
     } else if (!RunWellLegalization()) {
       return false;
     }
-  }
-  if (export_well_cluster_matlab_) {
-    circuit_.GenMATLABTable("lg_result.txt");
   }
   std::vector<PlacementWellRect> final_well_rects;
   if (!is_standard_cell_ && !disable_legalization_) {
@@ -1539,7 +1517,6 @@ bool Dali::AddWellTaps(int argc, char** argv) {
 bool Dali::GlobalPlace(double density, int num_threads) {
   gb_placer_.SetNumThreads(num_threads);
   gb_placer_.SetCircuit(&circuit_);
-  gb_placer_.SetShouldSaveIntermediateResult(false);
   gb_placer_.SetBoundaryFromCircuit();
   gb_placer_.SetPlacementDensity(density);
   return gb_placer_.StartPlacement();
@@ -1559,7 +1536,6 @@ bool Dali::GlobalPlace(double density, int num_threads) {
 bool Dali::UnifiedLegalization() {
   well_legalizer_.CopyPlacementContextFrom(&gb_placer_);
   well_legalizer_.SetStripePartitionMode(int(WellPartitionMode::kScavenge));
-  well_legalizer_.is_dump = false;
   return well_legalizer_.StartPlacement();
 }
 

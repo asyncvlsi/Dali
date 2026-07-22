@@ -506,17 +506,6 @@ class Circuit {
       std::string const& file_name = "optimal_region_distance.txt");
 
   /**** Save placement results to various file formats ****/
-  // save placement result as a Matlab table
-  void GenMATLABTable(std::string const& name_of_file = "component.txt",
-                      bool only_well_tap = false);
-
-  // save placement with well fillings as a Matlab tale
-  void GenMATLABWellTable(std::string const& name_of_file = "res",
-                          bool only_well_tap = false);
-
-  // save long nets as a Matlab table
-  void GenLongNetTable(std::string const& name_of_file);
-
   // Save new macros to a LEF file
   void SaveLefFile(std::string const& input_lef_file_full_name,
                    std::string const& output_lef_name);

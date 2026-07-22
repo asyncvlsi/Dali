@@ -151,48 +151,4 @@ void Component::ReportNet() {
   LOG(info) << "\n";
 }
 
-void Component::ExportWellToMatlabPatchRect(std::ofstream& ost) {
-  std::vector<RectI> n_well_shapes;
-  std::vector<RectI> p_well_shapes;
-  if (MacroPtr()->HasWellInfo()) {
-    auto& n_rects = MacroPtr()->Nrects();
-    for (auto& rect : n_rects) {
-      n_well_shapes.push_back(rect);
-    }
-    auto& p_rects = MacroPtr()->Prects();
-    for (auto& rect : p_rects) {
-      p_well_shapes.push_back(rect);
-    }
-  }
-
-  size_t sz = n_well_shapes.size();
-  for (size_t i = 0; i < sz; ++i) {
-    int length = CumulativeStretchLength(i);
-    if (Orient() == N) {
-      RectD n_rect(LLX() + n_well_shapes[i].LLX(),
-                   LLY() + (n_well_shapes[i].LLY() + length),
-                   LLX() + n_well_shapes[i].URX(),
-                   LLY() + (n_well_shapes[i].URY() + length));
-      RectD p_rect(LLX() + p_well_shapes[i].LLX(),
-                   LLY() + (p_well_shapes[i].LLY() + length),
-                   LLX() + p_well_shapes[i].URX(),
-                   LLY() + (p_well_shapes[i].URY() + length));
-      SaveMatlabPatchRegion(ost, n_rect, p_rect);
-    } else if (Orient() == FS) {
-      RectD n_rect(LLX() + n_well_shapes[i].LLX(),
-                   URY() - (n_well_shapes[i].URY() + length),
-                   LLX() + n_well_shapes[i].URX(),
-                   URY() - (n_well_shapes[i].LLY() + length));
-      RectD p_rect(LLX() + p_well_shapes[i].LLX(),
-                   URY() - (p_well_shapes[i].URY() + length),
-                   LLX() + p_well_shapes[i].URX(),
-                   URY() - (p_well_shapes[i].LLY() + length));
-      SaveMatlabPatchRegion(ost, n_rect, p_rect);
-    } else {
-      LOG(debug) << "Orientation not supported " << __FILE__ << " : "
-                 << __LINE__ << " : " << __FUNCTION__ << "\n";
-    }
-  }
-}
-
 }  // namespace dali

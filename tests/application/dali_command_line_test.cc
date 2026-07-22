@@ -243,7 +243,6 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "6",
                      "-debug_placement_region_scale",
                      "1.1",
-                     "-save_intermediate_result",
                      "-disable_detailed_place",
                      "-disable_io_place",
                      "-gui_debug",
@@ -334,7 +333,6 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_EQ(config_get_int("dali.exact_gridded_boundary_components"), 32);
   EXPECT_EQ(config_get_int("dali.exact_gridded_boundary_max_changes"), 6);
   EXPECT_DOUBLE_EQ(config_get_real("dali.debug_placement_region_scale"), 1.1);
-  EXPECT_EQ(config_get_int("dali.save_intermediate_result"), 1);
   EXPECT_EQ(config_get_int("dali.disable_detailed_place"), 1);
   EXPECT_EQ(config_get_int("dali.disable_io_place"), 1);
   EXPECT_EQ(config_get_int("dali.gui_debug"), 1);

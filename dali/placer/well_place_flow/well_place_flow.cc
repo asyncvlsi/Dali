@@ -65,8 +65,6 @@ bool WellPlaceFlow::StartPlacement() {  // TODO: do not use this
       // GriddedCellWellLegalizer well_legalizer;
       // well_legalizer.TakeOver(this);
       // bool is_success = well_legalizer.StartPlacement();
-      // well_legalizer_.GenMatlabClusterTable("sc_result");
-      // well_legalizer_.GenMATLABWellTable("scw", 0);
       // if (!is_success && !old_success) {
       //   filling_rate_ = filling_rate_ * 0.99;
       //   LOG(info)   << "Adjusted filling rate: " <<

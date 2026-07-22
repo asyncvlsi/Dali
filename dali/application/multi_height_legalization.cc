@@ -47,7 +47,6 @@ int main(int argc, char* argv[]) {
   std::vector<std::string> def_files;
   std::string output_name = "dali_out";
   int number_of_threads = 1;
-  bool is_export_matlab = false;
   double k_width = 0.0;
   double k_height = 0.0;
   double k_left = 0.5;
@@ -71,8 +70,6 @@ int main(int argc, char* argv[]) {
       } catch (...) {
         DaliExpects(false, "Invalid #threads!");
       }
-    } else if (flag == "--clsmatlab") {
-      is_export_matlab = true;
     } else if (flag == "--kwidth") {
       try {
         k_width = std::stod(option[1]);
@@ -137,24 +134,9 @@ int main(int argc, char* argv[]) {
   tetris_legalizer->SetMaxIteration(10);
   tetris_legalizer->StartRowAssignment();
 
-  circuit.GenMATLABTable("lg_result.txt");
-  multi_well_legalizer->GenDisplacement("disp_result.txt");
-
-  /*
-  multi_well_legalizer->StartStandardLegalization();
-  if (is_export_matlab) {
-    multi_well_legalizer->GenMATLABTable("sc_result.txt");
-    multi_well_legalizer->GenMatlabClusterTable("sc_result");
-    //multi_well_legalizer->GenMATLABWellTable("scw", 0);
-  }
-  multi_well_legalizer->ReportStandardCellDisplacement();
-   */
-
   // tetris_legalizer->InitializeFromGriddedRowLegalizer(multi_well_legalizer.get());
   // tetris_legalizer->IsPrintDisplacement(true);
   // tetris_legalizer->StartMultiHeightLegalization();
-  // tetris_legalizer->GenMATLABTable("lg1_result.txt");
-  // tetris_legalizer->GenDisplacement("disp1_result.txt");
 
   if (!output_name.empty()) {
     circuit.SaveDefFile(output_name, "", def_files[0], 1, 1, 2, 1);

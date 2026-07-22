@@ -25,37 +25,6 @@
 
 namespace dali {
 
-void GenClusterTable(std::string const& name_of_file,
-                     std::vector<StripeColumn>& col_list_) {
-  std::string cluster_file = name_of_file + "_cluster.txt";
-  std::ofstream ost(cluster_file.c_str());
-  DaliExpects(ost.is_open(), "Cannot open output file: " << cluster_file);
-
-  for (auto& col : col_list_) {
-    for (auto& stripe : col.stripe_list_) {
-      for (auto& cluster : stripe.gridded_rows_) {
-        std::vector<int> llx;
-        std::vector<int> lly;
-        std::vector<int> urx;
-        std::vector<int> ury;
-
-        llx.push_back(cluster.LLX());
-        lly.push_back(cluster.LLY());
-        urx.push_back(cluster.URX());
-        ury.push_back(cluster.URY());
-
-        size_t sz = llx.size();
-        for (size_t i = 0; i < sz; ++i) {
-          ost << llx[i] << "\t" << urx[i] << "\t" << urx[i] << "\t" << llx[i]
-              << "\t" << lly[i] << "\t" << lly[i] << "\t" << ury[i] << "\t"
-              << ury[i] << "\n";
-        }
-      }
-    }
-  }
-  ost.close();
-}
-
 void CollectWellFillingRects(const Stripe& stripe, int bottom_boundary,
                              int top_boundary, std::vector<RectI>& n_rects,
                              std::vector<RectI>& p_rects) {
@@ -111,42 +80,6 @@ void CollectWellFillingRects(const Stripe& stripe, int bottom_boundary,
     }
     is_p_well_rect = !is_p_well_rect;
   }
-}
-
-void GenMATLABWellFillingTable(std::string const& base_file_name,
-                               std::vector<StripeColumn>& col_list,
-                               int bottom_boundary, int top_boundary,
-                               int well_emit_mode) {
-  std::string p_file = base_file_name + "_pwell.txt";
-  std::ofstream ostp(p_file.c_str());
-  DaliExpects(ostp.is_open(), "Cannot open output file: " << p_file);
-
-  std::string n_file = base_file_name + "_nwell.txt";
-  std::ofstream ostn(n_file.c_str());
-  DaliExpects(ostn.is_open(), "Cannot open output file: " << n_file);
-
-  for (auto& col : col_list) {
-    for (auto& stripe : col.stripe_list_) {
-      std::vector<RectI> n_rects;
-      std::vector<RectI> p_rects;
-      CollectWellFillingRects(stripe, bottom_boundary, top_boundary, n_rects,
-                              p_rects);
-      if (well_emit_mode != 1) {
-        for (auto& rect : p_rects) {
-          SaveMatlabPatchRect(ostp, rect.LLX(), rect.LLY(), rect.URX(),
-                              rect.URY());
-        }
-      }
-      if (well_emit_mode != 2) {
-        for (auto& rect : n_rects) {
-          SaveMatlabPatchRect(ostn, rect.LLX(), rect.LLY(), rect.URX(),
-                              rect.URY());
-        }
-      }
-    }
-  }
-  ostp.close();
-  ostn.close();
 }
 
 }  // namespace dali

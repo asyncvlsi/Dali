@@ -99,12 +99,6 @@ class GriddedRowLegalizer : public Placer {
 
   void ReportOutOfBoundCell();
 
-  void GenMatlabClusterTable(std::string const& name_of_file);
-  void GenMATLABWellTable(std::string const& name_of_file,
-                          int well_emit_mode) override;
-  void GenSubCellTable(std::string const& name_of_file);
-  void GenDisplacement(std::string const& name_of_file);
-
   void ReportEffectiveDensity();
 
  private:

@@ -143,7 +143,6 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -standard_cell_legalizer_cost <displacement/hpwl>  default displacement\n"
       << "  -detailed_max_rounds <n>                   detailed-placement optimization rounds, default 1\n"
       << "  -detailed_max_move_candidates <n>          optimal-region move candidates per round, default 1000\n"
-      << "  -save_intermediate_result                  dump placement snapshots for visualization\n"
       << "  -num_threads <n>                           number of OpenMP threads to use\n"
       << "  -v                                         verbosity_level (optional, 0-5, default 1)\n"
       << "  -disable_log_prefix                        optional, if this flag is present, then only messages will be saved to the log file\n"
@@ -378,8 +377,6 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       }
       config_set_int("dali.detailed_max_move_candidates",
                      detailed_max_move_candidates);
-    } else if (arg == "-save_intermediate_result") {
-      EnableConfigFlag("dali.save_intermediate_result");
     } else if (arg == "-max_row_width") {
       double max_row_width = 0;
       if (!TryGetValue(argc, argv, &i, &value) ||
@@ -412,8 +409,6 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.disable_cell_flip");
     } else if (arg == "-disable_io_place") {
       EnableConfigFlag("dali.disable_io_place");
-    } else if (arg == "-export_well_cluster_matlab") {
-      EnableConfigFlag("dali.export_well_cluster_matlab");
     } else if (arg == "-log_file_name") {
       if (!TryGetValue(argc, argv, &i, &options->log_file_name)) {
         error_output << "Invalid name for log file!\n";

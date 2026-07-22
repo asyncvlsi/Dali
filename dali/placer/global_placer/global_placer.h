@@ -49,7 +49,6 @@ class GlobalPlacer : public Placer {
   void SetMinIteration(int min_iter);
 
   /** Enable or disable intermediate placement dumps. */
-  void SetShouldSaveIntermediateResult(bool should_save_intermediate_result);
 
   /** Callback used by the application to emit visualization snapshots. */
   using SnapshotCallback =
@@ -133,7 +132,6 @@ class GlobalPlacer : public Placer {
   int upper_bound_improvement_patience_ = 5;
 
   // Save intermediate result for debugging and/or visualization.
-  bool should_save_intermediate_result_ = false;
 
   bool IsComponentListOrNetListEmpty() const;
   /** Return the relative improvement from old_value to new_value. */

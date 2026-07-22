@@ -744,16 +744,6 @@ size_t GriddedRow::CountComponentOverlaps() const {
   return overlap_count;
 }
 
-void GriddedRow::GenSubCellTable(std::ofstream& ost_cluster,
-                                 std::ofstream& ost_sub_cell,
-                                 std::ofstream& ost_discrepancy,
-                                 std::ofstream& ost_displacement) {
-  for (auto& seg : segments_) {
-    seg.GenSubCellTable(ost_cluster, ost_sub_cell, ost_discrepancy,
-                        ost_displacement, LLY(), URY());
-  }
-}
-
 void GriddedRow::UpdateCommonSegment(std::vector<SegI>& avail_spaces, int width,
                                      double density) {
   std::vector<SegI> cur_spaces;

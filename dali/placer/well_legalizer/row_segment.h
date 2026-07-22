@@ -69,11 +69,6 @@ class RowSegment {
   std::vector<ComponentDisplacementVariable> OptimizeLinearDisplacement(
       double lambda, bool is_weighted_anchor, bool is_reorder);
 
-  void GenSubCellTable(std::ofstream& ost_cluster, std::ofstream& ost_sub_cell,
-                       std::ofstream& ost_discrepancy,
-                       std::ofstream& ost_displacement, double row_ly,
-                       double row_uy);
-
  private:
   // list of components in this segment
   std::vector<ComponentRegion> component_regions_;

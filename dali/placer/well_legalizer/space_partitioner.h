@@ -104,12 +104,6 @@ class WellSpacePartitioner : public SpacePartitioner {
 
   bool StartPartitioning() override;
 
-  /**** member functions for debugging ****/
-  void PlotAvailSpace(std::string const& name_of_file = "avail_space.txt");
-  void PlotAvailSpaceInCols(
-      std::string const& name_of_file = "avail_space.txt");
-  void PlotSimpleStripes(std::string const& name_of_file = "stripe_space.txt");
-
  private:
   /**** well parameters ****/
   int max_unplug_length_ = 0;

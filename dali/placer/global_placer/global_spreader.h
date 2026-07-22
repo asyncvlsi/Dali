@@ -46,7 +46,6 @@ class GlobalSpreader {
   const std::vector<double>& HpwlsY() const { return upper_bound_hpwl_y_; }
 
   /** Enable or disable intermediate placement dumps. */
-  void SetShouldSaveIntermediateResult(bool should_save);
 
   /** Update the current global-placement iteration. */
   void SetIteration(int iteration) { iteration_ = iteration; }
@@ -57,7 +56,6 @@ class GlobalSpreader {
   std::vector<double> upper_bound_hpwl_;
   std::vector<double> upper_bound_hpwl_x_;
   std::vector<double> upper_bound_hpwl_y_;
-  bool should_save_intermediate_result_ = false;
   int iteration_ = 0;
 };
 

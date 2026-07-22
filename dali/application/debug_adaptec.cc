@@ -90,7 +90,6 @@ int main(int argc, char** argv) {
   // circuit.ReportComponentType();
   // circuit.ReportComponentList();
   // circuit.ReportNetList();
-  // circuit.GenMATLABTable("_result.txt");
 
   LOG(info) << "File loading complete, time: "
             << double(clock() - Time) / CLOCKS_PER_SEC << " s" << std::endl;
@@ -105,24 +104,11 @@ int main(int argc, char** argv) {
   gb_placer.SetBoundaryFromCircuit();
   gb_placer.SetPlacementDensity(0.9);
   gb_placer.ReportBoundaries();
-  gb_placer.SetShouldSaveIntermediateResult(false);
 #if !TEST_LG
   gb_placer.StartPlacement();
   circuit.SaveDefFile("ISPD2005/adaptec1_dali", "", adaptec1_def, 1, 1, 1, 1);
   circuit.SaveBookshelfPl("adaptec1bs.pl");
 #endif
-  circuit.GenMATLABTable("gb_result.txt");
-
-  /*
-  ExtendedTetrisLegalizer legalizer_;
-  legalizer_.CopyPlacementContextFrom(&gb_placer_);
-  legalizer_.SetRowHeight(12);
-  legalizer_.StartPlacement();
-  //legalizer_.PlotAvailSpace("as_result.txt");
-  legalizer_.GenMATLABTable("lg_result.txt");
-  //legalizer_->SaveDEFFile("circuit.def", def_file);
-   */
-
 #if TEST_WLG
   circuit.LoadImaginaryCellFile();
   // circuit.ReportWellShape();
@@ -130,8 +116,6 @@ int main(int argc, char** argv) {
   well_legalizer->CopyPlacementContextFrom(&gb_placer_);
   well_legalizer->SetRowHeight(1);
   well_legalizer->StartPlacement();
-  well_legalizer->GenMATLABTable("sc_result.txt");
-  well_legalizer->GenMATLABWellTable("scw");
   well_legalizer->EmitDEFWellFile("circuit", adaptec1_def);
   delete well_legalizer;
 #endif

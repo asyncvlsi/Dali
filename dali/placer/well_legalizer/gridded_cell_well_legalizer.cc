@@ -982,8 +982,6 @@ bool GriddedCellWellLegalizer::ComponentClustering() {
  * After clustering, leave clusters as they are
  * ****/
 bool GriddedCellWellLegalizer::ComponentClusteringLoose() {
-  int step = 50;
-  int count = 0;
   bool res = true;
   int failed_stripe_count = 0;
   last_clustering_violations_.clear();
@@ -1024,15 +1022,6 @@ bool GriddedCellWellLegalizer::ComponentClusteringLoose() {
       for (auto& row : stripe.gridded_rows_) {
         row.UpdateComponentLocY();
         row.MinDisplacementLegalization();
-        if (is_dump) {
-          if (count % step == 0) {
-            std::string tmp_file_name =
-                "wlg_result_" + std::to_string(dump_count) + ".txt";
-            ckt_ptr_->GenMATLABTable(tmp_file_name);
-            ++dump_count;
-          }
-          ++count;
-        }
       }
       stripe.MinDisplacementAdjustment();
       if (is_success && stripe.used_height_ > stripe.Height()) {
@@ -2767,23 +2756,6 @@ void GriddedCellWellLegalizer::LogActualGriddedUtilization() const {
             << "    occupied row area           : " << occupied_row_area << "\n"
             << "    allocated row area          : " << allocated_row_area
             << "\n";
-}
-
-void GriddedCellWellLegalizer::GenMatlabClusterTable(
-    std::string const& name_of_file) {
-  std::string frame_file = name_of_file + "_outline.txt";
-  ckt_ptr_->GenMATLABTable(frame_file);
-  GenClusterTable(name_of_file, col_list_);
-}
-
-void GriddedCellWellLegalizer::GenMATLABWellTable(
-    std::string const& name_of_file, int well_emit_mode) {
-  ckt_ptr_->GenMATLABWellTable(name_of_file, false);
-
-  GenMATLABWellFillingTable(name_of_file, col_list_, RegionBottom(),
-                            RegionTop(), well_emit_mode);
-
-  GenPPNP(name_of_file);
 }
 
 void GriddedCellWellLegalizer::GenPPNP(const std::string& name_of_file) {

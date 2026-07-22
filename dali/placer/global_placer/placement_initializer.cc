@@ -61,11 +61,6 @@ PlacementInitializer::PlacementInitializer(Circuit* ckt_ptr,
   initializer_name_ = "placement";
 }
 
-void PlacementInitializer::SetShouldSaveIntermediateResult(
-    bool should_save_intermediate_result) {
-  should_save_intermediate_result_ = should_save_intermediate_result;
-}
-
 void PlacementInitializer::PrintStartStatement() {
   elapsed_time_.RecordStartTime();
   RecordPlacementHpwlMetrics("initialization.before", *ckt_ptr_);
@@ -83,9 +78,6 @@ void PlacementInitializer::PrintEndStatement() {
   LOG(info) << "    HPWL after, " << ckt_ptr_->WeightedHPWL() << "\n";
   elapsed_time_.RecordEndTime();
   elapsed_time_.PrintTimeElapsed(severity::debug);
-  if (should_save_intermediate_result_) {
-    ckt_ptr_->GenMATLABTable("rand_init.txt");
-  }
 }
 
 UniformInitializer::UniformInitializer(Circuit* ckt_ptr, uint32_t random_seed)

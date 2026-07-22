@@ -107,7 +107,6 @@ void TetrisLegalizer::FlipPlacement() {
   for (auto& component : components) {
     component.SetLLX(sum_left_right - component.URX());
   }
-  // GenMATLABScript("flip_result.txt");
 }
 
 bool TetrisLegalizer::TetrisLegal() {
@@ -195,10 +194,6 @@ bool TetrisLegalizer::TetrisLegal() {
         return false;
       }
     }
-    /*components[component_num].is_placed = true;
-    std::string file_name = std::to_string(count);
-    LOG(info)   << count << "  " << is_current_loc_legal << "\n";
-     GenMATLABScriptPlaced(file_name);*/
     // count++;
   }
   return true;
@@ -207,11 +202,6 @@ bool TetrisLegalizer::TetrisLegal() {
 bool TetrisLegalizer::StartPlacement() {
   PrintStartStatement("Tetris legalization");
   InitLegalizer();
-  /*for (auto &component: GetCircuitRef().component_list) {
-    component.IncreaseX((right_-left_)/2.0);
-  }
-  max_iter_ = 2;
-  GenMATLABScript("shift_result.txt");*/
   bool is_successful = false;
   for (current_iteration_ = 0; current_iteration_ < max_iteration_;
        ++current_iteration_) {

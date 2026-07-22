@@ -161,16 +161,6 @@ class Placer {
   /** Mark movable components as placed after placement. */
   void UpdateMovableComponentPlacementStatus();
 
-  /** Generate a MATLAB well table from the attached circuit. */
-  virtual void GenMATLABWellTable(std::string const& name_of_file,
-                                  [[maybe_unused]] int well_emit_mode) {
-    ckt_ptr_->GenMATLABWellTable(name_of_file);
-  }
-
-  /** Generate a MATLAB script for placed component/net visualization. */
-  void GenMATLABScriptPlaced(
-      std::string const& name_of_file = "component_net_list.m");
-
   /** Save Bookshelf terminal and node files. */
   bool SaveNodeTerminal(std::string const& terminal_file = "terminal.txt",
                         std::string const& node_file = "nodes.txt");

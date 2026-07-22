@@ -36,7 +36,6 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_DOUBLE_EQ(options.target_density, -1);
   EXPECT_EQ(options.net_ignore_threshold, 100);
   EXPECT_EQ(options.io_metal_layer, 0);
-  EXPECT_FALSE(options.export_well_cluster_matlab);
   EXPECT_FALSE(options.disable_welltap);
   EXPECT_FALSE(options.disable_cell_flip);
   EXPECT_DOUBLE_EQ(options.max_row_width, 0);
@@ -100,7 +99,6 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
             dali::StandardCellLegalizerCostMode::kDisplacement);
   EXPECT_EQ(options.detailed_max_rounds, 1);
   EXPECT_EQ(options.detailed_max_move_candidates, 1000);
-  EXPECT_FALSE(options.save_intermediate_result);
   EXPECT_EQ(options.output_name, "dali_out");
   EXPECT_FALSE(options.gui_debug);
   EXPECT_EQ(options.gui_pause, "every_snapshot");
@@ -120,7 +118,6 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_real("dali.target_density", 0.71);
   config_set_int("dali.net_ignore_threshold", 300);
   config_set_int("dali.io_metal_layer", 2);
-  config_set_int("dali.export_well_cluster_matlab", 1);
   config_set_int("dali.disable_welltap", 1);
   config_set_int("dali.disable_cell_flip", 1);
   config_set_real("dali.max_row_width", 42.5);
@@ -189,7 +186,6 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_string("dali.standard_cell_legalizer_cost", "hpwl");
   config_set_int("dali.detailed_max_rounds", 2);
   config_set_int("dali.detailed_max_move_candidates", 500);
-  config_set_int("dali.save_intermediate_result", 1);
   config_set_string("dali.output_name", "placed");
   config_set_int("dali.gui_debug", 1);
   config_set_string("dali.gui_pause", "off");
@@ -209,7 +205,6 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_DOUBLE_EQ(options.target_density, 0.71);
   EXPECT_EQ(options.net_ignore_threshold, 300);
   EXPECT_EQ(options.io_metal_layer, 2);
-  EXPECT_TRUE(options.export_well_cluster_matlab);
   EXPECT_TRUE(options.disable_welltap);
   EXPECT_TRUE(options.disable_cell_flip);
   EXPECT_DOUBLE_EQ(options.max_row_width, 42.5);
@@ -282,7 +277,6 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
             dali::StandardCellLegalizerCostMode::kHpwl);
   EXPECT_EQ(options.detailed_max_rounds, 2);
   EXPECT_EQ(options.detailed_max_move_candidates, 500);
-  EXPECT_TRUE(options.save_intermediate_result);
   EXPECT_EQ(options.output_name, "placed");
   EXPECT_TRUE(options.gui_debug);
   EXPECT_EQ(options.gui_pause, "off");
