@@ -85,8 +85,7 @@ The option list is long because most flags exist to isolate one stage during
 development. Two combinations are the ones actually used for real runs; start
 from whichever matches the design and change one thing at a time.
 
-**Gridded well placement.** This is the flow a `-cell` file selects, and the
-configuration the regression cases under `DaliTest/gridded_placement` run:
+**Gridded well placement.** This is the flow a `-cell` file selects:
 
     $ dali -lef design.lef -def design.def -cell design.cell \
            -well_legalization_mode strict \
@@ -124,8 +123,7 @@ What each group does:
   * `-enable_end_cap_cell` adds end caps at row ends. Add `-enable_filler_cell`
     when the implant layers must be continuous across the whole row.
 
-**Standard cells.** No `-cell` file, no well legalization; this is what the
-ISPD2005 benchmarks under `PlacementBenchmark/ISPD2005LEFDEF` use:
+**Standard cells.** No `-cell` file, and no well legalization:
 
     $ dali -lef design.lef -def design.def \
            -is_standard_cell \
@@ -133,8 +131,9 @@ ISPD2005 benchmarks under `PlacementBenchmark/ISPD2005LEFDEF` use:
            -target_density 1 \
            -metrics_file dali_metrics.json
 
-`-target_density 1` is deliberate: the ISPD2005 designs are already close to
-fully utilized, so asking for spare whitespace only distorts the result.
+`-target_density 1` suits designs that are already close to fully utilized,
+where asking for spare whitespace only distorts the result; lower it when the
+design has room to spread.
 
 Useful additions to either configuration: `-num_threads <n>` for the OpenMP
 paths, `-v 3` with `-disable_log_prefix` and `-log_file_name` for a readable
