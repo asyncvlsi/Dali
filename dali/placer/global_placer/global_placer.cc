@@ -83,18 +83,10 @@ void GlobalPlacer::SetInitializerType(
   initializer_type_ = initializer_type;
 }
 
-void GlobalPlacer::SetAnchorSchedule(GlobalAnchorSchedule schedule) {
-  anchor_schedule_ = schedule;
-}
-
 void GlobalPlacer::SetNetIgnoreThreshold(int net_ignore_threshold) {
   DaliExpects(net_ignore_threshold > 1,
               "Net ignore threshold must be greater than one");
   net_ignore_threshold_ = net_ignore_threshold;
-}
-
-void GlobalPlacer::SetGridSchedule(GlobalGridSchedule schedule) {
-  grid_schedule_ = schedule;
 }
 
 void GlobalPlacer::SetLalExpansionMode(GlobalLalExpansionMode mode) {
@@ -148,13 +140,11 @@ void GlobalPlacer::LoadConf(std::string const& config_file) {
 void GlobalPlacer::InitializePlacementEngines() {
   optimizer_ =
       std::make_unique<BoundToBoundHpwlOptimizer>(ckt_ptr_, num_threads_);
-  optimizer_->SetAnchorSchedule(anchor_schedule_);
   optimizer_->SetNetIgnoreThreshold(net_ignore_threshold_);
   optimizer_->Initialize();
 
   auto look_ahead_spreader =
       std::make_unique<LookAheadSpreader>(ckt_ptr_, capacity_model_);
-  look_ahead_spreader->SetGridSchedule(grid_schedule_);
   look_ahead_spreader->SetExpansionMode(lal_expansion_mode_);
   look_ahead_spreader->SetHotspotMode(lal_hotspot_mode_);
   look_ahead_spreader->SetAffineScalingWeight(lal_affine_scaling_weight_);

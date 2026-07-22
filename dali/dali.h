@@ -128,8 +128,6 @@ class Dali {
     bool enable_shrink_off_grid_die_area = false;
     PlacementInitializerType global_initializer =
         PlacementInitializerType::kUniform;
-    GlobalAnchorSchedule global_anchor_schedule = GlobalAnchorSchedule::kDali;
-    GlobalGridSchedule global_grid_schedule = GlobalGridSchedule::kDali;
     GlobalLalExpansionMode global_lal_expansion_mode =
         GlobalLalExpansionMode::kSymmetric;
     GlobalLalHotspotMode global_lal_hotspot_mode =
@@ -305,8 +303,6 @@ class Dali {
   bool enable_shrink_off_grid_die_area_ = false;
   PlacementInitializerType global_initializer_ =
       PlacementInitializerType::kUniform;
-  GlobalAnchorSchedule global_anchor_schedule_ = GlobalAnchorSchedule::kDali;
-  GlobalGridSchedule global_grid_schedule_ = GlobalGridSchedule::kDali;
   GlobalLalExpansionMode global_lal_expansion_mode_ =
       GlobalLalExpansionMode::kSymmetric;
   GlobalLalHotspotMode global_lal_hotspot_mode_ =

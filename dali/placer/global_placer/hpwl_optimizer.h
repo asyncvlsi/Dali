@@ -30,12 +30,6 @@
 
 namespace dali {
 
-/** Schedule used to increase anchor pseudo-net strength across iterations. */
-enum class GlobalAnchorSchedule {
-  kDali,
-  kSimpl,
-};
-
 /** Translation-invariant Y offset requested between two movable components. */
 struct RelativeYConstraint {
   int first_component_id = -1;
@@ -73,11 +67,6 @@ class HpwlOptimizer {
     relative_y_constraints_ = std::move(relative_y_constraints);
   }
 
-  /** Select how anchor pseudo-net strength is updated across iterations. */
-  void SetAnchorSchedule(GlobalAnchorSchedule schedule) {
-    anchor_schedule_ = schedule;
-  }
-
   /** Ignore nets at or above this pin count in the quadratic wire model. */
   void SetNetIgnoreThreshold(int net_ignore_threshold);
 
@@ -113,8 +102,6 @@ class HpwlOptimizer {
   // iterations.
   double net_model_update_stop_criterion_ = 0.01;
 
-  // Save intermediate result for debugging and/or visualization.
-  GlobalAnchorSchedule anchor_schedule_ = GlobalAnchorSchedule::kDali;
   size_t net_ignore_threshold_ = 100;
   std::vector<RelativeYConstraint> relative_y_constraints_;
 };

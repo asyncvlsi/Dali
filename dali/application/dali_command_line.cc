@@ -74,8 +74,6 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -well_legalization_mode <scavenge/strict>  determine whether the last column use unassigned space\n"
       << "  -well_tap_pattern <row-end/row-end-every-other> well-tap placement pattern, default row-end\n"
       << "  -global_initializer <keep/uniform/gaussian/monte_carlo/density_aware>\n"
-      << "  -global_anchor_schedule <dali/simpl>       choose global-placement anchor pseudo-net schedule\n"
-      << "  -global_grid_schedule <dali/simpl>         choose look-ahead legalization grid schedule\n"
       << "  -global_lal_expansion <symmetric/best_neighbor>\n"
       << "  -global_lal_hotspot <area/overflow/overflow_ratio>\n"
       << "  -global_lal_affine_weight <0..1>           blend between packed and affine LAL spreading, default 0.65\n"
@@ -271,26 +269,6 @@ bool ParseDaliCommandLine(int argc, char* argv[],
         return false;
       }
       config_set_string("dali.global_initializer", value.c_str());
-    } else if (arg == "-global_anchor_schedule") {
-      if (!TryGetValue(argc, argv, &i, &value)) {
-        error_output << "Invalid global anchor schedule!\n";
-        return false;
-      }
-      if (value != "dali" && value != "simpl") {
-        error_output << "Invalid global anchor schedule!\n";
-        return false;
-      }
-      config_set_string("dali.global_anchor_schedule", value.c_str());
-    } else if (arg == "-global_grid_schedule") {
-      if (!TryGetValue(argc, argv, &i, &value)) {
-        error_output << "Invalid global grid schedule!\n";
-        return false;
-      }
-      if (value != "dali" && value != "simpl") {
-        error_output << "Invalid global grid schedule!\n";
-        return false;
-      }
-      config_set_string("dali.global_grid_schedule", value.c_str());
     } else if (arg == "-global_lal_expansion") {
       if (!TryGetValue(argc, argv, &i, &value)) {
         error_output << "Invalid global LAL expansion mode!\n";

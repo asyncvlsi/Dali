@@ -32,12 +32,6 @@
 
 namespace dali {
 
-/** Grid refinement schedule used by look-ahead legalization. */
-enum class GlobalGridSchedule {
-  kDali,
-  kSimpl,
-};
-
 /** How LAL expands overfilled clusters into legal whitespace regions. */
 enum class GlobalLalExpansionMode {
   kSymmetric,
@@ -59,11 +53,6 @@ class LookAheadSpreader : public GlobalSpreader {
       Circuit* circuit,
       std::shared_ptr<const PlacementCapacityModel> capacity_model);
   ~LookAheadSpreader() override = default;
-
-  /** Select how look-ahead legalization grid dimensions are refined. */
-  void SetGridSchedule(GlobalGridSchedule schedule) {
-    grid_schedule_ = schedule;
-  }
 
   /** Select how overfilled clusters expand into whitespace. */
   void SetExpansionMode(GlobalLalExpansionMode mode) { expansion_mode_ = mode; }
@@ -168,7 +157,6 @@ class LookAheadSpreader : public GlobalSpreader {
   HotspotDebugInfo last_hotspot_debug_;
   std::shared_ptr<const PlacementCapacityModel> capacity_model_;
 
-  GlobalGridSchedule grid_schedule_ = GlobalGridSchedule::kDali;
   GlobalLalExpansionMode expansion_mode_ = GlobalLalExpansionMode::kSymmetric;
   GlobalLalHotspotMode hotspot_mode_ = GlobalLalHotspotMode::kComponentArea;
   double affine_scaling_weight_ = 0.65;

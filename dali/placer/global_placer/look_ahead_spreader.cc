@@ -127,39 +127,19 @@ void LookAheadSpreader::InitializeGridBinSize() {
   DaliExpects(grid_value_x > 0 && grid_value_y > 0,
               "Placement grid values must be positive");
 
-  if (grid_schedule_ == GlobalGridSchedule::kSimpl) {
-    constexpr double kInitialGridCount = 100.0;
-    constexpr double kGridShrinkFactor = 1.06;
-    double refinement = std::pow(kGridShrinkFactor, iteration_);
-    double target_width =
-        double(circuit_->RegionWidth()) / (kInitialGridCount * refinement);
-    double target_height =
-        double(circuit_->RegionHeight()) / (kInitialGridCount * refinement);
-    target_width =
-        std::max(target_width, 4.0 * circuit_->AverageMovableComponentWidth());
-    target_height = std::max(target_height,
-                             4.0 * circuit_->AverageMovableComponentHeight());
-    grid_bin_width = std::max(1, static_cast<int>(std::round(target_width)));
-    grid_bin_height = std::max(1, static_cast<int>(std::round(target_height)));
-    target_component_count_per_bin_ =
-        std::max(1, static_cast<int>(std::round(
-                        grid_bin_width * grid_bin_height * placement_density_ /
-                        circuit_->AverageMovableComponentArea())));
-  } else {
-    target_component_count_per_bin_ = TargetComponentCountPerBin();
-    double grid_bin_area = target_component_count_per_bin_ *
-                           circuit_->AverageMovableComponentArea() /
-                           placement_density_;
+  target_component_count_per_bin_ = TargetComponentCountPerBin();
+  double grid_bin_area = target_component_count_per_bin_ *
+                         circuit_->AverageMovableComponentArea() /
+                         placement_density_;
 
-    // Keep roughly the same bin area in Dali grid units, but make the bin close
-    // to square in physical microns when x/y grid units have different sizes.
-    double grid_y_to_x_ratio = grid_value_y / grid_value_x;
-    grid_bin_height = static_cast<int>(
-        std::round(std::sqrt(grid_bin_area / grid_y_to_x_ratio)));
-    grid_bin_height = std::max(grid_bin_height, 1);
-    grid_bin_width = std::max(
-        1, static_cast<int>(std::round(grid_bin_height * grid_y_to_x_ratio)));
-  }
+  // Keep roughly the same bin area in Dali grid units, but make the bin close
+  // to square in physical microns when x/y grid units have different sizes.
+  double grid_y_to_x_ratio = grid_value_y / grid_value_x;
+  grid_bin_height = static_cast<int>(
+      std::round(std::sqrt(grid_bin_area / grid_y_to_x_ratio)));
+  grid_bin_height = std::max(grid_bin_height, 1);
+  grid_bin_width = std::max(
+      1, static_cast<int>(std::round(grid_bin_height * grid_y_to_x_ratio)));
   grid_cnt_x =
       std::max(1, static_cast<int>(std::ceil(double(circuit_->RegionWidth()) /
                                              grid_bin_width)));
@@ -330,12 +310,6 @@ int LookAheadSpreader::TargetComponentCountPerBin() const {
 }
 
 void LookAheadSpreader::RebuildGridBinsIfTargetChanged() {
-  if (grid_schedule_ == GlobalGridSchedule::kSimpl) {
-    InitGridBins();
-    InitWhiteSpaceLUT();
-    return;
-  }
-
   int target_component_count_per_bin = TargetComponentCountPerBin();
   if (target_component_count_per_bin ==
       active_target_component_count_per_bin_) {

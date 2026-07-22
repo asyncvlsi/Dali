@@ -63,13 +63,11 @@ class GlobalPlacer : public Placer {
   void SetInitializerType(PlacementInitializerType initializer_type);
 
   /** Select how anchor pseudo-net strength changes across iterations. */
-  void SetAnchorSchedule(GlobalAnchorSchedule schedule);
 
   /** Set the pin-count cutoff for nets omitted from the quadratic model. */
   void SetNetIgnoreThreshold(int net_ignore_threshold);
 
   /** Select how look-ahead legalization grid dimensions are refined. */
-  void SetGridSchedule(GlobalGridSchedule schedule);
 
   /** Select how LAL grows overfilled clusters into whitespace regions. */
   void SetLalExpansionMode(GlobalLalExpansionMode mode);
@@ -207,9 +205,7 @@ class GlobalPlacer : public Placer {
 
   PlacementInitializerType initializer_type_ =
       PlacementInitializerType::kUniform;
-  GlobalAnchorSchedule anchor_schedule_ = GlobalAnchorSchedule::kDali;
   int net_ignore_threshold_ = 100;
-  GlobalGridSchedule grid_schedule_ = GlobalGridSchedule::kDali;
   GlobalLalExpansionMode lal_expansion_mode_ =
       GlobalLalExpansionMode::kSymmetric;
   GlobalLalHotspotMode lal_hotspot_mode_ = GlobalLalHotspotMode::kComponentArea;

@@ -98,17 +98,6 @@ static PlacementInitializerType ParseGlobalInitializer(
   return PlacementInitializerType::kUniform;
 }
 
-static GlobalAnchorSchedule ParseGlobalAnchorSchedule(const std::string& name) {
-  if (name == "dali") {
-    return GlobalAnchorSchedule::kDali;
-  }
-  if (name == "simpl") {
-    return GlobalAnchorSchedule::kSimpl;
-  }
-  std::cout << "Ignore unknown global_anchor_schedule: " << name << "\n";
-  return GlobalAnchorSchedule::kDali;
-}
-
 static GlobalRefinementFeedbackMode ParseGlobalRefinementFeedbackMode(
     const std::string& name) {
   if (name == "full") {
@@ -143,17 +132,6 @@ static GlobalRefinementFeedbackMode ParseGlobalRefinementFeedbackMode(
   }
   std::cout << "Ignore unknown gridded_legalization_feedback: " << name << "\n";
   return GlobalRefinementFeedbackMode::kFull;
-}
-
-static GlobalGridSchedule ParseGlobalGridSchedule(const std::string& name) {
-  if (name == "dali") {
-    return GlobalGridSchedule::kDali;
-  }
-  if (name == "simpl") {
-    return GlobalGridSchedule::kSimpl;
-  }
-  std::cout << "Ignore unknown global_grid_schedule: " << name << "\n";
-  return GlobalGridSchedule::kDali;
 }
 
 static GlobalLalExpansionMode ParseGlobalLalExpansionMode(
@@ -362,10 +340,6 @@ void Dali::ShowParamsList() {
       << "  enable_shrink_off_grid_die_area: "
       << enable_shrink_off_grid_die_area_ << "\n"
       << "  global_initializer: " << static_cast<int>(global_initializer_)
-      << "\n"
-      << "  global_anchor_schedule: "
-      << static_cast<int>(global_anchor_schedule_) << "\n"
-      << "  global_grid_schedule: " << static_cast<int>(global_grid_schedule_)
       << "\n"
       << "  global_lal_expansion: "
       << static_cast<int>(global_lal_expansion_mode_) << "\n"
@@ -634,16 +608,6 @@ void Dali::LoadParamsFromConfig() {
     global_initializer_ =
         ParseGlobalInitializer(config_get_string(param_name.c_str()));
   }
-  param_name = ConfigName(prefix_, "global_anchor_schedule");
-  if (ConfigExists(param_name)) {
-    global_anchor_schedule_ =
-        ParseGlobalAnchorSchedule(config_get_string(param_name.c_str()));
-  }
-  param_name = ConfigName(prefix_, "global_grid_schedule");
-  if (ConfigExists(param_name)) {
-    global_grid_schedule_ =
-        ParseGlobalGridSchedule(config_get_string(param_name.c_str()));
-  }
   param_name = ConfigName(prefix_, "global_lal_expansion");
   if (ConfigExists(param_name)) {
     global_lal_expansion_mode_ =
@@ -785,8 +749,6 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       exact_gridded_boundary_max_changes_,
       enable_shrink_off_grid_die_area_,
       global_initializer_,
-      global_anchor_schedule_,
-      global_grid_schedule_,
       global_lal_expansion_mode_,
       global_lal_hotspot_mode_,
       global_lal_affine_weight_,
@@ -1033,8 +995,6 @@ bool Dali::RunGlobalPlacementStage() {
     gb_placer_.SetPlacementDensity(target_density_);
     gb_placer_.SetNetIgnoreThreshold(net_ignore_threshold_);
     gb_placer_.SetInitializerType(global_initializer_);
-    gb_placer_.SetAnchorSchedule(global_anchor_schedule_);
-    gb_placer_.SetGridSchedule(global_grid_schedule_);
     gb_placer_.SetLalExpansionMode(global_lal_expansion_mode_);
     gb_placer_.SetLalHotspotMode(global_lal_hotspot_mode_);
     gb_placer_.SetLalAffineScalingWeight(global_lal_affine_weight_);
