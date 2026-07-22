@@ -28,7 +28,7 @@ void WellRowCompleter::InsertWellTaps() {
   DaliExpects(config_.well_tap_macro != nullptr,
               "Cannot insert well taps without a well-tap macro");
 
-  RowTapPlacer default_placer(TapPosition::kRowEnd, TapCadence::kEveryRow);
+  RowTapPlacer default_placer(TapCadence::kEveryRow);
   const TapPlacer& placer =
       config_.tap_placer != nullptr ? *config_.tap_placer : default_placer;
   const TapPlacementContext ctx{config_.well_tap_macro, config_.pre_end_cap_width,

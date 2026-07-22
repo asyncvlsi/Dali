@@ -10,22 +10,14 @@
 namespace dali {
 
 std::string RowTapPlacer::Name() const {
-  const std::string base =
-      position_ == TapPosition::kRowMid ? "row-mid" : "row-end";
-  return cadence_ == TapCadence::kEveryOtherRow ? base + "-every-other" : base;
+  return cadence_ == TapCadence::kEveryOtherRow ? "row-end-every-other"
+                                                : "row-end";
 }
 
 void RowTapPlacer::ValidateRow(const GriddedRow& row,
                                const TapPlacementContext& ctx) const {
   DaliExpects(ctx.well_tap_macro != nullptr,
               "Cannot place well taps without a well-tap macro");
-  // row-mid reserves an interior gap at the row center rather than the boundary
-  // margins; that reservation is part of the not-yet-implemented row-splitting
-  // work, so only the row-end preconditions are checked here (row-mid never
-  // reaches placement while unsupported).
-  if (position_ != TapPosition::kRowEnd) {
-    return;
-  }
   const int tap_width = ctx.well_tap_macro->Width();
   const int required_left_margin =
       ctx.pre_end_cap_width + tap_width + ctx.space_to_well_tap;
@@ -50,24 +42,10 @@ std::vector<double> RowTapPlacer::RowTapCenters(
     return {};  // Odd rows rely on taps in the abutting even rows.
   }
   const double tap_width = ctx.well_tap_macro->Width();
-  if (position_ == TapPosition::kRowMid) {
-    return {(row.LLX() + row.URX()) / 2.0};
-  }
   return {
       row.LLX() + ctx.pre_end_cap_width + tap_width / 2.0,
       row.URX() - ctx.post_end_cap_width - tap_width / 2.0,
   };
-}
-
-TapPosition PositionOf(WellTapPattern pattern) {
-  switch (pattern) {
-    case WellTapPattern::kRowMid:
-      return TapPosition::kRowMid;
-    case WellTapPattern::kRowEnd:
-    case WellTapPattern::kRowEndEveryOther:
-      return TapPosition::kRowEnd;
-  }
-  return TapPosition::kRowEnd;
 }
 
 TapCadence CadenceOf(WellTapPattern pattern) {
@@ -75,7 +53,6 @@ TapCadence CadenceOf(WellTapPattern pattern) {
     case WellTapPattern::kRowEndEveryOther:
       return TapCadence::kEveryOtherRow;
     case WellTapPattern::kRowEnd:
-    case WellTapPattern::kRowMid:
       return TapCadence::kEveryRow;
   }
   return TapCadence::kEveryRow;
@@ -92,11 +69,6 @@ bool IsWellTapPatternSupported(WellTapPattern pattern) {
     case WellTapPattern::kRowEnd:
     case WellTapPattern::kRowEndEveryOther:
       return true;
-    // Known and planned, but not yet handled end-to-end: a row-mid tap splits
-    // the row into two segments, which the space partitioner does not yet
-    // produce. Keep it known-but-unsupported until that lands.
-    case WellTapPattern::kRowMid:
-      return false;
   }
   return false;
 }
@@ -105,7 +77,6 @@ const std::vector<std::string>& KnownWellTapPatternNames() {
   static const std::vector<std::string> names = {
       WellTapPatternName(WellTapPattern::kRowEnd),
       WellTapPatternName(WellTapPattern::kRowEndEveryOther),
-      WellTapPatternName(WellTapPattern::kRowMid),
   };
   return names;
 }
@@ -124,7 +95,7 @@ std::string SupportedWellTapPatternList() {
 }
 
 std::unique_ptr<TapPlacer> CreateTapPlacer(WellTapPattern pattern) {
-  return std::make_unique<RowTapPlacer>(PositionOf(pattern), CadenceOf(pattern));
+  return std::make_unique<RowTapPlacer>(CadenceOf(pattern));
 }
 
 bool TryParseWellTapPattern(const std::string& name, WellTapPattern* pattern) {
@@ -136,10 +107,6 @@ bool TryParseWellTapPattern(const std::string& name, WellTapPattern* pattern) {
   if (name == "row-end-every-other" || name == "row_end_every_other" ||
       name == "every-other-row" || name == "every_other_row") {
     *pattern = WellTapPattern::kRowEndEveryOther;
-    return true;
-  }
-  if (name == "row-mid" || name == "row_mid") {
-    *pattern = WellTapPattern::kRowMid;
     return true;
   }
   return false;
@@ -158,8 +125,6 @@ std::string WellTapPatternName(WellTapPattern pattern) {
   switch (pattern) {
     case WellTapPattern::kRowEndEveryOther:
       return "row-end-every-other";
-    case WellTapPattern::kRowMid:
-      return "row-mid";
     case WellTapPattern::kRowEnd:
       return "row-end";
   }

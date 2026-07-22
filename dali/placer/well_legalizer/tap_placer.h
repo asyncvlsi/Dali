@@ -52,12 +52,6 @@ class TapPlacer {
       const TapPlacementContext& ctx) const = 0;
 };
 
-/** Where taps sit within a row. */
-enum class TapPosition {
-  kRowEnd,  // One tap in each reserved row-end margin (two per row).
-  kRowMid,  // One tap at the row center, splitting the row into two segments.
-};
-
 /** Which rows carry taps. */
 enum class TapCadence {
   kEveryRow,        // Every row gets its taps.
@@ -65,17 +59,13 @@ enum class TapCadence {
 };
 
 /**
- * Row-based tap placer, parameterized by the two orthogonal axes of the
- * taxonomy: intra-row position and row cadence. row-end taps go in the reserved
- * boundary margins; a row-mid tap goes at the row center. An even/other cadence
- * leaves odd rows untapped, relying on the abutting rows' taps -- the coverage
- * verifier is the guard for that. Checkerboard, being a 2-D staggered lattice
- * rather than a position x cadence, is intentionally a separate placer.
+ * Places taps in the reserved row-end margins at the configured cadence. An
+ * every-other cadence leaves odd rows untapped, relying on the abutting rows'
+ * taps -- the coverage verifier is the guard for that.
  */
 class RowTapPlacer : public TapPlacer {
  public:
-  RowTapPlacer(TapPosition position, TapCadence cadence)
-      : position_(position), cadence_(cadence) {}
+  explicit RowTapPlacer(TapCadence cadence) : cadence_(cadence) {}
 
   std::string Name() const override;
   void ValidateRow(const GriddedRow& row,
@@ -85,22 +75,21 @@ class RowTapPlacer : public TapPlacer {
       const TapPlacementContext& ctx) const override;
 
  private:
-  TapPosition position_;
+  /** Whether this row carries taps under the configured cadence. */
+  bool PlacesTapInRow(std::size_t row_index) const;
+
   TapCadence cadence_;
 };
 
-/** Selectable well-tap placement patterns, exposed via -well_tap_pattern. Each
- * is a curated (position, cadence) combination the gridded flow stands behind;
- * combinations that are not offered (e.g. row-mid every-other-row) are simply
- * absent. */
+/** Selectable well-tap placement patterns, exposed via -well_tap_pattern. Taps
+ * always sit in the reserved row-end margins; patterns differ only in which
+ * rows carry them. */
 enum class WellTapPattern {
   kRowEnd,            // row-end, every row (default).
   kRowEndEveryOther,  // row-end, every other row.
-  kRowMid,            // row-mid, every row.
 };
 
-/** Decompose a pattern into its two taxonomy axes. */
-TapPosition PositionOf(WellTapPattern pattern);
+/** Row cadence a pattern uses. */
 TapCadence CadenceOf(WellTapPattern pattern);
 
 /** Whether a pattern places the same number of taps in every row (row-end) or a

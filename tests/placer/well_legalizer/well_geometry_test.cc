@@ -119,7 +119,7 @@ TEST(WellGeometryBuilderTest, FillsTapColumnsOfUntappedRowsContinuously) {
   config.space_to_well_tap = 3;
   config.pre_end_cap_width = 2;
   config.post_end_cap_width = 2;
-  RowTapPlacer sparse(TapPosition::kRowEnd, TapCadence::kEveryOtherRow);
+  RowTapPlacer sparse(TapCadence::kEveryOtherRow);
   config.tap_placer = &sparse;
   WellRowCompleter(&circuit, &columns, config).InsertWellTaps();
 

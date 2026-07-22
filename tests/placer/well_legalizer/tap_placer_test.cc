@@ -44,7 +44,7 @@ class TapPlacerTest : public testing::Test {
 };
 
 TEST_F(TapPlacerTest, RowEndPlacesTwoTapsInMargins) {
-  RowTapPlacer placer(TapPosition::kRowEnd, TapCadence::kEveryRow);
+  RowTapPlacer placer(TapCadence::kEveryRow);
   EXPECT_EQ(placer.Name(), "row-end");
   placer.ValidateRow(row, ctx);  // Must not throw for a well-reserved row.
 
@@ -57,23 +57,15 @@ TEST_F(TapPlacerTest, RowEndPlacesTwoTapsInMargins) {
 }
 
 TEST_F(TapPlacerTest, RowEndCountIsRowIndexIndependent) {
-  RowTapPlacer placer(TapPosition::kRowEnd, TapCadence::kEveryRow);
+  RowTapPlacer placer(TapCadence::kEveryRow);
   EXPECT_EQ(placer.RowTapCenters(row, 0, ctx).size(), 2U);
   EXPECT_EQ(placer.RowTapCenters(row, 1, ctx).size(), 2U);
   EXPECT_EQ(placer.RowTapCenters(row, 7, ctx).size(), 2U);
 }
 
-TEST_F(TapPlacerTest, RowMidPlacesOneCenteredTap) {
-  RowTapPlacer placer(TapPosition::kRowMid, TapCadence::kEveryRow);
-  EXPECT_EQ(placer.Name(), "row-mid");
-  const std::vector<double> centers = placer.RowTapCenters(row, 0, ctx);
-  ASSERT_EQ(centers.size(), 1U);
-  // Center of the row: (LLX + URX) / 2 = (0 + 100) / 2.
-  EXPECT_DOUBLE_EQ(centers[0], 50.0);
-}
 
 TEST_F(TapPlacerTest, EveryOtherCadenceSkipsOddRows) {
-  RowTapPlacer placer(TapPosition::kRowEnd, TapCadence::kEveryOtherRow);
+  RowTapPlacer placer(TapCadence::kEveryOtherRow);
   EXPECT_EQ(placer.Name(), "row-end-every-other");
 
   // Even rows keep the row-end pair; odd rows get none.
@@ -85,8 +77,7 @@ TEST_F(TapPlacerTest, EveryOtherCadenceSkipsOddRows) {
   // Even-row positions match the every-row pattern exactly.
   const std::vector<double> even = placer.RowTapCenters(row, 0, ctx);
   const std::vector<double> baseline =
-      RowTapPlacer(TapPosition::kRowEnd, TapCadence::kEveryRow)
-          .RowTapCenters(row, 0, ctx);
+      RowTapPlacer(TapCadence::kEveryRow).RowTapCenters(row, 0, ctx);
   EXPECT_EQ(even, baseline);
 }
 
@@ -95,7 +86,6 @@ TEST(WellTapPatternTest, ParseRoundTripsCanonicalNames) {
   EXPECT_EQ(ParseWellTapPattern("row_end"), WellTapPattern::kRowEnd);
   EXPECT_EQ(ParseWellTapPattern("row-end-every-other"),
             WellTapPattern::kRowEndEveryOther);
-  EXPECT_EQ(ParseWellTapPattern("row-mid"), WellTapPattern::kRowMid);
   // Legacy name is still accepted as an alias.
   EXPECT_EQ(ParseWellTapPattern("every-other-row"),
             WellTapPattern::kRowEndEveryOther);
@@ -107,29 +97,22 @@ TEST(WellTapPatternTest, ParseRoundTripsCanonicalNames) {
   EXPECT_EQ(WellTapPatternName(WellTapPattern::kRowEnd), "row-end");
   EXPECT_EQ(WellTapPatternName(WellTapPattern::kRowEndEveryOther),
             "row-end-every-other");
-  EXPECT_EQ(WellTapPatternName(WellTapPattern::kRowMid), "row-mid");
 }
 
-TEST(WellTapPatternTest, PatternDecomposesIntoAxes) {
-  EXPECT_EQ(PositionOf(WellTapPattern::kRowEnd), TapPosition::kRowEnd);
+TEST(WellTapPatternTest, PatternMapsToCadence) {
   EXPECT_EQ(CadenceOf(WellTapPattern::kRowEnd), TapCadence::kEveryRow);
-  EXPECT_EQ(PositionOf(WellTapPattern::kRowEndEveryOther), TapPosition::kRowEnd);
   EXPECT_EQ(CadenceOf(WellTapPattern::kRowEndEveryOther),
             TapCadence::kEveryOtherRow);
-  EXPECT_EQ(PositionOf(WellTapPattern::kRowMid), TapPosition::kRowMid);
-  EXPECT_EQ(CadenceOf(WellTapPattern::kRowMid), TapCadence::kEveryRow);
 }
 
 TEST(WellTapPatternTest, FactoryBuildsMatchingStrategy) {
   EXPECT_EQ(CreateTapPlacer(WellTapPattern::kRowEnd)->Name(), "row-end");
   EXPECT_EQ(CreateTapPlacer(WellTapPattern::kRowEndEveryOther)->Name(),
             "row-end-every-other");
-  EXPECT_EQ(CreateTapPlacer(WellTapPattern::kRowMid)->Name(), "row-mid");
 }
 
 TEST(WellTapPatternTest, FixedCountForEveryRowCadence) {
   EXPECT_TRUE(WellTapPatternHasFixedCount(WellTapPattern::kRowEnd));
-  EXPECT_TRUE(WellTapPatternHasFixedCount(WellTapPattern::kRowMid));
   EXPECT_FALSE(WellTapPatternHasFixedCount(WellTapPattern::kRowEndEveryOther));
 }
 
@@ -138,17 +121,16 @@ TEST(WellTapPatternTest, TryParseRejectsUnknownNames) {
   EXPECT_TRUE(TryParseWellTapPattern("row-end", &pattern));
   EXPECT_EQ(pattern, WellTapPattern::kRowEnd);
   // Unknown names leave the out-param untouched and report failure.
-  EXPECT_FALSE(TryParseWellTapPattern("checkerboard", &pattern));
+  EXPECT_FALSE(TryParseWellTapPattern("row-mid", &pattern));
   EXPECT_EQ(pattern, WellTapPattern::kRowEnd);
   EXPECT_FALSE(TryParseWellTapPattern("nonsense", &pattern));
 }
 
 TEST(WellTapPatternTest, SupportReflectsEndToEndReadiness) {
-  // "Supported" is independent of tap count: both row-end cadences run today,
-  // while row-mid still needs the row-splitting work.
+  // Every pattern the registry offers runs end-to-end; the flag stays so a
+  // future pattern can be known without being usable yet.
   EXPECT_TRUE(IsWellTapPatternSupported(WellTapPattern::kRowEnd));
   EXPECT_TRUE(IsWellTapPatternSupported(WellTapPattern::kRowEndEveryOther));
-  EXPECT_FALSE(IsWellTapPatternSupported(WellTapPattern::kRowMid));
 }
 
 TEST(WellTapPatternTest, RegistryListsAreConsistent) {

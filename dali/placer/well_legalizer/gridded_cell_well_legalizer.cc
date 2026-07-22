@@ -1691,7 +1691,7 @@ bool GriddedCellWellLegalizer::RunBestBoundaryClusteringStage() {
                       static_cast<int>(uniform_boundaries.size() - 1);
   StripeBoundaryCoordinateConfig search_config;
   // A one-grid move changes ownership only for components immediately beside
-  // the cutline. Cell-width moves were too disruptive on test_case_3 and had
+  // the cutline. Cell-width moves proved too disruptive in practice and offered
   // no improving candidate in either direction.
   search_config.step = 1;
   search_config.minimum_pitch =
