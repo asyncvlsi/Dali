@@ -210,7 +210,8 @@ void LookAheadSpreader::UpdatePlacementBlockagesInGridBins() {
         rect.URX() <= circuit_->RegionLLX() ||
         rect.LLY() >= circuit_->RegionURY() ||
         rect.URY() <= circuit_->RegionLLY();
-    // TODO: test and clean up this part of code using an adaptec benchmark
+    // TODO: test and clean up this part of code on a design with placement
+    // blockages that extend past the placement region
     if (blockage_component_out_of_region) continue;
     int left_index =
         std::floor((rect.LLX() - circuit_->RegionLLX()) / grid_bin_width);
