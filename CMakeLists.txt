@@ -1,3 +1,6 @@
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+#Project Settings
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 cmake_minimum_required(VERSION 3.12)
 
 project(
@@ -24,47 +27,30 @@ include_directories(
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-#Link Mode
-#Set before dependency detection so CMAKE_FIND_LIBRARY_SUFFIXES steers it
+#Installation Prefix & RPATH
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-set(BUILD_STATIC_EXECUTABLES FALSE)
-if (BUILD_STATIC_EXECUTABLES)
-    set(CMAKE_EXE_LINKER_FLAGS -static)
-    set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
-    set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS)       # remove -Wl,-Bdynamic
-    set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS)
-    set(CMAKE_SHARED_LIBRARY_C_FLAGS)         # remove -fPIC
-    set(CMAKE_SHARED_LIBRARY_CXX_FLAGS)
-    set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS)    # remove -rdynamic
-    set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS)
-else ()
-#Set RPATH to use for installed targets; append linker search path
-    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+#Resolve the prefix before it is used: CMAKE_INSTALL_RPATH seeds each target's
+#INSTALL_RPATH as the target is created, so both must precede the targets.
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    message(STATUS "Changing default installation directory to $ACT_HOME")
+    set(CMAKE_INSTALL_PREFIX $ENV{ACT_HOME} CACHE PATH "installation path" FORCE)
 endif ()
+message(STATUS "Current installation directory: ${CMAKE_INSTALL_PREFIX}")
+
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-#Dependency Detection : ACT_HOME
+#Dependency Detection : ACT_HOME, Galois, OpenMP, Git Commit
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-#Locate the ACT toolchain (libact and companion libraries) via ACT_HOME
 include(cmake/FindACT.cmake)
-
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-#Dependencies : Galois, OpenMP, Git Commit
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-#Detect if galois_eda library exists
 include(cmake/FindGaloisEDA.cmake)
-
-#Detect if OpenMP library exists
 include(cmake/FindOpenMPPackage.cmake)
-
-#Set Git Commit version
 include(cmake/FindGitCommitVersion.cmake)
 
-
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 #Build Types and Options
-#Per-configuration flags are CMake's own; use RelWithDebInfo for an optimized
-#build that still carries symbols.
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 #Set default build type to RELEASE if none specified
 set(default_build_type "RELEASE")
 if (NOT CMAKE_BUILD_TYPE)
@@ -81,15 +67,20 @@ endif ()
 
 add_compile_options(-Wall -Wextra -Wshadow -Wnon-virtual-dtor -Werror=return-type -pedantic)
 
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+#Optional Features : OR-Tools, Qt GUI
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 include(cmake/ConfigureOrTools.cmake)
 include(cmake/ConfigureQtGui.cmake)
 
-#Set output directories
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+#Output Directories
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-#Library Target
+#Library Targets
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 #Glob all used circuit and placer source code
 file(
@@ -106,7 +97,6 @@ file(
     dali/timing/*.h
 )
 
-# Create the dalilib static library
 add_library(
     dalilib
     STATIC
@@ -149,9 +139,9 @@ if (DALI_HAS_QT_GUI)
     target_compile_definitions(daligui PUBLIC DALI_HAS_QT_GUI QT_NO_KEYWORDS)
 endif ()
 
-# ------------------------------------------------------------------------------
-# Executable Targets
-# ------------------------------------------------------------------------------
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+#Executable Targets
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 macro(add_dali_executable name source)
     add_executable(${name} ${source})
     target_link_libraries(${name} PRIVATE dalilib)
@@ -173,9 +163,9 @@ add_dali_executable(lefdef2bookshelf dali/application/lef_def_to_bookshelf.cc)
 add_dali_executable(bookshelf2lefdef dali/application/bookshelf_to_lef_def.cc)
 add_dali_executable(mhlg dali/application/multi_height_legalization.cc)
 
-# ------------------------------------------------------------------------------
-# Tests
-# ------------------------------------------------------------------------------
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+#Tests
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 enable_testing()
 add_subdirectory(tests/application)
 add_subdirectory(tests/common)
@@ -203,15 +193,9 @@ add_custom_target(
     COMMENT "Run all configured tests"
 )
 
-# ------------------------------------------------------------------------------
-# Installation Rules
-# ------------------------------------------------------------------------------
-if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    message(STATUS "Changing default installation directory to $ACT_HOME")
-    set(CMAKE_INSTALL_PREFIX $ENV{ACT_HOME} CACHE PATH "installation path" FORCE)
-endif ()
-message(STATUS "Current installation directory: ${CMAKE_INSTALL_PREFIX}")
-
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+#Installation Rules
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 # Install header files
 set(INCLUDE_DESTIN include)
 install(
