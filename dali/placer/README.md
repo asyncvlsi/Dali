@@ -40,8 +40,10 @@ selects the standard-cell flow, which skips well legalization entirely.
     legalizer derives it from the technology's MaxPlugDist as
     `2 * max_unplug_length`; every transistor must sit within MaxPlugDist of a
     compatible-well tap, and that is what bounds row width. The derived value is
-    not yet as good as a tuned one — on a test design it costs roughly 5% final
-    HPWL — so set this when a good width for the design is known.
+    not yet as good as a tuned one — on the largest design measured it costs
+    about 2.3% final HPWL, and it is the dominant term in the gap between a
+    tuned and a fully automatic run — so set this when a good width for the
+    design is known.
 
 ### Steering global placement with legalization
 
@@ -106,12 +108,16 @@ to spread.
 ## Iteration control
 
 `-global_max_iterations <n>` caps global-placement iterations, default 100.
-Global placement runs to whichever cap is set — on the designs measured so far
-the convergence criterion does not fire first, so this behaves as a fixed
-iteration count rather than a limit. Lowering it is a runtime trade: on a test
-design 40 iterations instead of 100 cost about 0.17% final HPWL and saved a
-third of the total run. Having the schedule stop on convergence rather than on a
-hand-picked cap is open work.
+Global placement runs to whichever cap is set — on every design measured the
+convergence criterion does not fire first, so this behaves as a fixed iteration
+count rather than a limit.
+
+The default is not obviously the right count, and which count is best depends on
+the design. On the largest design measured, 40 iterations finished both faster
+and marginally better than 100 (0.12% lower HPWL in 142s against 182s); on a
+smaller one, 100 was better than 40 by a similar margin. A cap that has to be
+re-picked per design is the wrong mechanism — having the schedule stop on
+convergence instead is open work.
 
 `-global_min_iterations <n>` sets the floor below which it will not stop.
 
