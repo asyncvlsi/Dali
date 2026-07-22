@@ -24,25 +24,8 @@ include_directories(
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-#Dependency Detection : ACT_HOME
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-#Locate the ACT toolchain (libact and companion libraries) via ACT_HOME
-include(cmake/FindACT.cmake)
-
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-#Dependencies : Galois, OpenMP, Git Commit
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-#Detect if galois_eda library exists
-include(cmake/FindGaloisEDA.cmake)
-
-#Detect if OpenMP library exists
-include(cmake/FindOpenMPPackage.cmake)
-
-#Set Git Commit version
-include(cmake/FindGitCommitVersion.cmake)
-
-#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-#Build Types and Options
+#Link Mode
+#Set before dependency detection so CMAKE_FIND_LIBRARY_SUFFIXES steers it
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 set(BUILD_STATIC_EXECUTABLES FALSE)
 if (BUILD_STATIC_EXECUTABLES)
@@ -60,10 +43,28 @@ else ()
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif ()
 
-#Use CMake's own per-configuration flags: RELEASE is already -O3 -DNDEBUG, and
-#DEBUG stays unoptimized so a debugger can see through it. For a fast build that
-#still carries symbols, configure with -DCMAKE_BUILD_TYPE=RelWithDebInfo.
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+#Dependency Detection : ACT_HOME
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+#Locate the ACT toolchain (libact and companion libraries) via ACT_HOME
+include(cmake/FindACT.cmake)
 
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+#Dependencies : Galois, OpenMP, Git Commit
+#-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+#Detect if galois_eda library exists
+include(cmake/FindGaloisEDA.cmake)
+
+#Detect if OpenMP library exists
+include(cmake/FindOpenMPPackage.cmake)
+
+#Set Git Commit version
+include(cmake/FindGitCommitVersion.cmake)
+
+
+#Build Types and Options
+#Per-configuration flags are CMake's own; use RelWithDebInfo for an optimized
+#build that still carries symbols.
 #Set default build type to RELEASE if none specified
 set(default_build_type "RELEASE")
 if (NOT CMAKE_BUILD_TYPE)
@@ -78,8 +79,6 @@ else ()
     message(STATUS "RELEASE build type")
 endif ()
 
-#OpenMP flags come from the OpenMP::OpenMP_CXX target, so they apply to the
-#targets that actually link it rather than to every compile in the tree.
 add_compile_options(-Wall -Wextra -Wshadow -Wnon-virtual-dtor -Werror=return-type -pedantic)
 
 include(cmake/ConfigureOrTools.cmake)
