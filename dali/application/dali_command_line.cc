@@ -81,7 +81,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -disable_welltap                           optional, do not insert well-tap cells\n"
       << "  -enable_end_cap_cell                       insert end-cap cells at gridded row ends\n"
       << "  -enable_filler_cell                        insert filler cells to keep implant continuous\n"
-      << "  -max_row_width <um>                        maximum gridded row width, 0 means unlimited\n"
+      << "  -max_row_width <um>                        maximum gridded row width, default 0 derives it from MaxPlugDist\n"
       << "  -global_initializer <keep/uniform/gaussian/monte_carlo/density_aware>\n"
       << "  -global_lal_expansion <symmetric/best_neighbor>\n"
       << "  -global_lal_hotspot <area/overflow/overflow_ratio>\n"

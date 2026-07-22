@@ -79,6 +79,67 @@ Commonly used options:
 
 Run `dali` with no arguments to print the full option list.
 
+### Production configurations
+
+The option list is long because most flags exist to isolate one stage during
+development. Two combinations are the ones actually used for real runs; start
+from whichever matches the design and change one thing at a time.
+
+**Gridded well placement.** This is the flow a `-cell` file selects, and the
+configuration the regression cases under `DaliTest/gridded_placement` run:
+
+    $ dali -lef design.lef -def design.def -cell design.cell \
+           -well_legalization_mode strict \
+           -target_density 0.65 \
+           -max_row_width 70.2 \
+           -global_max_iterations 40 \
+           -enable_gridded_upper_bound_refiner \
+           -enable_gridded_upper_bound_balancing \
+           -gridded_legalization_feedback y_row_transactional_coherent \
+           -enable_gridded_row_y_optimization \
+           -enable_gridded_detailed_placement \
+           -enable_gridded_detailed_relocation \
+           -enable_end_cap_cell \
+           -metrics_file dali_metrics.json
+
+What each group does:
+
+  * `-well_legalization_mode strict` refuses to spill into space the stripe
+    planner did not assign; `scavenge` lets the last column use leftover space,
+    which packs better but weakens the well guarantees.
+  * `-max_row_width` caps gridded row width in microns. It has to stay below the
+    MaxPlugDist implied by the technology, since every transistor must be within
+    that distance of a compatible-well tap. Leaving it at the default 0 does not
+    mean unlimited: the legalizer then derives the width from MaxPlugDist as
+    `2 * max_unplug_length`.
+  * The two `upper_bound` flags roughly legalize every global-placement
+    iteration and rebalance stripes that fail, so global placement optimizes
+    against a legal-ish picture instead of an idealized one.
+  * `-gridded_legalization_feedback` selects how much of that rough-legal result
+    is fed back. `y_row_transactional_coherent` is the most conservative mode
+    that still helps; `none` disables feedback entirely.
+  * The three `gridded_detailed` / `row_y` flags are the post-legalization
+    optimizers: row-group Y placement, then relocation into row whitespace,
+    then swaps and local reordering.
+  * `-enable_end_cap_cell` adds end caps at row ends. Add `-enable_filler_cell`
+    when the implant layers must be continuous across the whole row.
+
+**Standard cells.** No `-cell` file, no well legalization; this is what the
+ISPD2005 benchmarks under `PlacementBenchmark/ISPD2005LEFDEF` use:
+
+    $ dali -lef design.lef -def design.def \
+           -is_standard_cell \
+           -global_initializer density_aware \
+           -target_density 1 \
+           -metrics_file dali_metrics.json
+
+`-target_density 1` is deliberate: the ISPD2005 designs are already close to
+fully utilized, so asking for spare whitespace only distorts the result.
+
+Useful additions to either configuration: `-num_threads <n>` for the OpenMP
+paths, `-v 3` with `-disable_log_prefix` and `-log_file_name` for a readable
+log, and `-net_hpwl_file` for a per-net HPWL breakdown.
+
 ### Visualizing the placement flow
 
 Dali can step through the placement live in a Qt GUI, showing a snapshot at
