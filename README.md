@@ -65,8 +65,12 @@ force a non-GUI build:
 A placement run needs a LEF and a DEF. Providing a `-cell` file triggers the
 gridded well-placement flow:
 
-    $ dali -lef design.lef -def design.def -cell design.cell \
-           -target_density 0.7 -output_name placed.def
+    $ dali \
+        -lef design.lef \
+        -def design.def \
+        -cell design.cell \
+        -target_density 0.7 \
+        -output_name placed.def
 
 Commonly used options:
   * `-o`/`-output_name <name>.def` — output DEF (default `dali_out.def`)
@@ -87,30 +91,32 @@ from whichever matches the design and change one thing at a time.
 
 **Gridded well placement.** This is the flow a `-cell` file selects:
 
-    $ dali -lef design.lef -def design.def -cell design.cell \
-           -well_legalization_mode strict \
-           -target_density 0.65 \
-           -max_row_width 70.2 \
-           -global_max_iterations 40 \
-           -enable_gridded_upper_bound_refiner \
-           -enable_gridded_upper_bound_balancing \
-           -gridded_legalization_feedback y_row_transactional_coherent \
-           -enable_gridded_row_y_optimization \
-           -enable_gridded_detailed_placement \
-           -enable_gridded_detailed_relocation \
-           -enable_end_cap_cell \
-           -metrics_file dali_metrics.json
+    $ dali \
+        -lef design.lef \
+        -def design.def \
+        -cell design.cell \
+        -well_legalization_mode strict \
+        -target_density 0.65 \
+        -global_max_iterations 40 \
+        -enable_gridded_upper_bound_refiner \
+        -enable_gridded_upper_bound_balancing \
+        -gridded_legalization_feedback y_row_transactional_coherent \
+        -enable_gridded_row_y_optimization \
+        -enable_gridded_detailed_placement \
+        -enable_gridded_detailed_relocation \
+        -enable_end_cap_cell \
+        -metrics_file dali_metrics.json
 
 What each group does:
 
   * `-well_legalization_mode strict` refuses to spill into space the stripe
     planner did not assign; `scavenge` lets the last column use leftover space,
     which packs better but weakens the well guarantees.
-  * `-max_row_width` caps gridded row width in microns. It has to stay below the
-    MaxPlugDist implied by the technology, since every transistor must be within
-    that distance of a compatible-well tap. Leaving it at the default 0 does not
-    mean unlimited: the legalizer then derives the width from MaxPlugDist as
-    `2 * max_unplug_length`.
+  * Gridded row width is left to the legalizer, which derives it from the
+    technology's MaxPlugDist as `2 * max_unplug_length` — every transistor has
+    to sit within MaxPlugDist of a compatible-well tap, and that is what bounds
+    the width. `-max_row_width <um>` overrides the derived value when a specific
+    width has to be forced; prefer leaving it alone.
   * The two `upper_bound` flags roughly legalize every global-placement
     iteration and rebalance stripes that fail, so global placement optimizes
     against a legal-ish picture instead of an idealized one.
@@ -125,11 +131,13 @@ What each group does:
 
 **Standard cells.** No `-cell` file, and no well legalization:
 
-    $ dali -lef design.lef -def design.def \
-           -is_standard_cell \
-           -global_initializer density_aware \
-           -target_density 1 \
-           -metrics_file dali_metrics.json
+    $ dali \
+        -lef design.lef \
+        -def design.def \
+        -is_standard_cell \
+        -global_initializer density_aware \
+        -target_density 1 \
+        -metrics_file dali_metrics.json
 
 `-target_density 1` suits designs that are already close to fully utilized,
 where asking for spare whitespace only distorts the result; lower it when the
