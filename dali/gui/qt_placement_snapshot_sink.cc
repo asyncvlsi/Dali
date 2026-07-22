@@ -241,6 +241,33 @@ class PlacementCanvas : public QWidget {
     update();
   }
 
+  /**
+   * Render the given world-coordinate rectangle to a PNG.
+   *
+   * Sets the view to frame [llx, lly]-[urx, ury] in microns, letterboxing to
+   * preserve aspect, then grabs the canvas. Used to capture documentation
+   * screenshots without a human at the window; see SnapshotCaptureRequests.
+   */
+  void CaptureRegion(const QString& path, double llx, double lly, double urx,
+                     double ury) {
+    const double w = std::max(width() - 2.0 * kCanvasMargin, 1.0);
+    const double h =
+        std::max(height() - kStatusBandHeight - 2.0 * kCanvasMargin, 1.0);
+    const double rw = std::max(urx - llx, 1.0);
+    const double rh = std::max(ury - lly, 1.0);
+    scale_ = std::min(w / rw, h / rh);
+    pan_x_ = kCanvasMargin - llx * scale_ + (w - rw * scale_) / 2.0;
+    pan_y_ = kCanvasMargin + ury * scale_ + (h - rh * scale_) / 2.0;
+    has_view_ = true;
+    repaint();
+    grab().save(path);
+  }
+
+  /** Bounding box the view fits to, in canvas world coordinates. */
+  QRectF DesignBounds() const {
+    return QRectF(QPointF(view_llx_, view_lly_), QPointF(view_urx_, view_ury_));
+  }
+
   void FitToView() {
     const double design_width = std::max(view_urx_ - view_llx_, 1.0);
     const double design_height = std::max(view_ury_ - view_lly_, 1.0);
@@ -263,6 +290,8 @@ class PlacementCanvas : public QWidget {
     has_view_ = true;
     update();
   }
+
+  bool MovableDotMode() const { return movable_dot_mode_; }
 
   void SetMovableDotMode(bool enabled) {
     movable_dot_mode_ = enabled;
@@ -937,6 +966,8 @@ class QtPlacementWindow : public QWidget {
     }
   }
 
+  PlacementCanvas* Canvas() { return canvas_; }
+
   bool ShouldPause() const { return pause_checkbox_->isChecked(); }
   bool ShouldResume() const { return step_requested_ || continue_requested_; }
   void MarkFinished() {
@@ -1019,12 +1050,110 @@ void QtPlacementSnapshotSink::StartRun(
   window_ = std::make_unique<QtPlacementWindow>();
   window_->SetPauseAtEverySnapshot(metadata.pause_at_every_snapshot);
   window_->SetStages(metadata.stages);
-  window_->resize(1100, 760);
+  int window_width = 1100;
+  int window_height = 760;
+  if (const char* size = std::getenv("DALI_GUI_CAPTURE_SIZE")) {
+    const QStringList wh = QString(size).split('x');
+    if (wh.size() == 2) {
+      window_width = wh[0].toInt();
+      window_height = wh[1].toInt();
+    }
+  }
+  window_->resize(window_width, window_height);
   window_->show();
   enabled_ = true;
   LOG(info) << "Dali GUI debug mode enabled for design " << metadata.design_name
             << "\n";
 }
+
+/**
+ * Screenshot requests read from the DALI_GUI_CAPTURE environment variable.
+ *
+ * Format is `<dir>;<stem>@<snapshot id>:<region>;...`, where `<stem>.png` is
+ * the file written -- so one snapshot can be captured at several zoom levels --
+ * and `<region>` is one of:
+ *
+ *   - `fit`, the whole design, framed as the GUI frames it on open
+ *   - `<fx0>,<fy0>,<fx1>,<fy1>`, a sub-rectangle given as fractions of the
+ *     design bounding box, so the same request works on any design
+ *
+ * Appending `+cells` to a region draws movable cells as rectangles instead of
+ * the dots the GUI uses by default, which is what makes individual cells
+ * legible in a zoomed capture. `DALI_GUI_CAPTURE_SIZE=<w>x<h>` sets the
+ * window size, and so the image resolution. When DALI_GUI_CAPTURE is unset --
+ * the normal case -- no requests exist and the GUI behaves exactly as if this
+ * feature were absent.
+ *
+ * It exists so documentation screenshots can be regenerated reproducibly rather
+ * than captured by hand, and works headlessly under QT_QPA_PLATFORM=offscreen,
+ * so a run needs no display and no operator at the window.
+ */
+class SnapshotCaptureRequests {
+ public:
+  static SnapshotCaptureRequests FromEnvironment() {
+    SnapshotCaptureRequests result;
+    const char* spec = std::getenv("DALI_GUI_CAPTURE");
+    if (spec == nullptr) return result;
+
+    const QStringList parts = QString(spec).split(';', Qt::SkipEmptyParts);
+    if (parts.isEmpty()) return result;
+    result.directory_ = parts.value(0);
+    for (int i = 1; i < parts.size(); ++i) {
+      const QStringList key_and_region = parts[i].split(':');
+      if (key_and_region.size() != 2) continue;
+      const QStringList stem_and_id = key_and_region[0].split('@');
+      if (stem_and_id.size() != 2) continue;
+      QString region = key_and_region[1];
+      const bool draw_cells = region.endsWith("+cells");
+      if (draw_cells) region.chop(QString("+cells").size());
+      if (region == "fit") {
+        result.requests_.push_back({stem_and_id[1], stem_and_id[0],
+                                    QRectF(0.0, 0.0, 1.0, 1.0), draw_cells});
+        continue;
+      }
+      const QStringList bounds = region.split(',');
+      if (bounds.size() != 4) continue;
+      result.requests_.push_back(
+          {stem_and_id[1], stem_and_id[0],
+           QRectF(QPointF(bounds[0].toDouble(), bounds[1].toDouble()),
+                  QPointF(bounds[2].toDouble(), bounds[3].toDouble())),
+           draw_cells});
+    }
+    return result;
+  }
+
+  /** Write `<dir>/<stem>.png` for every request naming this snapshot. */
+  void CaptureIfRequested(PlacementCanvas* canvas,
+                          const std::string& snapshot_id) const {
+    if (canvas == nullptr) return;
+    const QString id = QString::fromStdString(snapshot_id);
+    for (const Request& request : requests_) {
+      if (request.id != id) continue;
+      const QString path = directory_ + "/" + request.stem + ".png";
+      const QRectF design = canvas->DesignBounds();
+      const QRectF f = request.region;
+      const double llx = design.left() + f.left() * design.width();
+      const double lly = design.top() + f.top() * design.height();
+      const double urx = design.left() + f.right() * design.width();
+      const double ury = design.top() + f.bottom() * design.height();
+      const bool previous_dot_mode = canvas->MovableDotMode();
+      if (request.draw_cells) canvas->SetMovableDotMode(false);
+      canvas->CaptureRegion(path, llx, lly, urx, ury);
+      canvas->SetMovableDotMode(previous_dot_mode);
+      LOG(info) << "Captured GUI snapshot " << path.toStdString() << "\n";
+    }
+  }
+
+ private:
+  struct Request {
+    QString id;
+    QString stem;
+    QRectF region;
+    bool draw_cells = false;
+  };
+  QString directory_;
+  std::vector<Request> requests_;
+};
 
 void QtPlacementSnapshotSink::PublishSnapshot(
     Circuit* circuit, const PlacementSnapshotMetadata& metadata) {
@@ -1034,6 +1163,10 @@ void QtPlacementSnapshotSink::PublishSnapshot(
 
   window_->SetSnapshot(circuit, metadata);
   QApplication::processEvents();
+
+  SnapshotCaptureRequests::FromEnvironment().CaptureIfRequested(
+      window_->Canvas(), metadata.id);
+
   if (!window_->ShouldPause()) {
     return;
   }

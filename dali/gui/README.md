@@ -23,6 +23,41 @@ structure, wells, taps, and end caps as they are built. The window also plots
 per-stage HPWL curves, reserving one slot per stage the run will actually
 execute rather than discovering them as they arrive.
 
+## What it shows
+
+Global placement finishes with cells spread by density, with no row structure —
+each dot is one movable cell:
+
+![After global placement](images/01_global_placement.png)
+
+After legalization and physical completion the same design is organised into
+stripe columns. Each column is its own well region, separated from its
+neighbours by well spacing, and the pink and blue bands are the P and N wells of
+the gridded rows:
+
+![After legalization](images/02_legalized.png)
+
+Zooming in resolves individual rows across a few stripe columns. The coloured
+strips running up the column edges are the cells physical completion inserts:
+
+![Stripe columns](images/03_stripe_columns.png)
+
+Zoomed further, cells are drawn as rectangles rather than dots, with a corner
+marker showing orientation. Rows abut so that adjacent rows share a well type,
+and the orange row-end taps tie each row's wells:
+
+![Cells and well taps](images/04_cells_and_taps.png)
+
+At a column boundary the full result of physical completion is visible. Reading
+outward from either column: cells, the orange well taps, then the green end caps
+that terminate the row, and between the two columns the well spacing that makes
+each column an independent well region:
+
+![End caps at a column boundary](images/05_end_caps.png)
+
+Regenerate all of these with [images/capture.sh](images/capture.sh), which
+drives the capture hook described below.
+
 ## Controls
 
 Mouse wheel zooms, left-drag pans. Controls are split by what they act on:
@@ -49,3 +84,22 @@ fraction of a row, which is close to invisible at fit-to-view zoom, so zoom in
 to inspect them. As a rough guide, on a large gridded design the vs-global
 arrows are clearly visible from detailed placement onward, while vs-previous is
 most informative during global placement.
+
+## Capturing screenshots
+
+The GUI can write PNGs of chosen snapshots without an operator at the window,
+which is how the images above are produced. It is off unless asked for: with
+`DALI_GUI_CAPTURE` unset the GUI behaves exactly as if the feature did not
+exist.
+
+    DALI_GUI_CAPTURE="<dir>;<stem>@<snapshot id>:<region>;..."
+    DALI_GUI_CAPTURE_SIZE="<width>x<height>"
+
+Each request writes `<dir>/<stem>.png` when the named snapshot arrives, so one
+snapshot can be captured at several zoom levels. `<region>` is either `fit` for
+the whole design, or `<fx0>,<fy0>,<fx1>,<fy1>` as fractions of the design
+bounding box — fractions rather than microns so the same request frames a
+comparable area on any design. Append `+cells` to draw movable cells as
+rectangles instead of dots.
+
+Set `QT_QPA_PLATFORM=offscreen` to run without a display.
