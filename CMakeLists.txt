@@ -60,9 +60,9 @@ else ()
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif ()
 
-#Set C++ compilation flags
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O3")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+#Use CMake's own per-configuration flags: RELEASE is already -O3 -DNDEBUG, and
+#DEBUG stays unoptimized so a debugger can see through it. For a fast build that
+#still carries symbols, configure with -DCMAKE_BUILD_TYPE=RelWithDebInfo.
 
 #Set default build type to RELEASE if none specified
 set(default_build_type "RELEASE")
@@ -78,7 +78,8 @@ else ()
     message(STATUS "RELEASE build type")
 endif ()
 
-add_compile_options(-fopenmp)
+#OpenMP flags come from the OpenMP::OpenMP_CXX target, so they apply to the
+#targets that actually link it rather than to every compile in the tree.
 add_compile_options(-Wall -Wextra -Wshadow -Wnon-virtual-dtor -Werror=return-type -pedantic)
 
 include(cmake/ConfigureOrTools.cmake)

@@ -11,11 +11,15 @@ if(APPLE)
     else()
         set (HOMEBREW_LIBOMP_PREFIX $ENV{HOMEBREW_LIBOMP_PREFIX})
     endif()
-    set(OpenMP_CXX_FLAGS "-Xpreprocessor -I${HOMEBREW_LIBOMP_PREFIX}/include")
+    # AppleClang needs -fopenmp handed to the preprocessor. Keep the two tokens
+    # adjacent here: passing -Xpreprocessor separately relies on it landing
+    # immediately before -fopenmp, and it silently consumes whatever flag
+    # follows it instead.
+    set(OpenMP_CXX_FLAGS
+        "-Xpreprocessor -fopenmp -I${HOMEBREW_LIBOMP_PREFIX}/include")
     set(OpenMP_CXX_LIB_NAMES omp)
-    set(OpenMP_omp_LIBRARY ${HOMEBREW_LIBOMP_PREFIX}/lib/libomp.dylib ${HOMEBREW_LIBOMP_PREFIX}/lib/libomp.a)
+    set(OpenMP_omp_LIBRARY ${HOMEBREW_LIBOMP_PREFIX}/lib/libomp.dylib)
     find_package(OpenMP REQUIRED)
-    add_compile_options(-Xpreprocessor)
 else()
     find_package(OpenMP REQUIRED)
 endif()
