@@ -18,6 +18,16 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Rows of the standard-cell flow, and the segments they are cut into.
+ *
+ * Distinct from the gridded flow's GriddedRow: these rows come from the DEF and
+ * are a fixed pitch, whereas a gridded row is as tall as the cells clustered
+ * into it. Blockages split a row into GeneralRowSegments, each a contiguous run
+ * of placeable space.
+ */
 #include "row.h"
 
 #include <algorithm>

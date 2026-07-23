@@ -19,6 +19,21 @@
  *
  ******************************************************************************/
 
+/**
+ * @file
+ * Shared base for every placement algorithm.
+ *
+ * Placer holds what all of them need -- the circuit, the placement boundary,
+ * target density, thread count -- and the checks that must hold whatever the
+ * algorithm: that the boundary is sane, that nets are connected, that the
+ * requested density is achievable.
+ *
+ * A subclass implements StartPlacement. CopyPlacementContextFrom hands that
+ * shared state from one placer to the next, which is how the flow passes a
+ * placement from global placement to a legalizer and on to detailed placement
+ * without re-deriving it.
+ */
+
 #include "placer.h"
 
 #include <omp.h>

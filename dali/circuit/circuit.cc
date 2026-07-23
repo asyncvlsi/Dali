@@ -18,6 +18,26 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * The design under placement: its technology, macros, components, and nets.
+ *
+ * Circuit is the single owner of design state. Placement algorithms read
+ * geometry from it and write component locations back to it; nothing else
+ * holds a second copy.
+ *
+ * Everything inside Dali works in **grid units** -- integers, so placement
+ * arithmetic is exact and a location is either on the grid or invalid. PhyDB
+ * works in database units. The `LocDali2Phydb` and `LengthPhydb2Dali` helpers
+ * near the top of this file are the only sanctioned conversion between the two,
+ * and crossing that boundary anywhere else is how off-grid geometry gets in.
+ *
+ * The file is long because it is the meeting point of several concerns:
+ * construction from PhyDB or from a programmatic API, technology and macro
+ * lookup, reporting, and output in DEF and Bookshelf. They are grouped in that
+ * order.
+ */
 #include "circuit.h"
 
 #include <algorithm>

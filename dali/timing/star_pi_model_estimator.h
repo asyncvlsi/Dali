@@ -18,6 +18,15 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Star and pi RC models for timing-driven placement.
+ *
+ * Implements PhyDB's AbstractRcEstimator so a timer can ask for net parasitics
+ * derived from the current placement. Placement supplies geometry only; the
+ * timing engine itself lives outside Dali.
+ */
 #ifndef DALI_TIMING_STAR_PI_MODEL_ESTIMATOR_H_
 #define DALI_TIMING_STAR_PI_MODEL_ESTIMATOR_H_
 

@@ -18,6 +18,15 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Legacy well-aware placement flow, superseded by the gridded legalizer.
+ *
+ * Kept for the `wellflow` application only; the main flow does not use it and
+ * its StartPlacement carries a do-not-use note. New work belongs in
+ * GriddedCellWellLegalizer.
+ */
 #include "well_place_flow.h"
 
 #include "dali/common/helper.h"

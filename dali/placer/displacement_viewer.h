@@ -19,6 +19,15 @@
  *
  ******************************************************************************/
 
+/**
+ * @file
+ * Debugging aid that records where components were and where they moved to, so
+ * a pass can be inspected as a displacement field rather than two placements.
+ *
+ * The Qt GUI's displacement overlays cover the same ground interactively; this
+ * remains for use from a debugger or a one-off dump.
+ */
+
 #ifndef DALI_COMMON_DISPLACEVIEWER_H_
 #define DALI_COMMON_DISPLACEVIEWER_H_
 
