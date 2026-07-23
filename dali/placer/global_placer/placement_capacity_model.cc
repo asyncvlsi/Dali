@@ -1,6 +1,16 @@
 /*******************************************************************************
  * Copyright (c) 2026 Yihang Yang
  *******************************************************************************/
+
+/**
+ * @file
+ * Asks how much room a set of components will really need.
+ *
+ * Standard cells occupy their area, so the default model is area over white
+ * space. The gridded flow substitutes a model that accounts for row
+ * quantization, which lets global placement see the capacity legalization will
+ * actually impose rather than discovering it later.
+ */
 #include "dali/placer/global_placer/placement_capacity_model.h"
 
 #include <algorithm>

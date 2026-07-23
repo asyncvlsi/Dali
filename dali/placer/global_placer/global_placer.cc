@@ -238,6 +238,16 @@ void GlobalPlacer::PreparePlacement() {
   InitializePlacementEngines();
 }
 
+/**
+ * The global placement loop: solve for a wirelength lower bound, spread to get
+ * an upper bound, then pull the two together with anchor pseudo-nets whose
+ * strength rises each iteration.
+ *
+ * The gridded flow additionally rough-legalizes each iteration, which replaces
+ * the spread upper bound with a nearly legal one and can feed row assignments
+ * back into the placement. Stops when IsPlacementConverged agrees or the
+ * iteration limit is reached.
+ */
 void GlobalPlacer::RunPlacementIterations() {
   for (cur_iter_ = 0; cur_iter_ < max_iter_; ++cur_iter_) {
     optimizer_->SetIteration(cur_iter_);

@@ -19,6 +19,21 @@
  *
  ******************************************************************************/
 
+/**
+ * @file
+ * The recursive bisection that spreads components out of dense regions.
+ *
+ * A region holding more component area than it has room for is cut in two and
+ * its components divided between the halves, in proportion to the whitespace
+ * each half actually has rather than to its size -- so blockages and fixed
+ * cells push components away rather than trapping them. Cutting continues until
+ * a region is small enough or no longer overfull.
+ *
+ * Cut direction and position are chosen to balance whitespace, with a
+ * preference for cutting along a macro edge when one lies close to the balanced
+ * point, since a boundary already exists there.
+ */
+
 #include "spreading_region.h"
 
 #include <cmath>

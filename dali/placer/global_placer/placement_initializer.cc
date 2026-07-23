@@ -19,6 +19,17 @@
  *
  ******************************************************************************/
 
+/**
+ * @file
+ * Chooses where components start, before any optimization runs.
+ *
+ * The quadratic solver converges to the same neighbourhood from most starting
+ * points, so the initializers differ mainly in how quickly they get there and
+ * how much they perturb a placement that is already meaningful. `keep` leaves an
+ * existing placement alone, which is what to use when re-placing a design that
+ * was already placed.
+ */
+
 #include "placement_initializer.h"
 
 #include <algorithm>

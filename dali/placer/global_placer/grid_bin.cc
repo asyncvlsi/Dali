@@ -19,6 +19,15 @@
  *
  ******************************************************************************/
 
+/**
+ * @file
+ * One cell of the density grid: what occupies it and how much room is left.
+ *
+ * Bins at the region edge are clipped to the placement boundary, so a bin's
+ * area is not assumed uniform and overfill is judged against each bin's own
+ * white space.
+ */
+
 #include "grid_bin.h"
 
 #include "dali/common/logging.h"

@@ -19,6 +19,22 @@
  *
  ******************************************************************************/
 
+/**
+ * @file
+ * Solves for the wirelength lower bound of a global placement iteration.
+ *
+ * Wirelength is not differentiable, so each multi-pin net is modelled as a set
+ * of pairwise connections weighted so their quadratic cost approximates HPWL --
+ * the bound-to-bound model, which weights each pin against the net's extreme
+ * pins. X and Y separate into two independent systems, each solved by conjugate
+ * gradient.
+ *
+ * The result is a lower bound: cells overlap freely, because nothing here knows
+ * about density. Spreading supplies the matching upper bound, and anchor
+ * pseudo-nets pull the two together over successive iterations, their strength
+ * rising on the schedule in UpdateAnchorAlpha.
+ */
+
 #include "hpwl_optimizer.h"
 
 #include <algorithm>
@@ -107,6 +123,15 @@ void BoundToBoundHpwlOptimizer::Initialize() {
   Ay.reserve(static_cast<SparseIndex>(coefficient_size));
 }
 
+/**
+ * Build the X system for this iteration from the current placement.
+ *
+ * Each net contributes pairwise terms under the bound-to-bound model, so the
+ * matrix depends on which pins are currently extreme and must be rebuilt as
+ * cells move. Anchor pseudo-nets and a weak pull toward the region centre are
+ * folded in here, not applied afterwards. Nets at or above the ignore threshold
+ * are skipped entirely.
+ */
 void BoundToBoundHpwlOptimizer::BuildProblemX() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();

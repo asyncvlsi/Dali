@@ -542,6 +542,13 @@ void LookAheadSpreader::UpdateRegionCapacity(SpreadingRegion* region) const {
   region->capacity_target_utilization = capacity.target_utilization;
 }
 
+/**
+ * Group the overfilled bins into clusters of adjacent bins.
+ *
+ * Spreading works on clusters rather than single bins so that a congested area
+ * is relieved as one region; treating each bin separately would push components
+ * back and forth across a shared boundary.
+ */
 void LookAheadSpreader::UpdateClusterList() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
