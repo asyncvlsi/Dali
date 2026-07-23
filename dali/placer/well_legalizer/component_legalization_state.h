@@ -31,6 +31,8 @@ namespace dali {
 /** Auxiliary legalization locations cached on each component. */
 class ComponentLegalizationState : public ComponentAux {
  public:
+  /** Per-component scratch state carried through legalization (start location,
+   * per-region sub-locations). */
   explicit ComponentLegalizationState(Component* component_ptr);
 
   /** Cache the component's current location as its initial location. */

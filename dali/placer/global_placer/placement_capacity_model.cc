@@ -34,6 +34,7 @@ bool PlacementCapacity::IsOverfilled() const {
   return demand > target_utilization * capacity;
 }
 
+/** Report how much room a component set needs under this capacity model. */
 PlacementCapacity AreaCapacityModel::Evaluate(
     const std::vector<Component*>& components, int region_width,
     int region_height, unsigned long long whitespace_area,
@@ -59,6 +60,7 @@ GriddedPlacementCapacityModel::GriddedPlacementCapacityModel(
               "Gridded demand normalization must be positive");
 }
 
+/** Report the room a component set needs (gridded model). */
 PlacementCapacity GriddedPlacementCapacityModel::Evaluate(
     const std::vector<Component*>& components, int region_width,
     int region_height, unsigned long long whitespace_area,
@@ -110,6 +112,7 @@ void LegalizationPressureCapacityModel::SetDemandMultipliers(
   demand_multipliers_ = std::move(demand_multipliers);
 }
 
+/** Report the room a component set needs, inflated by legalization pressure. */
 PlacementCapacity LegalizationPressureCapacityModel::Evaluate(
     const std::vector<Component*>& components, int region_width,
     int region_height, unsigned long long whitespace_area,

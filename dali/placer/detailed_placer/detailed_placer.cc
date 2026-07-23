@@ -172,6 +172,7 @@ int DetailedPlacer::LocalReorderSegment(GeneralRowSegment* segment,
   return reorder_count;
 }
 
+/** Build the spatial index used to find swap candidates. */
 void DetailedPlacer::BuildSwapIndex() {
   auto& rows = ckt_ptr_->design().Rows();
   row_components_.assign(rows.size(), {});
@@ -285,6 +286,7 @@ double DetailedPlacer::DistanceToRegion(double x, double y,
   return dx + dy;
 }
 
+/** The rows nearest a target Y, as move destinations. */
 std::vector<int> DetailedPlacer::FindClosestRows(
     const OptimalRegion& region) const {
   const auto& rows = ckt_ptr_->design().Rows();
@@ -323,6 +325,7 @@ double DetailedPlacer::AffectedWireLength(const std::set<int>& net_ids) const {
   return cost;
 }
 
+/** Re-legalize one row segment in X after a move. */
 bool DetailedPlacer::LegalizeSegment(GeneralRowSegment* segment,
                                      GeneralRow* row) {
   std::vector<StandardCellRowLegalizationCell> cells;
@@ -508,6 +511,7 @@ bool DetailedPlacer::TryMove(Component* component, GeneralRow* target_row,
   return true;
 }
 
+/** Cheap pre-check that rejects swaps that cannot help. */
 bool DetailedPlacer::IsPromisingSwap(Component* first, Component* second,
                                      GeneralRow* first_row,
                                      GeneralRow* second_row) const {

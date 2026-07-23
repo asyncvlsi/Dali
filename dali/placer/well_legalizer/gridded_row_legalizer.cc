@@ -109,6 +109,7 @@ void GriddedRowLegalizer::SetWellTapCellParameters(
     double tap_cell_interval_microns, std::string const& well_tap_macro_name) {
   SetWellTapCellNecessary(is_well_tap_needed);
   SetWellTapCellPlacementMode(is_checker_board_mode);
+  /** Set the tap pitch in grid units, derived from MaxPlugDist. */
   SetWellTapCellInterval(tap_cell_interval_microns);
   SetWellTapMacro(well_tap_macro_name);
 }
@@ -251,6 +252,8 @@ void GriddedRowLegalizer::CleanUpTemporaryRowSegments() {
   }
 }
 
+/** Legalize each stripe by trying upward then downward, keeping the better.
+ * @return true if all stripes fit. */
 bool GriddedRowLegalizer::UpwardDownwardLegalization(bool use_init_loc) {
   LOG(info) << "Start upward-downward legalization\n";
   ElapsedTime elapsed_time;
@@ -316,6 +319,7 @@ bool GriddedRowLegalizer::StripeLegalizationDownwardWithDispCheck(
   return true;
 }
 
+/** Upward/downward legalization under a per-cell displacement limit. */
 bool GriddedRowLegalizer::UpwardDownwardLegalizationWithDispCheck(
     bool use_init_loc) {
   LOG(info)
@@ -395,6 +399,7 @@ bool GriddedRowLegalizer::IterativeDisplacementOptimization() {
   return IsPlacementLegal();
 }
 
+/** Instantiate the precomputed tap locations as real components. */
 void GriddedRowLegalizer::EmbodyWellTapCells() {
   if (!is_well_tap_needed_) return;
 
@@ -469,6 +474,8 @@ void GriddedRowLegalizer::ReportDisplacement() {
             << " um^2\n";
 }
 
+/** Run multi-height legalization end to end.
+ * @return true on success. */
 bool GriddedRowLegalizer::StartPlacement() {
   PrintStartStatement("gridded row well legalization");
 
@@ -625,6 +632,7 @@ void GriddedRowLegalizer::SetWellTapCellPlacementMode(
   LOG(info) << "Checkerboard mode on: " << is_mode_on << "\n";
 }
 
+/** Set the tap pitch in grid units, derived from MaxPlugDist. */
 void GriddedRowLegalizer::SetWellTapCellInterval(
     double tap_cell_interval_microns) {
   if (tap_cell_interval_microns > 0) {

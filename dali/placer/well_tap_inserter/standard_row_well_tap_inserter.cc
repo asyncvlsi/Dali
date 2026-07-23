@@ -96,6 +96,7 @@ void StandardRowWellTapInserter::LoadRows() {
   }
 }
 
+/** Mark row sites already occupied by fixed components as unavailable. */
 void StandardRowWellTapInserter::MarkFixedComponentSites() {
   if (rows_.empty()) return;
   for (auto& comp : phy_db_->GetDesignPtr()->GetComponentsRef()) {
@@ -242,6 +243,7 @@ void StandardRowWellTapInserter::InsertUniformTaps() {
   }
 }
 
+/** Insert taps in a checkerboard pattern across rows. */
 void StandardRowWellTapInserter::InsertCheckerboardTaps() {
   // add well tap macro using half well-tap interval
   int half_tap_interval = tap_interval_in_sites_ / 2;
@@ -316,6 +318,7 @@ void StandardRowWellTapInserter::ExportToPhyDB() {
   }
 }
 
+/** Log the free tap sites per row, for debugging. */
 void StandardRowWellTapInserter::DumpAvailableSites() {
   std::ofstream ost("avail_space.txt");
   DaliExpects(ost.is_open(), "Cannot open output file: avail_space.txt");

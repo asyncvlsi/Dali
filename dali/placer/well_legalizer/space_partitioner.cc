@@ -199,6 +199,7 @@ void WellSpacePartitioner::UpdateWhiteSpaceInCol(StripeColumn& col) {
   }
 }
 
+/** Cut each column into simple stripes for legalization. */
 void WellSpacePartitioner::DecomposeSpaceToSimpleStripes() {
   for (auto& col : *output_stripes_) {
     for (int i = 0; i < tot_num_rows_; ++i) {

@@ -390,21 +390,32 @@ class GriddedCellWellLegalizer : public Placer {
                                                  Component& component);
   void AppendSingleWellComponentToFrontCluster(Stripe& stripe,
                                                Component& component);
+  /** Fill a stripe's rows from the bottom up; the top-down and compact
+   * variants differ in direction and in how tightly they pack. */
   void AppendComponentToColBottomUp(Stripe& stripe, Component& component);
+  /** Fill a stripe's rows from the top down. */
   void AppendComponentToColTopDown(Stripe& stripe, Component& component);
   void AppendComponentToColBottomUpCompact(Stripe& stripe,
                                            Component& component);
+  /** Top-down fill that packs rows tightly, for a stripe short of space. */
   void AppendComponentToColTopDownCompact(Stripe& stripe, Component& component);
 
+  /** Legalize a stripe by clustering bottom-up; the four variants pair fill
+   * direction with normal or compact packing. */
   bool StripeLegalizationBottomUp(Stripe& stripe);
+  /** Legalize a stripe by clustering top-down. */
   bool StripeLegalizationTopDown(Stripe& stripe);
+  /** Bottom-up stripe legalization with compact packing. */
   bool StripeLegalizationBottomUpCompact(Stripe& stripe);
+  /** Top-down stripe legalization with compact packing. */
   bool StripeLegalizationTopDownCompact(Stripe& stripe);
 
   bool ComponentClustering();
   bool ComponentClusteringLoose();
   bool ComponentClusteringCompact();
 
+  /** Place a stripe's rows in Y without committing.
+   * @return true if the stripe fits. */
   bool TrialClusterLegalization(Stripe& stripe);
 
   // void SingleSegmentClusteringOptimization();
@@ -416,13 +427,19 @@ class GriddedCellWellLegalizer : public Placer {
 
   bool StartPlacement() override;
 
+  /** Write the P+/N+ implant rectangles to a text file for inspection. */
   void GenPPNP(std::string const& name_of_file);
   void EmitDEFWellFile(std::string const& name_of_file, int well_emit_mode,
                        bool enable_emitting_cluster = true) override;
+  /** Append one implant rectangle to the PhyDB export. */
   void EmitPPNPRect(std::string const& name_of_file);
+  /** Write all P+/N+ implant geometry to PhyDB. */
   void ExportPpNpToPhyDB(phydb::PhyDB* phydb_ptr);
+  /** Append one well rectangle to the PhyDB export. */
   void EmitWellRect(std::string const& name_of_file, int well_emit_mode);
+  /** Write all well geometry to PhyDB. */
   void ExportWellToPhyDB(phydb::PhyDB* phydb_ptr, int well_emit_mode);
+  /** Append one cluster outline rectangle, for debugging output. */
   void EmitClusterRect(std::string const& name_of_file);
   /** Return current well rectangles in micron coordinates for visualization. */
   std::vector<PlacementWellRect> CollectWellVisualizationRects();

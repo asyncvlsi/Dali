@@ -36,22 +36,32 @@ class FreeSegment {
   FreeSegment* prev_ = nullptr;  // Pointer to previous free segment
   FreeSegment* next_ = nullptr;  // Pointer to Next free segment
  public:
+  /** A half-open interval of free space in a row, linked into a list. */
   explicit FreeSegment(int start = 0, int stop = 0);
   bool SetPrev(FreeSegment* preFreeSeg_ptr);
   bool SetNext(FreeSegment* nextFreeSeg_ptr);
+  /** Link this segment to a successor in the list. */
   bool LinkSingleSeg(FreeSegment* seg_ptr);
   FreeSegment* Next();
   FreeSegment* Prev();
+  /** Set the segment's [start, end) interval. */
   void SetSpan(int startLoc, int endLoc);
   int Start() const;
   int End() const;
   int Length() const;
+  /** Whether this segment overlaps another. */
   bool IsOverlap(FreeSegment* seg) const;
+  /** Whether this segment abuts another with no gap. */
   bool IsTouch(FreeSegment* seg) const;
+  /** Whether this segment lies entirely to the right of another. */
   bool IsDominate(FreeSegment* seg) const;
+  /** Whether this segment fully contains another. */
   bool IsContain(FreeSegment* seg) const;
+  /** Whether two segments share both endpoints. */
   bool IsSameStartEnd(FreeSegment* seg) const;
+  /** Intersection of this segment with another. */
   FreeSegment* SingleSegAnd(FreeSegment* seg);
+  /** Union of this segment with another, when they touch or overlap. */
   FreeSegment* SingleSegOr(FreeSegment* seg);
   void Clear();
 };

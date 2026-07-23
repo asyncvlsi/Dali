@@ -18,6 +18,12 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Small shared helpers: interval merging and other utilities with no home of
+ * their own.
+ */
 #include "helper.h"
 
 #include <algorithm>

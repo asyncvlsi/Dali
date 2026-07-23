@@ -41,6 +41,7 @@ GriddedCapacityEstimate GriddedStripeBalancer::Estimate(
       stripe.component_ptrs_vec_, stripe.Width(), stripe.Height(), whitespace);
 }
 
+/** The nearest stripe with room to take a component from an overfull one. */
 Stripe* GriddedStripeBalancer::FindNearestTarget(
     std::vector<StripeColumn>& columns, int source_column, Component* component,
     const std::unordered_map<Stripe*, unsigned long long>& available_spare)
@@ -76,6 +77,7 @@ Stripe* GriddedStripeBalancer::FindNearestTarget(
   return best_target;
 }
 
+/** Estimated HPWL change from moving a component between stripes. */
 double GriddedStripeBalancer::EstimateAffectedNetHpwlDelta(
     Component* component, const Stripe& target) const {
   double original_x = component->CenterX();
@@ -113,6 +115,8 @@ unsigned long long GriddedStripeBalancer::EstimateComponentDemand(
          (p_height + n_height);
 }
 
+/** Move components out of overfull stripes into nearby room.
+ * @return the number moved. */
 GriddedStripeBalanceResult GriddedStripeBalancer::Balance(
     std::vector<StripeColumn>* stripe_columns) const {
   DaliExpects(stripe_columns != nullptr,
@@ -229,6 +233,7 @@ int GriddedStripeBalancer::ApplyMoves(
   return moved_component_count;
 }
 
+/** Balance only the stripes a prior pass observed overflowing. */
 GriddedStripeBalanceResult GriddedStripeBalancer::BalanceObservedOverflow(
     std::vector<StripeColumn>* stripe_columns) const {
   DaliExpects(stripe_columns != nullptr,

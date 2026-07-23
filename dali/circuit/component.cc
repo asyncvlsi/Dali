@@ -18,6 +18,11 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * A placed instance of a macro: its location, orientation, and placement status.
+ */
 #include "component.h"
 
 #include <algorithm>

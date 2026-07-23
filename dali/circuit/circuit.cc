@@ -79,6 +79,7 @@ void Circuit::InitializeFromPhyDB(phydb::PhyDB* phy_db_ptr) {
   LoadTech(phy_db_ptr_);
   LoadDesign();
   LoadCell(phy_db_ptr_);
+  /** Recompute the summed area of all movable components. */
   UpdateTotalComponentArea();
 
   elapsed_time.RecordEndTime();
@@ -301,6 +302,8 @@ Macro* Circuit::AddMacro(std::string const& macro_name, double width,
                          double height) {
   int gridded_width = 0;
   int gridded_height = 0;
+  /** Convert a macro's micron dimensions to integer grid units, checking they
+   * land on the grid. */
   MacroSizeMicrometerToGridValue(macro_name, width, height, gridded_width,
                                  gridded_height);
   return AddMacroWithGridUnit(macro_name, gridded_width, gridded_height);
@@ -483,6 +486,7 @@ void Circuit::AddComponent(std::string const& component_name,
                is_real_cel);
 }
 
+/** Recompute the summed area of all movable components. */
 void Circuit::UpdateTotalComponentArea() {
   design_.tot_white_space_ =
       (unsigned long long)(design_.die_area_.region_right_ -
@@ -1627,6 +1631,7 @@ void Circuit::ExportCellsExcept(std::ofstream& ost,
   ost << "END COMPONENTS\n\n";
 }
 
+/** Write component locations back to PhyDB in database units. */
 void Circuit::ExportCells(std::ofstream& ost, std::string const& base_name,
                           int mode) {
   switch (mode) {
@@ -1664,6 +1669,7 @@ void Circuit::ExportCells(std::ofstream& ost, std::string const& base_name,
   }
 }
 
+/** Write one I/O pin's placement to the DEF output. */
 void Circuit::SaveIoPin(std::ofstream& ost, IoPin& iopin,
                         bool after_io_place) const {
   ost << "- " << iopin.Name() << " + NET " << iopin.NetName() << " + DIRECTION "
@@ -1937,6 +1943,7 @@ void Circuit::SaveBookshelfNode(std::string const& name_of_file) {
   }
 }
 
+/** Write the Bookshelf `.nets` file. */
 void Circuit::SaveBookshelfNet(std::string const& name_of_file) {
   std::ofstream ost(name_of_file.c_str());
   DaliExpects(ost.is_open(), "Cannot open file " + name_of_file);
@@ -2008,6 +2015,7 @@ void Circuit::SaveBookshelfAux(std::string const& name_of_file) {
       << name_of_file << ".scl";
 }
 
+/** Read component locations from a Bookshelf `.pl` file. */
 void Circuit::LoadBookshelfPl(std::string const& name_of_file) {
   std::ifstream ist(name_of_file.c_str());
   DaliExpects(ist.is_open(), "Cannot open file " + name_of_file);
@@ -2115,6 +2123,7 @@ void Circuit::SetBoundary(int left, int bottom, int right, int top) {
   design_.die_area_.die_area_set_ = true;
 }
 
+/** Convert a macro's micron size to grid units, checking grid alignment. */
 void Circuit::MacroSizeMicrometerToGridValue(std::string const& macro_name,
                                              double width, double height,
                                              int& gridded_width,
@@ -2539,6 +2548,7 @@ void Circuit::LoadUnits() {
   SetUnitsDistanceMicrons(phy_db_design.GetUnitsDistanceMicrons());
 }
 
+/** Read the placement grid origin and pitch from the technology. */
 void Circuit::LoadPlacementGridOrigin() {
   const auto& rows = phy_db_ptr_->GetRowVec();
   if (rows.empty()) {
@@ -2624,6 +2634,7 @@ void Circuit::LoadPlacementBlockages() {
   }
 }
 
+/** Build the net list from PhyDB, binding pins to components. */
 void Circuit::LoadNets() {
   auto& phy_db_design = *(phy_db_ptr_->GetDesignPtr());
   auto& components = phy_db_design.GetComponentsRef();

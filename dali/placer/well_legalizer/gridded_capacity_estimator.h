@@ -50,6 +50,7 @@ struct GriddedCapacityEstimate {
  */
 class GriddedCapacityEstimator {
  public:
+  /** Estimates the stripe height a component set occupies once grouped into rows. */
   explicit GriddedCapacityEstimator(GriddedCapacityConfig config);
 
   /**

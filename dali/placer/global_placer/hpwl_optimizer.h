@@ -120,8 +120,12 @@ class BoundToBoundHpwlOptimizer : public HpwlOptimizer {
   virtual void BuildProblemY();
   bool IsSeriesConverged(std::vector<double>& data, int window_size,
                          double tolerance);
+  /** Whether an HPWL series is oscillating rather than converging. */
   bool IsSeriesOscillate(std::vector<double>& data, int window_size);
+  /** Solve the X system by conjugate gradient; loose tolerance since the
+   * problem is rebuilt next iteration. @return the resulting X wirelength. */
   virtual double OptimizeQuadraticMetricX(double cg_stop_criterion);
+  /** Solve the Y system by conjugate gradient. */
   virtual double OptimizeQuadraticMetricY(double cg_stop_criterion);
   void PullComponentBackToRegion();
 
@@ -134,7 +138,9 @@ class BoundToBoundHpwlOptimizer : public HpwlOptimizer {
   /** Add translation-invariant physical row relationships to the Y problem. */
   void AddRelativeYConstraints();
   void BackUpComponentLocation();
+  /** Build and solve the X system with anchor pseudo-nets folded in. */
   void OptimizeHpwlXWithAnchor(int num_threads);
+  /** Build and solve the Y system with anchor pseudo-nets folded in. */
   void OptimizeHpwlYWithAnchor(int num_threads);
   double OptimizeHpwl() override;
 

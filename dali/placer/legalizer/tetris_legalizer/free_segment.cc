@@ -47,6 +47,7 @@ bool FreeSegment::LinkSingleSeg(FreeSegment* seg_ptr) {
   return (SetNext(seg_ptr) && seg_ptr->SetPrev(this));
 }
 
+/** Union of this segment with another when they touch or overlap. */
 FreeSegment* FreeSegment::SingleSegOr(FreeSegment* seg) {
   if ((Length() == 0) && (seg->Length() == 0)) {
     LOG(info) << "What?! two segments with Length 0 for OR operation\n";

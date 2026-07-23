@@ -18,6 +18,12 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * A net and its HPWL. Weighted and unweighted half-perimeter wirelength are
+ * computed here from the current component locations.
+ */
 #include "net.h"
 
 #include <algorithm>
@@ -44,6 +50,7 @@ const std::string& Net::Name() const { return name_id_pair_ptr_->first; }
 
 int Net::Id() const { return name_id_pair_ptr_->second; }
 
+/** Add a (component, pin) connection to this net. */
 void Net::AddComponentPinPair(Component* component_ptr, Pin* pin_ptr) {
   if (component_pins_.size() < component_pins_.capacity()) {
     component_pins_.emplace_back(component_ptr, pin_ptr);
@@ -92,6 +99,7 @@ void Net::SetAux(NetAux* aux) {
 
 NetAux* Net::Aux() { return aux_ptr_; }
 
+/** The net's X span with one component excluded, for incremental HPWL. */
 void Net::GetXBoundIfComponentAbsent(Component* component_ptr, double& lo,
                                      double& hi) {
   lo = -DBL_MAX;
@@ -123,6 +131,7 @@ void Net::GetXBoundIfComponentAbsent(Component* component_ptr, double& lo,
   }
 }
 
+/** The net's Y span with one component excluded, for incremental HPWL. */
 void Net::GetYBoundIfComponentAbsent(Component* component_ptr, double& lo,
                                      double& hi) {
   lo = -DBL_MAX;
@@ -211,6 +220,7 @@ void Net::UpdateMaxMinIdX() {
   }
 }
 
+/** Cache the pins at the net's Y extremes. */
 void Net::UpdateMaxMinIdY() {
   // no pin
   if (component_pins_.empty()) return;

@@ -75,6 +75,7 @@ void WellGeometryExporter::EmitImplantRectFile(
   }
 }
 
+/** Write well rectangles to a text file for inspection. */
 void WellGeometryExporter::EmitWellRectFile(const std::string& file_name,
                                             int well_emit_mode) const {
   DaliExpects(well_emit_mode >= 0 && well_emit_mode <= 2,
@@ -130,6 +131,7 @@ void WellGeometryExporter::ExportImplantsToPhyDB(phydb::PhyDB* phydb) const {
   }
 }
 
+/** Write well geometry to PhyDB in database units. */
 void WellGeometryExporter::ExportWellsToPhyDB(phydb::PhyDB* phydb,
                                               int well_emit_mode) const {
   DaliExpects(phydb != nullptr, "Cannot export wells to a null PhyDB");

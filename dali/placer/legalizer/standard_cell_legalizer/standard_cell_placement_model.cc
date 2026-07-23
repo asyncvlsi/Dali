@@ -48,6 +48,7 @@ void StandardCellPlacementModel::AddBlockage(int lx, int ly, int ux, int uy) {
   blockages_.push_back({lx, ly, ux, uy});
 }
 
+/** Build the free-space segments per row from blockages and fixed cells. */
 void StandardCellPlacementModel::BuildFreeSegments() {
   for (auto& row : rows_) {
     row.free_segments.clear();

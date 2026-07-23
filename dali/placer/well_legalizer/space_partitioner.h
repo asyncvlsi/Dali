@@ -98,6 +98,7 @@ class WellSpacePartitioner : public SpacePartitioner {
 
   void FetchWellParameters();
   void DetectAvailSpace();
+  /** Recompute the free space in one stripe column. */
   void UpdateWhiteSpaceInCol(StripeColumn& col);
   void DecomposeSpaceToSimpleStripes();
   void AssignComponentToColBasedOnWhiteSpace();

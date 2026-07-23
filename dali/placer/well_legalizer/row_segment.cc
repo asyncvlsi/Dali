@@ -72,6 +72,7 @@ void RowSegment::AddComponentRegion(Component* component_ptr, int region_id) {
   component_regions_.emplace_back(component_ptr, region_id);
 }
 
+/** Place the segment's cells at minimum displacement, keeping order. */
 void RowSegment::MinDisplacementLegalization(bool use_init_loc) {
   if (component_regions_.empty()) return;
   std::sort(component_regions_.begin(), component_regions_.end(),
@@ -152,6 +153,7 @@ double RowSegment::DispCost(std::vector<ComponentDisplacementVariable>& vars,
   return quadratic_disp;
 }
 
+/** Search a window's permutations for the cheapest legal ordering. */
 void RowSegment::FindBestLocalOrder(
     std::vector<ComponentDisplacementVariable>& res, double& cost,
     std::vector<ComponentDisplacementVariable>& vars, int cur, int l, int r,
@@ -190,6 +192,7 @@ void RowSegment::FindBestLocalOrder(
   }
 }
 
+/** Slide a window over the segment, applying each window's best order. */
 void RowSegment::LocalReorder(std::vector<ComponentDisplacementVariable>& vars,
                               int range, int omit, bool is_linear) {
   int sz = static_cast<int>(vars.size());
@@ -227,6 +230,7 @@ void RowSegment::LocalReorder(std::vector<ComponentDisplacementVariable>& vars,
   }
 }
 
+/** Alternative local-reorder pass with a different window strategy. */
 void RowSegment::LocalReorder2(
     std::vector<ComponentDisplacementVariable>& vars) {
   int sz = static_cast<int>(vars.size());

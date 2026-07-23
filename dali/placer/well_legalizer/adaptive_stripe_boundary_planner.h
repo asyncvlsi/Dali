@@ -51,6 +51,7 @@ struct AdaptiveStripeBoundaryResult {
  */
 class AdaptiveStripeBoundaryPlanner {
  public:
+  /** Plans stripe boundaries from local demand, widening sparse regions. */
   explicit AdaptiveStripeBoundaryPlanner(AdaptiveStripeBoundaryConfig config);
 
   /** Optimize stripe boundaries for the supplied horizontal demand samples. */

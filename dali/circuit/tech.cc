@@ -19,6 +19,12 @@
  *
  ******************************************************************************/
 
+/**
+ * @file
+ * The technology: layers, macros, and well rules, shared by every design placed
+ * against it. The fixed counterpart to Design.
+ */
+
 #include "tech.h"
 
 #include <algorithm>

@@ -73,6 +73,7 @@ class PlacementInitializer {
  */
 class UniformInitializer : public PlacementInitializer {
  public:
+  /** Scatter components uniformly across the region. */
   explicit UniformInitializer(Circuit* ckt_ptr, uint32_t random_seed = 1);
   ~UniformInitializer() override = default;
   void InitializeLocations() override;
@@ -81,6 +82,7 @@ class UniformInitializer : public PlacementInitializer {
 /** Places cells with a normal distribution centered on the placement region. */
 class GaussianInitializer : public PlacementInitializer {
  public:
+  /** Scatter components about the region centre with a Gaussian spread. */
   explicit GaussianInitializer(Circuit* ckt_ptr, uint32_t = 1);
   ~GaussianInitializer() override = default;
   void SetParameters(
@@ -98,11 +100,13 @@ class InitializerGridBin {
   double GetDensity() const;
   double PriorityTieBreaker() const { return priority_tie_breaker_; }
   void UpdateDensity();
+  /** Set the region the initializer scatters within. */
   void SetBoundary(int lx, int ly, int ux, int uy);
   void SetPriorityTieBreaker(double priority_tie_breaker);
   void UpdateTotalArea();
   /** Rebuild legal free rectangles after fixed macros are assigned. */
   void UpdateFreeSpace();
+  /** Register a component to be given a starting location. */
   void AddComponent(Component* component);
   /** Seed assigned components across legal free rectangles. */
   void InitializeComponentLocation(uint32_t random_seed, int num_trials);
@@ -142,6 +146,7 @@ struct CompareInitializerGridBinPtr {
  */
 class MonteCarloInitializer : public PlacementInitializer {
  public:
+  /** Place components by random trials, keeping the best by wirelength. */
   explicit MonteCarloInitializer(Circuit* ckt_ptr, uint32_t random_seed = 1);
   ~MonteCarloInitializer() override = default;
   void InitializeLocations() override;
@@ -164,6 +169,7 @@ class MonteCarloInitializer : public PlacementInitializer {
  */
 class DensityAwareInitializer : public MonteCarloInitializer {
  public:
+  /** Seed locations from a coarse density estimate, spreading dense areas. */
   explicit DensityAwareInitializer(Circuit* ckt_ptr, uint32_t random_seed = 1);
   ~DensityAwareInitializer() override = default;
   void InitializeLocations() override;

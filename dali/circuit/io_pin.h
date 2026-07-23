@@ -36,6 +36,7 @@ class Net;
 /** DEF I/O pin with net, signal metadata, placement status, and geometry. */
 class IoPin {
  public:
+  /** An I/O pin: its net, shape, and assigned boundary location and layer. */
   explicit IoPin(std::pair<const std::string, int>* name_id_pair_ptr);
   IoPin(std::pair<const std::string, int>* name_id_pair_ptr, double loc_x,
         double loc_y);

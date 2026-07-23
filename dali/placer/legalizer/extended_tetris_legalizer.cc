@@ -115,6 +115,7 @@ void ExtendedTetrisLegalizer::SetLeftBoundFactor(double k_left,
   k_left_step_ = k_left_step;
 }
 
+/** Seed this legalizer's rows from a GriddedRowLegalizer's result. */
 void ExtendedTetrisLegalizer::InitializeFromGriddedRowLegalizer(
     GriddedRowLegalizer* grlg) {
   DaliExpects(grlg != nullptr,
@@ -1170,6 +1171,8 @@ void ExtendedTetrisLegalizer::ExportRowsToCircuit() {
   }
 }
 
+/** Legalize by Tetris placement.
+ * @return true if all cells placed. */
 bool ExtendedTetrisLegalizer::StartPlacement() {
   PrintStartStatement("ExtendedTetrisLegalizer Legalization");
 
@@ -1204,6 +1207,7 @@ bool ExtendedTetrisLegalizer::StartPlacement() {
   return is_success;
 }
 
+/** Assign components to rows before X legalization. */
 bool ExtendedTetrisLegalizer::StartRowAssignment() {
   PrintStartStatement("row assignment");
 
@@ -1243,6 +1247,7 @@ bool ExtendedTetrisLegalizer::StartRowAssignment() {
   return true;
 }
 
+/** Build the per-row available-space structure. */
 void ExtendedTetrisLegalizer::GenAvailSpace(std::string const& name_of_file) {
   LOG(info) << "Generating available space, dump result to: " << name_of_file
             << "\n";

@@ -103,6 +103,7 @@ void SpreadingRegion::UpdateComponentAreaWhiteSpace(
   filling_rate = ComputeFillingRate(total_component_area, total_white_space);
 }
 
+/** Recompute the region's component area, white space, and fill rate. */
 void SpreadingRegion::UpdateComponentAreaWhiteSpaceFillingRate(
     std::vector<std::vector<unsigned long long>>& grid_bin_white_space_LUT,
     std::vector<std::vector<GridBin>>& grid_bin_matrix) {
@@ -234,6 +235,7 @@ void SpreadingRegion::UpdatePlacementBlockages(
   }
 }
 
+/** Recompute white space after subtracting fixed components. */
 void SpreadingRegion::UpdateWhiteSpaceAndFixedComponents(
     const std::vector<const PlacementBlockage*>& placement_blockages) {
   placement_blockages_.clear();

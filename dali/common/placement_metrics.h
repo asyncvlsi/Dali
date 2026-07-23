@@ -39,7 +39,9 @@ struct WeightedHpwlBreakdown {
 class PlacementMetrics {
  public:
   void Clear();
+  /** Record one named metric value for the current stage. */
   void Record(const std::string& name, double value);
+  /** Write all recorded metrics to a JSON file. */
   bool WriteJson(const std::string& file_name, bool completed) const;
 
  private:

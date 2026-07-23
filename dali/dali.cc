@@ -1112,6 +1112,8 @@ bool Dali::RunGlobalPlacementStage() {
   return true;
 }
 
+/** Run standard-cell legalization, falling back to Tetris on failure.
+ * @return true on success. */
 bool Dali::RunStandardCellLegalization() {
   if (!ShouldRunMovableCellLegalization()) {
     LOG(info) << "Skip standard-cell legalization: no movable components\n";
@@ -1150,6 +1152,8 @@ bool Dali::RunStandardCellLegalization() {
   return true;
 }
 
+/** Run detailed placement for the current flow.
+ * @return true on success. */
 bool Dali::RunDetailedPlacement() {
   if (disable_detailed_place_) {
     LOG(info) << "Skip detailed placement: disabled by configuration\n";
@@ -1376,6 +1380,7 @@ std::vector<PlacementSnapshotStage> Dali::ExpectedSnapshotStages() const {
   return stages;
 }
 
+/** Wire up the snapshot sink stages will publish to. */
 void Dali::InitializeVisualizationSnapshots() {
   if (!gui_debug_) {
     snapshot_sink_.reset();
@@ -1745,6 +1750,7 @@ void Dali::ExportComponentsToPhyDB() {
   ExportFillerCellsToPhyDB();
 }
 
+/** Write placed I/O pins back to PhyDB. */
 void Dali::ExportIoPinsToPhyDB() {
   DaliExpects(!circuit_.Metals().empty(),
               "Need metal layer info to generate PIN location\n");

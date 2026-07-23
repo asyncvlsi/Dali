@@ -18,6 +18,11 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * A pin on a macro: its offset from the macro origin, per orientation.
+ */
 #include "pin.h"
 
 #include "macro.h"

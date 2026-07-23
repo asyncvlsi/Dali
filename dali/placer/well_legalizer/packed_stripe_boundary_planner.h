@@ -37,6 +37,7 @@ struct StripePackingSample {
  */
 class PackedStripeBoundaryPlanner {
  public:
+  /** Plans stripe boundaries by packing columns at a uniform width. */
   explicit PackedStripeBoundaryPlanner(AdaptiveStripeBoundaryConfig config);
 
   /** Optimize boundaries and return an infeasible result if pitches conflict.

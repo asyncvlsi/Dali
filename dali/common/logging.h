@@ -61,6 +61,7 @@ const char* SeverityName(severity level);
  */
 class LogMessage {
  public:
+  /** A log record at a given severity, flushed on destruction. */
   explicit LogMessage(severity level);
   LogMessage(const LogMessage&) = delete;
   LogMessage& operator=(const LogMessage&) = delete;

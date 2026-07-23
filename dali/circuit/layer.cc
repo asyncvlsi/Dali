@@ -19,6 +19,12 @@
  *
  ******************************************************************************/
 
+/**
+ * @file
+ * A technology layer (metal or well) and its rules: pitch, spacing, and for
+ * well layers the MaxPlugDist that bounds gridded row width.
+ */
+
 #include "layer.h"
 
 namespace dali {

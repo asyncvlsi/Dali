@@ -20,6 +20,7 @@ namespace dali {
 /** Replaceable component that produces overlap-reduced global placements. */
 class GlobalSpreader {
  public:
+  /** Interface for the spreading step that produces the upper bound. */
   explicit GlobalSpreader(Circuit* circuit);
   virtual ~GlobalSpreader() = default;
 

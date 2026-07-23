@@ -55,11 +55,14 @@ class RowSegment {
   int UsedSize() const;
 
   std::vector<ComponentRegion>& ComponentRegions();
+  /** Record a component and which of its well regions this segment holds. */
   void AddComponentRegion(Component* component_ptr, int region_id);
+  /** Place the segment's cells at minimum displacement, keeping order. */
   void MinDisplacementLegalization(bool use_init_loc);
   void SnapComponentsToPlacementGrid();
 
   void SetOptimalAnchorWeight(double weight);
+  /** Clamp the segment's cells into its legal X interval. */
   void FitInRange(std::vector<ComponentDisplacementVariable>& vars);
   double DispCost(std::vector<ComponentDisplacementVariable>& vars, int l,
                   int r, bool is_linear);
@@ -71,6 +74,7 @@ class RowSegment {
                           bool is_linear);
   void LocalReorder(std::vector<ComponentDisplacementVariable>& vars,
                     int range = 3, int omit = 0, bool is_linear = false);
+  /** Alternative local-reorder pass over the segment's cells. */
   void LocalReorder2(std::vector<ComponentDisplacementVariable>& vars);
   /**
    * Place this segment's components to minimize displacement from where they

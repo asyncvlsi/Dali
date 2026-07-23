@@ -57,6 +57,7 @@ void FillerCellPlacer::CreateFillerMacros(int upper_width) {
   LOG(info) << "Filler cells exported to " << filler_lef_file_name << "\n";
 }
 
+/** Fill row gaps with filler cells to keep implant layers continuous. */
 void FillerCellPlacer::PlaceFillerCells(int lx, int ux, int ly,
                                         bool is_orient_N, int& filler_counter) {
   if (ux <= lx) {

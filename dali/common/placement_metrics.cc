@@ -8,6 +8,12 @@
  * of the License, or (at your option) any later version.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Collects per-stage metrics (HPWL, runtime) and writes them to the metrics
+ * JSON file the regression harness reads.
+ */
 #include "dali/common/placement_metrics.h"
 
 #include <atomic>
@@ -79,6 +85,7 @@ ScopedPlacementMetricSuppression::~ScopedPlacementMetricSuppression() {
   PlacementMetricSuppressionDepth().fetch_sub(1, std::memory_order_relaxed);
 }
 
+/** Write all recorded metrics to a JSON file. */
 bool PlacementMetrics::WriteJson(const std::string& file_name,
                                  bool completed) const {
   std::ofstream ost(file_name);

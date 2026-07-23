@@ -238,6 +238,7 @@ void Placer::CopyPlacementContextFrom(Placer* placer) {
   ckt_ptr_ = placer->ckt_ptr_;
 }
 
+/** Write Bookshelf node and terminal files. */
 bool Placer::SaveNodeTerminal(std::string const& terminal_file,
                               std::string const& node_file) {
   std::ofstream ost(terminal_file.c_str());

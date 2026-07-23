@@ -121,6 +121,7 @@ class SpreadingRegion {
   void UpdateWhiteSpaceAndFixedComponents(
       const std::vector<const PlacementBlockage*>& placement_blockages);
 
+  /** Refresh the fixed-terminal contribution to this region's density. */
   void update_all_terminal(std::vector<std::vector<GridBin>>& grid_bin_matrix);
   void UpdateComponentArea();
   void UpdateComponentAreaWhiteSpace(
@@ -128,14 +129,18 @@ class SpreadingRegion {
   void UpdateComponentAreaWhiteSpaceFillingRate(
       std::vector<std::vector<unsigned long long>>& grid_bin_white_space_LUT,
       std::vector<std::vector<GridBin>>& grid_bin_matrix);
+  /** Grow the region's box to include more white space. */
   void ExpandBox(int grid_cnt_x, int grid_cnt_y);
+  /** Emit the region's box outline, for debugging visualization. */
   bool write_box_boundary(std::string const& NameOfFile);
   bool WriteComponentRegion(
       std::string const& NameOfFile = "first_cell_bounding_box.txt");
   static unsigned long long white_space_LUT(
       std::vector<std::vector<unsigned long long>>& grid_bin_white_space_LUT,
       GridBinIndex& ll, GridBinIndex& ur);
+  /** Refresh the list of components currently inside the region. */
   void UpdateComponentList(std::vector<std::vector<GridBin>>& grid_bin_matrix);
+  /** Emit the components inside the box, for debugging visualization. */
   bool WriteComponentsInBox(std::string const& NameOfFile);
   bool update_cut_index_white_space(
       std::vector<std::vector<unsigned long long>>& grid_bin_white_space_LUT,

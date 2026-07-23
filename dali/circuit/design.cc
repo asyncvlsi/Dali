@@ -18,6 +18,12 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * The design's components, nets, I/O pins, and rows -- everything a placer
+ * moves or connects, as opposed to the fixed technology in Tech.
+ */
 #include "design.h"
 
 #include <algorithm>
@@ -43,6 +49,7 @@ static void NormalizeFanoutBuckets(std::vector<size_t>* buckets) {
   buckets->erase(std::unique(buckets->begin(), buckets->end()), buckets->end());
 }
 
+/** Grow a blockage outward to grid lines so it fully covers off-grid area. */
 RectI Design::ExpandOffGridPlacementBlockage(double lx, double ly, double ux,
                                              double uy) {
   int new_lx = 0;
@@ -127,6 +134,7 @@ void Design::UpdateFanOutHistogram(size_t net_size) {
   ++net_histogram_.counts[FindFanoutBucket(net_histogram_.buckets, net_size)];
 }
 
+/** Set up the per-net fan-out histogram bins. */
 void Design::InitNetFanOutHistogram(std::vector<size_t>* histo_x) {
   if (histo_x != nullptr) {
     net_histogram_.buckets = *histo_x;

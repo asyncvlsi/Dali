@@ -137,6 +137,7 @@ void GlobalPlacer::LoadConf(std::string const& config_file) {
   DaliFatal("This function is not fully implemented");
 }
 
+/** Construct the optimizer, spreader, and refiner for this run's flow. */
 void GlobalPlacer::InitializePlacementEngines() {
   optimizer_ =
       std::make_unique<BoundToBoundHpwlOptimizer>(ckt_ptr_, num_threads_);
@@ -268,6 +269,7 @@ void GlobalPlacer::RunPlacementIterations() {
       placement_before_refinement = SaveCurrentPlacement();
       GlobalUpperBoundRefinement refinement =
           upper_bound_refiner_->Refine(cur_iter_);
+      /** Feed a rough-legalization result into the density model as added pressure. */
       UpdateLegalizationPressure(refinement);
       if (RollbackRefinementFeedbackIfRequested(refinement)) {
         accepted_hpwl = WeightedHPWL();
@@ -283,6 +285,7 @@ void GlobalPlacer::RunPlacementIterations() {
             std::move(refinement.anchor_component_ids);
         refined_component_rows = std::move(refinement.component_rows);
         current_upper_bound_is_physical_ = true;
+        /** Log how far the refiner moved cells this iteration. */
         LogRefinementDisplacement(placement_before_refinement);
       } else {
         previous_feedback_checkpoint_.clear();
@@ -302,11 +305,13 @@ void GlobalPlacer::RunPlacementIterations() {
           selective_anchor_component_ids, refined_component_rows);
       previous_feedback_checkpoint_ = std::move(placement_before_refinement);
     }
+    /** Log the iteration's lower/upper bounds, tagged by upper-bound kind. */
     PrintHpwl();
     if (IsPlacementConverged()) break;
   }
 }
 
+/** Feed a rough-legalization result into the density model as added pressure. */
 void GlobalPlacer::UpdateLegalizationPressure(
     const GlobalUpperBoundRefinement& refinement) {
   auto pressure_model =
@@ -456,6 +461,7 @@ void GlobalPlacer::ApplyRefinedAnchorFeedback(
 
   if (use_relative_y_constraints) {
     std::vector<RelativeYConstraint> constraints =
+        /** Collect the translation-invariant Y offsets requested between components. */
         BuildRelativeYConstraints(component_rows, keep_component_y);
     LOG(info) << "    relative Y feedback: " << constraints.size()
               << " adjacent component pairs\n";
@@ -482,6 +488,7 @@ void GlobalPlacer::ApplyRefinedAnchorFeedback(
             << selected_movable_count << " selected components\n";
 }
 
+/** Collect the requested translation-invariant Y offsets between components. */
 std::vector<RelativeYConstraint> GlobalPlacer::BuildRelativeYConstraints(
     const std::vector<std::vector<int>>& component_rows,
     const std::vector<bool>& accepted_components) const {
@@ -661,6 +668,7 @@ bool GlobalPlacer::RollbackRefinementFeedbackIfRequested(
   return true;
 }
 
+/** Log how far the refiner moved cells this iteration. */
 void GlobalPlacer::LogRefinementDisplacement(
     const std::vector<ComponentLocation>& placement_before_refinement) {
   DaliExpects(
@@ -889,6 +897,7 @@ const char* GlobalPlacer::UpperBoundKindLabel() const {
   return current_upper_bound_is_physical_ ? " rough-legal" : " spread";
 }
 
+/** Log the iteration's lower/upper bounds, tagged by upper-bound kind. */
 void GlobalPlacer::PrintHpwl() const {
   if (optimizer_->GetHpwls().empty() || optimizer_->GetHpwlsX().empty() ||
       optimizer_->GetHpwlsY().empty() || accepted_upper_bound_hpwl_.empty() ||

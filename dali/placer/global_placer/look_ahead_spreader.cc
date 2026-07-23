@@ -481,6 +481,7 @@ void LookAheadSpreader::UpdateGridBinState() {
   update_grid_bin_state_time_ += elapsed_time.GetWallTime();
 }
 
+/** Recompute the total component area in an overfilled cluster. */
 void LookAheadSpreader::UpdateClusterArea(OverfilledBinCluster& cluster) {
   cluster.total_component_area = 0;
   cluster.total_white_space = 0;

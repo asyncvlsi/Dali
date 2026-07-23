@@ -19,6 +19,12 @@
  *
  ******************************************************************************/
 
+/**
+ * @file
+ * String conversions for the circuit enums (orientations, layer directions,
+ * signal types), used when reading and writing PhyDB and DEF.
+ */
+
 #include "enums.h"
 
 #include "dali/common/logging.h"

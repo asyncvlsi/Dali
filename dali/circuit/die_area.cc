@@ -18,6 +18,15 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * The die outline and its conversion into a placeable region.
+ *
+ * A rectilinear outline is reduced to the placement rectangle plus blockages
+ * for its concave parts, and edges that fall off the placement grid are snapped
+ * on, since placement works in integer grid units.
+ */
 #include "die_area.h"
 
 #include <algorithm>
@@ -100,6 +109,7 @@ void DieArea::SetRawRectilinearDieArea(
   ConvertPlacementBlockagesToGridUnit();
 }
 
+/** Expand a two-point die-area rectangle to four explicit corners. */
 void DieArea::MaybeExpandTwoPointsToFour() {
   size_t num_points = rectilinear_die_area_.size();
   DaliExpects(num_points > 1, "Only one point to specify die area?");

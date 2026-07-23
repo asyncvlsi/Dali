@@ -84,6 +84,7 @@ bool FreeSegmentList::EmplaceBack(int start, int end) {
   return true;
 }
 
+/** Add a segment at the end of the list. */
 void FreeSegmentList::PushBack(FreeSegment* seg) {
   /****push a single free segment into the linked list****/
   if (seg == nullptr) {
@@ -161,6 +162,7 @@ void FreeSegmentList::Clear() {
   min_width_ = 0;
 }
 
+/** Remove a segment from the list. */
 void FreeSegmentList::RemoveSeg(
     FreeSegment*
         seg_in_list) {  // don't remove, traverse the linked list is good enough
@@ -240,6 +242,7 @@ void FreeSegmentList::RemoveShortSeg(int width) {
   }
 }
 
+/** Consume an interval, splitting or shrinking the segment it falls in. */
 void FreeSegmentList::UseSpace(int start, int length) {
   /****
    * It is for sure that [start, start+length] sits in one of the segments

@@ -72,14 +72,21 @@ class GriddedRowLegalizer : public Placer {
   void RestoreConsensusLocX();
 
   void SetLegalizationMaxIteration(int max_iteration);
+  /** Legalize a stripe growing rows upward; the downward and disp-check
+   * variants differ in direction and whether a displacement limit applies. */
   bool StripeLegalizationUpward(Stripe& stripe, bool use_init_loc);
+  /** Legalize a stripe growing rows downward. */
   bool StripeLegalizationDownward(Stripe& stripe, bool use_init_loc);
   void CleanUpTemporaryRowSegments();
+  /** Legalize by trying upward then downward and keeping the better result.
+   * @return true if the stripe fits. */
   bool UpwardDownwardLegalization(bool use_init_loc = true);
 
+  /** Upward stripe legalization that rejects cells exceeding a displacement limit. */
   bool StripeLegalizationUpwardWithDispCheck(Stripe& stripe, bool use_init_loc);
   bool StripeLegalizationDownwardWithDispCheck(Stripe& stripe,
                                                bool use_init_loc);
+  /** Upward/downward legalization under a per-cell displacement limit. */
   bool UpwardDownwardLegalizationWithDispCheck(bool use_init_loc);
 
   bool IsLeftmostPlacementLegal();
@@ -92,6 +99,7 @@ class GriddedRowLegalizer : public Placer {
 
   bool StartPlacement() override;
 
+  /** Populate rows from PhyDB standard-cell row definitions. */
   void ImportStandardRowSegments(phydb::PhyDB& phydb);
   void AssignStandardCellsToRowSegments();
   void ReportStandardCellDisplacement();

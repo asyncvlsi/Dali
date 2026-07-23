@@ -588,6 +588,7 @@ int GriddedCellWellLegalizer::PhysicalCompletionRightMargin() const {
   return reserved_width;
 }
 
+/** Reserve room in each row for the taps and end caps physical completion adds. */
 void GriddedCellWellLegalizer::ReservePhysicalCompletionSpace(
     GriddedRow* row, bool grows_upward) {
   if (row == nullptr) {
@@ -666,6 +667,7 @@ WellRowCompletionConfig GriddedCellWellLegalizer::BuildRowCompletionConfig()
   return config;
 }
 
+/** Start a new row for a single-well component and add it. */
 void GriddedCellWellLegalizer::CreateClusterAndAppendSingleWellComponent(
     Stripe& stripe, Component& component) {
   stripe.gridded_rows_.emplace_back();
@@ -884,6 +886,8 @@ void GriddedCellWellLegalizer::AppendComponentToColTopDownCompact(
   stripe.contour_ = front_cluster->LLY();
 }
 
+/** Legalize a stripe by clustering bottom-up.
+ * @return true if the stripe fits. */
 bool GriddedCellWellLegalizer::StripeLegalizationBottomUp(Stripe& stripe) {
   stripe.gridded_rows_.clear();
   stripe.contour_ = stripe.LLY();
@@ -910,6 +914,8 @@ bool GriddedCellWellLegalizer::StripeLegalizationBottomUp(Stripe& stripe) {
   return stripe.HasNoRowsSpillingOut();
 }
 
+/** Legalize a stripe by clustering top-down.
+ * @return true if the stripe fits. */
 bool GriddedCellWellLegalizer::StripeLegalizationTopDown(Stripe& stripe) {
   stripe.gridded_rows_.clear();
   stripe.contour_ = stripe.URY();
@@ -936,6 +942,7 @@ bool GriddedCellWellLegalizer::StripeLegalizationTopDown(Stripe& stripe) {
   return stripe.HasNoRowsSpillingOut();
 }
 
+/** Bottom-up stripe legalization with tight packing, for a stripe short of space. */
 bool GriddedCellWellLegalizer::StripeLegalizationBottomUpCompact(
     Stripe& stripe) {
   stripe.gridded_rows_.clear();
@@ -963,6 +970,7 @@ bool GriddedCellWellLegalizer::StripeLegalizationBottomUpCompact(
   return stripe.contour_ <= RegionTop();
 }
 
+/** Top-down stripe legalization with tight packing. */
 bool GriddedCellWellLegalizer::StripeLegalizationTopDownCompact(
     Stripe& stripe) {
   stripe.gridded_rows_.clear();
@@ -1072,6 +1080,7 @@ bool GriddedCellWellLegalizer::ComponentClusteringLoose() {
       if (!is_success) {
         ++failed_stripe_count;
         RecordStripeLegalizationFailure(stripe);
+        /** Log which stripe failed and by how much it overflowed. */
         LogStripeLegalizationFailure(col, stripe, col_id, stripe_id);
       }
       for (auto& row : stripe.gridded_rows_) {
@@ -1110,6 +1119,7 @@ void GriddedCellWellLegalizer::RecordStripeLegalizationFailure(
   last_clustering_violations_.push_back(std::move(violation));
 }
 
+/** Log which stripe failed and by how much it overflowed. */
 void GriddedCellWellLegalizer::LogStripeLegalizationFailure(
     const StripeColumn& col, const Stripe& stripe, int column_index,
     int stripe_index) const {
@@ -1255,6 +1265,7 @@ bool GriddedCellWellLegalizer::ValidateFinalPlacement() const {
   return report.IsLegal();
 }
 
+/** Cluster components with tight packing, used when normal clustering overflows. */
 bool GriddedCellWellLegalizer::ComponentClusteringCompact() {
   /****
    * Clustering components in each stripe in a compact way
@@ -1865,6 +1876,7 @@ void GriddedCellWellLegalizer::RunGriddedDetailedPlacementStage() {
                "detailed_placement", "final");
 }
 
+/** Optimize row-group Y locations after clustering. */
 void GriddedCellWellLegalizer::RunRowLocationOptimizationStage() {
   LOG(info) << "Optimize gridded row Y locations\n";
   ElapsedTime timer;
@@ -2385,6 +2397,7 @@ GriddedCellWellLegalizer::RunExactStripeOptimizationPhase(
   return result;
 }
 
+/** Refine stripe assignments with the CP-SAT stripe optimizer (research path). */
 void GriddedCellWellLegalizer::RunExactStripeOptimizationStage() {
   const GriddedCapacityConfig capacity = BuildGriddedCapacityConfig(1.0);
   exact_stripe_optimizer_config_.minimum_p_well_height =
@@ -2631,6 +2644,8 @@ bool GriddedCellWellLegalizer::RetryMovableCellLegalizationWithScavenging() {
   return is_success;
 }
 
+/** Retry legalization with stripe rebalancing after a first pass failed.
+ * @return true if the retry fits. */
 bool GriddedCellWellLegalizer::RetryMovableCellLegalizationWithBalancing() {
   if (!enable_stripe_balancing_) return false;
 
@@ -2761,6 +2776,7 @@ bool GriddedCellWellLegalizer::StartPlacement() {
     PrintEndStatement("Standard Cluster Well Legalization", false);
     return false;
   }
+  /** Log the achieved per-stripe utilization after legalization. */
   LogActualGriddedUtilization();
   RunPhysicalCompletionStages();
   is_success = ValidateFinalPlacement();
@@ -2830,6 +2846,7 @@ void GriddedCellWellLegalizer::LogEstimatedGriddedCapacity() {
       << gridded_utilization << "\n";
 }
 
+/** Log the achieved per-stripe utilization after legalization. */
 void GriddedCellWellLegalizer::LogActualGriddedUtilization() const {
   unsigned long long occupied_row_area = 0;
   unsigned long long allocated_row_area = 0;

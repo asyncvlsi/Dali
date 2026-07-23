@@ -551,6 +551,7 @@ double BoundToBoundHpwlOptimizer::OptimizeQuadraticMetricY(
   return eval_history.back();
 }
 
+/** Add a weak pull keeping components inside the placement region. */
 void BoundToBoundHpwlOptimizer::PullComponentBackToRegion() {
   int sz = static_cast<int>(vx.size());
   std::vector<Component>& component_list = ckt_ptr_->Components();
@@ -667,6 +668,7 @@ void BoundToBoundHpwlOptimizer::BuildProblemWithAnchorX() {
   elapsed_time.RecordEndTime();
   tot_triplets_time_x += elapsed_time.GetWallTime();
 }
+/** Build the Y system including anchor pseudo-nets. */
 void BoundToBoundHpwlOptimizer::BuildProblemWithAnchorY() {
   UpdateMaxMinY();
   BuildProblemY();
@@ -688,11 +690,13 @@ void BoundToBoundHpwlOptimizer::BuildProblemWithAnchorY() {
     by[i] += pin_loc1 * weight;
     coefficients_y_.emplace_back(SparseTriplet(i, i, weight));
   }
+  /** Fold the requested relative-Y offsets into the Y system. */
   AddRelativeYConstraints();
   elapsed_time.RecordEndTime();
   tot_triplets_time_y += elapsed_time.GetWallTime();
 }
 
+/** Fold the requested relative-Y offsets into the Y system. */
 void BoundToBoundHpwlOptimizer::AddRelativeYConstraints() {
   std::vector<Component>& components = ckt_ptr_->Components();
   for (const RelativeYConstraint& constraint : relative_y_constraints_) {
@@ -838,6 +842,7 @@ void BoundToBoundHpwlOptimizer::OptimizeHpwlYWithAnchor(int num_threads) {
   lower_bound_hpwl_y_.push_back(eval_history_y.back());
 }
 
+/** Solve X and Y for this iteration's wirelength lower bound. */
 double BoundToBoundHpwlOptimizer::OptimizeHpwl() {
   omp_set_dynamic(0);
   int avail_threads_num = num_threads_ / 2;

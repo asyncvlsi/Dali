@@ -517,16 +517,22 @@ class Circuit {
   /**** Save results in Bookshelf formats ****/
   void SaveBookshelfNode(std::string const& name_of_file);
 
+  /** Write the Bookshelf `.nets` file (the academic placement format). */
   void SaveBookshelfNet(std::string const& name_of_file);
 
+  /** Write the Bookshelf `.pl` placement file. */
   void SaveBookshelfPl(std::string const& name_of_file);
 
+  /** Write the Bookshelf `.scl` row/site file. */
   void SaveBookshelfScl(std::string const& name_of_file);
 
+  /** Write the Bookshelf `.wts` net-weight file. */
   void SaveBookshelfWts(std::string const& name_of_file);
 
+  /** Write the Bookshelf `.aux` index file naming the other Bookshelf files. */
   void SaveBookshelfAux(std::string const& name_of_file);
 
+  /** Read component locations back from a Bookshelf `.pl` file. */
   void LoadBookshelfPl(std::string const& name_of_file);
 
   /**** for standard cells ****/

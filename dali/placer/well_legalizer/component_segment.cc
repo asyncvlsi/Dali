@@ -31,6 +31,7 @@
 
 namespace dali {
 
+/** Merge an adjacent component run into this one. */
 void ComponentSegment::Merge(ComponentSegment& sc, int lower_bound,
                              int upper_bound) {
   int sz = (int)sc.component_ptrs.size();

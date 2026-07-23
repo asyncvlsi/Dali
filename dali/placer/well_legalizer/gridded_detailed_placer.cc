@@ -331,6 +331,8 @@ int GriddedDetailedPlacer::LocalReorderAllRows() {
   return reorder_count;
 }
 
+/** Slide the reorder window across every row.
+ * @return move statistics for the stage. */
 int GriddedDetailedPlacer::RunLocalReorderStage(bool log_progress) {
   double previous_hpwl = WeightedHPWL();
   int total_changed_windows = 0;
@@ -680,6 +682,7 @@ double GriddedDetailedPlacer::ComputeMoveTargetX(
   return std::clamp(component->LLX(), overlap_lx, overlap_ux);
 }
 
+/** The net-weighted median X interval a component's nets pull it toward. */
 std::pair<double, double> GriddedDetailedPlacer::ComputeWeightedMedianInterval(
     std::vector<std::pair<double, double>> weighted_bounds) {
   DaliExpects(!weighted_bounds.empty(),
@@ -811,6 +814,7 @@ void GriddedDetailedPlacer::LegalizeRowXInCurrentOrder(GriddedRow* row) const {
   }
 }
 
+/** Apply a chosen insertion, re-legalizing the affected rows. */
 void GriddedDetailedPlacer::ApplyInsertionAssignment(GriddedRow* source_row,
                                                      Component* component,
                                                      GriddedRow* target_row,
@@ -1129,6 +1133,7 @@ std::vector<int> GriddedDetailedPlacer::BoundedInsertionPositions(
   return {positions.begin(), positions.end()};
 }
 
+/** Gather the components whose don't-look state an insertion invalidated. */
 void GriddedDetailedPlacer::CollectInsertionDirtyComponents(
     Component* moved, GriddedRow* source_row, GriddedRow* target_row,
     std::unordered_set<Component*>* dirty) const {
@@ -1355,6 +1360,7 @@ bool GriddedDetailedPlacer::TryClosedAssignmentCycle(
   if (best_candidate.displaced_component == nullptr) {
     return false;
   }
+  /** Apply a closed-cycle rotation as one unit. */
   return CommitClosedAssignmentCycle(source_row, component, target_row,
                                      source_region, best_candidate, stats);
 }
@@ -1458,6 +1464,7 @@ GriddedDetailedPlacer::FindBestClosedAssignmentCycle(
   return best_candidate;
 }
 
+/** Apply a closed-cycle rotation as one unit. */
 bool GriddedDetailedPlacer::CommitClosedAssignmentCycle(
     GriddedRow* source_row, Component* component, GriddedRow* target_row,
     const OptimalRegion& source_region, const ClosedCycleCandidate& candidate,
@@ -2097,6 +2104,7 @@ void GriddedDetailedPlacer::LogClusteringPass(const std::string& stage_name,
             << "um, improvement=" << hpwl_before - hpwl_after << "um\n";
 }
 
+/** Log a detailed-placement stage's move counts and HPWL change. */
 void GriddedDetailedPlacer::LogMoveStage(const MoveStats& stats,
                                          double hpwl_before) {
   double hpwl_after = WeightedHPWL();

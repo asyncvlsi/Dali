@@ -34,7 +34,9 @@ namespace dali {
  */
 class IoPlacer {
  public:
+  /** Places I/O pins along the placement boundary. */
   IoPlacer();
+  /** Construct bound to a PhyDB and circuit. */
   explicit IoPlacer(phydb::PhyDB* phy_db, Circuit* circuit);
 
   /** Create boundary-space containers for the current circuit. */

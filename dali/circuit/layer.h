@@ -56,6 +56,7 @@ class Layer {
 /** Routing metal layer parameters used mainly by I/O placement. */
 class MetalLayer : public Layer {
  public:
+  /** A routing metal layer: direction, pitch, and width. */
   explicit MetalLayer(std::pair<const std::string, int>* name_id_pair_ptr);
   MetalLayer(double width, double spacing,
              std::pair<const std::string, int>* name_id_pair_ptr,

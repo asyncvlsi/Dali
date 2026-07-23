@@ -58,18 +58,30 @@ class FreeSegmentList {
   FreeSegment* Tail() const { return tail_; }
   int MinWidth() const { return min_width_; }
   void SetMinWidth(int initMinWidth) { min_width_ = initMinWidth; }
+  /** Append a segment to the end of the list. */
   void Append(FreeSegment* segList);
+  /** Construct a segment in place at the end of the list. */
   bool EmplaceBack(int start, int end);
+  /** Add a segment at the end of the list. */
   void PushBack(FreeSegment* seg);
+  /** Insert a segment at a given position, keeping the list ordered. */
   void Insert(FreeSegment* insertPosition, FreeSegment* segToInsert);
   bool Empty() const;
+  /** Replace this list's contents with a copy of another. */
   void CopyFrom(FreeSegmentList& originList);
   void Clear();
+  /** Subtract a set of occupied intervals from the free list. */
   bool ApplyMask(FreeSegmentList& maskRow);
+  /** Remove a segment from the list. */
   void RemoveSeg(FreeSegment* seg_in_list);
+  /** Drop free segments narrower than `min_width`. */
   void RemoveShortSeg(int width);
+  /** Consume an interval, splitting or shrinking the segment it falls in. */
   void UseSpace(int start, int length);
+  /** Whether a free segment can hold a cell of the given width at some X. */
   bool IsSpaceAvail(int x_loc, int width);
+  /** Nearest free X to a target that fits the given width.
+   * @return the location, or a sentinel when none fits. */
   int MinDispLoc(int width);
   void Show();
 };

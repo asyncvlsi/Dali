@@ -58,6 +58,7 @@ class StandardRowWellTapInserter {
   bool checkerboard_enabled_ = true;
 
  public:
+  /** Inserts well taps into standard-cell rows at a covering pitch. */
   explicit StandardRowWellTapInserter(phydb::PhyDB* phy_db);
 
   /** Load row/site data from PhyDB. */

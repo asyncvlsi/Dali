@@ -45,11 +45,15 @@ class TetrisSpace {
  public:
   TetrisSpace(int left, int right, int bottom, int top, int rowHeight,
               int minWidth);
+  /** Row index at or above a Y coordinate. */
   int ToStartRow(int y_loc);
+  /** Row index at or below a Y coordinate. */
   int ToEndRow(int y_loc);
+  /** Consume free space in the rows a placed cell covers. */
   void UseSpace(int llx, int lly, int width, int height);
   void FindCommonSegments(int startRowNum, int endRowNum,
                           FreeSegmentList& commonSegments);
+  /** Whether a cell of the given size fits somewhere at or past a location. */
   bool IsSpaceAvail(int llx, int lly, int width, int height);
   bool FindComponentLoc(int llx, int lly, int width, int height,
                         int2d& result_loc);

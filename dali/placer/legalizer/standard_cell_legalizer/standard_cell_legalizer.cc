@@ -53,9 +53,12 @@ void StandardCellLegalizer::SetCostMode(
   cost_mode_ = cost_mode;
 }
 
+/** Legalize onto DEF rows.
+ * @return false if some cell could not be placed. */
 bool StandardCellLegalizer::StartPlacement() {
   PrintStartStatement("standard-cell legalization");
 
+  /** Build the row/segment model cells are assigned into. */
   BuildPlacementModel();
   auto components = CollectMovableComponents();
   if (components.empty()) {
@@ -70,10 +73,12 @@ bool StandardCellLegalizer::StartPlacement() {
     original_locations.emplace_back(component->LLX(), component->LLY());
   }
 
+  /** Assign each component to a row segment by cost. */
   bool is_success = AssignComponentsToSegments(components);
   if (is_success) {
     LegalizeAssignedSegments();
     ReportDisplacement(components, original_locations);
+    /** Write the legalized locations back to the circuit. */
     ExportRowsToCircuit();
     UpdateMovableComponentPlacementStatus();
     ReportHPWL();
@@ -84,6 +89,7 @@ bool StandardCellLegalizer::StartPlacement() {
   return is_success;
 }
 
+/** Build the row/segment model cells are assigned into. */
 void StandardCellLegalizer::BuildPlacementModel() {
   placement_model_ = StandardCellPlacementModel();
   segment_assignments_.clear();
@@ -170,6 +176,7 @@ std::vector<Component*> StandardCellLegalizer::CollectMovableComponents() {
   return components;
 }
 
+/** Assign each component to a row segment by cost. */
 bool StandardCellLegalizer::AssignComponentsToSegments(
     std::vector<Component*> components) {
   int failed_component_count = 0;
@@ -317,6 +324,7 @@ bool StandardCellLegalizer::EvaluateCandidate(
   return true;
 }
 
+/** Net wirelength if a component took a candidate location. */
 double StandardCellLegalizer::NetWireLengthWithCandidate(
     Net& net, const Component& component, double candidate_lx,
     double candidate_ly, ComponentOrient candidate_orient) const {
@@ -424,6 +432,7 @@ void StandardCellLegalizer::ReportDisplacement(
             << "  maximum: " << maximum_displacement << " um\n";
 }
 
+/** Write the legalized locations back to the circuit. */
 void StandardCellLegalizer::ExportRowsToCircuit() {
   auto& rows = ckt_ptr_->design().Rows();
   rows.clear();

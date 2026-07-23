@@ -82,6 +82,7 @@ void WellRowCompleter::InsertWellTaps() {
             << placer.Name() << " pattern)\n";
 }
 
+/** Create the end-cap macros used to terminate rows. */
 void WellRowCompleter::CreateEndCapMacros() {
   for (const auto& column : *columns_) {
     for (const auto& stripe : column.stripe_list_) {

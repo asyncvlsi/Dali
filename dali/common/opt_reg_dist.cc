@@ -97,6 +97,7 @@ void OptimalRegionDistance::FindOptimalRegionX(Component& component, double& lx,
   uy = loc_list_y[hi_index];
 }
 
+/** Write per-component optimal-region distances to a file. */
 void OptimalRegionDistance::SaveFile(std::string const& file_name) const {
   LOG(info) << "Writing optimal region distance file: " << file_name;
   std::ofstream ost(file_name.c_str());

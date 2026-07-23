@@ -18,6 +18,11 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Logging setup: severity levels and the boost.log sinks Dali writes through.
+ */
 #include "logging.h"
 
 #include <chrono>

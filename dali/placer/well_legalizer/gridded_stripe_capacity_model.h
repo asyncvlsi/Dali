@@ -48,6 +48,7 @@ struct GriddedStripeCapacitySummary {
  */
 class GriddedStripeCapacityModel {
  public:
+  /** Capacity model reporting gridded stripe occupancy to global placement. */
   explicit GriddedStripeCapacityModel(GriddedCapacityConfig config);
 
   /** Estimate every rectangular whitespace fragment in one stripe column. */

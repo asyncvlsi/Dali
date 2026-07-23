@@ -108,6 +108,7 @@ void TetrisSpace::FindCommonSegments(int startRowNum, int endRowNum,
   }
 }
 
+/** Whether a cell of the given size fits at or past a location. */
 bool TetrisSpace::IsSpaceAvail(int llx, int lly, int width, int height) {
   /****
    * 1. Check if the current location is in the placement region, if not return

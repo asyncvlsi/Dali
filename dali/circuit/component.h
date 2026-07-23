@@ -201,6 +201,8 @@ class Component {
              LLY() > component.URY() || component.LLY() > URY());
   }
 
+  /** Whether this component's rectangle overlaps another's. */
+  /** Whether this component overlaps the given rectangle. */
   bool IsOverlap(const RectI& rect) const {
     return !(LLX() > rect.URX() || rect.LLX() > URX() || LLY() > rect.URY() ||
              rect.LLY() > URY());

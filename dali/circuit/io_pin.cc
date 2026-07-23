@@ -18,6 +18,11 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * An I/O pin: its net, its shape, and its assigned boundary location and layer.
+ */
 #include "io_pin.h"
 
 namespace dali {

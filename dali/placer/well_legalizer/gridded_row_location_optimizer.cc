@@ -166,6 +166,7 @@ bool GriddedRowLocationOptimizer::OptimizeGroup(const RowGroup& group) {
   return true;
 }
 
+/** Shift legal row groups in Y toward their nets' optimal region. */
 GriddedRowLocationResult GriddedRowLocationOptimizer::Optimize(
     std::vector<StripeColumn>* columns) {
   DaliExpects(circuit_ != nullptr,

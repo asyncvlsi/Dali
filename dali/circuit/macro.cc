@@ -18,6 +18,12 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * A cell master: its size, pins, and well geometry. Components are instances of
+ * a Macro.
+ */
 #include "macro.h"
 
 #include <algorithm>
@@ -124,6 +130,7 @@ int Macro::RegionCount() const { return region_count_; }
 
 bool Macro::HasOddRegions() const { return region_count_ & 1; }
 
+/** Whether the macro's N/P wells meet the cell boundary for row abutment. */
 bool Macro::IsWellAbutted() const {
   int row_count = RegionCount();
   std::vector<int> y_edges;

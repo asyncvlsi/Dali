@@ -74,6 +74,7 @@ struct DisplacementViewer {
   }
 
   void SaveDisplacementVector(std::string const& name_of_file) {
+    /** Stream the recorded displacements for inspection. */
     std::ofstream ost(name_of_file.c_str());
     DaliExpects(ost.is_open(), "Cannot open output file: " << name_of_file);
     for (size_t i = 0; i < sz_; ++i) {

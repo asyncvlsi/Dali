@@ -24,6 +24,7 @@ GriddedStripeCapacityModel::GriddedStripeCapacityModel(
     GriddedCapacityConfig config)
     : estimator_(config) {}
 
+/** Estimate a stripe's occupancy for the density model. */
 GriddedStripeCapacitySummary GriddedStripeCapacityModel::Estimate(
     const StripeColumn& column) const {
   GriddedStripeCapacitySummary summary;

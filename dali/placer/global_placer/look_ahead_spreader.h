@@ -74,9 +74,11 @@ class LookAheadSpreader : public GlobalSpreader {
   void UpdateAttributesForAllGridBins();
   void UpdatePlacementBlockagesInGridBins();
   void UpdateDummyPlacementBlockagesInGridBins();
+  /** Recompute one bin's free area after blockages and fixed cells. */
   void UpdateWhiteSpaceInGridBin(GridBin& grid_bin);
   void InitGridBins();
   void InitWhiteSpaceLUT();
+  /** Build the density grid and white-space tables for a placement density. */
   void Initialize(double placement_density) override;
   int TargetComponentCountPerBin() const;
   void RebuildGridBinsIfTargetChanged();
@@ -87,21 +89,31 @@ class LookAheadSpreader : public GlobalSpreader {
                                    const GridBinIndex& upper_right,
                                    unsigned long long whitespace_area,
                                    CapacityEvaluationPurpose purpose) const;
+  /** Recompute how much component area a spreading region can hold. */
   void UpdateRegionCapacity(SpreadingRegion* region) const;
+  /** Recompute the total component area in an overfilled cluster. */
   void UpdateClusterArea(OverfilledBinCluster& cluster);
   void UpdateClusterList();
   std::multiset<OverfilledBinCluster, std::greater<>>::iterator
   SelectHotspotCluster();
+  /** Rank an overfilled cluster for how urgently it needs relief. */
   double HotspotScore(const OverfilledBinCluster& cluster) const;
   static const char* HotspotModeName(GlobalLalHotspotMode mode);
   void UpdateLargestCluster();
+  /** Total white space in a window of bins, from the prefix-sum table. */
   uint32_t LookUpWhiteSpace(GridBinIndex const& ll_index,
                             GridBinIndex const& ur_index) const;
+  /** White space in a bin window (overload taking an explicit window). */
   uint32_t LookUpWhiteSpace(GridBinWindow& window) const;
+  /** Grow a spreading box by the neighbour adding the most white space per area.
+   * @return true if a neighbour was absorbed. */
   bool ExpandBoxByBestNeighbor(SpreadingRegion* box);
   void FindMinimumBoxForLargestCluster();
+  /** Divide a box along the grid into two child boxes. */
   void SplitGridBox(SpreadingRegion& box);
+  /** Distribute a box's components across its area by white space. */
   void PlaceComponentInBox(SpreadingRegion& box);
+  /** Split a box's components between its halves in proportion to white space. */
   void SplitBox(SpreadingRegion& box);
   bool RecursiveBisectionComponentSpreading();
   double Spread() override;

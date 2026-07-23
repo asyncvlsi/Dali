@@ -533,6 +533,8 @@ std::vector<ComponentRegion>& GriddedRow::ComponentRegions() {
   return component_regions_;
 }
 
+/** Try to add a component to the row, growing it if it fits.
+ * @return true if added. */
 bool GriddedRow::AttemptToAdd(Component* component, bool is_upward) {
   // put this component to the closest white space segment
   double min_distance = DBL_MAX;
@@ -569,6 +571,7 @@ bool GriddedRow::AttemptToAdd(Component* component, bool is_upward) {
   return true;
 }
 
+/** As AttemptToAdd, rejecting the component past a displacement limit. */
 bool GriddedRow::AttemptToAddWithDispCheck(Component* component,
                                            double displacement_upper_limit,
                                            bool is_upward) {
@@ -765,6 +768,7 @@ size_t GriddedRow::CountComponentOverlaps() const {
   return overlap_count;
 }
 
+/** Recompute the shared usable interval across the row's regions. */
 void GriddedRow::UpdateCommonSegment(std::vector<SegI>& avail_spaces, int width,
                                      double density) {
   std::vector<SegI> cur_spaces;

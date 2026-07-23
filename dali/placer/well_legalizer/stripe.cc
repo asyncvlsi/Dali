@@ -231,6 +231,7 @@ void Stripe::PrecomputeWellTapCellLocation(bool is_checker_board_mode,
   }
 }
 
+/** Advance the upward-growing frontier row by one cluster. */
 void Stripe::UpdateFrontClusterUpward(int p_height, int n_height) {
   ++front_id_;
   if (front_id_ >= static_cast<int>(gridded_rows_.size())) {
@@ -303,6 +304,7 @@ bool Stripe::AddComponentToFrontClusterWithDispCheck(
   return true;
 }
 
+/** Pack as many pending components as fit into the frontier row, growing upward. */
 size_t Stripe::FitComponentsToFrontSpaceUpward(size_t start_id,
                                                int current_iteration) {
   std::vector<Component*> legalized_components;
@@ -340,6 +342,7 @@ size_t Stripe::FitComponentsToFrontSpaceUpward(size_t start_id,
   return start_id;
 }
 
+/** As FitComponentsToFrontSpaceUpward, rejecting cells past a displacement limit. */
 size_t Stripe::FitComponentsToFrontSpaceUpwardWithDispCheck(
     size_t start_id, double displacement_upper_limit) {
   std::vector<Component*> legalized_components;
@@ -393,6 +396,7 @@ void Stripe::UpdateRemainingClusters(int p_height, int n_height,
   }
 }
 
+/** Recompute how far each multi-region cell stretches across the row. */
 void Stripe::UpdateComponentStretchLength() {
   if (!is_bottom_up_) {
     std::reverse(gridded_rows_.begin(), gridded_rows_.end());
@@ -424,6 +428,7 @@ void Stripe::UpdateComponentStretchLength() {
   }
 }
 
+/** Advance the downward-growing frontier row by one cluster. */
 void Stripe::UpdateFrontClusterDownward(int p_height, int n_height) {
   ++front_id_;
   if (front_id_ >= static_cast<int>(gridded_rows_.size())) {
@@ -463,6 +468,7 @@ void Stripe::UpdateFrontClusterDownward(int p_height, int n_height) {
   }
 }
 
+/** Pack pending components into the frontier row, growing downward. */
 size_t Stripe::FitComponentsToFrontSpaceDownward(size_t start_id,
                                                  int current_iteration) {
   std::vector<Component*> legalized_components;
@@ -632,6 +638,7 @@ void Stripe::ComputeAverageLoc() {
   }
 }
 
+/** Log HPWL and displacement during iterative cell reordering. */
 void Stripe::ReportIterativeStatus(int i) {
   double disp_x = 0;
   double discrepancy = 0;
@@ -781,6 +788,7 @@ int Stripe::LocY2RowId(double lly) {
   return static_cast<int>(std::round(height / row_height_));
 }
 
+/** Estimate a candidate clustering's cost (displacement and wirelength). */
 double Stripe::EstimateCost(int row_id, Component* component_ptr, SegI& range,
                             double density) {
   int region_cnt = component_ptr->MacroPtr()->RegionCount();
@@ -870,6 +878,7 @@ Stripe* StripeColumn::GetStripeMatchComponent(Component* component_ptr) {
   return res;
 }
 
+/** The stripe whose column is nearest a component's X. */
 Stripe* StripeColumn::GetStripeClosestToComponent(Component* component_ptr,
                                                   double& distance) {
   Stripe* res = nullptr;

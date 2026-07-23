@@ -51,6 +51,7 @@ double IoPinCluster::Low() const { return low; }
 
 double IoPinCluster::High() const { return low + span; }
 
+/** Space assigned pins evenly along the boundary. */
 void IoPinCluster::UniformLegalize() {
   if (is_horizontal) {
     std::sort(iopin_ptr_list.begin(), iopin_ptr_list.end(),

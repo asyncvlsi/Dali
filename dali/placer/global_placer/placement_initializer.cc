@@ -96,6 +96,7 @@ UniformInitializer::UniformInitializer(Circuit* ckt_ptr, uint32_t random_seed)
   initializer_name_ = "uniform";
 }
 
+/** Assign starting locations to all components (per initializer strategy). */
 void UniformInitializer::InitializeLocations() {
   PrintStartStatement();
 
@@ -141,6 +142,7 @@ void GaussianInitializer::SetParameters(
   }
 }
 
+/** Assign starting locations for this initializer's strategy. */
 void GaussianInitializer::InitializeLocations() {
   PrintStartStatement();
   std::minstd_rand0 generator{random_seed_};
@@ -200,6 +202,7 @@ unsigned long long InitializerGridBin::RectangleArea(const RectI& rect) const {
          static_cast<unsigned long long>(rect.Height());
 }
 
+/** Partition the region into free rectangles the initializer scatters into. */
 void InitializerGridBin::BuildFreeRectangles(
     std::vector<RectI> const& blocked_rects) {
   free_rects_.clear();
@@ -330,6 +333,7 @@ MonteCarloInitializer::MonteCarloInitializer(Circuit* ckt_ptr,
   initializer_name_ = "Monte Carlo";
 }
 
+/** Assign starting locations for this initializer's strategy. */
 void MonteCarloInitializer::InitializeLocations() {
   PrintStartStatement();
 

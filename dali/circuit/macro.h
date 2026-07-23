@@ -44,6 +44,7 @@ class MacroWell;
  */
 class Macro {
  public:
+  /** A cell master: size, pins, and well geometry; components instantiate it. */
   explicit Macro(std::string const* name_ptr);
 
   /** Return the macro/master name. */
@@ -153,8 +154,10 @@ class Macro {
   /** Return distance between adjacent N/P boundary edges. */
   int AdjacentRegionEdgeDistance(int index, bool is_flipped = false) const;
 
+  /** The macro's N-well rectangle, or null if it has none. */
   RectI& NwellRect(int index);
 
+  /** The macro's P-well rectangle, or null if it has none. */
   RectI& PwellRect(int index);
 
   std::vector<RectI>& Nrects() { return n_rects_; }

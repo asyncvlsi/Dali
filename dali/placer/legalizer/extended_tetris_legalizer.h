@@ -65,36 +65,66 @@ class ExtendedTetrisLegalizer : public Placer {
   void InitLegalizer();
 
   int RowHeight() const;
+  /**
+   * Row-index geometry helpers. Rows are a fixed pitch here, so a Y location
+   * maps to a row index and back: StartRow/EndRow/MaxRow give the index range,
+   * HeightToRow the rows a cell of some height spans, LocToRow/RowToLoc convert
+   * between a Y and its row, and AlignLocToRowLoc snaps a Y onto a row.
+   */
   int StartRow(int y_loc) const;
+  /** Row index whose top is at or above `y_loc`. */
   int EndRow(int y_loc) const;
+  /** Highest row index a cell of `height` may start in and still fit. */
   int MaxRow(int height) const;
+  /** Number of rows a cell of `height` spans. */
   int HeightToRow(int height) const;
+  /** Row index containing `y_loc`. */
   int LocToRow(int y_loc) const;
+  /** Y location of row `row_num`, offset by `displacement` rows. */
   int RowToLoc(int row_num, int displacement = 0) const;
+  /** Snap a Y location down onto its row's origin. */
   int AlignLocToRowLoc(double y_loc) const;
+  /** Whether a segment of space is legal to place into (wide enough, unblocked). */
   bool IsSpaceLegal(int lo_x, int hi_x, int lo_row, int hi_row) const;
 
+  /** Whether a component fits within a single row's height. */
   bool IsFitToRow(int row_id, Component& component) const;
+  /** Whether a component should be N-oriented in the row it lands in. */
   bool ShouldOrientN(int row_id, Component& component) const;
 
   void InitComponentContourForward();
   void InitAndSortComponentAscendingX();
+  /** Consume row space for a component during the leftward legalization scan. */
   void UseSpaceLeft(Component const& component);
+  /** Whether a component's current location is legal for the leftward scan. */
   bool IsCurrentLocLegalLeft(Value2D<int>& loc, Component& component);
+  /** Leftmost X the leftward scan may reach within the given row range. */
   int WhiteSpaceBoundLeft(int lo_x, int hi_x, int lo_row, int hi_row);
+  /**
+   * Nearest legal location at or left of the target.
+   * @param loc receives the location. @return true if one was found.
+   */
   bool FindLocLeft(Value2D<int>& loc, Component& component);
   bool LocalLegalizationLeft();
 
   void InitComponentContourBackward();
   void InitAndSortComponentDescendingX();
+  /** Consume row space for a component during the rightward legalization scan. */
   void UseSpaceRight(Component const& component);
+  /** Whether a component's current location is legal for the rightward scan. */
   bool IsCurrentLocLegalRight(Value2D<int>& loc, Component& component);
+  /** Rightmost X the rightward scan may reach within the given row range. */
   int WhiteSpaceBoundRight(int lo_x, int hi_x, int lo_row, int hi_row);
+  /**
+   * Nearest legal location at or right of the target.
+   * @param loc receives the location. @return true if one was found.
+   */
   bool FindLocRight(Value2D<int>& loc, Component& component);
   bool LocalLegalizationRight();
 
   void ResetLeftLimitFactor();
   void UpdateLeftLimitFactor();
+  /** Estimated HPWL of the current placement, for comparing legalization runs. */
   double EstimatedHPWL(Component& component, int x, int y);
 
   void ExportRowsToCircuit();
@@ -102,6 +132,7 @@ class ExtendedTetrisLegalizer : public Placer {
 
   bool StartRowAssignment();
 
+  /** Build the per-row available-space structure the scan primitives read. */
   void GenAvailSpace(std::string const& name_of_file = "avail_space.txt");
 
  protected:

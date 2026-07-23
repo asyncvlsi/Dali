@@ -39,6 +39,7 @@ void ElapsedTime::RecordEndTime() {
       static_cast<double>(end_cpu_time_ - start_cpu_time_) / CLOCKS_PER_SEC;
 }
 
+/** Log wall and CPU time since the start mark. */
 void ElapsedTime::PrintTimeElapsed(severity lvl) const {
   std::ostringstream message;
   message << "(wall time: " << wall_time_ << "s, cpu time: " << cpu_time_

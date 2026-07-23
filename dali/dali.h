@@ -171,6 +171,10 @@ class Dali {
   bool SetIoPlacerGlobalMetalLayer(std::string const& layer_name);
   bool ConfigIoPlacer();
   bool RunIoPinAutoPlacement();
+  /**
+   * Place I/O pins from an argv-style command (interactive API).
+   * @return true on success.
+   */
   bool IoPinPlacement(int argc, char** argv);
 
   bool ShouldPerformTimingDrivenPlacement();
@@ -182,6 +186,8 @@ class Dali {
   void PerformTimingAnalysis();
   void UpdateNetWeights();
   void ReportPerformance();
+  /** Run placement with net weights driven by timing.
+   * @return true on success. */
   bool TimingDrivenPlacement(double density, int number_of_threads);
 #endif
 
@@ -200,9 +206,13 @@ class Dali {
    */
   bool ShouldRunMovableCellLegalization() const;
 
+  /** Insert well taps of `cell` at a fixed micron pitch. */
   void AddWellTaps(phydb::Macro* cell, double cell_interval_microns,
                    bool is_checker_board);
+  /** Insert well taps from an argv-style command (interactive API). */
   bool AddWellTaps(int argc, char** argv);
+  /** Run global placement to the given target density.
+   * @return true on success. */
   bool GlobalPlace(double density, int num_threads = 1);
   bool UnifiedLegalization();
 
