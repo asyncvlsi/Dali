@@ -78,7 +78,6 @@ void BoundToBoundHpwlOptimizer::Initialize() {
   // set a small value for net weight dividend to improve numerical stability
   UpdateEpsilon();
 
-  // initialize containers to store HPWL after each iteration
   lower_bound_hpwl_x_.clear();
   lower_bound_hpwl_y_.clear();
   lower_bound_hpwl_.clear();
@@ -246,6 +245,12 @@ void BoundToBoundHpwlOptimizer::BuildProblemX() {
   tot_triplets_time_x += elapsed_time.GetWallTime();
 }
 
+/**
+ * Build the Y system for this iteration, the Y counterpart of BuildProblemX.
+ *
+ * Y additionally carries relative-position constraints between components that
+ * X does not, so the two build functions are not mirror images.
+ */
 void BoundToBoundHpwlOptimizer::BuildProblemY() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
@@ -420,6 +425,12 @@ bool BoundToBoundHpwlOptimizer::IsSeriesOscillate(std::vector<double>& data,
   return is_oscillate;
 }
 
+/**
+ * Solve the current X system by conjugate gradient to `cg_stop_criterion`.
+ *
+ * The loose stopping tolerance is deliberate: an exact solve is wasted when the
+ * problem is rebuilt next iteration. Returns the resulting X wirelength.
+ */
 double BoundToBoundHpwlOptimizer::OptimizeQuadraticMetricX(
     double cg_stop_criterion) {
   ElapsedTime elapsed_time;
@@ -478,6 +489,10 @@ double BoundToBoundHpwlOptimizer::OptimizeQuadraticMetricX(
   return eval_history.back();
 }
 
+/**
+ * Solve the current Y system by conjugate gradient. The Y counterpart of
+ * OptimizeQuadraticMetricX.
+ */
 double BoundToBoundHpwlOptimizer::OptimizeQuadraticMetricY(
     double cg_stop_criterion) {
   ElapsedTime elapsed_time;
@@ -715,6 +730,13 @@ void BoundToBoundHpwlOptimizer::BackUpComponentLocation() {
   }
 }
 
+/**
+ * Build and solve the X system with the anchor pseudo-nets folded in.
+ *
+ * The anchors pull the lower-bound solve toward the spread placement, so this
+ * is what makes successive iterations converge rather than each re-solving from
+ * scratch.
+ */
 void BoundToBoundHpwlOptimizer::OptimizeHpwlXWithAnchor(int num_threads) {
   Eigen::setNbThreads(num_threads);
   LOG(trace) << "threads in branch x: " << num_threads
@@ -764,6 +786,10 @@ void BoundToBoundHpwlOptimizer::OptimizeHpwlXWithAnchor(int num_threads) {
   lower_bound_hpwl_x_.push_back(eval_history_x.back());
 }
 
+/**
+ * Build and solve the Y system with anchors. The Y counterpart of
+ * OptimizeHpwlXWithAnchor.
+ */
 void BoundToBoundHpwlOptimizer::OptimizeHpwlYWithAnchor(int num_threads) {
   LOG(trace) << "threads in branch y: " << num_threads
              << " actual number of threads: " << omp_get_max_threads()

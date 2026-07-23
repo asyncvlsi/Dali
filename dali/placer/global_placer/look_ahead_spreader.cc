@@ -646,6 +646,12 @@ const char* LookAheadSpreader::HotspotModeName(GlobalLalHotspotMode mode) {
   return "area";
 }
 
+/**
+ * Recompute the largest overfilled cluster, the one relieved first.
+ *
+ * Spreading works largest-first because the most congested region constrains
+ * the others.
+ */
 void LookAheadSpreader::UpdateLargestCluster() {
   if (cluster_set.empty()) return;
 
@@ -760,6 +766,10 @@ uint32_t LookAheadSpreader::LookUpWhiteSpace(GridBinWindow& window) const {
   return total_white_space;
 }
 
+/**
+ * Grow a spreading box by absorbing the neighbouring region that adds the most
+ * whitespace for the least area. Returns whether a neighbour was absorbed.
+ */
 bool LookAheadSpreader::ExpandBoxByBestNeighbor(SpreadingRegion* box) {
   DaliExpects(box != nullptr, "Cannot expand a null LAL box");
   std::vector<SpreadingRegion> candidates;
@@ -810,6 +820,12 @@ bool LookAheadSpreader::ExpandBoxByBestNeighbor(SpreadingRegion* box) {
   return true;
 }
 
+/**
+ * Find the smallest region with enough whitespace to hold the largest cluster.
+ *
+ * Grows a box outward from the cluster until it contains room for the cluster's
+ * area, so components spread only as far as they must.
+ */
 void LookAheadSpreader::FindMinimumBoxForLargestCluster() {
   /****
    * this function find the box for the largest cluster,
@@ -1063,6 +1079,13 @@ void LookAheadSpreader::PlaceComponentInBox(SpreadingRegion& box) {
                         /*scale_x=*/false, affine_scaling_weight_);
 }
 
+/**
+ * Divide a box's components between its two halves in proportion to the
+ * whitespace each half has.
+ *
+ * Splitting by available whitespace rather than by area is what routes
+ * components around blockages instead of piling them onto covered space.
+ */
 void LookAheadSpreader::SplitBox(SpreadingRegion& box) {
   bool flag_bisection_complete;
   int dominating_box_flag;  // indicate whether there is a dominating
@@ -1207,6 +1230,14 @@ bool LookAheadSpreader::RecursiveBisectionComponentSpreading() {
   return true;
 }
 
+/**
+ * One spreading pass: build density bins, find the overfilled clusters, and
+ * relieve each by expanding it into legal whitespace. Returns the HPWL after
+ * spreading.
+ *
+ * This is the upper-bound half of a global-placement iteration -- it produces a
+ * legal-ish placement the wirelength solve is then anchored toward.
+ */
 double LookAheadSpreader::Spread() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();

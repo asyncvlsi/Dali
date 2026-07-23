@@ -345,6 +345,14 @@ void GlobalPlacer::UpdateLegalizationPressure(
                         maximum_multiplier);
 }
 
+/**
+ * Fold a rough-legalization result back into the placement as anchor targets.
+ *
+ * After the gridded refiner produces a nearly legal placement, this steers the
+ * next lower-bound solve toward it by anchoring components -- all of them, or a
+ * selected subset -- to where legalization put them. `placement_before_refinement`
+ * is kept so the feedback can be rolled back if the iteration regresses.
+ */
 void GlobalPlacer::ApplyRefinedAnchorFeedback(
     const std::vector<ComponentLocation>& placement_before_refinement,
     bool anchor_all_components, const std::vector<int>& component_ids,
@@ -524,6 +532,13 @@ bool GlobalPlacer::IsRefinedYLocallyNonWorsening(Component& component,
   return refined_hpwl <= analytical_hpwl;
 }
 
+/**
+ * Decide which components' Y feedback to accept, as a transaction.
+ *
+ * A candidate is accepted only if the group it belongs to stays coherent once
+ * accepted, so a set of row moves is taken or dropped together rather than
+ * leaving the placement half-updated. Returns the accepted mask.
+ */
 std::vector<bool> GlobalPlacer::SelectTransactionalYFeedback(
     const std::vector<bool>& candidates,
     const std::vector<ComponentLocation>& analytical_placement,

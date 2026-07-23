@@ -260,6 +260,12 @@ void SpreadingRegion::UpdateWhiteSpaceAndFixedComponents(
   total_white_space -= used_area;
 }
 
+/**
+ * Recompute the candidate cut lines from blockage and macro edges.
+ *
+ * Collecting obstacle edges up front lets the cut search prefer a boundary that
+ * already exists over an arbitrary one.
+ */
 void SpreadingRegion::UpdateObsBoundary() {
   vertical_cutlines.clear();
   horizontal_cutlines.clear();
@@ -362,6 +368,12 @@ unsigned long long SpreadingRegion::white_space_LUT(
   return white_space;
 }
 
+/**
+ * Locate the cut line that balances whitespace between the two halves.
+ *
+ * Scans candidate cut positions and picks the one splitting the box's whitespace
+ * most evenly, which is the position the component division is then matched to.
+ */
 bool SpreadingRegion::update_cut_index_white_space(
     std::vector<std::vector<unsigned long long>>& grid_bin_white_space_LUT,
     std::vector<std::vector<GridBin>>& grid_bin_matrix,
@@ -453,6 +465,12 @@ bool SpreadingRegion::update_cut_index_white_space(
   }
 }
 
+/**
+ * Split a non-leaf box into its two child boxes, recursing until leaves.
+ *
+ * Reports each child's whitespace back through the reference parameters so the
+ * parent can balance the division.
+ */
 bool SpreadingRegion::UpdateCutPointComponentLists(
     unsigned long long& box1_total_white_space,
     unsigned long long& box2_total_white_space) {
@@ -549,6 +567,13 @@ bool SpreadingRegion::UpdateCutPointComponentLists(
   return true;
 }
 
+/**
+ * Split a leaf box: choose the cut line and divide its components across it.
+ *
+ * The base case of the recursion. Components are partitioned so each side gets
+ * area matching its share of the box's whitespace, and the cut line is placed
+ * accordingly. Returns whether a legal split was found.
+ */
 bool SpreadingRegion::UpdateCutPointComponentListsLeaf(
     int& cut_line_w, int average_component_height) {
   DaliExpects(total_component_area > 0,
@@ -714,6 +739,7 @@ bool SpreadingRegion::UpdateCutPointComponentListsLeaf(
   return true;
 }
 
+/** Log this region's cut direction, boxes, and whitespace, for debugging. */
 void SpreadingRegion::Report() {
   std::string cur_direction = cut_direction_x ? "x" : "y";
   LOG(info) << "cut direction: " << cur_direction << "\n"

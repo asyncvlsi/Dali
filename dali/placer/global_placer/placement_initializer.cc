@@ -104,7 +104,6 @@ void UniformInitializer::InitializeLocations() {
   int region_llx = ckt_ptr_->RegionLLX();
   int region_lly = ckt_ptr_->RegionLLY();
 
-  // initialize the random number generator
   std::minstd_rand0 generator{random_seed_};
   std::uniform_real_distribution<double> distribution(0, 1);
 
@@ -144,7 +143,6 @@ void GaussianInitializer::SetParameters(
 
 void GaussianInitializer::InitializeLocations() {
   PrintStartStatement();
-  // initialize the random number generator
   std::minstd_rand0 generator{random_seed_};
   std::normal_distribution<double> normal_distribution(0.0, std_dev_);
 
@@ -261,6 +259,13 @@ void InitializerGridBin::AddComponent(Component* component) {
   UpdateDensity();
 }
 
+/**
+ * Seed component locations by scattering them across density-grid bins.
+ *
+ * Gives the quadratic solver a spread starting point rather than a single
+ * cluster, so its first iterations are not spent undoing an initial pile-up.
+ * `num_trials` is unused here.
+ */
 void InitializerGridBin::InitializeComponentLocation(uint32_t random_seed,
                                                      int num_trials) {
   (void)num_trials;
@@ -336,7 +341,6 @@ void MonteCarloInitializer::InitializeLocations() {
   int region_llx = ckt_ptr_->RegionLLX();
   int region_lly = ckt_ptr_->RegionLLY();
 
-  // initialize the random number generator
   std::minstd_rand0 generator{random_seed_};
   std::uniform_real_distribution<double> distribution(0, 1);
 
