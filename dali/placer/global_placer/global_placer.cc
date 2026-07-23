@@ -842,6 +842,20 @@ bool GlobalPlacer::IsPlacementConverged() {
 /****
  * @brief A helper function to format and print HPWL in each iteration.
  */
+/**
+ * Names the quantity the accepted upper bound holds, for the iteration log.
+ *
+ * Only meaningful when a refiner is in use: the upper bound is then normally a
+ * rough-legalized placement, but falls back to the merely spread placement when
+ * the refiner reports the result infeasible, and the two are otherwise
+ * indistinguishable in the log. Without a refiner every upper bound is the
+ * spread placement by definition, so there is nothing to disambiguate.
+ */
+const char* GlobalPlacer::UpperBoundKindLabel() const {
+  if (upper_bound_refiner_ == nullptr) return "";
+  return current_upper_bound_is_physical_ ? " rough-legal" : " spread";
+}
+
 void GlobalPlacer::PrintHpwl() const {
   if (optimizer_->GetHpwls().empty() || optimizer_->GetHpwlsX().empty() ||
       optimizer_->GetHpwlsY().empty() || accepted_upper_bound_hpwl_.empty() ||
@@ -857,9 +871,9 @@ void GlobalPlacer::PrintHpwl() const {
   std::string buffer(buffer_size, '\0');
   int written_length =
       snprintf(&buffer[0], buffer_size,
-               "  iter-%-3d: lower %.4e, upper %.4e, gap %.4e (%.2f%%) %s\n",
+               "  iter-%-3d: lower %.4e, upper %.4e, gap %.4e (%.2f%%)%s\n",
                cur_iter_, lo_hpwl, hi_hpwl, hpwl_gap, hpwl_gap_percent,
-               current_upper_bound_is_physical_ ? "rough-legal" : "spread");
+               UpperBoundKindLabel());
   buffer.resize(written_length);
   LOG(info) << buffer;
   LOG(info) << "            lower X/Y " << optimizer_->GetHpwlsX().back()

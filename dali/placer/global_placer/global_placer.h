@@ -199,6 +199,7 @@ class GlobalPlacer : public Placer {
                              const std::string& label_suffix,
                              const std::string& subgroup);
   void FinalizePlacement();
+  const char* UpperBoundKindLabel() const;
   void PrintHpwl() const;
   void PrintEndStatement(std::string const& name_of_process,
                          bool is_success) override;
