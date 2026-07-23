@@ -49,16 +49,15 @@ namespace dali {
 bool Stripe::HasNoRowsSpillingOut() const {
   if (gridded_rows_.empty()) return true;
 
-  // check if the first row fully inside the placement region
   bool is_first_row_fully_in =
       gridded_rows_[0].LLY() >= LLY() && gridded_rows_[0].URY() <= URY();
-  // check if the last row fully inside the placement region
   bool is_last_row_fully_in = gridded_rows_.back().LLY() >= LLY() &&
                               gridded_rows_.back().URY() <= URY();
 
   return is_first_row_fully_in && is_last_row_fully_in;
 }
 
+/** Nudge each row's cells to minimum displacement from their start locations. */
 void Stripe::MinDisplacementAdjustment() {
   for (auto& row : gridded_rows_) {
     row.UpdateMinDisplacementLLY();
@@ -91,7 +90,6 @@ void Stripe::MinDisplacementAdjustment() {
     size_t seg_sz = segments.size();
     if (seg_sz == 1) continue;
 
-    // check if this segment overlap with the previous one, if yes, merge these
     // two segments repeats until this is no overlap or only one segment left
 
     VerticalRowSegment* cur_seg = &(segments[seg_sz - 1]);
@@ -156,6 +154,11 @@ void Stripe::SortComponentsBasedOnYLocation(int criterion) {
   }
 }
 
+/**
+ * Work out where taps will go in each row before physical completion runs.
+ * @param is_checker_board_mode stagger tap columns between adjacent rows.
+ * @param tap_cell_interval_grid spacing between taps, in grid units.
+ */
 void Stripe::PrecomputeWellTapCellLocation(bool is_checker_board_mode,
                                            int tap_cell_interval_grid,
                                            Macro* well_tap_macro) {
@@ -180,7 +183,6 @@ void Stripe::PrecomputeWellTapCellLocation(bool is_checker_board_mode,
     tap_cell_interval_grid = tap_cell_interval_grid / 2;
   }
 
-  // compute how many well-tap cells are needed
   int space_to_left = 0;  // TODO: this can be a parameter exposed to users
   int well_tap_cell_loc = lx_ + space_to_left;
   int number_of_well_tap_cell =
@@ -190,13 +192,11 @@ void Stripe::PrecomputeWellTapCellLocation(bool is_checker_board_mode,
     well_tap_cell_loc += tap_cell_interval_grid;
   }
 
-  // check if the ux of the last well-tap cell is out of the region
   int last_ux = locations.back() + well_tap_width_;
   int right_most_loc = URX() - well_tap_width_;
   if (last_ux > URX()) {
     locations.back() = right_most_loc;
   } else {
-    // check if the last segment is longer than half of the well tap cell
     // interval
     if (URX() - last_ux >= tap_cell_interval_grid / 2.0) {
       locations.emplace_back(right_most_loc);
@@ -637,14 +637,12 @@ void Stripe::ReportIterativeStatus(int i) {
   double discrepancy = 0;
   max_discrepancy_ = 0;
   for (auto& component_ptr : component_ptrs_vec_) {
-    // compute displacement from init_x to average_x
     auto aux_ptr =
         static_cast<ComponentLegalizationState*>(component_ptr->AuxPtr());
     double2d init_loc = aux_ptr->InitLoc();
     double tmp_disp_x = std::fabs(aux_ptr->AverageLoc() - init_loc.x);
     disp_x += tmp_disp_x;
 
-    // compute average discrepancy to the average location
     int sz = static_cast<int>(aux_ptr->SubLocs().size());
     double tmp_discrepancy = 0;
     for (auto& loc_x : aux_ptr->SubLocs()) {
@@ -722,6 +720,12 @@ size_t Stripe::OutOfBoundCell() {
   return cnt;
 }
 
+/**
+ * Populate this stripe's rows from PhyDB's standard-cell row definitions.
+ *
+ * The path for a design already placed on standard-cell rows, as opposed to one
+ * clustered into gridded rows here.
+ */
 void Stripe::ImportStandardRowSegments(phydb::PhyDB& phydb, Circuit& ckt) {
   lx_ = INT_MAX;
   int ux = INT_MIN;

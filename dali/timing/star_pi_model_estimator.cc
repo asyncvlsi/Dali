@@ -24,6 +24,7 @@
 
 namespace dali {
 
+/** Hand the estimated per-net RC parasitics to the timing manager. */
 void StarPiModelEstimator::PushNetRCToManager() {
 #if PHYDB_USE_GALOIS
   FindFirstHorizontalAndVerticalMetalLayer();

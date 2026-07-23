@@ -176,6 +176,7 @@ void Design::UpdateNetHPWLHistogram(size_t net_size, double hpwl) {
   }
 }
 
+/** Log a histogram of net fan-out, the distribution of pins per net. */
 void Design::ReportNetFanOutHistogram() {
   if (net_histogram_.counts.empty()) return;
   size_t sz = net_histogram_.counts.size();

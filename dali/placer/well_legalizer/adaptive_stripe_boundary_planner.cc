@@ -46,6 +46,12 @@ AdaptiveStripeBoundaryPlanner::AdaptiveStripeBoundaryPlanner(
               "Adaptive stripe spacing cannot be negative");
 }
 
+/**
+ * Choose stripe boundaries from local demand, widening sparse regions and
+ * narrowing dense ones.
+ * @param samples per-position demand across the region.
+ * @return the boundary positions and the plan's estimated quality.
+ */
 AdaptiveStripeBoundaryResult AdaptiveStripeBoundaryPlanner::Plan(
     const std::vector<StripeDemandSample>& samples) const {
   AdaptiveStripeBoundaryResult result;

@@ -59,7 +59,6 @@ void IoPlacer::InitializeBoundarySpaces() {
                                    (double)circuit_->design().RegionBottom(),
                                    (double)circuit_->design().RegionTop()};
 
-  // initialize each boundary
   for (int i = 0; i < NUM_OF_PLACE_BOUNDARY; ++i) {
     boundary_spaces_.emplace_back(i == BOTTOM || i == TOP, boundary_loc[i]);
     boundary_spaces_.back().manufacturing_grid_ =
@@ -92,7 +91,6 @@ bool IoPlacer::PartialPlaceCmd(int argc, char** argv) {
 }
 
 bool IoPlacer::ConfigSetMetalLayer(int boundary_index, int metal_layer_index) {
-  // check if this metal index exists or not
   bool is_legal_index = (metal_layer_index >= 0) &&
                         (metal_layer_index < (int)circuit_->Metals().size());
   if (!is_legal_index) {
@@ -117,6 +115,10 @@ bool IoPlacer::SetGlobalMetalLayer(int metal_layer_index) {
 
 bool IoPlacer::ConfigAutoPlace() { return true; }
 
+/**
+ * Configure which metal layers each boundary may place pins on, from argv.
+ * @return false if the arguments are malformed.
+ */
 bool IoPlacer::ConfigBoundaryMetal(int argc, char** argv) {
   if (argc < 2) {
     ReportConfigUsage();
@@ -216,6 +218,13 @@ bool IoPlacer::CheckConfiguration() {
   return true;
 }
 
+/**
+ * Build the free-space map along every boundary and layer.
+ *
+ * Records where pins may go once existing fixed pins and blockages are removed,
+ * so assignment has a resource picture to place into.
+ * @return false if no usable boundary space exists.
+ */
 bool IoPlacer::BuildResourceMap() {
   std::vector<std::vector<Seg<double>>> all_used_segments(
       NUM_OF_PLACE_BOUNDARY,
@@ -301,6 +310,13 @@ bool IoPlacer::BuildResourceMap() {
   return true;
 }
 
+/**
+ * Assign each movable I/O pin to a boundary, layer, and position.
+ *
+ * Pins already marked fixed keep their location; the rest are placed near the
+ * nets that reach them, subject to the layer configuration and spacing.
+ * @return false if some pin could not be placed.
+ */
 bool IoPlacer::AssignIoPinToBoundaryLayers() {
   for (auto& iopin : circuit_->IoPins()) {
     // do nothing for placed IOPINs
@@ -320,7 +336,6 @@ bool IoPlacer::AssignIoPinToBoundaryLayers() {
     double net_miny = net->MinY();
     double net_maxy = net->MaxY();
 
-    // compute distances from edges of this bounding box to the corresponding
     // placement boundary
     std::vector<double> distance_to_boundary{
         net_minx - circuit_->design().RegionLeft(),
@@ -328,7 +343,6 @@ bool IoPlacer::AssignIoPinToBoundaryLayers() {
         net_miny - circuit_->design().RegionBottom(),
         circuit_->design().RegionTop() - net_maxy};
 
-    // compute candidate locations for this IOPIN on each boundary
     std::vector<double> loc_candidate_x{
         (double)circuit_->design().RegionLeft(),
         (double)circuit_->design().RegionRight(), (net_minx + net_maxx) / 2,
@@ -352,7 +366,6 @@ bool IoPlacer::AssignIoPinToBoundaryLayers() {
       close_to_boundary[3] = !close_to_boundary[2];
     }
 
-    // set this IOPIN to the best candidate location
     for (int i = 0; i < NUM_OF_PLACE_BOUNDARY; ++i) {
       if (close_to_boundary[i]) {
         iopin.SetLoc(loc_candidate_x[i], loc_candidate_y[i], PLACED);
@@ -386,7 +399,6 @@ void IoPlacer::AdjustIoPinLocationForPhyDB() {
     // ignore pre-placed I/O pins
     if (iopin.IsPrePlaced()) continue;
 
-    // compute PhyDB locations assuming width and height are integer multiple of
     // grid values
     int final_x = circuit_->LocDali2PhydbX(iopin.X());
     int final_y = circuit_->LocDali2PhydbY(iopin.Y());
@@ -399,7 +411,6 @@ void IoPlacer::AdjustIoPinLocationForPhyDB() {
       final_y = die_area.URY();
     }
 
-    // set final locations
     iopin.SetFinalX(final_x);
     iopin.SetFinalY(final_y);
   }

@@ -130,6 +130,11 @@ void GriddedVerticalHpwlRowOptimizer::RunLocalDetailedClosure(
   detailed_placer.RunOneRoundClosure();
 }
 
+/**
+ * Reassign components between the rows of one window to cut vertical wirelength.
+ * @param window the adjacent rows considered together.
+ * @param result receives the reassignment and its gain.
+ */
 void GriddedVerticalHpwlRowOptimizer::OptimizeWindow(
     const Window& window, GriddedVerticalHpwlRowOptimizerResult* result) const {
   DaliExpects(result != nullptr, "Row-assignment result must not be null");
@@ -336,6 +341,11 @@ void GriddedVerticalHpwlRowOptimizer::OptimizeWindow(
   }
 }
 
+/**
+ * Slide the window across all columns and apply each window's best reassignment.
+ * @param columns updated in place.
+ * @return the total gain and move counts.
+ */
 GriddedVerticalHpwlRowOptimizerResult GriddedVerticalHpwlRowOptimizer::Optimize(
     std::vector<StripeColumn>* columns) const {
   DaliExpects(columns != nullptr, "Stripe-column list must not be null");

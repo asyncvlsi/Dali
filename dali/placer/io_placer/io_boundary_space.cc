@@ -157,6 +157,12 @@ void IoBoundaryLayerSpace::UpdateIoPinShapeAndLayer() {
 
 void IoBoundaryLayerSpace::UniformAssignIoPinToCluster() {}
 
+/**
+ * Assign this layer's I/O pins to clusters along the boundary, greedily.
+ *
+ * Pins are taken in boundary order and packed into clusters that respect
+ * spacing, which is fast and keeps pins near where their nets reach.
+ */
 void IoBoundaryLayerSpace::GreedyAssignIoPinToCluster() {
   if (is_horizontal) {
     std::sort(iopin_ptr_list.begin(), iopin_ptr_list.end(),

@@ -166,6 +166,12 @@ void ExtendedTetrisLegalizer::SetRowInfoAuto() {
   component_contour_.resize(tot_num_rows_, left_);
 }
 
+/**
+ * Compute the free space in each row after subtracting fixed macros.
+ *
+ * The Tetris legalizer places into this whitespace, so it must be found before
+ * legalization begins.
+ */
 void ExtendedTetrisLegalizer::DetectWhiteSpace() {
   std::vector<std::vector<SegI>> macro_segments;
   macro_segments.resize(tot_num_rows_);
@@ -850,6 +856,11 @@ int ExtendedTetrisLegalizer::WhiteSpaceBoundRight(int lo_x, int hi_x,
   return white_space_bound;
 }
 
+/**
+ * Find the nearest legal location at or to the right of a component's target.
+ * @param loc receives the chosen location.
+ * @return true if a legal location was found.
+ */
 bool ExtendedTetrisLegalizer::FindLocRight(Value2D<int>& loc,
                                            Component& component) {
   bool is_successful;
@@ -1117,13 +1128,13 @@ double ExtendedTetrisLegalizer::EstimatedHPWL(Component& component, int x,
   return tot_hpwl;
 }
 
+/** Write the legalized row assignments back into the circuit's components. */
 void ExtendedTetrisLegalizer::ExportRowsToCircuit() {
   std::vector<GeneralRow>& rows = ckt_ptr_->design().Rows();
   rows.clear();
   rows.reserve(tot_num_rows_);
   bool is_orient_N = is_first_row_N_;
 
-  // initialize rows in circuit
   for (int i = 0; i < tot_num_rows_; ++i) {
     rows.emplace_back();
     auto& last_row = rows.back();

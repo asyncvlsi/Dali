@@ -147,6 +147,12 @@ bool TetrisSpace::IsSpaceAvail(int llx, int lly, int width, int height) {
   return all_row_avail;
 }
 
+/**
+ * Find the nearest free location that fits a component of the given size.
+ * @param llx,lly the desired lower-left; the search starts here.
+ * @param result_loc receives the chosen location.
+ * @return true if a fitting free location was found.
+ */
 bool TetrisSpace::FindComponentLoc(int llx, int lly, int width, int height,
                                    int2d& result_loc) {
   if (llx < left_) {

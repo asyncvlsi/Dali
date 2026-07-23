@@ -149,6 +149,10 @@ void DieArea::CheckRectilinearLines() {
   }
 }
 
+/**
+ * Validate the die-area outline: its edges must form a closed rectilinear
+ * boundary with no crossing segments.
+ */
 void DieArea::CheckIntersectingLines() {
   // separate horizontal lines and vertical lines
   std::vector<std::pair<int2d, int2d>> horizontal_lines;
@@ -170,7 +174,6 @@ void DieArea::CheckIntersectingLines() {
     }
   }
 
-  // check if two horizontal lines share the same segment
   size_t num_horizontal_lines = horizontal_lines.size();
   for (size_t i = 0; i < num_horizontal_lines - 1; ++i) {
     for (size_t j = i + 1; j < num_horizontal_lines; ++j) {
@@ -178,7 +181,6 @@ void DieArea::CheckIntersectingLines() {
     }
   }
 
-  // check if two vertical lines share the same segment
   size_t num_vertical_lines = vertical_lines.size();
   for (size_t i = 0; i < num_vertical_lines - 1; ++i) {
     for (size_t j = i + 1; j < num_vertical_lines; ++j) {
@@ -186,7 +188,6 @@ void DieArea::CheckIntersectingLines() {
     }
   }
 
-  // check if a horizontal line intersect with a vertical line
   for (size_t i = 0; i < num_horizontal_lines; ++i) {
     for (size_t j = 0; j < num_vertical_lines; ++j) {
       CheckCommonSegment(horizontal_lines[i], vertical_lines[j]);
@@ -240,7 +241,6 @@ void DieArea::CheckAndRemoveRedundantPointsImp() {
     }
   }
 
-  // now we have a new die area with a shorter length
   size_t new_num_points = new_rectilinear_die_area_.size();
   rectilinear_die_area_.swap(new_rectilinear_die_area_);
 
@@ -264,6 +264,12 @@ void DieArea::DetectMinimumBoundingBox() {
   }
 }
 
+/**
+ * Shrink the die bounding box inward to grid lines when its edges fall off grid.
+ *
+ * Keeps the usable region strictly inside the declared one, since placement
+ * works in grid units and cannot represent an off-grid boundary.
+ */
 void DieArea::ShrinkOffGridBoundingBox() {
   double f_left = (region_left_ - die_area_offset_x_) /
                   static_cast<double>(distance_scale_factor_x_);
@@ -358,8 +364,13 @@ bool DieArea::IsPointInDieArea(double2d point) const {
   return (number_of_intersections % 2 == 1);
 }
 
+/**
+ * Turn the concave parts of a rectilinear die outline into placement blockages.
+ *
+ * The placer works within a rectangle, so any notch in the outline becomes a
+ * blockage that keeps components out of it.
+ */
 void DieArea::CreatePlacementBlockages() {
-  // get all vertical lines and horizontal lines
   std::unordered_set<int> x_lines;
   std::unordered_set<int> y_lines;
   for (auto& point : rectilinear_die_area_) {
@@ -367,7 +378,6 @@ void DieArea::CreatePlacementBlockages() {
     y_lines.insert(point.y);
   }
 
-  // get sorted vertical lines
   std::vector<int> sort_x_lines;
   for (auto& line : x_lines) {
     sort_x_lines.emplace_back(line);
@@ -376,7 +386,6 @@ void DieArea::CreatePlacementBlockages() {
       sort_x_lines.begin(), sort_x_lines.end(),
       [](const int& line_0, const int& line_1) { return line_0 < line_1; });
 
-  // get sorted horizontal lines
   std::vector<int> sort_y_lines;
   for (auto& line : y_lines) {
     sort_y_lines.emplace_back(line);

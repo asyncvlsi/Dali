@@ -95,6 +95,11 @@ void ComponentDisplacementVariableSegment::Merge(
   }
 }
 
+/**
+ * Merge a neighbouring segment under the linear displacement cost, clamped to
+ * bounds.
+ * @param lower_bound,upper_bound the range the merged result must stay within.
+ */
 void ComponentDisplacementVariableSegment::LinearMerge(
     ComponentDisplacementVariableSegment& seg, double lower_bound,
     double upper_bound) {
@@ -186,7 +191,6 @@ void MinimizeQuadraticDisplacement(
     size_t seg_sz = segments.size();
     if (seg_sz == 1) continue;
 
-    // check if this segment overlap with the previous one, if yes, merge these
     // two segments repeats until this is no overlap or only one segment left
     ComponentDisplacementVariableSegment* cur_seg = &(segments[seg_sz - 1]);
     ComponentDisplacementVariableSegment* prev_seg = &(segments[seg_sz - 2]);
@@ -241,7 +245,6 @@ void MinimizeLinearDisplacement(
     size_t seg_sz = segments.size();
     if (seg_sz == 1) continue;
 
-    // check if this segment overlap with the previous one, if yes, merge these
     // two segments repeats until this is no overlap or only one segment left
     ComponentDisplacementVariableSegment* cur_seg = &(segments[seg_sz - 1]);
     ComponentDisplacementVariableSegment* prev_seg = &(segments[seg_sz - 2]);

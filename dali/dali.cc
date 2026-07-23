@@ -1668,7 +1668,6 @@ std::string Dali::CreateDetailedPlacementAndLegalizationScript(
                         phy_db_ptr_->GetDesignPtr()->GetName() + ".def";
   ost << "defOut " << out_def << "\n";
 
-  // check if the engine can be found
   DaliExpects(IsExecutableExisting(engine), "Cannot find the given engine");
   return out_def;
 }

@@ -72,6 +72,15 @@ void RoughGriddedUpperBoundRefiner::Initialize(double placement_density) {
   well_legalizer_->SetPlacementDensity(placement_density);
 }
 
+/**
+ * Roughly legalize the current placement to produce a global-placement upper
+ * bound.
+ *
+ * Runs every iteration, so it favours speed over accuracy and can report the
+ * result infeasible.
+ * @param iteration the current global-placement iteration.
+ * @return the refined placement and whether it is feasible.
+ */
 GlobalUpperBoundRefinement RoughGriddedUpperBoundRefiner::Refine(
     int iteration) {
   ElapsedTime timer;

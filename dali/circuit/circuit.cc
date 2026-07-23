@@ -156,7 +156,6 @@ void Circuit::SetDatabaseMicrons(int database_micron) {
 
 int Circuit::DatabaseMicrons() const { return tech_.database_microns_; }
 
-// set manufacturing grid
 void Circuit::SetManufacturingGrid(double manufacture_grid) {
   DaliExpects(manufacture_grid > 0,
               "Cannot set negative manufacturing grid: "
@@ -164,7 +163,6 @@ void Circuit::SetManufacturingGrid(double manufacture_grid) {
   tech_.manufacturing_grid_ = manufacture_grid;
 }
 
-// get manufacturing grid
 double Circuit::ManufacturingGrid() const { return tech_.manufacturing_grid_; }
 
 void Circuit::SetGridValue(double grid_value_x, double grid_value_y) {
@@ -813,7 +811,6 @@ void Circuit::SetLegalizerSpacing(double same_spacing, double any_spacing) {
 // covering the prBoundary of a given cell.
 void Circuit::SetWellRect(std::string const& macro_name, bool is_n, double lx,
                           double ly, double ux, double uy) {
-  // check if well width is smaller than max_plug_distance
   double width = ux - lx;
   double max_plug_distance = 0;
   if (is_n) {
@@ -879,10 +876,8 @@ int Circuit::CreateEndCapMacro(std::string const& end_cap_macro_name, int width,
   auto& end_cap_macro =
       tech_.end_cap_cell_macro_collection_.Create(end_cap_macro_name);
 
-  // Calculate the total height
   int height = n_well_height_in_grid_unit + p_well_height_in_grid_unit;
 
-  // Set width and height.
   end_cap_macro.SetSize(width, height);
 
   // Report if the area exceeds INT_MAX
@@ -1334,7 +1329,6 @@ void Circuit::ReportHPWLHistogramLogarithm(int bin_num) {
   double factor = GridValueY() / GridValueX();
   int num_nets_non_zero_hpwl = 0;
 
-  // Calculate the HPWL for each net and store the logarithm of the HPWL values
   for (auto& net : design_.nets_) {
     double tmp_hpwl = net.WeightedHPWLX() + net.WeightedHPWLY() * factor;
     if (tmp_hpwl > 0) {
@@ -2189,7 +2183,6 @@ void Circuit::AddComponent(std::string const& component_name, Macro* macro_ptr,
   component.SetOrient(orient);
 
   if (!is_real_cel) return;
-  // update statistics of components
   ++design_.real_component_count_;
   design_.tot_width_ += component.Width();
   design_.tot_height_ += component.Height();

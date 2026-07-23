@@ -212,6 +212,10 @@ void IoPin::Report() const {
             << "    Net connected: " << net_name << "\n";
 }
 
+/**
+ * Set the pin's shape rectangle.
+ * @param llx,lly,urx,ury corners in microns.
+ */
 void IoPin::SetRect(double llx, double lly, double urx, double ury) {
   /****
    * rotate 0 degree

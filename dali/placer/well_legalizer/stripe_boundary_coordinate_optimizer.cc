@@ -38,6 +38,11 @@ StripeBoundaryCoordinateOptimizer::StripeBoundaryCoordinateOptimizer(
               "Stripe boundary minimum improvement cannot be negative");
 }
 
+/**
+ * Snap stripe boundaries onto legal pitches while keeping well spacing.
+ * @param initial_boundaries the demand-chosen boundaries to legalize.
+ * @return the adjusted boundaries.
+ */
 StripeBoundaryCoordinateResult StripeBoundaryCoordinateOptimizer::Optimize(
     const std::vector<int>& initial_boundaries,
     const Evaluator& evaluator) const {

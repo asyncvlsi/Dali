@@ -34,6 +34,7 @@ WellRowCompleter::WellRowCompleter(Circuit* circuit,
               "Well row completion requires legalized columns");
 }
 
+/** Insert well-tap cells into each row per the configured pattern. */
 void WellRowCompleter::InsertWellTaps() {
   DaliExpects(config_.well_tap_macro != nullptr,
               "Cannot insert well taps without a well-tap macro");
@@ -108,6 +109,7 @@ void WellRowCompleter::CreateEndCapMacros() {
   circuit_->tech().EndCapCellMacroCollection().Freeze();
 }
 
+/** Insert end-cap cells at the ends of each row. */
 void WellRowCompleter::InsertEndCaps() {
   DaliExpects(config_.pre_end_cap_width > 0,
               "Pre-end-cap width must be positive");

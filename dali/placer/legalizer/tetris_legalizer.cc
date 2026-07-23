@@ -40,6 +40,10 @@ void TetrisLegalizer::SetMaxItr(int max_iteration) {
   max_iteration_ = max_iteration;
 }
 
+/**
+ * Slide already-placed components left to recover space after a failed placement.
+ * @param failure_point index of the component whose placement failed.
+ */
 void TetrisLegalizer::FastShift(int failure_point) {
   /****
    * This method is to FastShiftLeft() the components following the
@@ -108,6 +112,10 @@ void TetrisLegalizer::FlipPlacement() {
   }
 }
 
+/**
+ * Legalize every component by Tetris placement, in sorted order.
+ * @return true if all components were placed legally.
+ */
 bool TetrisLegalizer::TetrisLegal() {
   std::vector<Component>& components = ckt_ptr_->Components();
   // 1. move all components into placement region

@@ -82,6 +82,10 @@ void Pin::Report() const {
   LOG(info) << "\n";
 }
 
+/**
+ * Record the pin's offset from its component origin.
+ * @param x_offset,y_offset offset in grid units from the component's lower-left.
+ */
 void Pin::CalculateOffset(double x_offset, double y_offset) {
   /****
    * rotate 0 degree

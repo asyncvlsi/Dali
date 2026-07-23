@@ -270,6 +270,12 @@ StandardCellLegalizer::FindCandidateSegments(Component& component) const {
   return candidates;
 }
 
+/**
+ * Score placing a component into a candidate segment, without committing.
+ * @param assignment the segment and position under consideration.
+ * @return true if the candidate is legal and its cost is recorded for
+ *         comparison against others.
+ */
 bool StandardCellLegalizer::EvaluateCandidate(
     Component& component, const SegmentAssignment& assignment,
     std::vector<StandardCellRowLegalizationCell>* legalized_cells,

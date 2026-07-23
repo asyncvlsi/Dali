@@ -42,6 +42,7 @@ StandardRowWellTapInserter::StandardRowWellTapInserter(phydb::PhyDB* phy_db) {
   phy_db_ = phy_db;
 }
 
+/** Read the standard-cell rows from PhyDB into the inserter's row list. */
 void StandardRowWellTapInserter::LoadRows() {
   auto& row_vec = phy_db_->GetRowVec();
   size_t sz = row_vec.size();
@@ -152,6 +153,10 @@ void StandardRowWellTapInserter::SetCheckerboardEnabled(
   checkerboard_enabled_ = checkerboard_enabled;
 }
 
+/**
+ * Insert taps into one row at a uniform pitch that keeps every cell covered.
+ * @param first_loc X of the first tap.
+ */
 void StandardRowWellTapInserter::InsertUniformTapsInRow(WellTapRowSites& row,
                                                         int first_loc,
                                                         int interval) {
@@ -181,7 +186,6 @@ void StandardRowWellTapInserter::InsertUniformTapsInRow(WellTapRowSites& row,
       continue;
     }
 
-    // now we have a range of available sites [lo_col, hi_col]
 
     // we do a left->right scan to insert well tap cells for the first round
     int leftmost_tap_col = INT_MAX;
@@ -210,11 +214,9 @@ void StandardRowWellTapInserter::InsertUniformTapsInRow(WellTapRowSites& row,
       }
     } else {
       if (leftmost_tap_col - lo_col > interval / 2) {
-        // check if an extra well tap is needed at left
         row.tap_starts[lo_col] = true;
       }
       if (hi_col - rightmost_tap_col > interval / 2) {
-        // check if an extra well tap is needed at right
         row.tap_starts[hi_col + 1 - tap_width_in_sites_] = true;
       }
     }

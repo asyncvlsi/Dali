@@ -55,6 +55,11 @@ bool Tech::IsPwellSet() const { return p_set_; }
 
 bool Tech::IsWellInfoSet() const { return n_set_ || p_set_; }
 
+/**
+ * Whether a macro's ground rail is at the bottom, which fixes its default
+ * orientation.
+ * @return true if a pin named vss/gnd sits in the lower half of the macro.
+ */
 bool Tech::IsGndAtBottom(phydb::Macro* macro) {
   const std::unordered_set<std::string> gnd_names = {"vss", "gnd"};
   const std::unordered_set<std::string> vdd_names = {"vdd"};
@@ -98,6 +103,12 @@ bool Tech::IsGndAtBottom(phydb::Macro* macro) {
 
 std::vector<Macro>& Tech::Macros() { return macro_collection_.Instances(); }
 
+/**
+ * Synthesize well geometry for a standard-cell library that ships without it.
+ *
+ * The gridded flow needs each macro's N/P-well split; for a library that omits
+ * it, this infers one from row height so those designs can still run.
+ */
 void Tech::CreateFakeWellForStandardCell(phydb::PhyDB* phy_db) {
   std::unordered_set<int> height_set;
   for (auto& macro : Macros()) {
@@ -121,7 +132,6 @@ void Tech::CreateFakeWellForStandardCell(phydb::PhyDB* phy_db) {
     auto* phydb_macro = phy_db->GetMacroPtr(dali_macro.Name());
     int region_cnt = (int)std::round(dali_macro.Height() / standard_height);
 
-    // Create the well info
     int accumulative_height = 0;
     bool is_pwell = IsGndAtBottom(phydb_macro);
     for (int i = 0; i < 2 * region_cnt; ++i) {

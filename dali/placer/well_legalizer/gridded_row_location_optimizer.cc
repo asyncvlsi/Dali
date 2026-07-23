@@ -52,6 +52,12 @@ GriddedRowLocationOptimizer::CollectRowGroups(Stripe* stripe) const {
   return groups;
 }
 
+/**
+ * Shift one group of legal rows in Y toward the region its nets want.
+ *
+ * Moving whole rows preserves legality by construction.
+ * @return true if the group moved.
+ */
 bool GriddedRowLocationOptimizer::OptimizeGroup(const RowGroup& group) {
   auto& rows = group.stripe->gridded_rows_;
   int current_base = rows[group.first_row].LLY();

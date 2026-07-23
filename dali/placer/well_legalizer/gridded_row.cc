@@ -317,6 +317,10 @@ void GriddedRow::UpdateComponentLocationCompact() {
   }
 }
 
+/**
+ * Place this row's cells in X at minimum displacement from where they started,
+ * keeping their order.
+ */
 void GriddedRow::MinDisplacementLegalization() {
   std::sort(
       components_.begin(), components_.end(),
@@ -348,7 +352,6 @@ void GriddedRow::MinDisplacementLegalization() {
     size_t seg_sz = segments.size();
     if (seg_sz == 1) continue;
 
-    // check if this segment overlap with the previous one, if yes, merge these
     // two segments repeats until this is no overlap or only one segment left
 
     ComponentSegment* cur_seg = &(segments[seg_sz - 1]);
@@ -386,6 +389,11 @@ double GriddedRow::MinDisplacementLLY() const { return min_displacement_lly_; }
 
 std::vector<RowSegment>& GriddedRow::Segments() { return segments_; }
 
+/**
+ * Recompute the row's usable segments after blockages split it.
+ * @param blockage occupied intervals that break the row.
+ * @param is_existing_components_considered also treat placed cells as occupied.
+ */
 void GriddedRow::UpdateSegments(std::vector<SegI>& blockage,
                                 bool is_existing_components_considered) {
   // collect used space segments
@@ -810,6 +818,10 @@ size_t GriddedRow::OutOfBoundCell() {
   return cnt;
 }
 
+/**
+ * Merge an adjacent vertical segment into this one, clamped to the given bounds.
+ * @param lower_bound,upper_bound the range the merged segment must stay within.
+ */
 void VerticalRowSegment::Merge(const VerticalRowSegment& next_segment,
                                int lower_bound, int upper_bound) {
   int sz = (int)next_segment.rows_.size();

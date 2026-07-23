@@ -150,6 +150,11 @@ GriddedStripeBalanceResult GriddedStripeBalancer::Balance(
   return result;
 }
 
+/**
+ * Move components out of over-capacity stripes into the nearest with room.
+ * @param stripe_columns updated in place.
+ * @return the number of components moved.
+ */
 int GriddedStripeBalancer::ApplyMoves(
     std::vector<StripeColumn>* stripe_columns,
     std::unordered_map<Stripe*, unsigned long long>* overflow_budget,

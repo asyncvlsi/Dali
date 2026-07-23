@@ -32,6 +32,11 @@
 
 namespace dali {
 
+/**
+ * Place the cells assigned to one row's free segment along X.
+ * @param site_width the row's placement site pitch.
+ * @return true if all cells fit legally in the segment.
+ */
 bool StandardCellRowLegalizer::Legalize(
     StandardCellFreeSegment segment, int site_width,
     std::vector<StandardCellRowLegalizationCell>* cells) const {

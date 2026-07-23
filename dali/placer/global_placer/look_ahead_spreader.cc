@@ -288,7 +288,6 @@ void LookAheadSpreader::InitGridBins() {
   UpdateAttributesForAllGridBins();
   UpdatePlacementBlockagesInGridBins();
 
-  // update white spaces in grid bins
   for (auto& grid_bin_column : grid_bin_mesh) {
     for (auto& grid_bin : grid_bin_column) {
       UpdateWhiteSpaceInGridBin(grid_bin);
@@ -667,8 +666,6 @@ void LookAheadSpreader::UpdateLargestCluster() {
     }
     if (is_contact) break;
 
-    // initialize a list to store all indices in this cluster
-    // initialize a map to store the visited flag during bfs
     std::vector<GridBinIndex> grid_bin_list;
     grid_bin_list.reserve(it->bin_set.size());
     std::unordered_map<GridBinIndex, bool, GridBinIndexHasher> grid_bin_visited;
@@ -851,7 +848,6 @@ void LookAheadSpreader::FindMinimumBoxForLargestCluster() {
   R.ll_index.y = grid_cnt_y - 1;
   R.ur_index.x = 0;
   R.ur_index.y = 0;
-  // initialize a box with y cut-direction
   // identify the bounding box of the initial cluster
   auto it = SelectHotspotCluster();
   last_hotspot_debug_ = HotspotDebugInfo();
@@ -874,7 +870,6 @@ void LookAheadSpreader::FindMinimumBoxForLargestCluster() {
   last_hotspot_debug_.cluster_ll = R.ll_index;
   last_hotspot_debug_.cluster_ur = R.ur_index;
   while (true) {
-    // update component area, white space, and thus filling rate to determine
     // whether to expand this box or not
     R.UpdateComponentAreaWhiteSpaceFillingRate(grid_bin_white_space_LUT,
                                                grid_bin_mesh);

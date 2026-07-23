@@ -45,6 +45,14 @@ PackedStripeBoundaryPlanner::PackedStripeBoundaryPlanner(
               "Packed stripe spacing cannot be negative");
 }
 
+/**
+ * Choose stripe boundaries by packing columns at a uniform width.
+ *
+ * The simple counterpart to the adaptive planner; divides the region evenly
+ * within the maximum row width.
+ * @param samples per-position demand, used only to size the region.
+ * @return the boundary positions.
+ */
 AdaptiveStripeBoundaryResult PackedStripeBoundaryPlanner::Plan(
     const std::vector<StripePackingSample>& samples) const {
   AdaptiveStripeBoundaryResult result;

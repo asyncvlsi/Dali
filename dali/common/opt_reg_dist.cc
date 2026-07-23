@@ -25,6 +25,13 @@
 
 namespace dali {
 
+/**
+ * The X extent of the region a component's nets pull it toward.
+ *
+ * The optimal region is the median of the component's connected pins; a cell
+ * placed inside it is at minimum wirelength for its current neighbours.
+ * @param lx,ly,ux,uy receive the region rectangle.
+ */
 void OptimalRegionDistance::FindOptimalRegionX(Component& component, double& lx,
                                                double& ly, double& ux,
                                                double& uy) const {

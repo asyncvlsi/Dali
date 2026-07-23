@@ -47,6 +47,12 @@ GriddedPlacementValidator::GriddedPlacementValidator(
               "Gridded placement validation requires stripe columns");
 }
 
+/**
+ * Check the placement against every structural and physical rule and collect
+ * the violations.
+ * @return a report with per-rule counts; the placement is legal only when all
+ *         are zero.
+ */
 GriddedPlacementLegalityReport GriddedPlacementValidator::Validate() const {
   constexpr double kCoordinateTolerance = 1e-9;
   constexpr size_t kMaxLoggedCoordinateViolations = 8;
@@ -248,6 +254,13 @@ GriddedPlacementLegalityReport GriddedPlacementValidator::Validate() const {
   return report;
 }
 
+/**
+ * Measure each cell's distance to the nearest compatible tap against MaxPlugDist.
+ *
+ * Pattern-agnostic on purpose: it measures geometry rather than assuming where a
+ * pattern places taps, so a new pattern needs no change here.
+ * @param report receives the coverage violation count and worst gap.
+ */
 void GriddedPlacementValidator::ValidateWellTapCoverage(
     GriddedPlacementLegalityReport& report) const {
   constexpr double kCoordinateTolerance = 1e-9;

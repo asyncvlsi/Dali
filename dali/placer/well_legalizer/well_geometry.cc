@@ -135,6 +135,15 @@ std::vector<std::pair<int, int>> UncoveredSpans(
 
 }  // namespace
 
+/**
+ * Append the implant rectangles that keep the P+/N+ layer gap-free.
+ *
+ * A tap is short, so its column is filled above, below, and across untapped
+ * rows; both the cell-area and tap-column passes follow the same P/N banding so
+ * the implant type matches the well beneath it. Gaps here cause implant-area,
+ * notch, and spacing DRC violations.
+ * @param geometry receives the appended rectangles.
+ */
 void WellGeometryBuilder::AppendImplantRects(
     std::vector<WellGeometryRect>* geometry) const {
   DaliExpects(geometry != nullptr, "Cannot append to null implant geometry");

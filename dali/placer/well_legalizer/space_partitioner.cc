@@ -98,6 +98,7 @@ void WellSpacePartitioner::FetchWellParameters() {
       (int)std::floor(n_well_layer.MaxPlugDist() / grid_value_x);
 }
 
+/** Compute the placeable whitespace per row, before columns are cut. */
 void WellSpacePartitioner::DetectAvailSpace() {
   if (!row_height_set_) {
     row_height_ = circuit_->RowHeightGridUnit();
@@ -229,8 +230,10 @@ void WellSpacePartitioner::DecomposeSpaceToSimpleStripes() {
   //     col_list_[tot_col_num_ - 1].stripe_list_[0].width_ /
   }
 
+/**
+ * Assign each component to a column, balancing against available whitespace.
+ */
 void WellSpacePartitioner::AssignComponentToColBasedOnWhiteSpace() {
-  // assign components to columns
   std::vector<Component>& component_list = circuit_->Components();
   std::vector<StripeColumn>& col_list = *output_stripes_;
   int sz = (int)component_list.size();
@@ -295,6 +298,13 @@ void WellSpacePartitioner::AssignComponentToColBasedOnWhiteSpace() {
   }
 }
 
+/**
+ * Partition the region into stripe columns and assign components to them.
+ *
+ * Fetches the well rules, chooses column boundaries within the maximum row
+ * width, distributes components by whitespace, and cuts each column into stripes.
+ * @return true on success.
+ */
 bool WellSpacePartitioner::StartPartitioning() {
   DaliExpects(circuit_ != nullptr, "Circuit is not set");
   DaliExpects(output_stripes_ != nullptr, "Output location is not set");
@@ -305,7 +315,6 @@ bool WellSpacePartitioner::StartPartitioning() {
   output_stripes_->clear();
   white_space_in_rows_.clear();
 
-  // initialize row height and white space segments
   DetectAvailSpace();
 
   FetchWellParameters();
@@ -417,6 +426,13 @@ int WellSpacePartitioner::LocToCol(int x) const {
   return static_cast<int>(std::distance(columns.begin(), column) - 1);
 }
 
+/**
+ * Choose the column boundary coordinates across the region.
+ *
+ * Columns are separated by well spacing so each is an independent well region,
+ * and no wider than the technology's maximum row width.
+ * @return the boundary X coordinates.
+ */
 std::vector<int> WellSpacePartitioner::PlanColumnBoundaries(
     int region_width) const {
   std::vector<int> uniform_boundaries(tot_col_num_ + 1);

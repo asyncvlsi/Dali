@@ -62,6 +62,15 @@ unsigned long long GriddedCapacityEstimator::EstimateStandaloneDemand(
   return static_cast<unsigned long long>(component.Width()) * total_height;
 }
 
+/**
+ * Estimate the stripe height a set of components will occupy once grouped into
+ * rows.
+ *
+ * Height depends on how components pack into rows, not just their area, so this
+ * models the grouping rather than summing areas.
+ * @param region_width the width components must pack within.
+ * @return required height and the assumptions behind it.
+ */
 GriddedCapacityEstimate GriddedCapacityEstimator::Estimate(
     const std::vector<Component*>& components, int region_width,
     int region_height, unsigned long long raw_whitespace_area) const {

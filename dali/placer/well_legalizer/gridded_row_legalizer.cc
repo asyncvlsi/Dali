@@ -398,7 +398,6 @@ bool GriddedRowLegalizer::IterativeDisplacementOptimization() {
 void GriddedRowLegalizer::EmbodyWellTapCells() {
   if (!is_well_tap_needed_) return;
 
-  // compute the number of well-tap cells and reserve space
   size_t well_tap_cell_count_upper_limit = 0;
   for (auto& col : col_list_) {
     for (auto& stripe : col.stripe_list_) {
@@ -423,6 +422,7 @@ void GriddedRowLegalizer::EmbodyWellTapCells() {
   tap_cell_collection.Freeze();
 }
 
+/** Log how far cells moved from their pre-legalization locations. */
 void GriddedRowLegalizer::ReportDisplacement() {
   if (!is_init_loc_cached_) {
     LOG(info)
@@ -524,6 +524,7 @@ void GriddedRowLegalizer::AssignStandardCellsToRowSegments() {
   stripe.AssignStandardCellsToRowSegments();
 }
 
+/** Log cell displacement for the standard-cell path of this legalizer. */
 void GriddedRowLegalizer::ReportStandardCellDisplacement() {
   if (!is_init_loc_cached_) {
     LOG(info)

@@ -47,6 +47,10 @@ unsigned long long BandedStripeAssigner::BandCapacity(
   return capacity;
 }
 
+/**
+ * Estimate the wirelength change from moving a component to another column.
+ * @return the projected HPWL delta; negative means an improvement.
+ */
 double BandedStripeAssigner::ProjectedHpwlDelta(
     Component* component, const StripeColumn& target_column) const {
   double target_x = component->CenterX();
@@ -97,6 +101,14 @@ double BandedStripeAssigner::ProjectedHpwlDelta(
   return hpwl_after - hpwl_before;
 }
 
+/**
+ * Assign components to stripe columns band by band, balancing occupancy.
+ *
+ * A move is taken only when its projected wirelength change clears a gain
+ * threshold, so the assignment does not churn for negligible benefit.
+ * @param columns updated in place with the assignment.
+ * @return move counts and the resulting occupancy.
+ */
 BandedStripeAssignmentResult BandedStripeAssigner::Assign(
     std::vector<StripeColumn>* columns) const {
   DaliExpects(columns != nullptr, "Cannot assign a null stripe collection");
