@@ -8,6 +8,14 @@
  * of the License, or (at your option) any later version.
  *
  *******************************************************************************/
+
+/**
+ * @file
+ * Writes the well and implant geometry out to PhyDB.
+ *
+ * Converts the rectangles the geometry builder produced into PhyDB's units and
+ * layer names. Which layers are emitted depends on what the technology defines.
+ */
 #include "dali/placer/well_legalizer/well_geometry_exporter.h"
 
 #include <fstream>

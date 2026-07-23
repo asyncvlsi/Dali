@@ -8,6 +8,16 @@
  * of the License, or (at your option) any later version.
  *
  *******************************************************************************/
+
+/**
+ * @file
+ * Chooses stripe boundaries from local component demand instead of a uniform
+ * width.
+ *
+ * Widening columns where the design is sparse and narrowing them where it is
+ * dense balances occupancy better than even division, at the cost of columns
+ * that no longer share a width. Selected by `-enable_adaptive_stripe_boundaries`.
+ */
 #include "dali/placer/well_legalizer/adaptive_stripe_boundary_planner.h"
 
 #include <algorithm>

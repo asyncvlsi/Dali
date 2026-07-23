@@ -8,6 +8,16 @@
  * of the License, or (at your option) any later version.
  *
  *******************************************************************************/
+
+/**
+ * @file
+ * Physical completion: inserts the well taps and end caps a legal placement
+ * needs before it can be taped out.
+ *
+ * Runs after legalization, on rows whose cells are already placed, so it works
+ * within whatever space the legalizer reserved. Taps satisfy the latch-up rule;
+ * end caps terminate each row. Both are tracked separately from assigned cells.
+ */
 #include "dali/placer/well_legalizer/well_row_completer.h"
 
 #include <string>

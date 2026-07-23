@@ -18,6 +18,16 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Per-component scratch state carried through legalization.
+ *
+ * Records where a component started, so displacement can be measured against
+ * the placement handed over rather than against the previous pass, and holds
+ * the per-region sub-locations a multi-region cell needs while its halves are
+ * pulled back together.
+ */
 #include "component_legalization_state.h"
 
 namespace dali {

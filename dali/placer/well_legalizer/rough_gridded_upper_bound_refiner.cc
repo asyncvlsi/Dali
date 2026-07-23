@@ -1,6 +1,16 @@
 /*******************************************************************************
  * Copyright (c) 2026 Yihang Yang
  *******************************************************************************/
+
+/**
+ * @file
+ * Rough legalization run inside global placement, not at the end of it.
+ *
+ * Produces the upper bound that global placement optimizes against, so that
+ * bound is a nearly legal placement rather than an idealized one. Because it
+ * runs every iteration it trades accuracy for speed, and it can report a result
+ * infeasible, in which case the caller falls back to the spread placement.
+ */
 #include "rough_gridded_upper_bound_refiner.h"
 
 #include <utility>

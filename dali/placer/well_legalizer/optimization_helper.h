@@ -18,6 +18,11 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Declarations for the shared displacement solvers; see optimization_helper.cc.
+ */
 #ifndef DALI_PLACER_WELL_LEGALIZER_OPTIMIZATION_HELPER_H_
 #define DALI_PLACER_WELL_LEGALIZER_OPTIMIZATION_HELPER_H_
 

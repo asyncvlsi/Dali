@@ -18,6 +18,13 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Interface of the gridded well legalizer, the main flow's legalizer for
+ * designs with a `-cell` file. The phases it runs are described in
+ * gridded_cell_well_legalizer.cc.
+ */
 #ifndef DALI_PLACER_WELL_LEGALIZER_GRIDDED_CELL_WELL_LEGALIZER_H_
 #define DALI_PLACER_WELL_LEGALIZER_GRIDDED_CELL_WELL_LEGALIZER_H_
 

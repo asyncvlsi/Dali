@@ -8,6 +8,14 @@
  * of the License, or (at your option) any later version.
  *
  *******************************************************************************/
+
+/**
+ * @file
+ * Capacity model that reports gridded stripe occupancy to global placement.
+ *
+ * Lets the density model account for the height a set of components will
+ * actually occupy once grouped into rows, rather than assuming area alone.
+ */
 #include "dali/placer/well_legalizer/gridded_stripe_capacity_model.h"
 
 namespace dali {

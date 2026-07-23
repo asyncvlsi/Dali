@@ -18,6 +18,15 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Shared solvers for placing an ordered run of cells at minimum displacement.
+ *
+ * Used by the row and segment legalizers rather than called directly. The
+ * quadratic and linear variants differ in how they price displacement; both
+ * take cells in a fixed order and choose positions within given bounds.
+ */
 #include "optimization_helper.h"
 
 #include <algorithm>

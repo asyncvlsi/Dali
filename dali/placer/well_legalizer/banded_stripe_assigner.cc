@@ -1,6 +1,16 @@
 /*******************************************************************************
  * Copyright (c) 2026 Yihang Yang
  *******************************************************************************/
+
+/**
+ * @file
+ * Assigns components to stripes band by band rather than all at once.
+ *
+ * Dividing the region into horizontal bands and assigning within each keeps a
+ * component near its global-placement Y while balancing stripe occupancy. A
+ * candidate move is taken only when its projected wirelength change clears a
+ * gain threshold, so the assignment does not churn for negligible benefit.
+ */
 #include "dali/placer/well_legalizer/banded_stripe_assigner.h"
 
 #include <algorithm>

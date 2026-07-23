@@ -8,6 +8,18 @@
  * of the License, or (at your option) any later version.
  *
  *******************************************************************************/
+
+/**
+ * @file
+ * Builds the well and implant rectangles a legal placement must be shipped with.
+ *
+ * A well-tap cell is short and cannot span a row, so the rest of its column has
+ * to be filled: above the tap, below it, and across any row the pattern leaves
+ * untapped. That fill is a DRC requirement, not decoration -- a gap in the
+ * implant layer causes minimum-area, notch and spacing violations. Both the
+ * cell-area and tap-column passes follow the same P/N banding so the implant
+ * type always matches the well beneath it.
+ */
 #include "dali/placer/well_legalizer/well_geometry.h"
 
 #include <algorithm>

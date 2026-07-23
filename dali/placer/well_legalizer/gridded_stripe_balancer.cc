@@ -1,6 +1,17 @@
 /*******************************************************************************
  * Copyright (c) 2026 Yihang Yang
  *******************************************************************************/
+
+/**
+ * @file
+ * Moves components out of stripes that do not fit.
+ *
+ * When rough legalization leaves a stripe over its height, this finds the
+ * nearest stripe with room and estimates the wirelength cost of moving
+ * candidates there, preferring the cheapest. It is a repair pass, not an
+ * optimizer: the goal is a placement that fits, at the least wirelength cost
+ * available.
+ */
 #include "dali/placer/well_legalizer/gridded_stripe_balancer.h"
 
 #include <algorithm>

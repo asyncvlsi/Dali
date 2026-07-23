@@ -8,6 +8,15 @@
  * of the License, or (at your option) any later version.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Reassigns components between nearby rows to reduce vertical wirelength.
+ *
+ * Works in windows of adjacent rows so each decision stays bounded. A candidate
+ * reassignment is scored on the net wirelength it would save against the row
+ * capacity it would consume, and taken only when the rows involved still fit.
+ */
 #include "dali/placer/well_legalizer/gridded_vertical_hpwl_row_optimizer.h"
 
 #include <algorithm>

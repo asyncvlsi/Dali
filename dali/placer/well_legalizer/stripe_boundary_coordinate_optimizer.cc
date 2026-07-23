@@ -8,6 +8,15 @@
  * of the License, or (at your option) any later version.
  *
  *******************************************************************************/
+
+/**
+ * @file
+ * Adjusts stripe boundaries onto coordinates the technology allows.
+ *
+ * A boundary chosen from component demand will not generally land on a legal
+ * pitch; this moves each to the nearest one that does, keeping columns
+ * separated by the required well spacing.
+ */
 #include "dali/placer/well_legalizer/stripe_boundary_coordinate_optimizer.h"
 
 #include <algorithm>

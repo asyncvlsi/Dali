@@ -8,6 +8,15 @@
  * of the License, or (at your option) any later version.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Moves whole groups of legal rows in Y toward where their nets want them.
+ *
+ * Operating on groups rather than cells preserves legality by construction: the
+ * rows keep their contents and ordering, only their Y changes, so no cell can
+ * overlap or leave its row.
+ */
 #include "dali/placer/well_legalizer/gridded_row_location_optimizer.h"
 
 #include <algorithm>

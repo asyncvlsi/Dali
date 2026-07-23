@@ -19,6 +19,11 @@
  *
  ******************************************************************************/
 
+/**
+ * @file
+ * Collects the well-filling rectangles a stripe needs for DEF output.
+ */
+
 #include "stripe_helper.h"
 
 #include <algorithm>

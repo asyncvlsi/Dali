@@ -1,6 +1,16 @@
 /*******************************************************************************
  * Copyright (c) 2026 Yihang Yang
  *******************************************************************************/
+
+/**
+ * @file
+ * Chooses where well taps go within a row, and parses the pattern option.
+ *
+ * A pattern decides tap positions only; whether the result satisfies the
+ * latch-up rule is checked separately and geometrically, so adding a pattern
+ * does not mean teaching the validator about it. See
+ * [well-tap patterns](README.md) for what a new pattern must satisfy.
+ */
 #include "dali/placer/well_legalizer/tap_placer.h"
 
 #include <iostream>

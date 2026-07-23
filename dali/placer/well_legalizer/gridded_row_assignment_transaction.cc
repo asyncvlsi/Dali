@@ -8,6 +8,15 @@
  * of the License, or (at your option) any later version.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Applies a batch of row assignments as a transaction.
+ *
+ * The batch is scored as a whole and committed only if it improves wirelength,
+ * so a set of moves that are individually neutral but collectively good is not
+ * lost, and a set that regresses is rolled back rather than half-applied.
+ */
 #include "dali/placer/well_legalizer/gridded_row_assignment_transaction.h"
 
 #include <algorithm>

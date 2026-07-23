@@ -8,6 +8,16 @@
  * of the License, or (at your option) any later version.
  *
  *******************************************************************************/
+
+/**
+ * @file
+ * Estimates how much stripe height a set of components will consume.
+ *
+ * Because a gridded row is as tall as its tallest cell, height depends on how
+ * components group into rows, not just on their total area. This estimates that
+ * before the rows are built, so global placement can be steered by a capacity
+ * model rather than discovering overflow at legalization time.
+ */
 #include "dali/placer/well_legalizer/gridded_capacity_estimator.h"
 
 #include <algorithm>

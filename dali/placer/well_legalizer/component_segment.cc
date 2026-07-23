@@ -18,6 +18,15 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * A run of components treated as one unit while a row is legalized.
+ *
+ * Merging neighbours that would otherwise be pushed into each other lets the
+ * row solvers place a group in one step instead of resolving the same overlap
+ * repeatedly.
+ */
 #include "component_segment.h"
 
 namespace dali {

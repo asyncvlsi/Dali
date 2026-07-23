@@ -8,6 +8,15 @@
  * of the License, or (at your option) any later version.
  *
  *******************************************************************************/
+
+/**
+ * @file
+ * Chooses stripe boundaries by packing columns at a uniform width.
+ *
+ * The simple planner: it divides the region evenly, subject to the maximum row
+ * width the technology allows. See the adaptive planner for the alternative
+ * that varies boundaries with local demand.
+ */
 #include "dali/placer/well_legalizer/packed_stripe_boundary_planner.h"
 
 #include <algorithm>
