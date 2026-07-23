@@ -5,7 +5,8 @@ for the complete list; this page covers the ones worth understanding before
 changing them.
 
 For well-tap arrangement specifically, see
-[well-tap patterns](well_legalizer/README.md).
+[well-tap patterns](well_legalizer/README.md). For how the placer is put
+together, see [architecture notes](ARCHITECTURE.md).
 
 ## Choosing a flow
 
