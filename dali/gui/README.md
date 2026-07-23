@@ -18,40 +18,32 @@ Requires a Qt-enabled build. Add the flags to any placement command:
   * `-gui_pause <every_snapshot/off>` — pause at each checkpoint, default
     `every_snapshot`. With `off` the run streams through without waiting.
 
-Pausing is what makes intermediate state inspectable — the gridded row
-structure, wells, taps, and end caps as they are built. The window also plots
-per-stage HPWL curves, reserving one slot per stage the run will actually
-execute rather than discovering them as they arrive.
+Pausing lets intermediate state be inspected as it is built. The window also
+plots per-stage HPWL curves.
 
 ## What it shows
 
-Global placement finishes with cells spread by density, with no row structure —
+Global placement finishes with cells spread by density and no row structure —
 each dot is one movable cell:
 
 ![After global placement](images/01_global_placement.png)
 
-After legalization and physical completion the same design is organised into
-stripe columns. Each column is its own well region, separated from its
-neighbours by well spacing, and the pink and blue bands are the P and N wells of
-the gridded rows:
+After legalization the same design is organised into stripe columns, with the
+P and N wells of the gridded rows shown in pink and blue:
 
 ![After legalization](images/02_legalized.png)
 
-Zooming in resolves individual rows across a few stripe columns. The coloured
-strips running up the column edges are the cells physical completion inserts:
+Zooming in resolves individual rows across a few stripe columns:
 
 ![Stripe columns](images/03_stripe_columns.png)
 
-Zoomed further, cells are drawn as rectangles rather than dots, with a corner
-marker showing orientation. Rows abut so that adjacent rows share a well type,
-and the orange row-end taps tie each row's wells:
+Zoomed further, cells are drawn as rectangles with a corner marker showing
+orientation, and the well taps are orange:
 
 ![Cells and well taps](images/04_cells_and_taps.png)
 
-At a column boundary the full result of physical completion is visible. Reading
-outward from either column: cells, the orange well taps, then the green end caps
-that terminate the row, and between the two columns the well spacing that makes
-each column an independent well region:
+At a column boundary: cells, orange well taps, green end caps, and the spacing
+between columns:
 
 ![End caps at a column boundary](images/05_end_caps.png)
 
@@ -67,39 +59,27 @@ Mouse wheel zooms, left-drag pans. Controls are split by what they act on:
 
 ## Displacement overlays
 
-Two independent toggles, both off by default, overlay an arrow per movable cell
-drawn from where that cell sat in an earlier placement to where it sits now.
-Either or both can be enabled, so total and incremental movement can be compared
-in one view.
+Two independent toggles, both off by default, draw an arrow per movable cell
+from where it sat earlier to where it sits now. Either or both can be enabled.
 
   * *Displacement vs global* (red) — total movement since global placement
-    finished, i.e. what legalization and detailed placement cost overall. This
-    overlay is empty while global placement is still running, since there is no
-    global placement result to compare against yet.
-  * *Displacement vs previous* (blue) — movement contributed by the current
-    stage alone.
+    finished. Empty while global placement is still running.
+  * *Displacement vs previous* (blue) — movement from the current stage alone.
 
-Arrows are drawn to scale. Late detailed-placement stages move cells by a
-fraction of a row, which is close to invisible at fit-to-view zoom, so zoom in
-to inspect them. As a rough guide, on a large gridded design the vs-global
-arrows are clearly visible from detailed placement onward, while vs-previous is
-most informative during global placement.
+Arrows are drawn to scale, so late stages that move cells by a fraction of a row
+need zooming in to see.
 
 ## Capturing screenshots
 
-The GUI can write PNGs of chosen snapshots without an operator at the window,
-which is how the images above are produced. It is off unless asked for: with
-`DALI_GUI_CAPTURE` unset the GUI behaves exactly as if the feature did not
-exist.
+The GUI can write PNGs of chosen snapshots unattended, which is how the images
+above are produced. Off unless `DALI_GUI_CAPTURE` is set.
 
     DALI_GUI_CAPTURE="<dir>;<stem>@<snapshot id>:<region>;..."
     DALI_GUI_CAPTURE_SIZE="<width>x<height>"
 
 Each request writes `<dir>/<stem>.png` when the named snapshot arrives, so one
-snapshot can be captured at several zoom levels. `<region>` is either `fit` for
-the whole design, or `<fx0>,<fy0>,<fx1>,<fy1>` as fractions of the design
-bounding box — fractions rather than microns so the same request frames a
-comparable area on any design. Append `+cells` to draw movable cells as
-rectangles instead of dots.
+snapshot can be captured at several zoom levels. `<region>` is `fit` for the
+whole design, or `<fx0>,<fy0>,<fx1>,<fy1>` as fractions of the design bounding
+box. Append `+cells` to draw cells as rectangles instead of dots.
 
 Set `QT_QPA_PLATFORM=offscreen` to run without a display.

@@ -31,65 +31,37 @@ selects the standard-cell flow, which skips well legalization entirely.
 
 ### Region and well structure
 
-  * `-well_legalization_mode <strict/scavenge>` — `strict` refuses to spill into
-    space the stripe planner did not assign. `scavenge` lets the last column
-    consume whatever is left over to the right boundary, which packs better but
-    weakens the guarantee that each column is an independent well region.
+  * `-well_legalization_mode <strict/scavenge>` — `scavenge` packs better,
+    `strict` keeps each column an independent well region.
 
-  * `-max_row_width <um>` — caps gridded row width. Omitted above, so the
-    legalizer derives it from the technology's MaxPlugDist as
-    `2 * max_unplug_length`; every transistor must sit within MaxPlugDist of a
-    compatible-well tap, and that is what bounds row width. The derived value is
-    not yet as good as a tuned one — on the largest design measured it costs
-    about 2.3% final HPWL, and it is the dominant term in the gap between a
-    tuned and a fully automatic run — so set this when a good width for the
-    design is known.
+  * `-max_row_width <um>` — force a gridded row width. Omitted above: the
+    legalizer derives one from the technology, and forcing a width that the
+    technology does not allow produces an illegal placement.
 
 ### Steering global placement with legalization
 
-Global placement optimizes wirelength against a model that has no notion of
-gridded rows. Left alone it converges to a picture legalization then has to
-undo. These three flags feed legalization results back into it.
+These feed legalization results back into global placement, so it optimizes
+against something close to legal. The refiner enables the other two.
 
-  * `-enable_gridded_upper_bound_refiner` — roughly legalize the placement each
-    global-placement iteration, so the upper bound global placement optimizes
-    against is a legal-ish placement rather than an idealized one. This is what
-    makes the other two meaningful; without it there is no rough-legal result to
-    balance or feed back.
-
-  * `-enable_gridded_upper_bound_balancing` — when that rough legalization
-    leaves a stripe over capacity, minimally rebalance across stripes instead of
-    accepting the failure. Without it an overfull stripe simply reports failure
-    for that iteration.
-
-  * `-gridded_legalization_feedback <mode>` — how much of the rough-legal result
-    is written back into the placement global placement continues from. `none`
-    discards it; `full` accepts it wholesale; the `y_*` modes accept only
-    vertical information, in increasing order of caution.
-    `y_row_transactional_coherent` is the most conservative mode that still
-    helps: row assignments are accepted as a transaction, and only when the
-    result stays coherent.
+  * `-enable_gridded_upper_bound_refiner` — roughly legalize every iteration.
+  * `-enable_gridded_upper_bound_balancing` — rebalance stripes that overflow.
+  * `-gridded_legalization_feedback <mode>` — how much of that result to keep.
+    `none` discards it, `full` takes it wholesale, the `y_*` modes are
+    increasingly cautious middle grounds.
 
 ### After legalization
 
-  * `-enable_gridded_row_y_optimization` — shift whole legal row groups toward
-    the Y region their nets want. Operates on rows, so it preserves legality by
-    construction.
-
-  * `-enable_gridded_detailed_relocation` — move cells into legal whitespace
-    elsewhere in the rows before any swapping. Relocation opens up the space
-    that makes swaps productive, so it is normally enabled alongside detailed
-    placement rather than on its own.
-
-  * `-enable_gridded_detailed_placement` — the swap-based optimizers: global
-    swap, vertical swap, and local reorder within a row.
+  * `-enable_gridded_row_y_optimization` — move row groups toward the Y their
+    nets want.
+  * `-enable_gridded_detailed_relocation` — move cells into row whitespace.
+  * `-enable_gridded_detailed_placement` — global swap, vertical swap, and
+    local reorder. Normally enabled together with relocation.
 
 ### Physical completion
 
-  * `-enable_end_cap_cell` — insert end caps at gridded row ends.
-  * `-enable_filler_cell` — insert filler cells, needed when implant layers must
-    stay continuous across the whole row.
-  * `-disable_welltap` — skip well-tap insertion entirely.
+  * `-enable_end_cap_cell` — insert end caps at row ends.
+  * `-enable_filler_cell` — insert fillers, for continuous implant layers.
+  * `-disable_welltap` — skip well-tap insertion.
 
 ## Standard cells
 
@@ -101,26 +73,22 @@ undo. These three flags feed legalization results back into it.
         -target_density 1 \
         -metrics_file dali_metrics.json
 
-`-target_density 1` suits designs already close to fully utilized, where asking
-for spare whitespace only distorts the result; lower it when the design has room
-to spread.
+`-target_density 1` suits designs already close to fully utilized; lower it when
+the design has room to spread.
 
 ## Iteration control
 
-Global placement stops when its upper-bound wirelength stops trending downward,
-so the iteration count adapts to the design and normally needs no attention.
+Global placement stops on its own when it stops improving, so these rarely need
+attention.
 
-  * `-global_max_iterations <n>` — upper limit, default 100. Reach for it only
-    to bound runtime on a design that would otherwise run long.
-  * `-global_min_iterations <n>` — floor below which it will not stop, default
-    10.
+  * `-global_max_iterations <n>` — upper limit, default 100.
+  * `-global_min_iterations <n>` — floor, default 10.
 
 ## Standard-cell results on ISPD 2005
 
 Measured with the standard-cell configuration above, four threads on an Apple
-M1 Max. HPWL is in units of 1e6 um; every net has weight 1, so the reported
-weighted HPWL is plain HPWL. *GP* is the wirelength global placement hands over,
-*legal* is after legalization, *final* is after detailed placement.
+M1 Max. HPWL in units of 1e6 um, after global placement, after legalization, and
+after detailed placement.
 
 | design | cells | GP iters | GP | legal | final | runtime |
 |---|---|---|---|---|---|---|
@@ -132,29 +100,20 @@ weighted HPWL is plain HPWL. *GP* is the wirelength global placement hands over,
 | bigblue2 | 558 K | 40 | 145.71 | 151.27 | 148.89 | 332 s |
 | bigblue3 | 1.10 M | 39 | 338.71 | 348.84 | 345.70 | 1444 s |
 
-Legalization overshoots and detailed placement recovers part of it, on every
-design: adaptec3 runs 200.80 -> 205.52 -> 203.50. The residue between the global
-placement result and the final number is what the legalizer costs.
-
-Global placement converges in 39 to 49 iterations across the suite, against a
-default limit of 100, and the count does not grow with the design: the 1.10 M
-cell case uses the fewest. Runtime does grow, roughly with cell count once past
-adaptec1.
+Legalization costs a little wirelength and detailed placement recovers part of
+it. Global placement converges in 39 to 49 iterations on every design, without
+growing with design size.
 
 ## Experimental: CP-SAT legalization
 
-Not used by any production flow yet. Dali can optionally solve bounded
-legalization sub-problems exactly with OR-Tools CP-SAT, exposed through
-`-enable_ortools_row_optimization`, the `-analyze_exact_gridded_*` /
-`-solve_exact_gridded_*` family, and the exact stripe and boundary refiners.
-These are research switches: they trade large amounts of runtime for small
-placement gains and are off by default.
+Research switches, off by default and not used by any production flow: they buy
+small placement gains for a lot of runtime. Exposed through
+`-enable_ortools_row_optimization` and the `-*_exact_gridded_*` families.
 
-They are only available when the build found OR-Tools 9.15.x. Detection defaults
-to `AUTO`, so a normal `cmake ..` picks it up if present and silently builds
-without it otherwise. To install it: `brew install or-tools pkgconf` on macOS,
-or the official 9.15 C++ binary distribution on Ubuntu. If it lives outside a
-standard prefix, point CMake at it:
+They need OR-Tools 9.15.x at build time. Detection defaults to `AUTO`, so a
+normal `cmake ..` picks it up if present. To install: `brew install or-tools
+pkgconf` on macOS, or the official 9.15 C++ binary distribution on Ubuntu. If it
+lives outside a standard prefix:
 
     $ ORTOOLS_ROOT=/path/to/or-tools-9.15 cmake ..
 
