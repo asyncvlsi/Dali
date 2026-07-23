@@ -27,7 +27,6 @@ namespace dali {
 void StarPiModelEstimator::PushNetRCToManager() {
 #if PHYDB_USE_GALOIS
   FindFirstHorizontalAndVerticalMetalLayer();
-  // AddEdgesToManager();
   auto maxMode = galois::eda::utility::AnalysisMode::ANALYSIS_MAX;
   auto& timing_api = phy_db_->GetTimingApi();
   auto* spef_manager = phy_db_->GetParaManager();
@@ -72,7 +71,6 @@ void StarPiModelEstimator::PushNetRCToManager() {
     // << "\n";
   }
   // std::cout << "after adding\n";
-  // spef_manager->dump();
   // std::cout << "--------------------------------------------------\n";
 #endif
 }

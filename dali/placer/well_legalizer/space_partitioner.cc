@@ -191,25 +191,6 @@ void WellSpacePartitioner::UpdateWhiteSpaceInCol(StripeColumn& col) {
     for (auto& seg : white_space_in_rows_[i]) {
       SegI* tmp_seg = stripe_seg.Joint(seg);
       if (tmp_seg != nullptr) {
-        /*
-        if (tmp_seg->lo - seg.lo < max_component_width_ * 2 + well_spacing_) {
-            if (tmp_seg->hi - seg.lo
-                < stripe_width_factor_ * max_unplug_length_) {
-                tmp_seg->lo = seg.lo;
-            }
-        }
-        if (seg.hi - tmp_seg->hi
-            < max_component_width_ * 2 + well_spacing_) {
-            if (seg.hi - tmp_seg->lo
-                < stripe_width_factor_ * max_unplug_length_) {
-                tmp_seg->hi = seg.hi;
-            }
-        }
-        if (tmp_seg->Span() < max_component_width_ * 2
-            && tmp_seg->Span() < seg.Span()) {
-            continue;
-        }
-        */
         col.white_space_[i].push_back(*tmp_seg);
       }
       delete tmp_seg;
@@ -243,18 +224,10 @@ void WellSpacePartitioner::DecomposeSpaceToSimpleStripes() {
   }
 
   // col_list_[tot_col_num_ - 1].stripe_list_[0].width_ =
-  //     RegionRight() - col_list_[tot_col_num_ - 1].stripe_list_[0].LLX() -
-  //     well_spacing_;
   // col_list_[tot_col_num_ -
   // 1].stripe_list_[0].max_component_capacity_per_cluster_ =
   //     col_list_[tot_col_num_ - 1].stripe_list_[0].width_ /
-  //     circuit_ptr_->MinComponentWidth();
-  /*for (auto &col: col_list_) {
-    for (auto &stripe: col.stripe_list_) {
-      stripe.height_ -= row_height_;
-    }
-  }*/
-}
+  }
 
 void WellSpacePartitioner::AssignComponentToColBasedOnWhiteSpace() {
   // assign components to columns
@@ -354,7 +327,6 @@ bool WellSpacePartitioner::StartPartitioning() {
     stripe_width_ = (int)std::round(max_unplug_length_ * stripe_width_factor_);
   } else {
     // A row narrower than MaxPlugDist is fine -- even preferred -- for latch-up
-    // coverage (row-end taps then over-satisfy the rule, and the coverage
     // verifier checks it geometrically). The only width that can actually block
     // legalization is one smaller than the widest movable cell.
     DaliWarns(cluster_width_ < max_component_width_,
@@ -392,9 +364,7 @@ bool WellSpacePartitioner::StartPartitioning() {
     UpdateWhiteSpaceInCol(col_list.back());
   }
   DecomposeSpaceToSimpleStripes();
-  // cluster_list_.reserve(tot_col_num_ * max_clusters_per_col);
 
-  // LOG(info)  <<"left: %d, right: %d\n", left_, right_);
   LOG(info) << "Maximum possible number of gridded rows in a column: "
             << max_clusters_per_col << "\n";
 

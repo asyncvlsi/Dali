@@ -247,7 +247,6 @@ void Design::ReportNetFanOutHistogram() {
   LOG(info) << " * HPWL unit, grid value in X: " << net_histogram_.hpwl_unit
             << " um\n";
   LOG(info) << "\n";
-  // printf("%f\n", net_histogram_.tot_hpwl * 0.18);
 }
 
 }  // namespace dali

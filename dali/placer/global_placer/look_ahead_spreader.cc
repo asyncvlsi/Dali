@@ -724,24 +724,6 @@ uint32_t LookAheadSpreader::LookUpWhiteSpace(
    * ****/
 
   uint32_t total_white_space;
-  /*if (ll_index.x == 0) {
-  if (ll_index.y == 0) {
-    total_white_space = grid_bin_white_space_LUT[ur_index.x][ur_index.y];
-  } else {
-    total_white_space = grid_bin_white_space_LUT[ur_index.x][ur_index.y]
-        - grid_bin_white_space_LUT[ur_index.x][ll_index.y-1];
-  }
-} else {
-  if (ll_index.y == 0) {
-    total_white_space = grid_bin_white_space_LUT[ur_index.x][ur_index.y]
-        - grid_bin_white_space_LUT[ll_index.x-1][ur_index.y];
-  } else {
-    total_white_space = grid_bin_white_space_LUT[ur_index.x][ur_index.y]
-        - grid_bin_white_space_LUT[ur_index.x][ll_index.y-1]
-        - grid_bin_white_space_LUT[ll_index.x-1][ur_index.y]
-        + grid_bin_white_space_LUT[ll_index.x-1][ll_index.y-1];
-  }
-}*/
   GridBinWindow window = {ll_index.x, ll_index.y, ur_index.x, ur_index.y};
   total_white_space = LookUpWhiteSpace(window);
   return total_white_space;
@@ -885,7 +867,6 @@ void LookAheadSpreader::FindMinimumBoxForLargestCluster() {
     } else {
       break;
     }
-    // LOG(info)   << R.total_white_space << "  " <<
     // R.filling_rate << "  " << FillingRate() << "\n";
   }
 
@@ -930,10 +911,7 @@ void LookAheadSpreader::FindMinimumBoxForLargestCluster() {
              << "      spreading region bins: " << last_hotspot_debug_.region_ll
              << "to " << last_hotspot_debug_.region_ur << ", filling rate "
              << last_hotspot_debug_.region_filling_rate << "\n";
-  // LOG(info)   << "Bounding box total white space: " <<
-  // spreading_region_queue_.front().total_white_space << "\n"; LOG(info) <<
   // "Bounding box total component area: " <<
-  // spreading_region_queue_.front().total_component_area
   // << "\n";
 
   for (int kx = R.ll_index.x; kx <= R.ur_index.x; ++kx) {
@@ -1011,7 +989,6 @@ void LookAheadSpreader::SplitGridBox(SpreadingRegion& box) {
       spreading_region_queue_.push(box2);
     }
   } else {
-    // box.Report();
     box.cut_direction_x = false;
     box1.right = box.vertical_cutlines[0];
     box1.top = box.top;
@@ -1131,10 +1108,6 @@ void LookAheadSpreader::SplitBox(SpreadingRegion& box) {
   }
   box1.UpdateComponentAreaWhiteSpace(grid_bin_mesh);
   box2.UpdateComponentAreaWhiteSpace(grid_bin_mesh);
-  // LOG(info)   << box1.ll_index_ << box1.ur_index_ << "\n";
-  // LOG(info)   << box2.ll_index_ << box2.ur_index_ << "\n";
-  // box1.update_all_terminal(grid_bin_matrix);
-  // box2.update_all_terminal(grid_bin_matrix);
   //  if the white space in one bin is dominating the other, ignore the smaller
   //  one
   dominating_box_flag = 0;
@@ -1153,7 +1126,6 @@ void LookAheadSpreader::SplitBox(SpreadingRegion& box) {
   box2.UpdateObsBoundary();
 
   if (dominating_box_flag == 0) {
-    // LOG(info)   << "component list size: " << box.component_ptrs.size()
     // << "\n"; box.UpdateComponentArea(component_list); LOG(info)   <<
     // "total_component_area: " << box.total_component_area << "\n";
     box.UpdateCutPointComponentLists(box1.total_white_space,
@@ -1167,51 +1139,24 @@ void LookAheadSpreader::SplitBox(SpreadingRegion& box) {
     box1.total_component_area = box.total_component_area_low;
     box2.total_component_area = box.total_component_area_high;
 
-    /*if ((box1.left < LEFT) || (box1.bottom < BOTTOM)) {
-  LOG(info)   << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM <<
-"\n"; LOG(info)   << box1.left << " " << box1.bottom << "\n";
-}
-if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
-  LOG(info)   << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM <<
-"\n"; LOG(info)   << box2.left << " " << box2.bottom << "\n";
-}*/
-
     spreading_region_queue_.push(box1);
     spreading_region_queue_.push(box2);
-    // box1.write_box_boundary("first_bounding_box.txt", grid_bin_width,
     // grid_bin_height, LEFT, BOTTOM);
-    // box2.write_box_boundary("first_bounding_box.txt", grid_bin_width,
     // grid_bin_height, LEFT, BOTTOM);
-    // box1.WriteComponentRegion("first_cell_bounding_box.txt");
-    // box2.WriteComponentRegion("first_cell_bounding_box.txt");
   } else if (dominating_box_flag == 1) {
     box2.ll_point = box.ll_point;
     box2.ur_point = box.ur_point;
     box2.component_ptrs = box.component_ptrs;
     box2.total_component_area = box.total_component_area;
-    /*if ((box2.left < LEFT) || (box2.bottom < BOTTOM)) {
-  LOG(info)   << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM <<
-"\n"; LOG(info)   << box2.left << " " << box2.bottom << "\n";
-}*/
-
     spreading_region_queue_.push(box2);
-    // box2.write_box_boundary("first_bounding_box.txt", grid_bin_width,
     // grid_bin_height, LEFT, BOTTOM);
-    // box2.WriteComponentRegion("first_cell_bounding_box.txt");
   } else {
     box1.ll_point = box.ll_point;
     box1.ur_point = box.ur_point;
     box1.component_ptrs = box.component_ptrs;
     box1.total_component_area = box.total_component_area;
-    /*if ((box1.left < LEFT) || (box1.bottom < BOTTOM)) {
-  LOG(info)   << "LEFT:" << LEFT << " " << "BOTTOM:" << BOTTOM <<
-"\n"; LOG(info)   << box1.left << " " << box1.bottom << "\n";
-}*/
-
     spreading_region_queue_.push(box1);
-    // box1.write_box_boundary("first_bounding_box.txt", grid_bin_width,
     // grid_bin_height, LEFT, BOTTOM);
-    // box1.WriteComponentRegion("first_cell_bounding_box.txt");
   }
 }
 
@@ -1236,7 +1181,6 @@ bool LookAheadSpreader::RecursiveBisectionComponentSpreading() {
     // (a) the box is a grid bin box or a smaller box
     // (b) and with no fixed macros inside
     if (box.ll_index == box.ur_index) {
-      // UpdateGridBinComponents(box);
       if (box.HasPlacementBlockages()) {  // if there is a fixed macro inside a
                                           // box, keep splitting the box
         SplitGridBox(box);
@@ -1244,9 +1188,7 @@ bool LookAheadSpreader::RecursiveBisectionComponentSpreading() {
         continue;
       }
       /* if no terminals inside a box, do component placement inside the box */
-      // PlaceComponentInBoxBisection(box);
       PlaceComponentInBox(box);
-      // RoughLegalComponentInBox(box);
     } else {
       SplitBox(box);
     }
@@ -1284,7 +1226,6 @@ double LookAheadSpreader::Spread() {
     UpdateLargestCluster();
     FindMinimumBoxForLargestCluster();
     RecursiveBisectionComponentSpreading();
-    // LOG(info) << "cluster count: " << cluster_set.size() <<
     // "\n";
   } while (!cluster_set.empty());
 

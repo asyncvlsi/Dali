@@ -354,7 +354,6 @@ void GriddedRow::MinDisplacementLegalization() {
   for (auto& seg : segments) {
     seg.UpdateComponentLocation();
     // count += seg.component_list.size();
-    // seg.Report();
   }
 }
 

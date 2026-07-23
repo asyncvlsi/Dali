@@ -43,7 +43,6 @@ bool WellPlaceFlow::StartPlacement() {  // TODO: do not use this
   InitializeComponentLocation();
 
   optimizer_->OptimizeHpwl();
-  // LOG(info)   << cg_total_hpwl_ << "  " << circuit_ptr_->HPWL()
   // << "\n";
 
   // bool old_success = false;
@@ -63,17 +62,9 @@ bool WellPlaceFlow::StartPlacement() {  // TODO: do not use this
       spreader_->Hpwls().back() = ckt_ptr_->WeightedHPWL();
 
       // GriddedCellWellLegalizer well_legalizer;
-      // well_legalizer.TakeOver(this);
       // bool is_success = well_legalizer.StartPlacement();
-      // if (!is_success && !old_success) {
-      //   filling_rate_ = filling_rate_ * 0.99;
-      //   LOG(info)   << "Adjusted filling rate: " <<
       //   filling_rate_ << "\n"; LOG(info)   << "White space
       //   usage: " << circuit_ptr_->WhiteSpaceUsage() << "\n";
-      // }
-      // if (!old_success) {
-      //   old_success = is_success;
-      // }
     }
     LOG(info) << "It " << cur_iter_ << ": \t" << optimizer_->GetHpwls().back()
               << " " << spreader_->Hpwls().back() << "\n";
@@ -85,7 +76,6 @@ bool WellPlaceFlow::StartPlacement() {  // TODO: do not use this
   LOG(info) << "(cg time: " << optimizer_->GetTime()
             << "s, lal time: " << spreader_->GetTime() << "s)\n";
   spreader_->Close();
-  // CheckAndShift();
   UpdateMovableComponentPlacementStatus();
   ReportHPWL();
 

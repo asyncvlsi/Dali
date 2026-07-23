@@ -69,24 +69,6 @@ void SpreadingRegion::update_all_terminal(
 }
 
 void SpreadingRegion::UpdateComponentArea() {
-  /*
-  int temp_total_component_area = 0;
-  Component *node;
-  for (auto &component: component_ptrs) {
-    node = &Nodelist[component];
-    temp_total_component_area += node->Area();
-  }
-  LOG(info)   << "Total component area: " << total_component_area << "  " <<
-  temp_total_component_area << "\n"; temp_total_component_area = 0; for (auto
-  &node: Nodelist) { if (node.isterminal()) continue; if ((node.x0 >=
-  ll_point.x) && (node.x0 < ur_point.x) && (node.y0 >= ll_point.y) && (node.y0 <
-  ur_point.y)) { temp_total_component_area += node.Area();
-    }
-  }
-  LOG(info)   << "Total component area: " << total_component_area << "  " <<
-  temp_total_component_area << "\n";
-  */
-
   total_component_area = 0;
   for (auto& component_ptr : component_ptrs) {
     total_component_area += component_ptr->Area();
@@ -318,19 +300,7 @@ void SpreadingRegion::UpdateObsBoundary() {
       vertical_cutlines[min_index] = tmp_boundary;
     }
   }
-  /*
-  LOG(info)   << "Horizontal_obs_boundaries: ";
-  for (auto &boundary: horizontal_obstacle_boundaries) {
-    LOG(info)   << boundary << " ";
   }
-  LOG(info)   << "\n";
-  LOG(info)   << "Vertical_obs_boundaries: ";
-  for (auto &boundary: vertical_obstacle_boundaries) {
-    LOG(info)   << boundary << " ";
-  }
-  LOG(info)   << "\n";
-  */
-}
 
 bool SpreadingRegion::IsMoreHorizontalCutlines() const {
   return horizontal_cutlines.size() > vertical_cutlines.size();
@@ -489,7 +459,6 @@ bool SpreadingRegion::UpdateCutPointComponentLists(
     cut_line_low = ll_point.y;
     cut_line_high = ur_point.y;
     for (int i = 0; i < 20; i++) {
-      // LOG(info)   << i << "\n";
       component_area_low = 0;
       cut_line = (cut_line_low + cut_line_high) / 2;
       for (auto& component_ptr : component_ptrs) {
@@ -497,7 +466,6 @@ bool SpreadingRegion::UpdateCutPointComponentLists(
           component_area_low += component_ptr->Area();
         }
       }
-      // LOG(info)   << component_area_low/(double)total_component_area <<
       // "\n";
       double tmp_ratio =
           component_area_low == 0
@@ -516,7 +484,6 @@ bool SpreadingRegion::UpdateCutPointComponentLists(
     total_component_area_high = total_component_area - total_component_area_low;
     cut_ll_point.y = cut_line;
     cut_ur_point.y = cut_line;
-    // LOG(info)   << cut_line << " LLY " << ll_point.y << " URY "
     // << ll_point.y << "\n";
     for (auto& component_ptr : component_ptrs) {
       if (component_ptr->Y() < cut_line) {
@@ -531,7 +498,6 @@ bool SpreadingRegion::UpdateCutPointComponentLists(
     cut_line_low = ll_point.x;
     cut_line_high = ur_point.x;
     for (int i = 0; i < 20; i++) {
-      // LOG(info)   << i << "\n";
       component_area_low = 0;
       cut_line = (cut_line_low + cut_line_high) / 2;
       for (auto& component_ptr : component_ptrs) {
@@ -539,7 +505,6 @@ bool SpreadingRegion::UpdateCutPointComponentLists(
           component_area_low += component_ptr->Area();
         }
       }
-      // LOG(info)   << component_area_low/(double)total_component_area <<
       // "\n";
       double tmp_ratio =
           component_area_low == 0
@@ -557,7 +522,6 @@ bool SpreadingRegion::UpdateCutPointComponentLists(
     total_component_area_high = total_component_area - total_component_area_low;
     cut_ll_point.x = cut_line;
     cut_ur_point.x = cut_line;
-    // LOG(info)   << cut_line << " LLX " << ll_point.x << " URX "
     // << ur_point.x << "\n";
     for (auto& component_ptr : component_ptrs) {
       if (component_ptr->X() < cut_line) {
@@ -595,18 +559,6 @@ bool SpreadingRegion::UpdateCutPointComponentListsLeaf(
     // and bottom of this box
     low_white_space_total_ratio = std::floor(row_num / 2.0) / row_num;
     cut_line_w = bottom + (int)(low_white_space_total_ratio * box_height);
-    /*
-    if ((box_height % average_component_height == 0) && (box_height >
-    average_component_height)) {
-      //LOG(info)   << left << " " << right << " " << bottom << "
-    " << top << "\n"; low_white_space_total_ratio =
-    std::floor(row_num/2.0)/row_num; cut_line_w = bottom +
-    (int)(low_white_space_total_ratio * box_height); } else {
-      LOG(info)   << left << " " << right << " " << bottom << " "
-    << top << "\n"; LOG(info)   << "Error: out of expectation, bin
-    height is not the integer multiple of standard cell height!\n"; exit(1);
-    }*/
-
     /* second part, split the total component_ptrs to two part,
      * by sort component_ptrs based on y location in ascending order */
     size_t mini_index;
@@ -636,7 +588,6 @@ bool SpreadingRegion::UpdateCutPointComponentListsLeaf(
       tmp_total_component_area_low += node->Area();
       component_area_low_percentage =
           double(tmp_total_component_area_low) / double(total_component_area);
-      // LOG(info)   << i << " " << component_area_low_percentage <<
       // "\n";
       if (fabs(component_area_low_percentage - low_white_space_total_ratio) <
           mini_error) {
@@ -645,7 +596,6 @@ bool SpreadingRegion::UpdateCutPointComponentListsLeaf(
         lower_area_split_index = i;
       }
       if (component_area_low_percentage >= low_white_space_total_ratio) {
-        // LOG(info)   << "mini_error: " << mini_error << " index:
         // " << lower_area_split_index << "\n";
         break;
       }
@@ -705,14 +655,12 @@ bool SpreadingRegion::UpdateCutPointComponentListsLeaf(
       tmp_total_component_area_low += node->Area();
       component_area_low_percentage =
           double(tmp_total_component_area_low) / double(total_component_area);
-      // LOG(info)   << i << " " << component_area_low_percentage <<
       // "\n";
       if (fabs(component_area_low_percentage - 1 / ratio) < mini_error) {
         mini_error = fabs(component_area_low_percentage - 1 / ratio);
         lower_area_split_index = i;
       }
       if (component_area_low_percentage > 0.5) {
-        // LOG(info)   << "mini_error: " << mini_error << " index:
         // " << lower_area_split_index << "\n";
         break;
       }

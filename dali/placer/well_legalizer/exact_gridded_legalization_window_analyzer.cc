@@ -98,7 +98,6 @@ ExactGriddedLegalizationWindowAnalyzer::BuildStripeWindows(
   };
   std::unordered_map<int, ComponentExtent> extents;
   std::vector<std::vector<int>> row_component_ids(rows.size());
-  // Components() is the canonical row ownership used by final legalization
   // and gridded detailed placement. ComponentRegions() belongs to a separate
   // region-level path and is not populated for these finalized rows.
   for (int row_index = 0; row_index < static_cast<int>(rows.size());

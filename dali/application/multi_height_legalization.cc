@@ -134,9 +134,6 @@ int main(int argc, char* argv[]) {
   tetris_legalizer->SetMaxIteration(10);
   tetris_legalizer->StartRowAssignment();
 
-  // tetris_legalizer->InitializeFromGriddedRowLegalizer(multi_well_legalizer.get());
-  // tetris_legalizer->IsPrintDisplacement(true);
-  // tetris_legalizer->StartMultiHeightLegalization();
 
   if (!output_name.empty()) {
     circuit.SaveDefFile(output_name, "", def_files[0], 1, 1, 2, 1);

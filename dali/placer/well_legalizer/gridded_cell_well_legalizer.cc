@@ -884,13 +884,6 @@ bool GriddedCellWellLegalizer::StripeLegalizationTopDown(Stripe& stripe) {
     gridded_row.UpdateComponentLocY();
   }
 
-  /*LOG(info)   << "Reverse clustering: ";
-  if (stripe.contour_ >= RegionLLY()) {
-    LOG(info)   << "success\n";
-  } else {
-    LOG(info)   << "fail\n";
-  }*/
-
   return stripe.HasNoRowsSpillingOut();
 }
 
@@ -944,13 +937,6 @@ bool GriddedCellWellLegalizer::StripeLegalizationTopDownCompact(
   for (auto& cluster : stripe.gridded_rows_) {
     cluster.UpdateComponentLocY();
   }
-
-  /*LOG(info)   << "Reverse clustering: ";
-  if (stripe.contour_ >= RegionLLY()) {
-    LOG(info)   << "success\n";
-  } else {
-    LOG(info)   << "fail\n";
-  }*/
 
   return stripe.contour_ >= RegionBottom();
 }
@@ -1032,12 +1018,6 @@ bool GriddedCellWellLegalizer::ComponentClusteringLoose() {
         RecordStripeLegalizationFailure(stripe);
         LogStripeLegalizationFailure(col, stripe, col_id, stripe_id);
       }
-      /*if (is_success) {
-        LOG(info)  <<"stripe legalization success, %d\n", i);
-      } else {
-        LOG(info)  <<"stripe legalization fail, %d\n", i);
-      }*/
-
       for (auto& row : stripe.gridded_rows_) {
         row.UpdateComponentLocY();
         row.MinDisplacementLegalization();
@@ -1255,7 +1235,6 @@ bool GriddedCellWellLegalizer::TrialClusterLegalization(Stripe& stripe) {
     cluster_list[i] = &stripe.gridded_rows_[i];
   }
 
-  // LOG(info)   << "used height/RegionHeight(): " <<
   // col.used_height_ / (double) RegionHeight() << "\n";
   if (stripe.used_height_ <= RegionHeight()) {
     if (stripe.is_bottom_up_) {
@@ -1309,65 +1288,6 @@ bool GriddedCellWellLegalizer::TrialClusterLegalization(Stripe& stripe) {
 
   return res;
 }
-
-/*
-void GriddedCellWellLegalizer::SingleSegmentClusteringOptimization() {
-  LOG(info) << "Start single segment clustering\n";
-
-  for (auto &col: col_list_) {
-    for (auto &stripe: col.stripe_list_) {
-      for (auto &cluster: stripe.cluster_list_) {
-        int old_cluster_component_count = cluster.components_.size();
-        std::vector<ComponentSegment> old_cluster(old_cluster_component_count);
-        for (int i = 0; i < old_cluster_component_count; ++i) {
-          old_cluster[i].component_index.push_back(i);
-          old_cluster[i].circuit_ptr_ = circuit_ptr_;
-          old_cluster[i].cluster_ = &cluster;
-          old_cluster[i].UpdateBoundList();
-          old_cluster[i].SortBounds();
-          old_cluster[i].UpdateLLX();
-        }
-
-        bool is_overlap = false;
-        do {
-          std::vector<ComponentSegment> new_cluster;
-          new_cluster.push_back(old_cluster[0]);
-          int j = 0;
-          while (j + 1 < old_cluster_component_count) {
-            if (new_cluster.back().Overlap(old_cluster[j + 1])) {
-              new_cluster.back().Merge(old_cluster[j + 1]);
-            } else {
-              new_cluster.push_back(old_cluster[j + 1]);
-            }
-            j += 1;
-          }
-          int new_count = new_cluster.size();
-          old_cluster_component_count = new_count;
-          for (int i = 0; i < new_count; ++i) {
-            old_cluster[i].CopyFrom(new_cluster[i]);
-          }
-
-          is_overlap = false;
-          for (int i = 0; i < new_count - 1; ++i) {
-            if (old_cluster[i].IsNotOnLeft(old_cluster[i + 1])) {
-              is_overlap = true;
-              break;
-            }
-          }
-
-          //LOG(info)   << is_overlap << "\n";
-
-        } while (is_overlap);
-
-        for (int i = 0; i < old_cluster_component_count; ++i) {
-          old_cluster[i].UpdateComponentLocation();
-        }
-      }
-    }
-  }
-
-}
- */
 
 void GriddedCellWellLegalizer::UpdateClusterOrient() {
   for (auto& col : col_list_) {
@@ -1453,14 +1373,12 @@ void GriddedCellWellLegalizer::ClearCachedData() {
     }
   }
 
-  // cluster_list_.clear();
 }
 
 bool GriddedCellWellLegalizer::WellLegalize() {
   bool is_success = true;
   InitializeWellLegalizer();
   is_success = ComponentClusteringLoose();
-  // ComponentClusteringCompact();
   ReportHPWL();
 
   if (is_success) {

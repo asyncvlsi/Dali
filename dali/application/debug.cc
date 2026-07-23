@@ -41,7 +41,6 @@ int main() {
 
   // read LEF/DEF/CELL
   phydb::PhyDB phy_db;
-  // phy_db.SetPlacementGrids(0.01, 0.01);
   phy_db.ReadLef(lef_file_name);
   phy_db.ReadDef(def_file_name);
   phy_db.ReadCell(cell_file_name);
@@ -50,35 +49,13 @@ int main() {
   Dali dali(&phy_db, severity::info);
 
   // phydb::Macro *cell = phy_db.GetMacroPtr("WELLTAPX1");
-  // dali.AddWellTaps(cell, 60, true);
   dali.StartPlacement(0.65);
-  // dali.GlobalPlace(1.00);
-  // dali.ExternalDetailedPlaceAndLegalize("innovus");
-  // dali.SimpleIoPinPlacement("m1");
-  // dali.ExportToDEF(def_file_name);
 
   // for testing dali APIs for interact
-  // dali.InstantiateIoPlacer();
-  /*int count = 11;
-  char *arguments[11] = {
-      "place-io",
-      "--auto-place",
-      "--metal",
-      "left",
-      "m1",
-      "right",
-      "m1",
-      "bottom",
-      "m1",
-      "top",
-      "m1"
-  };*/
-
   int count = 2;
   char* arguments[2] = {(char*)"place-io", (char*)"m1"};
 
   dali.IoPinPlacement(count, arguments);
-  // dali.AutoIoPinPlacement();
   dali.ExportToPhyDB();
 
   int place_count = 12;

@@ -554,8 +554,6 @@ bool Stripe::IsLeftmostPlacementLegal() {
       });
 
   DaliExpects(false, "To be implemented");
-  // for (Component *&component : component_ptrs_vec_) {
-  // }
 
   return true;
 }
@@ -603,7 +601,6 @@ void Stripe::OptimizeDisplacementInEachRowSegment(double lambda,
         seg->OptimizeQuadraticDisplacement(lambda, is_weighted_anchor,
                                            is_reorder);
     // std::vector<ComponentDisplacementVariable> vars =
-    //     seg->OptimizeLinearDisplacement(lambda, is_weighted_anchor,
     //     is_reorder);
     UpdateSubCellLocs(vars);
   }
@@ -801,7 +798,6 @@ double Stripe::EstimateCost(int row_id, Component* component_ptr, SegI& range,
   }
 
   range = spaces[min_id];
-  // return min_cost;
   double y_cost = std::fabs(component_ptr->LLY() - gridded_rows_[row_id].LLY());
   return min_cost + y_cost;
 }

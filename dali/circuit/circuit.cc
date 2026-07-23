@@ -183,7 +183,6 @@ void Circuit::SetGridFromMetalPitch() {
   DaliExpects(
       ver_layer != nullptr,
       "Cannot find a vertical metal layer! Circuit::SetGridFromMetalPitch()");
-  // LOG(info)   << "vertical layer: " << *ver_layer->Name() << "
   // " << ver_layer->PitchX() << "\n"; LOG(info)   << "horizontal
   // layer: " << *hor_layer->Name() << "  " << hor_layer->PitchY() << "\n";
   SetGridValue(ver_layer->PitchX(), hor_layer->PitchY());
@@ -204,7 +203,6 @@ void Circuit::SetPlacementGridOrigin(int origin_x, int origin_y) {
 
 void Circuit::SetRowHeight(double row_height) {
   DaliExpects(row_height > 0, "Setting row height to a negative value?");
-  // LOG(info) << row_height << "  " << GridValueY() << std::endl;
   double residual = AbsResidual(row_height, GridValueY());
   DaliExpects(residual < constants_.epsilon,
               "Site height is not integer multiple of grid value in Y");
@@ -1061,11 +1059,9 @@ void Circuit::ReadMultiWellCell(std::string const& name_of_file) {
           } while (line.find("END REGION") == std::string::npos && !ist.eof());
         }
       } while (line.find(end_macro_flag) == std::string::npos && !ist.eof());
-      // well_ptr->Report();
       macro_ptr->CheckLegality();
     }
   }
-  // ReportWellShape();
 }
 
 int Circuit::MinComponentWidth() const { return design_.min_component_width_; }
@@ -2437,7 +2433,6 @@ void Circuit::LoadTech(phydb::PhyDB* phy_db_ptr) {
     auto& macro_pins = macro.GetPinsRef();
     for (auto& pin : macro_pins) {
       std::string pin_name(pin.GetName());
-      // if (pin_name == "Vdd" || pin_name == "GND") continue;
 
       bool is_input = true;
       auto pin_direction = pin.GetDirection();

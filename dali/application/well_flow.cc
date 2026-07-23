@@ -52,7 +52,6 @@ int main(int argc, char* argv[]) {
   LOG(info) << "  Average white space utility: " << circuit.WhiteSpaceUsage()
             << "\n";
   circuit.ReportBriefSummary();
-  // circuit.ReportComponentType();
   circuit.ReportHPWL();
 
   dali::WellPlaceFlow well_place_flow;

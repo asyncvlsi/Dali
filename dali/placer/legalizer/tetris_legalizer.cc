@@ -82,7 +82,6 @@ void TetrisLegalizer::FastShift(int failure_point) {
     Component* last_placed_component =
         index_loc_list_[failure_point - 1].component_ptr;
     int left_new = (int)std::round(last_placed_component->LLX());
-    // LOG(info)   << left_new << "  " << bounding_left << "\n";
     for (size_t i = failure_point; i < index_loc_list_.size(); ++i) {
       Component* component_ptr = index_loc_list_[i].component_ptr;
       component_ptr->IncreaseX(left_new + init_diff - bounding_left);
@@ -112,21 +111,6 @@ void TetrisLegalizer::FlipPlacement() {
 bool TetrisLegalizer::TetrisLegal() {
   std::vector<Component>& components = ckt_ptr_->Components();
   // 1. move all components into placement region
-  /*for (auto &component: components) {
-    if (component.LLX() < Left()) {
-      component.SetLLX(Left());
-    }
-    if (component.LLY() < Bottom()) {
-      component.SetLLY(Bottom());
-    }
-    if (component.URX() > Right()) {
-      component.SetURX(Right());
-    }
-    if (component.URY() > Top()) {
-      component.SetURY(Top());
-    }
-  }*/
-
   // 2. sort components based on their lower Left corners. Further optimization
   // is doable here.
 
@@ -141,10 +125,6 @@ bool TetrisLegalizer::TetrisLegal() {
               return (pair0.x < pair1.x) ||
                      ((pair0.x == pair1.x) && (pair0.y < pair1.y));
             });
-
-  /*for (auto &pair: index_loc_list_) {
-    LOG(info)   << components[pair.num].LLX() << "\n";
-  }*/
 
   // 3. initialize the data structure to store row usage
   // int maxHeight = GetCircuitRef().MaxComponentHeight();

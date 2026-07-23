@@ -153,7 +153,6 @@ void BoundToBoundHpwlOptimizer::BuildProblemX() {
       if (component_id != max_component_id) {
         double distance = std::fabs(pin_loc - pin_loc_max);
         double weight = inv_p / (distance + width_epsilon_);
-        // weight_adjust = base_factor + adjust_factor * (1 - exp(-distance /
         // decay_length)); weight *= weight_adjust;
         if (!is_movable && is_movable_max) {
           bx[max_component_id] += (pin_loc - offset_max) * weight;
@@ -178,7 +177,6 @@ void BoundToBoundHpwlOptimizer::BuildProblemX() {
           (component_id != min_component_id)) {
         double distance = std::fabs(pin_loc - pin_loc_min);
         double weight = inv_p / (distance + width_epsilon_);
-        // weight_adjust = adjust_factor * (1 - exp(-distance / decay_length));
         // weight *= weight_adjust;
         if (!is_movable && is_movable_min) {
           bx[min_component_id] += (pin_loc - offset_min) * weight;
@@ -269,7 +267,6 @@ void BoundToBoundHpwlOptimizer::BuildProblemY() {
       if (component_id != max_component_id) {
         double distance = std::fabs(pin_loc - pin_loc_max);
         double weight = inv_p / (distance + height_epsilon_);
-        // weight_adjust = base_factor + adjust_factor * (1 - exp(-distance /
         // decay_length)); weight *= weight_adjust;
         if (!is_movable && is_movable_max) {
           by[max_component_id] += (pin_loc - offset_max) * weight;
@@ -294,7 +291,6 @@ void BoundToBoundHpwlOptimizer::BuildProblemY() {
           (component_id != min_component_id)) {
         double distance = std::fabs(pin_loc - pin_loc_min);
         double weight = inv_p / (distance + height_epsilon_);
-        // weight_adjust = adjust_factor * (1 - exp(-distance / decay_length));
         // weight *= weight_adjust;
         if (!is_movable && is_movable_min) {
           by[min_component_id] += (pin_loc - offset_min) * weight;
@@ -382,7 +378,6 @@ bool BoundToBoundHpwlOptimizer::IsSeriesOscillate(std::vector<double>& data,
   }
 
   // this vector keeps track of the increasing trend (true) and descreasing
-  // trend (false).
   std::vector<bool> trend(window_size - 1, false);
   for (int i = 0; i < window_size - 1; ++i) {
     trend[i] = data[sz - 1 - i] > data[sz - 2 - i];
@@ -426,7 +421,6 @@ double BoundToBoundHpwlOptimizer::OptimizeQuadraticMetricX(
     if (evaluate_result < hpwl_early_stop_threshold_) {
       break;
     }
-    // LOG(info)  <<"  %d WeightedHPWLX: %e\n", i,
     // evaluate_result);
     if (eval_history.size() >= 3) {
       bool is_converge = IsSeriesConverged(eval_history, 3, cg_stop_criterion);
@@ -485,7 +479,6 @@ double BoundToBoundHpwlOptimizer::OptimizeQuadraticMetricY(
     if (evaluate_result < hpwl_early_stop_threshold_) {
       break;
     }
-    // LOG(info)  <<"  %d WeightedHPWLY: %e\n", i,
     // evaluate_result);
     if (eval_history.size() >= 3) {
       bool is_converge = IsSeriesConverged(eval_history, 3, cg_stop_criterion);
@@ -805,7 +798,6 @@ double BoundToBoundHpwlOptimizer::OptimizeHpwl() {
 
   UpdateAnchorLocation();
   UpdateAnchorAlpha();
-  // UpdateAnchorNetWeight();
   LOG(trace) << "alpha: " << alpha << "\n";
   LOG(trace) << "OpenMP threads, " << num_threads_ << "\n";
 

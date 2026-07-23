@@ -287,7 +287,6 @@ bool FreeSegmentList::IsSpaceAvail(int x_loc, int width) {
    * ****/
   FreeSegment target(x_loc, x_loc + width);
   bool is_avail = false;
-  // LOG(info)   << Head() << "\n";
   for (auto* current = Head(); current != nullptr; current = current->Next()) {
     if (current->IsContain(&target)) {
       is_avail = true;

@@ -239,7 +239,6 @@ void ExtendedTetrisLegalizer::DetectWhiteSpace() {
       }
     }
   }
-  // PlotAvailSpace();
 }
 
 void ExtendedTetrisLegalizer::InitIndexLocList() {
@@ -536,7 +535,6 @@ bool ExtendedTetrisLegalizer::FindLocLeft(Value2D<int>& loc,
     if (!is_fit_to_row) {
       continue;
     }
-    // left_white_space_bound = left_;
     int left_white_space_bound =
         WhiteSpaceBoundLeft(loc.x, loc.x + width, tmp_start_row, tmp_end_row);
 
@@ -867,7 +865,6 @@ bool ExtendedTetrisLegalizer::FindLocRight(Value2D<int>& loc,
   int height = component.Height();
 
   right_component_bound = (int)std::round(loc.x + k_left_ * width);
-  // right_component_bound = loc.x;
 
   max_search_row = MaxRow(height);
   component_row_height = HeightToRow(height);
@@ -887,13 +884,11 @@ bool ExtendedTetrisLegalizer::FindLocRight(Value2D<int>& loc,
         WhiteSpaceBoundRight(loc.x - width, loc.x, tmp_start_row, tmp_end_row);
 
     tmp_x = std::min(right_white_space_bound, right_component_bound);
-    // tmp_x = std::min(right_, right_component_bound);
 
     for (int n = tmp_start_row; n <= tmp_end_row; ++n) {
       tmp_x = std::min(tmp_x, component_contour_[n]);
     }
 
-    // if (tmp_x - width < left_) continue;
 
     tmp_y = RowToLoc(tmp_start_row);
     // double tmp_hpwl = EstimatedHPWL(component, tmp_x, tmp_y);

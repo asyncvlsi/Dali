@@ -231,22 +231,16 @@ class Circuit {
   // set rectilinear die area, unit in manufacturing grid;
   void SetRectilinearDieArea(std::vector<int2d>& rectilinear_die_area);
 
-  // return lower x of the placement region, unit is grid value in x
   int RegionLLX() const;
 
-  // return upper x of the placement region, unit is grid value in x
   int RegionURX() const;
 
-  // return lower y of the placement region, unit is grid value in y
   int RegionLLY() const;
 
-  // return upper y of the placement region, unit is grid value in y
   int RegionURY() const;
 
-  // return width of the placement region, unit is grid value in x
   int RegionWidth() const;
 
-  // return height of the placement region, unit is grid value in y
   int RegionHeight() const;
 
   /** Enlarge the placement region about its center by the given scale. */
