@@ -8,6 +8,19 @@
  * of the License, or (at your option) any later version.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Qt implementation of the placement snapshot sink.
+ *
+ * Placement stages publish snapshots through the abstract sink; this one draws
+ * them and can pause the run between stages, which is what makes intermediate
+ * state inspectable. All Qt knowledge stays behind that interface, so the
+ * placer builds without Qt.
+ *
+ * See [the GUI guide](README.md) for the controls and for the unattended
+ * screenshot capture.
+ */
 #include "dali/gui/qt_placement_snapshot_sink.h"
 
 #include <QApplication>

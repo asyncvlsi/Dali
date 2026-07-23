@@ -8,6 +8,19 @@
  * of the License, or (at your option) any later version.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Parses the command line into configuration entries.
+ *
+ * Options are not passed to Dali directly; each becomes a named entry in the
+ * ACT configuration system, which Dali then loads. So an option lives in three
+ * places -- the parser here, the member and its default in dali.h, and the load
+ * call in dali.cc -- and adding one means touching all three.
+ *
+ * ReportDaliUsage must list whatever the parser accepts; a flag that works but
+ * is not printed is undiscoverable.
+ */
 #include "dali/application/dali_command_line.h"
 
 #include <cmath>

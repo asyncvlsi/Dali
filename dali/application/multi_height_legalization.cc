@@ -18,6 +18,14 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Standalone driver for multi-height legalization (`mhlg`).
+ *
+ * The only user of GriddedRowLegalizer; the main flow uses
+ * GriddedCellWellLegalizer instead.
+ */
 #include <phydb/phydb.h>
 
 #include <string>
