@@ -251,6 +251,13 @@ void GriddedDetailedPlacer::FindBestLocalOrder(std::vector<Component*>& result,
   }
 }
 
+/**
+ * Slide a window along a row, replacing each window with its cheapest
+ * permutation. Returns how many windows changed.
+ *
+ * Cost grows factorially with the window, so it stays small; the sliding is what
+ * gives the pass its reach.
+ */
 int GriddedDetailedPlacer::LocalReorderInRow(GriddedRow* row,
                                              int window_size) const {
   int component_count = static_cast<int>(row->Components().size());
@@ -961,6 +968,12 @@ bool GriddedDetailedPlacer::TryMove(GriddedRow* source_row,
   return true;
 }
 
+/**
+ * Price moving a component straight into whitespace in the target row.
+ *
+ * The cheapest relocation to evaluate, tried before ejection chains and cycles.
+ * Writes the result into `plan` without applying it.
+ */
 bool GriddedDetailedPlacer::EvaluateDirectRelocation(
     GriddedRow* source_row, Component* component, GriddedRow* target_row,
     double target_lx, RelocationPlan* plan, MoveStats* stats) {
@@ -1018,6 +1031,13 @@ bool GriddedDetailedPlacer::EvaluateDirectRelocation(
   return true;
 }
 
+/**
+ * Candidate ordering positions for inserting a component into a row.
+ *
+ * Bounded rather than exhaustive: only positions near where the component wants
+ * to be are worth pricing, and considering every position in a long row would
+ * dominate the cost of the move.
+ */
 std::vector<int> GriddedDetailedPlacer::BoundedInsertionPositions(
     Component* component, GriddedRow* target_row, double target_lx,
     const OptimalRegion& region) const {
@@ -1120,6 +1140,12 @@ void GriddedDetailedPlacer::CollectInsertionDirtyComponents(
   }
 }
 
+/**
+ * Price the candidate insertion positions and record the best in `plan`.
+ *
+ * Evaluation only -- nothing is applied here. Returns whether any candidate
+ * improved on leaving the component where it is.
+ */
 bool GriddedDetailedPlacer::EvaluateInsertionRelocations(
     GriddedRow* source_row, Component* component, GriddedRow* target_row,
     double target_lx, const OptimalRegion& region, RelocationPlan* plan,
@@ -1229,6 +1255,14 @@ bool GriddedDetailedPlacer::FindBestInsertionRelocation(GriddedRow* source_row,
   return found;
 }
 
+/**
+ * Make room in a full target row by ejecting a cell from it into a third row.
+ *
+ * The move that unblocks placements a direct relocation cannot reach: a
+ * component wants a row that has no space, so a resident of that row moves on.
+ * Applied only if the chain as a whole improves cost, and rejected if any link
+ * would leave a row over height.
+ */
 bool GriddedDetailedPlacer::TryEjectionChain(GriddedRow* source_row,
                                              Component* component,
                                              GriddedRow* target_row,
@@ -1431,6 +1465,13 @@ bool GriddedDetailedPlacer::CommitClosedAssignmentCycle(
   return true;
 }
 
+/**
+ * Apply a rotation of components around a closed cycle of rows.
+ *
+ * Where an ejection chain ends in a third row, a cycle returns to the row it
+ * started from, so every row's occupancy is unchanged and only the assignment
+ * rotates. Committed as a unit: either the whole cycle applies or none of it.
+ */
 bool GriddedDetailedPlacer::ApplyClosedAssignmentCycle(
     GriddedRow* source_row, Component* component, GriddedRow* target_row,
     const OptimalRegion& source_region, const ClosedCycleCandidate& candidate) {
@@ -1553,6 +1594,13 @@ GriddedDetailedPlacer::TryClosestComponentSwaps(GriddedRow* first_row,
   return stats;
 }
 
+/**
+ * Swap a component with candidates drawn from its optimal region.
+ *
+ * Restricting candidates to the region the component's nets want keeps the
+ * search cheap and the accepted swaps meaningful. Returns attempt and acceptance
+ * counts.
+ */
 GriddedDetailedPlacer::SwapStats GriddedDetailedPlacer::TryOptimalRegionSwaps(
     GriddedRow* source_row, int source_index) {
   struct CandidateComponent {
@@ -1607,6 +1655,13 @@ GriddedDetailedPlacer::SwapStats GriddedDetailedPlacer::TryOptimalRegionSwaps(
   return stats;
 }
 
+/**
+ * Move a component toward its optimal region, trying the relocation kinds in
+ * increasing cost: direct, then ejection, then a closed cycle.
+ *
+ * Components whose cycle could not be evaluated now are appended to
+ * `deferred_cycle_components` for a later pass rather than dropped.
+ */
 GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::TryOptimalRegionMove(
     GriddedRow* source_row, Component* component, bool enable_ejection,
     std::vector<Component*>* deferred_cycle_components) {
@@ -1842,6 +1897,12 @@ GriddedDetailedPlacer::RunBatchedRelocationStage(bool insertion_aware) {
   return total_stats;
 }
 
+/**
+ * Relocate every eligible component once, in one pass over the rows.
+ *
+ * With `enable_ejection`, a component blocked by a full target row may displace
+ * one of its residents rather than giving up.
+ */
 GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::RunRelocationStage(
     bool enable_ejection) {
   MoveStats total_stats;
@@ -1889,6 +1950,13 @@ GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::RunRelocationStage(
   return total_stats;
 }
 
+/**
+ * Re-legalize one row in X, keeping the current cell ordering.
+ *
+ * Sets `*changed` when any cell moved, so callers can skip work that depends on
+ * the row having shifted. Ordering is preserved, so this repairs spacing rather
+ * than reconsidering the arrangement.
+ */
 bool GriddedDetailedPlacer::ClusterRowX(GriddedRow* row, bool* changed) {
   DaliExpects(changed != nullptr,
               "Gridded row clustering requires a changed-row output");
@@ -2098,6 +2166,15 @@ void GriddedDetailedPlacer::BuildRowStripeIndex() {
   }
 }
 
+/**
+ * Run the improvement rounds until they stop paying.
+ *
+ * Each round applies the enabled move kinds in turn and measures what it gained;
+ * rounds stop when the relative improvement falls below the threshold or the
+ * round limit is hit. Returns true when the placement is legal at the end, which
+ * it should be throughout, since every move is rejected unless it keeps the
+ * placement legal.
+ */
 bool GriddedDetailedPlacer::StartPlacement() {
   PrintStartStatement("gridded detailed placement");
   DaliExpects(ckt_ptr_ != nullptr,
