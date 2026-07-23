@@ -103,6 +103,12 @@ void DetailedPlacer::PlaceWindow(const std::vector<Component*>& order,
   }
 }
 
+/**
+ * Replace a short window of a row with its cheapest legal permutation.
+ *
+ * Exhaustive over the window, so the window is kept small; returns whether a
+ * cheaper ordering was found and applied.
+ */
 bool DetailedPlacer::ReorderWindow(std::vector<Component*>* components,
                                    int start, int window_size) {
   std::vector<Component*> original_order(window_size, nullptr);
@@ -192,6 +198,12 @@ void DetailedPlacer::BuildSwapIndex() {
   }
 }
 
+/**
+ * The rectangle a component's nets would pull it to, ignoring other cells.
+ *
+ * The median of its connected pins in X and Y; moving the component into this
+ * region is what the optimal-region moves and swaps aim for.
+ */
 DetailedPlacer::OptimalRegion DetailedPlacer::ComputeOptimalRegion(
     Component* component) const {
   std::vector<double> x_bounds;
@@ -378,6 +390,12 @@ std::vector<GeneralRowSegment*> DetailedPlacer::FindClosestSegmentsInRow(
   return segments;
 }
 
+/**
+ * Move a component into a target row if it lowers cost.
+ *
+ * The requested location is snapped to legal space in the row. Returns whether
+ * the move was applied.
+ */
 bool DetailedPlacer::TryMove(Component* component, GeneralRow* target_row,
                              GeneralRowSegment* target_segment,
                              double target_lx) {
@@ -516,6 +534,12 @@ bool DetailedPlacer::IsPromisingSwap(Component* first, Component* second,
   return cost_after + 1e-9 < cost_before;
 }
 
+/**
+ * Exchange two components if it lowers cost, leaving the placement legal.
+ *
+ * Returns false and changes nothing when the swap does not fit or does not help;
+ * a true return means it has been applied.
+ */
 bool DetailedPlacer::TrySwap(Component* first, Component* second) {
   if (first == second) {
     return false;
@@ -658,6 +682,10 @@ bool DetailedPlacer::TrySwap(Component* first, Component* second) {
   return false;
 }
 
+/**
+ * Move each component toward its optimal region where a legal spot exists
+ * there. Returns the number of moves applied.
+ */
 int DetailedPlacer::RunOptimalRegionMoves() {
   BuildSwapIndex();
   struct MoveCandidate {
@@ -725,6 +753,12 @@ int DetailedPlacer::RunOptimalRegionMoves() {
   return accepted;
 }
 
+/**
+ * Swap components with cells already sitting in their optimal region.
+ *
+ * The move for when the region has no free space: trade places with a resident
+ * rather than requiring a gap. Returns the number of swaps applied.
+ */
 int DetailedPlacer::RunOptimalRegionSwaps() {
   BuildSwapIndex();
   int accepted = 0;
@@ -776,6 +810,10 @@ int DetailedPlacer::RunOptimalRegionSwaps() {
   return accepted;
 }
 
+/**
+ * Re-pack each row segment to remove the gaps earlier moves left behind.
+ * Returns the number of segments changed.
+ */
 int DetailedPlacer::RunSingleSegmentClustering() {
   int accepted_segments = 0;
   for (GeneralRow& row : ckt_ptr_->design().Rows()) {
@@ -844,6 +882,13 @@ void DetailedPlacer::EmitSnapshot(const std::string& id,
   snapshot_callback_(id, label, subgroup, iteration);
 }
 
+/**
+ * Improve a legal standard-cell placement in rounds until it stops paying.
+ *
+ * Applies optimal-region moves, swaps, and window reordering, keeping only
+ * changes that lower cost and preserve legality, so the placement stays legal
+ * throughout. Returns true on success.
+ */
 bool DetailedPlacer::StartPlacement() {
   PrintStartStatement("detailed placement");
   DaliExpects(ckt_ptr_ != nullptr,

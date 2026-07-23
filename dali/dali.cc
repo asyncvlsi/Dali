@@ -230,6 +230,12 @@ void Dali::SetGuiSnapshotSinkFactory(SnapshotSinkFactory factory) {
   gui_snapshot_sink_factory_ = std::move(factory);
 }
 
+/**
+ * Log the resolved value of every option, for reproducing a run.
+ *
+ * One line per option, mirroring LoadParamsFromConfig, so a log records exactly
+ * what configuration produced it.
+ */
 void Dali::ShowParamsList() {
   LOG(info)
       << "Dali runtime parameters:\n"
@@ -383,6 +389,13 @@ void Dali::ShowParamsList() {
       << "\n";
 }
 
+/**
+ * Load every option from the ACT configuration into its member.
+ *
+ * The counterpart to the command-line parser: the parser writes named config
+ * entries, this reads them back. Long because it is one load call per option;
+ * an option missing here is silently left at its default however it was set.
+ */
 void Dali::LoadParamsFromConfig() {
   LoadStringConfig(ConfigName(prefix_, "log_file_name"), &log_file_name_);
 
@@ -692,6 +705,12 @@ Circuit& Dali::GetCircuit() { return circuit_; }
 
 phydb::PhyDB* Dali::GetPhyDBPtr() { return phy_db_ptr_; }
 
+/**
+ * Collect the options into the struct passed to the placement engines.
+ *
+ * The single place the many members become one argument, so a stage takes a
+ * RuntimeOptions rather than a long parameter list.
+ */
 Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
   return RuntimeOptions{
       log_file_name_,
@@ -995,6 +1014,13 @@ bool Dali::ShouldRunMovableCellLegalization() const {
   return HasMovableComponents();
 }
 
+/**
+ * Run global placement, configured for the current flow.
+ *
+ * Installs the gridded rough-legalization refiner and capacity model when the
+ * flow calls for them, then runs the placement. Returns false if it did not
+ * complete.
+ */
 bool Dali::RunGlobalPlacementStage() {
   ElapsedTime stage_timer;
   stage_timer.RecordStartTime();
@@ -1159,6 +1185,12 @@ bool Dali::RunDetailedPlacement() {
   return true;
 }
 
+/**
+ * Copy the resolved options onto the gridded well legalizer before it runs.
+ *
+ * Groups every legalizer setting in one place so the enabling flags and their
+ * effect on the legalizer are visible together rather than scattered.
+ */
 void Dali::ConfigureWellLegalizer() {
   well_legalizer_.CopyPlacementContextFrom(&gb_placer_);
   well_legalizer_.disable_welltap_ = disable_welltap_;
@@ -1441,6 +1473,12 @@ void Dali::AddWellTaps(phydb::Macro* cell, double cell_interval_microns,
   tap_inserter.ExportToPhyDB();
 }
 
+/**
+ * Insert well taps at a fixed pitch, driven by argv-style arguments.
+ *
+ * Part of the interactive API rather than the batch flow; the batch flow inserts
+ * taps through the legalizer's physical completion instead.
+ */
 bool Dali::AddWellTaps(int argc, char** argv) {
   phydb::Macro* cell = nullptr;
   double cell_interval_microns = -1;
@@ -1746,6 +1784,12 @@ void Dali::ExportIoPinsToPhyDB() {
   }
 }
 
+/**
+ * Write the gridded rows back to PhyDB as DEF rows, in database units.
+ *
+ * Each gridded row becomes a DEF row so downstream tools see the row structure
+ * legalization produced.
+ */
 void Dali::ExportMiniRowsToPhyDB() {
   double factor_x = circuit_.DistanceMicrons() * circuit_.GridValueX();
   double factor_y = circuit_.DistanceMicrons() * circuit_.GridValueY();

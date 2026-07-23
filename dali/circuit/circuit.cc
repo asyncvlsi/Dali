@@ -726,6 +726,10 @@ void Circuit::ReportNetFanoutHistogram() {
   design_.ReportNetFanOutHistogram();
 }
 
+/**
+ * Log the design's size and placement region: component and net counts, area,
+ * utilization, and boundary.
+ */
 void Circuit::ReportBriefSummary() {
   PrintHorizontalLine();
   LOG(info) << "Circuit brief summary:\n";
@@ -904,6 +908,14 @@ void Circuit::ReportWellShape() {
   }
 }
 
+/**
+ * Read the `.cell` file: per-macro well geometry and the technology's well
+ * rules.
+ *
+ * The `.cell` file is what distinguishes a well-aware run: it supplies each
+ * macro's N-well and P-well shapes and the plug/spacing rules the gridded
+ * legalizer needs. Providing one is what selects the gridded flow.
+ */
 void Circuit::ReadMultiWellCell(std::string const& name_of_file) {
   std::ifstream ist(name_of_file.c_str());
   DaliExpects(ist.is_open(), "Cannot open input file " + name_of_file);
@@ -1235,6 +1247,12 @@ void Circuit::ReportBoundingBox() {
   LOG(info) << "  current weighted bbox: " << WeightedBoundingBox() << " um\n";
 }
 
+/**
+ * Print a histogram of per-net HPWL over `bin_num` linear bins.
+ *
+ * A diagnostic for seeing whether wirelength is dominated by a few long nets or
+ * spread evenly.
+ */
 void Circuit::ReportHPWLHistogramLinear(int bin_num) {
   DaliExpects(bin_num > 0, "Histogram bin count must be positive");
   std::vector<double> hpwl_list;
@@ -1859,6 +1877,10 @@ void Circuit::SaveDefFile(std::string const& base_name,
   ist.close();
 }
 
+/**
+ * Write the component section of a DEF file, converting grid units back to
+ * database units on the way out.
+ */
 void Circuit::SaveDefFileComponent(std::string const& name_of_file,
                                    std::string const& def_file_name) {
   std::string file_name = name_of_file;
@@ -2137,6 +2159,12 @@ void Circuit::MacroSizeMicrometerToGridValue(std::string const& macro_name,
   }
 }
 
+/**
+ * Add a component to the design programmatically, bound to a macro.
+ *
+ * The non-PhyDB construction path, used by tests and tools that build a circuit
+ * directly. Locations are in grid units.
+ */
 void Circuit::AddComponent(std::string const& component_name, Macro* macro_ptr,
                            double llx, double lly, PlaceStatus place_status,
                            ComponentOrient orient, bool is_real_cel) {
@@ -2247,6 +2275,14 @@ IoPin* Circuit::AddPlacedIOPin(std::string const& iopin_name, double lx,
   return &(design_.iopins_.back());
 }
 
+/**
+ * Shrink a die area whose edges fall between grid lines inward to the grid.
+ *
+ * Placement works in grid units, so a boundary off the grid cannot be
+ * represented exactly; shrinking keeps the usable area strictly inside the
+ * declared one. Selected by `-enable_shrink_off_grid_die_area`. The shifting
+ * variant moves the edges instead of shrinking the region.
+ */
 RectI Circuit::ShrinkOffGridDieArea(int lower_x, int lower_y, int upper_x,
                                     int upper_y) {
   int factor_x = DistanceScaleFactorX();
@@ -2300,6 +2336,12 @@ RectI Circuit::ShrinkOffGridDieArea(int lower_x, int lower_y, int upper_x,
   return {left, bottom, right, top};
 }
 
+/**
+ * Shift a die area whose edges fall between grid lines onto the grid.
+ *
+ * The alternative to shrinking: edges move to the nearest grid line rather than
+ * inward, preserving area at the cost of moving the boundary slightly.
+ */
 RectI Circuit::ShiftOffGridDieArea(int lower_x, int lower_y, int upper_x,
                                    int upper_y) {
   int factor_x = DistanceScaleFactorX();
@@ -2350,6 +2392,13 @@ RectI Circuit::ShiftOffGridDieArea(int lower_x, int lower_y, int upper_x,
   return {left, bottom, right, top};
 }
 
+/**
+ * Copy the technology -- layers, macros, and units -- from PhyDB into Circuit.
+ *
+ * Converts everything to grid units on the way in, so the rest of Dali never
+ * touches database units. One half of construction from PhyDB; LoadCell brings
+ * in the design.
+ */
 void Circuit::LoadTech(phydb::PhyDB* phy_db_ptr) {
   auto& phy_db_tech = *(phy_db_ptr->GetTechPtr());
 
@@ -2621,6 +2670,12 @@ void Circuit::LoadDesign() {
   design().ComponentCollection().Freeze();
 }
 
+/**
+ * Copy the design -- components and nets -- from PhyDB into Circuit.
+ *
+ * The other half of construction from PhyDB, run after LoadTech so macros exist
+ * to bind components to.
+ */
 void Circuit::LoadCell(phydb::PhyDB* phy_db_ptr) {
   auto& phy_db_tech = *(phy_db_ptr->GetTechPtr());
   if (!phy_db_tech.IsWellInfoSet()) {
