@@ -180,10 +180,13 @@ void GriddedDetailedPlacer::SetNetIgnoreThreshold(int net_ignore_threshold) {
 }
 
 /**
- * Wirelength cost of the cells between `left_index` and `right_index` in a row.
+ * Wirelength cost of the cells in a window of a row.
  *
  * Scoped to a window so a candidate reordering can be priced without
  * recomputing the whole row. Nets at or above the ignore threshold are skipped.
+ *
+ * @param left_index,right_index inclusive window bounds within the row.
+ * @return the window's contribution to weighted HPWL.
  */
 double GriddedDetailedPlacer::WireLengthCost(GriddedRow* row, int left_index,
                                              int right_index) const {
@@ -253,10 +256,13 @@ void GriddedDetailedPlacer::FindBestLocalOrder(std::vector<Component*>& result,
 
 /**
  * Slide a window along a row, replacing each window with its cheapest
- * permutation. Returns how many windows changed.
+ * permutation.
  *
  * Cost grows factorially with the window, so it stays small; the sliding is what
  * gives the pass its reach.
+ *
+ * @param window_size number of consecutive cells permuted at each step.
+ * @return the number of windows whose ordering changed.
  */
 int GriddedDetailedPlacer::LocalReorderInRow(GriddedRow* row,
                                              int window_size) const {
@@ -397,6 +403,8 @@ GriddedDetailedPlacer::ComputeRowRequirementsAfterAssignment(
  * A gridded row is as tall as its tallest cell, so a swap that moves a taller
  * cell into a row grows that row and can push its stripe past the height it was
  * legalized into. Such swaps are refused regardless of their cost benefit.
+ *
+ * @return true if neither row would grow.
  */
 bool GriddedDetailedPlacer::IsNonHeightIncreasingSwap(
     GriddedRow* first_row, Component* first_component, GriddedRow* second_row,
@@ -862,9 +870,11 @@ void GriddedDetailedPlacer::TransferInitialLocation(
 /**
  * Exchange two cells if doing so lowers cost, leaving the placement legal.
  *
- * Returns false and changes nothing when either cell is ineligible, when the
- * swap would raise a row's height, or when the cost does not improve. A true
- * return means the swap has already been applied and both rows re-legalized.
+ * A swap is refused when either cell is ineligible, when it would raise a row's
+ * height, or when the cost does not improve.
+ *
+ * @return true if the swap was applied and both rows re-legalized; false if
+ *         nothing changed.
  */
 bool GriddedDetailedPlacer::TrySwap(GriddedRow* first_row, int first_index,
                                     GriddedRow* second_row, int second_index) {
@@ -896,13 +906,15 @@ bool GriddedDetailedPlacer::TrySwap(GriddedRow* first_row, int first_index,
 }
 
 /**
- * Move a component into another row at `target_lx` if it lowers cost.
+ * Move a component into another row if it lowers cost.
  *
- * `insertion_position` selects where in the target row's ordering the cell
- * lands; the row is re-legalized in X afterwards, so the requested X is a
- * preference rather than a final location. Returns false and changes nothing if
- * the move is rejected. `stats` accumulates attempt and acceptance counts and
- * must not be null.
+ * The row is re-legalized in X after the move, so the requested location is a
+ * preference rather than a final position.
+ *
+ * @param target_lx preferred X in the target row, before re-legalization.
+ * @param stats accumulates attempt and acceptance counts; must not be null.
+ * @param insertion_position where in the target row's ordering the cell lands.
+ * @return true if the move was applied; false if it was rejected.
  */
 bool GriddedDetailedPlacer::TryMove(GriddedRow* source_row,
                                     Component* component,
@@ -972,7 +984,9 @@ bool GriddedDetailedPlacer::TryMove(GriddedRow* source_row,
  * Price moving a component straight into whitespace in the target row.
  *
  * The cheapest relocation to evaluate, tried before ejection chains and cycles.
- * Writes the result into `plan` without applying it.
+ *
+ * @param plan receives the relocation if one is worthwhile; not applied here.
+ * @return true if a beneficial relocation was found.
  */
 bool GriddedDetailedPlacer::EvaluateDirectRelocation(
     GriddedRow* source_row, Component* component, GriddedRow* target_row,
@@ -1035,8 +1049,11 @@ bool GriddedDetailedPlacer::EvaluateDirectRelocation(
  * Candidate ordering positions for inserting a component into a row.
  *
  * Bounded rather than exhaustive: only positions near where the component wants
- * to be are worth pricing, and considering every position in a long row would
+ * to be are worth pricing, since considering every position in a long row would
  * dominate the cost of the move.
+ *
+ * @param region the optimal region the component's nets pull it toward.
+ * @return ordering indices in the target row worth evaluating.
  */
 std::vector<int> GriddedDetailedPlacer::BoundedInsertionPositions(
     Component* component, GriddedRow* target_row, double target_lx,
@@ -1143,8 +1160,10 @@ void GriddedDetailedPlacer::CollectInsertionDirtyComponents(
 /**
  * Price the candidate insertion positions and record the best in `plan`.
  *
- * Evaluation only -- nothing is applied here. Returns whether any candidate
- * improved on leaving the component where it is.
+ * Evaluation only -- nothing is applied here.
+ *
+ * @param plan receives the best insertion found.
+ * @return true if some candidate beat leaving the component where it is.
  */
 bool GriddedDetailedPlacer::EvaluateInsertionRelocations(
     GriddedRow* source_row, Component* component, GriddedRow* target_row,
@@ -1262,6 +1281,8 @@ bool GriddedDetailedPlacer::FindBestInsertionRelocation(GriddedRow* source_row,
  * component wants a row that has no space, so a resident of that row moves on.
  * Applied only if the chain as a whole improves cost, and rejected if any link
  * would leave a row over height.
+ *
+ * @return true if the chain was applied; false if nothing changed.
  */
 bool GriddedDetailedPlacer::TryEjectionChain(GriddedRow* source_row,
                                              Component* component,
@@ -1659,8 +1680,10 @@ GriddedDetailedPlacer::SwapStats GriddedDetailedPlacer::TryOptimalRegionSwaps(
  * Move a component toward its optimal region, trying the relocation kinds in
  * increasing cost: direct, then ejection, then a closed cycle.
  *
- * Components whose cycle could not be evaluated now are appended to
- * `deferred_cycle_components` for a later pass rather than dropped.
+ * @param enable_ejection allow displacing a resident of a full target row.
+ * @param deferred_cycle_components receives components whose cycle could not be
+ *        evaluated now, for a later pass, rather than dropping them.
+ * @return attempt and acceptance counts for the moves tried.
  */
 GriddedDetailedPlacer::MoveStats GriddedDetailedPlacer::TryOptimalRegionMove(
     GriddedRow* source_row, Component* component, bool enable_ejection,

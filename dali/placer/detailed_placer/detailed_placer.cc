@@ -393,8 +393,8 @@ std::vector<GeneralRowSegment*> DetailedPlacer::FindClosestSegmentsInRow(
 /**
  * Move a component into a target row if it lowers cost.
  *
- * The requested location is snapped to legal space in the row. Returns whether
- * the move was applied.
+ * @return true if the move was applied. The requested location is snapped to
+ *         legal space in the row first.
  */
 bool DetailedPlacer::TryMove(Component* component, GeneralRow* target_row,
                              GeneralRowSegment* target_segment,
@@ -537,8 +537,8 @@ bool DetailedPlacer::IsPromisingSwap(Component* first, Component* second,
 /**
  * Exchange two components if it lowers cost, leaving the placement legal.
  *
- * Returns false and changes nothing when the swap does not fit or does not help;
- * a true return means it has been applied.
+ * @return true if the swap was applied; false if it does not fit or does not
+ *         help, in which case nothing changed.
  */
 bool DetailedPlacer::TrySwap(Component* first, Component* second) {
   if (first == second) {

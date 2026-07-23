@@ -283,10 +283,10 @@ void GriddedCellWellLegalizer::SetMaxRowWidth(double max_row_width_microns) {
 /**
  * Set up the stripe plan and the row structure legalization will fill.
  *
- * `cluster_width` is the intended row width in grid units; passing a
- * non-positive value lets the space partitioner derive one from MaxPlugDist.
- * `apply_banded_assignment` selects assigning components to stripes band by band
- * rather than in one pass.
+ * @param cluster_width intended row width in grid units; a non-positive value
+ *        lets the space partitioner derive one from MaxPlugDist.
+ * @param apply_banded_assignment assign components to stripes band by band
+ *        rather than in one pass.
  */
 void GriddedCellWellLegalizer::InitializeWellLegalizer(
     int cluster_width, bool apply_banded_assignment) {
@@ -506,9 +506,11 @@ GriddedCellWellLegalizer::RunProvisionalPlacement(
  * stripes.
  *
  * Called when a provisional pass leaves a stripe over capacity, during global
- * placement rather than at the end of it. Returns whether the rebalanced result
- * fits; `result` carries it back either way, so the caller can keep the better
- * of the two.
+ * placement rather than at the end of it.
+ *
+ * @param result carries the rebalanced placement back either way, so the caller
+ *        can keep the better of the two.
+ * @return true if the rebalanced result fits.
  */
 bool GriddedCellWellLegalizer::TryBalanceProvisionalPlacement(
     const std::vector<ComponentPlacementSnapshot>& incoming_placement,
@@ -992,9 +994,8 @@ bool GriddedCellWellLegalizer::StripeLegalizationTopDownCompact(
  * Group each stripe's components into gridded rows, packing rows upward from
  * the bottom of the stripe.
  *
- * Returns false when any stripe ends up taller than the space it has. That is a
- * legalization failure rather than an error: the caller may rebalance stripes
- * and try again.
+ * @return true if every stripe fits; false when any ends up taller than the
+ *         space it has, which the caller may repair by rebalancing.
  */
 bool GriddedCellWellLegalizer::ComponentClustering() {
   /****
@@ -1286,8 +1287,9 @@ bool GriddedCellWellLegalizer::ComponentClusteringCompact() {
  * Place a stripe's rows in Y, without yet committing to the result.
  *
  * Rows are laid out by displacement where the stripe has room to spare, and
- * packed tightly from the bottom where it does not. Returns whether the stripe
- * fits; a false result is what drives rebalancing.
+ * packed tightly from the bottom where it does not.
+ *
+ * @return true if the stripe fits; a false result is what drives rebalancing.
  */
 bool GriddedCellWellLegalizer::TrialClusterLegalization(Stripe& stripe) {
   /****
@@ -2709,10 +2711,11 @@ void GriddedCellWellLegalizer::EmitSnapshot(const std::string& id,
  * Legalize the placement: partition into stripes, cluster components into
  * gridded rows, orient and locate those rows, then complete them physically.
  *
- * Returns false if legalization failed, which for this legalizer means one or
- * more stripes could not hold their components within the available height. The
- * placement is left in whatever state the failing attempt reached; the caller
- * decides whether to retry with different parameters or give up.
+ * The placement is left in whatever state the failing attempt reached; the
+ * caller decides whether to retry with different parameters or give up.
+ *
+ * @return true if the placement is legal; false if one or more stripes could
+ *         not hold their components within the available height.
  */
 bool GriddedCellWellLegalizer::StartPlacement() {
   PrintStartStatement("standard cluster well legalization");
