@@ -159,6 +159,7 @@ void GlobalPlacer::InitializePlacementEngines() {
         std::vector<double>(ckt_ptr_->Components().size(), 1.0));
   }
   accepted_upper_bound_hpwl_.clear();
+  physical_upper_bound_hpwl_.clear();
   accepted_upper_bound_hpwl_x_.clear();
   accepted_upper_bound_hpwl_y_.clear();
   best_upper_bound_placement_.clear();
@@ -281,6 +282,7 @@ void GlobalPlacer::RunPlacementIterations() {
     accepted_upper_bound_hpwl_x_.push_back(accepted_hpwl_x);
     accepted_upper_bound_hpwl_y_.push_back(accepted_hpwl_y);
     if (accepted_physical_refinement) {
+      physical_upper_bound_hpwl_.push_back(accepted_hpwl);
       UpdateBestUpperBoundPlacement(accepted_hpwl);
     }
     EmitIterationSnapshot("upper_bound", "Upper Bound", "upper_bound");
@@ -796,47 +798,53 @@ bool GlobalPlacer::HasUpperBoundHpwlStalled(
 }
 
 /**
- * @brief Whether global placement has stopped making progress.
+ * Convergence for the gridded flow: the rough-legalized upper bound has stopped
+ * improving.
  *
- * Two tests are selectable through `convergence_criteria_`:
- *
- *   1. (default) the upper-bound HPWL has stopped trending downward, measured
- *      over `upper_bound_improvement_patience_` iterations. Further iterations
- *      are not buying anything, which is what convergence means here.
- *   2. the lower/upper HPWL gap has fallen below `convergence_gap_threshold_`.
- *
- * Test 1 deliberately does not also require a small lower/upper gap. That gap
- * measures how much legalization costs for the flow in use, not whether the
- * optimization has converged, and it does not shrink with iterations: in the
- * gridded well flow the upper bound comes from a rough gridded legalization and
- * the gap plateaus near 30%, well above the threshold test 2 uses. Requiring
- * both left test 1 unsatisfiable for gridded designs, so global placement ran to
- * `-global_max_iterations` every time and the cap, not convergence, decided when
- * it stopped.
+ * Only that series is consulted. It is what legalization will actually produce,
+ * whereas the lower/upper gap here measures legalization cost rather than
+ * convergence and never shrinks. The series is kept apart from the accepted
+ * upper bounds because those fall back to the unlegalized placement whenever the
+ * refiner reports infeasible.
  */
-bool GlobalPlacer::IsPlacementConverged() {
-  if (cur_iter_ + 1 < min_iter_) return false;
+bool GlobalPlacer::IsGriddedPlacementConverged() const {
+  return HasUpperBoundHpwlStalled(physical_upper_bound_hpwl_);
+}
+
+/**
+ * Convergence for flows without rough legalization: every upper bound is the
+ * spread placement, so criterion 1 tests that series for a stall and criterion 2
+ * tests the lower/upper gap against `convergence_gap_threshold_`.
+ */
+bool GlobalPlacer::IsStandardCellPlacementConverged() {
   if (!HasCurrentConvergenceUpperBound()) return false;
 
-  bool res;
   auto& lower_bound_hpwl = optimizer_->GetHpwls();
   auto& upper_bound_hpwl = accepted_upper_bound_hpwl_;
   if (convergence_criteria_ == 1) {
-    res = !upper_bound_hpwl.empty() && HasUpperBoundHpwlStalled(upper_bound_hpwl);
-  } else if (convergence_criteria_ == 2) {
-    if (lower_bound_hpwl.empty()) {
-      res = false;
-    } else {
-      double lower_bound = lower_bound_hpwl.back();
-      double upper_bound = upper_bound_hpwl.back();
-      res = (lower_bound > 1e-10) && (lower_bound < upper_bound) &&
-            (upper_bound / lower_bound - 1 < convergence_gap_threshold_);
-    }
-  } else {
-    DaliExpects(false, "Unknown Convergence Criteria!");
+    return !upper_bound_hpwl.empty() &&
+           HasUpperBoundHpwlStalled(upper_bound_hpwl);
   }
+  if (convergence_criteria_ == 2) {
+    if (lower_bound_hpwl.empty()) return false;
+    double lower_bound = lower_bound_hpwl.back();
+    double upper_bound = upper_bound_hpwl.back();
+    return (lower_bound > 1e-10) && (lower_bound < upper_bound) &&
+           (upper_bound / lower_bound - 1 < convergence_gap_threshold_);
+  }
+  DaliExpects(false, "Unknown Convergence Criteria!");
+  return false;
+}
 
-  return res;
+/** True when the gridded flow rough-legalizes on every iteration. */
+bool GlobalPlacer::UsesGriddedRoughLegalization() const {
+  return upper_bound_refiner_ != nullptr;
+}
+
+bool GlobalPlacer::IsPlacementConverged() {
+  if (cur_iter_ + 1 < min_iter_) return false;
+  return UsesGriddedRoughLegalization() ? IsGriddedPlacementConverged()
+                                        : IsStandardCellPlacementConverged();
 }
 
 /****

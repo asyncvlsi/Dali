@@ -142,6 +142,9 @@ class GlobalPlacer : public Placer {
   bool HasUpperBoundHpwlStalled(
       const std::vector<double>& upper_bound_hpwl) const;
 
+  bool UsesGriddedRoughLegalization() const;
+  bool IsGriddedPlacementConverged() const;
+  bool IsStandardCellPlacementConverged();
   bool IsPlacementConverged();
   /** Return true when this iteration has a valid bound for convergence. */
   bool HasCurrentConvergenceUpperBound() const;
@@ -220,6 +223,8 @@ class GlobalPlacer : public Placer {
   std::unique_ptr<GlobalSpreader> spreader_;
   std::unique_ptr<GlobalUpperBoundRefiner> upper_bound_refiner_;
   std::vector<double> accepted_upper_bound_hpwl_;
+  // Only the entries of accepted_upper_bound_hpwl_ that are rough-legalized.
+  std::vector<double> physical_upper_bound_hpwl_;
   /** Accepted physical upper-bound X HPWL for each global iteration. */
   std::vector<double> accepted_upper_bound_hpwl_x_;
   /** Accepted physical upper-bound Y HPWL for each global iteration. */
