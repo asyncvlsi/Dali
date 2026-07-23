@@ -18,6 +18,15 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * The free space available to the Tetris legalizer, tracked per row.
+ *
+ * Placing a cell consumes part of a free segment and splits what remains, so
+ * the structure shrinks as legalization proceeds and a row that can no longer
+ * fit a cell is skipped.
+ */
 #include "tetris_space.h"
 
 #include <algorithm>

@@ -18,6 +18,12 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * A run of free space in a row, and the list operations the Tetris legalizer
+ * uses to consume and split it.
+ */
 #include "free_segment.h"
 
 #include <algorithm>

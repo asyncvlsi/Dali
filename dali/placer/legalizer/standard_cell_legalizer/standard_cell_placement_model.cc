@@ -18,6 +18,12 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Cost model the standard-cell legalizer scores candidate placements with,
+ * either displacement or wirelength.
+ */
 #include "dali/placer/legalizer/standard_cell_legalizer/standard_cell_placement_model.h"
 
 #include <algorithm>

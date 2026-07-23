@@ -8,6 +8,18 @@
  * of the License, or (at your option) any later version.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Detailed placement for the standard-cell flow.
+ *
+ * Works in windows: a window of cells is lifted, re-placed at lower cost, and
+ * kept only if the result improves and stays legal. Bounding the window keeps
+ * each decision cheap on designs of a million cells.
+ *
+ * The gridded flow has its own detailed placer, which must additionally respect
+ * row heights that follow their contents.
+ */
 #include "dali/placer/detailed_placer/detailed_placer.h"
 
 #include <algorithm>

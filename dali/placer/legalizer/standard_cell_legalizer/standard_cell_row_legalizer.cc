@@ -18,6 +18,11 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Places the cells assigned to one standard-cell row along X.
+ */
 #include "dali/placer/legalizer/standard_cell_legalizer/standard_cell_row_legalizer.h"
 
 #include <algorithm>

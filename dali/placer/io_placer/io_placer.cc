@@ -18,6 +18,16 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Places I/O pins along the placement boundary.
+ *
+ * A pin is assigned to a boundary and a position on it, on a metal layer the
+ * technology allows, spaced so pins do not collide. Runs after component
+ * placement, so pin positions can follow the nets that reach them; pins already
+ * marked fixed keep their positions.
+ */
 #include "io_placer.h"
 
 #include <algorithm>

@@ -18,6 +18,12 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * The space available along each placement boundary for I/O pins, per metal
+ * layer, and the bookkeeping that keeps assigned pins from overlapping.
+ */
 #include "io_boundary_space.h"
 
 #include <algorithm>

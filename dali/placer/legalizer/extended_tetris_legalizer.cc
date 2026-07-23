@@ -18,6 +18,16 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Fallback legalizer, used when the standard-cell legalizer fails.
+ *
+ * Places cells one at a time into the nearest row with room, in the manner of
+ * Tetris. That greedy order makes it robust -- it will nearly always produce
+ * something legal -- but worse than the legalizer it backs up, so it is a
+ * safety net rather than an alternative.
+ */
 #include "extended_tetris_legalizer.h"
 
 #include <algorithm>

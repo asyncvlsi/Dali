@@ -18,6 +18,20 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * The standard-cell flow's legalizer: snaps cells onto DEF rows without
+ * overlap.
+ *
+ * Rows here are a fixed pitch from the DEF, unlike the gridded flow where a row
+ * is as tall as its contents, so legalization is choosing a row and an X within
+ * it. Cost is either displacement from the global-placement location or
+ * wirelength, selected by `-standard_cell_legalizer_cost`.
+ *
+ * If this fails the flow falls back to ExtendedTetrisLegalizer rather than
+ * giving up.
+ */
 #include "dali/placer/legalizer/standard_cell_legalizer/standard_cell_legalizer.h"
 
 #include <algorithm>

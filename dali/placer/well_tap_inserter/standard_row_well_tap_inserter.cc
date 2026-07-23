@@ -18,6 +18,15 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Inserts well taps into standard-cell rows.
+ *
+ * The standard-cell counterpart to the gridded flow's row completer: taps go in
+ * at a pitch that keeps every cell within MaxPlugDist of one, into rows of fixed
+ * height rather than rows sized by their contents.
+ */
 #include "dali/placer/well_tap_inserter/standard_row_well_tap_inserter.h"
 
 #include <algorithm>
