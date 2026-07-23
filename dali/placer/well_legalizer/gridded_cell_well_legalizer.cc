@@ -84,6 +84,14 @@ void GriddedCellWellLegalizer::CheckWellStatus() {
   }
 }
 
+/**
+ * Read the well rules out of the technology and convert them to grid units.
+ *
+ * Well spacing takes the larger of the same-well and opposite-well spacings,
+ * since a column boundary has to satisfy both. MaxPlugDist becomes
+ * `max_unplug_length_`, which is what bounds row width and therefore the whole
+ * stripe plan. Cached against the circuit pointer so repeated calls are free.
+ */
 void GriddedCellWellLegalizer::FetchNpWellParams() {
   if (physical_parameter_circuit_ == ckt_ptr_) {
     return;
@@ -166,6 +174,14 @@ GriddedCapacityConfig GriddedCellWellLegalizer::BuildGriddedCapacityConfig(
   return config;
 }
 
+/**
+ * Calibrate the gridded capacity model against this design.
+ *
+ * The model reports how much stripe height a set of components will occupy;
+ * this scales it so the numbers are comparable to the area-based capacity global
+ * placement otherwise uses. Falls back to a width derived from MaxPlugDist when
+ * no row width has been forced.
+ */
 double GriddedCellWellLegalizer::EstimateGriddedDemandNormalization(
     const GriddedCapacityConfig& config) const {
   DaliExpects(ckt_ptr_ != nullptr,
@@ -264,6 +280,14 @@ void GriddedCellWellLegalizer::SetMaxRowWidth(double max_row_width_microns) {
   LOG(info) << "Max row width in grid unit : " << max_row_width_ << "\n";
 }
 
+/**
+ * Set up the stripe plan and the row structure legalization will fill.
+ *
+ * `cluster_width` is the intended row width in grid units; passing a
+ * non-positive value lets the space partitioner derive one from MaxPlugDist.
+ * `apply_banded_assignment` selects assigning components to stripes band by band
+ * rather than in one pass.
+ */
 void GriddedCellWellLegalizer::InitializeWellLegalizer(
     int cluster_width, bool apply_banded_assignment) {
   if (disable_welltap_) {
@@ -477,6 +501,15 @@ GriddedCellWellLegalizer::RunProvisionalPlacement(
   return result;
 }
 
+/**
+ * Try to make a failed rough legalization fit by moving components between
+ * stripes.
+ *
+ * Called when a provisional pass leaves a stripe over capacity, during global
+ * placement rather than at the end of it. Returns whether the rebalanced result
+ * fits; `result` carries it back either way, so the caller can keep the better
+ * of the two.
+ */
 bool GriddedCellWellLegalizer::TryBalanceProvisionalPlacement(
     const std::vector<ComponentPlacementSnapshot>& incoming_placement,
     ProvisionalGriddedPlacementResult* result) {
@@ -696,6 +729,14 @@ void GriddedCellWellLegalizer::AppendComponentToColBottomUp(
   }
 }
 
+/**
+ * Add a component to a stripe, filling rows from the top down.
+ *
+ * Starts a new row when the current one cannot take the component without
+ * exceeding the row width, so row heights follow whatever lands in them. The
+ * bottom-up and compact variants differ only in fill direction and in how
+ * aggressively they reuse a partly filled row.
+ */
 void GriddedCellWellLegalizer::AppendComponentToColTopDown(
     Stripe& stripe, Component& component) {
   bool is_no_row = stripe.gridded_rows_.empty();
@@ -743,6 +784,9 @@ void GriddedCellWellLegalizer::AppendComponentToColTopDown(
   stripe.contour_ = front_row->LLY();
 }
 
+/**
+ * Bottom-up fill that packs rows tightly, used when a stripe is short of space.
+ */
 void GriddedCellWellLegalizer::AppendComponentToColBottomUpCompact(
     Stripe& stripe, Component& component) {
   bool is_new_cluster_needed = (stripe.contour_ == stripe.LLY());
@@ -789,6 +833,9 @@ void GriddedCellWellLegalizer::AppendComponentToColBottomUpCompact(
   stripe.contour_ = front_cluster->URY();
 }
 
+/**
+ * Top-down fill that packs rows tightly, used when a stripe is short of space.
+ */
 void GriddedCellWellLegalizer::AppendComponentToColTopDownCompact(
     Stripe& stripe, Component& component) {
   bool is_new_cluster_needed = (stripe.contour_ == stripe.URY());
@@ -941,6 +988,14 @@ bool GriddedCellWellLegalizer::StripeLegalizationTopDownCompact(
   return stripe.contour_ >= RegionBottom();
 }
 
+/**
+ * Group each stripe's components into gridded rows, packing rows upward from
+ * the bottom of the stripe.
+ *
+ * Returns false when any stripe ends up taller than the space it has. That is a
+ * legalization failure rather than an error: the caller may rebalance stripes
+ * and try again.
+ */
 bool GriddedCellWellLegalizer::ComponentClustering() {
   /****
    * Clustering components in each stripe
@@ -1120,6 +1175,14 @@ size_t GriddedCellWellLegalizer::CountComponentOverlapsInRows() const {
   return overlap_count;
 }
 
+/**
+ * Check the finished placement against the rules the flow must satisfy.
+ *
+ * Which checks apply follows the configuration: tap coverage and tap counts are
+ * only meaningful when taps are enabled, and an exact per-row tap count only
+ * when the pattern has a fixed one. Returns false and logs the violations rather
+ * than aborting, so the caller can report them.
+ */
 bool GriddedCellWellLegalizer::ValidateFinalPlacement() const {
   GriddedPlacementValidationConfig config;
   config.check_component_orientation = !disable_cell_flip_;
@@ -1219,6 +1282,13 @@ bool GriddedCellWellLegalizer::ComponentClusteringCompact() {
   return res;
 }
 
+/**
+ * Place a stripe's rows in Y, without yet committing to the result.
+ *
+ * Rows are laid out by displacement where the stripe has room to spare, and
+ * packed tightly from the bottom where it does not. Returns whether the stripe
+ * fits; a false result is what drives rebalancing.
+ */
 bool GriddedCellWellLegalizer::TrialClusterLegalization(Stripe& stripe) {
   /****
    * Legalize the location of all clusters using extended Tetris legalization
@@ -1316,6 +1386,13 @@ void GriddedCellWellLegalizer::ApplyColumnOrientationPhase(
   }
 }
 
+/**
+ * Choose each column's row-flip phase, returning the HPWL after the choice.
+ *
+ * Flipping a column's first row flips the whole column, since adjacent rows must
+ * alternate for like wells to abut. That makes the choice one bit per column,
+ * swept a few times because a column's best phase depends on its neighbours'.
+ */
 double GriddedCellWellLegalizer::OptimizeColumnOrientationPhases() {
   constexpr int kMaxOrientationSweeps = 4;
   constexpr double kMinHpwlImprovement = 1e-9;
@@ -1410,6 +1487,12 @@ bool GriddedCellWellLegalizer::RunComponentClusteringStage() {
   return is_success;
 }
 
+/**
+ * Compare banded stripe assignments by clustering each, and keep the best.
+ *
+ * Requires banded assignment to be enabled. Returns false when no candidate
+ * clusters legally.
+ */
 bool GriddedCellWellLegalizer::RunBandedAssignmentPreviewStage() {
   DaliExpects(enable_banded_stripe_assignment_,
               "Banded preview requires banded assignment");
@@ -1488,6 +1571,14 @@ bool GriddedCellWellLegalizer::RunBandedAssignmentPreviewStage() {
   return is_success;
 }
 
+/**
+ * Evaluate candidate row assignments by running a detailed-placement round on
+ * each, and keep the best.
+ *
+ * Scoring a candidate after local detailed placement is more faithful than
+ * scoring the assignment alone, at the cost of a detailed round per candidate.
+ * Requires both CP-SAT row assignment and detailed placement to be enabled.
+ */
 bool GriddedCellWellLegalizer::RunVerticalHpwlRowAssignmentPreviewStage() {
   DaliExpects(enable_vertical_hpwl_row_assignment_,
               "Row-assignment preview requires CP-SAT row assignment");
@@ -1591,6 +1682,12 @@ bool GriddedCellWellLegalizer::RunVerticalHpwlRowAssignmentPreviewStage() {
   return is_success;
 }
 
+/**
+ * Try several stripe boundary plans and keep the one that clusters best.
+ *
+ * Requires adaptive boundaries, since it is choosing among plans that respond
+ * to local demand. Returns false when no candidate produces a legal clustering.
+ */
 bool GriddedCellWellLegalizer::RunBestBoundaryClusteringStage() {
   DaliExpects(enable_adaptive_stripe_boundaries_,
               "Boundary selection requires adaptive stripes to be enabled");
@@ -1794,6 +1891,9 @@ void GriddedCellWellLegalizer::RunRowLocationOptimizationStage() {
                "legalization", "row_location");
 }
 
+/**
+ * Refine legal row X locations with CP-SAT. Research path, off by default.
+ */
 void GriddedCellWellLegalizer::RunOrToolsRowOptimizationStage() {
   LOG(info) << "Optimize gridded row X locations with OR-Tools CP-SAT\n";
   ElapsedTime timer;
@@ -1845,6 +1945,13 @@ void GriddedCellWellLegalizer::RunOrToolsRowOptimizationStage() {
                "ortools_row");
 }
 
+/**
+ * Reassign components between rows to reduce vertical wirelength, applying the
+ * result directly.
+ *
+ * The non-preview form: it commits its assignment rather than scoring
+ * candidates against a detailed round first.
+ */
 void GriddedCellWellLegalizer::RunVerticalHpwlRowAssignmentStage() {
   LOG(info) << "Run experimental vertical-HPWL row assignment\n";
   ElapsedTime timer;
@@ -1912,6 +2019,13 @@ void GriddedCellWellLegalizer::RunVerticalHpwlRowAssignmentStage() {
                "vertical_hpwl_row_assignment");
 }
 
+/**
+ * Measure how much a bounded exact solver could still improve the placement.
+ *
+ * Analysis only: it solves small windows to see what headroom remains and
+ * records the result as metrics, without changing the placement. Part of the
+ * CP-SAT research path, off by default.
+ */
 void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
   LOG(info) << "Analyze bounded exact gridded legalization windows\n";
   ElapsedTime timer;
@@ -2078,6 +2192,12 @@ void GriddedCellWellLegalizer::RunExactLegalizationAnalysisStage() {
   RecordPlacementMetric("time.exact_legalization.cpu_s", timer.GetCpuTime());
 }
 
+/**
+ * Solve one CP-SAT model over the whole design and record what it found.
+ *
+ * The unbounded counterpart to the windowed analysis: far more expensive, and
+ * time-limited rather than run to optimality. Research path, off by default.
+ */
 void GriddedCellWellLegalizer::RunWholeDesignExactLegalizationStage() {
   ElapsedTime timer;
   timer.RecordStartTime();
@@ -2295,6 +2415,12 @@ void GriddedCellWellLegalizer::RunExactStripeOptimizationStage() {
   }
 }
 
+/**
+ * Refine the boundaries between adjacent stripes with CP-SAT.
+ *
+ * Adjusts where neighbouring columns meet rather than reassigning components.
+ * Research path, off by default and time-limited.
+ */
 void GriddedCellWellLegalizer::RunExactBoundaryOptimizationStage() {
   const GriddedCapacityConfig capacity = BuildGriddedCapacityConfig(1.0);
   exact_boundary_refiner_config_.minimum_p_well_height =
@@ -2372,6 +2498,13 @@ void GriddedCellWellLegalizer::RunExactBoundaryOptimizationStage() {
   }
 }
 
+/**
+ * Choose row orientation and row Y together rather than in sequence.
+ *
+ * The two interact -- flipping a row changes which wells abut and therefore
+ * where rows may sit -- so solving them jointly finds arrangements that
+ * optimizing each in turn misses.
+ */
 void GriddedCellWellLegalizer::RunJointOrientationAndRowLocationOptimization() {
   constexpr int kMaximumRounds = 4;
   constexpr double kMinimumRelativeImprovement = 1e-5;
@@ -2421,6 +2554,15 @@ void GriddedCellWellLegalizer::RunJointOrientationAndRowLocationOptimization() {
                         timer.GetCpuTime());
 }
 
+/**
+ * Run the stages that follow clustering: orientation, row locations, and
+ * whichever refinement passes the configuration enables.
+ *
+ * `clustering_succeeded` false means the stripes did not fit, so stages that
+ * would only be meaningful on a legal placement are skipped.
+ * `run_read_only_analysis` restricts this to the stages that measure without
+ * changing the placement.
+ */
 void GriddedCellWellLegalizer::RunPostClusteringStages(
     bool clustering_succeeded, bool run_read_only_analysis) {
   RunClusterOrientationStage();
@@ -2563,6 +2705,15 @@ void GriddedCellWellLegalizer::EmitSnapshot(const std::string& id,
                      label, group, subgroup, iteration);
 }
 
+/**
+ * Legalize the placement: partition into stripes, cluster components into
+ * gridded rows, orient and locate those rows, then complete them physically.
+ *
+ * Returns false if legalization failed, which for this legalizer means one or
+ * more stripes could not hold their components within the available height. The
+ * placement is left in whatever state the failing attempt reached; the caller
+ * decides whether to retry with different parameters or give up.
+ */
 bool GriddedCellWellLegalizer::StartPlacement() {
   PrintStartStatement("standard cluster well legalization");
 
@@ -2616,6 +2767,13 @@ bool GriddedCellWellLegalizer::StartPlacement() {
   return is_success;
 }
 
+/**
+ * Report how much gridded capacity the design needs against what the plan
+ * provides.
+ *
+ * Diagnostic only. A required-to-available ratio near or above one is the early
+ * warning that legalization will struggle with the current stripe plan.
+ */
 void GriddedCellWellLegalizer::LogEstimatedGriddedCapacity() {
   GriddedCapacityConfig config = BuildGriddedCapacityConfig(PlacementDensity());
   unsigned long long raw_component_area = 0;
@@ -2695,6 +2853,11 @@ void GriddedCellWellLegalizer::LogActualGriddedUtilization() const {
             << "\n";
 }
 
+/**
+ * Write the P+/N+ implant rectangles to a text file for inspection.
+ *
+ * A debugging output, separate from the DEF the flow emits.
+ */
 void GriddedCellWellLegalizer::GenPPNP(const std::string& name_of_file) {
   std::string np_file = name_of_file + "_np.txt";
   std::ofstream ostnp(np_file.c_str());
