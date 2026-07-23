@@ -115,6 +115,32 @@ so the iteration count adapts to the design and normally needs no attention.
   * `-global_min_iterations <n>` — floor below which it will not stop, default
     10.
 
+## Standard-cell results on ISPD 2005
+
+Measured with the standard-cell configuration above, four threads on an Apple
+M1 Max. HPWL is in units of 1e6 um; every net has weight 1, so the reported
+weighted HPWL is plain HPWL. *GP* is the wirelength global placement hands over,
+*legal* is after legalization, *final* is after detailed placement.
+
+| design | cells | GP iters | GP | legal | final | runtime |
+|---|---|---|---|---|---|---|
+| adaptec1 | 211 K | 49 | 79.05 | 81.60 | 80.87 | 134 s |
+| adaptec2 | 255 K | 44 | 88.95 | 91.33 | 90.54 | 247 s |
+| adaptec3 | 452 K | 45 | 200.80 | 205.52 | 203.50 | 280 s |
+| adaptec4 | 496 K | 45 | 182.69 | 188.96 | 186.84 | 315 s |
+| bigblue1 | 278 K | 45 | 95.84 | 98.75 | 98.49 | 411 s |
+| bigblue2 | 558 K | 40 | 145.71 | 151.27 | 148.89 | 332 s |
+| bigblue3 | 1.10 M | 39 | 338.71 | 348.84 | 345.70 | 1444 s |
+
+Legalization overshoots and detailed placement recovers part of it, on every
+design: adaptec3 runs 200.80 -> 205.52 -> 203.50. The residue between the global
+placement result and the final number is what the legalizer costs.
+
+Global placement converges in 39 to 49 iterations across the suite, against a
+default limit of 100, and the count does not grow with the design: the 1.10 M
+cell case uses the fewest. Runtime does grow, roughly with cell count once past
+adaptec1.
+
 ## Experimental: CP-SAT legalization
 
 Not used by any production flow yet. Dali can optionally solve bounded
