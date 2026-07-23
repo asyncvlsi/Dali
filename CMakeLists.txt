@@ -155,7 +155,6 @@ endif ()
 
 add_executable(dali dali/application/dali_main.cc)
 target_link_libraries(dali PRIVATE ${DALI_EXECUTABLE_LIBRARIES})
-add_dali_executable(dali-debug dali/application/debug.cc)
 add_dali_executable(wellflow dali/application/well_flow.cc)
 add_dali_executable(hpwl dali/application/hpwl.cc)
 add_dali_executable(lefdef2bookshelf dali/application/lef_def_to_bookshelf.cc)
