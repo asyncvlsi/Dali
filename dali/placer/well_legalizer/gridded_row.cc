@@ -18,6 +18,20 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * A gridded row: the cells clustered into it, and the segments they sit in.
+ *
+ * Row height is not a fixed pitch. A row is as tall as the tallest cell
+ * clustered into it, and its height is recomputed as cells are assigned, so
+ * adding a taller cell can grow the row and push its stripe over capacity.
+ * Adjacent rows are flipped so like wells abut across the boundary.
+ *
+ * Well taps are tracked apart from assigned cells because physical completion
+ * inserts them after legalization rather than the assignment passes placing
+ * them.
+ */
 #include "gridded_row.h"
 
 #include <algorithm>

@@ -18,6 +18,17 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Legalizes the cells of one row segment in X.
+ *
+ * A segment is a contiguous run of usable whitespace, so each is solved
+ * independently: a row with blockages or taps becomes several small ordered
+ * problems instead of one wide one. Cells keep their relative order, and the
+ * optimizers minimize displacement from where each cell sat before
+ * legalization.
+ */
 #include "row_segment.h"
 
 #include <algorithm>

@@ -18,6 +18,15 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Legalizer used by the multi-height legalization application.
+ *
+ * Separate from GriddedCellWellLegalizer, which is what the main flow uses. Only
+ * the `mhlg` application constructs this; if that application goes, so does
+ * this file.
+ */
 #include "gridded_row_legalizer.h"
 
 #include <algorithm>

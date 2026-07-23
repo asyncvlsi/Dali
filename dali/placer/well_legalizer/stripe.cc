@@ -18,6 +18,20 @@
  * Boston, MA  02110-1301, USA.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Stripe and StripeColumn: the regions gridded legalization works within.
+ *
+ * A stripe is the unit legalization succeeds or fails on. Rows are grown into
+ * it from a contour that advances as clusters are added, so a stripe whose used
+ * height exceeds its available height has failed and the flow reports it rather
+ * than emitting an illegal placement.
+ *
+ * A stripe column is a full-height slice of the region and its own well region;
+ * see [architecture notes](../ARCHITECTURE.md) for how the two relate to rows
+ * and segments.
+ */
 #include "stripe.h"
 
 #include <omp.h>

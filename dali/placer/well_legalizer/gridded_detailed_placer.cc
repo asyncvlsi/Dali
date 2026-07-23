@@ -8,6 +8,36 @@
  * of the License, or (at your option) any later version.
  *
  ******************************************************************************/
+
+/**
+ * @file
+ * Improves a legal gridded placement without ever breaking legality.
+ *
+ * Runs after the legalizer, on rows that already hold a legal arrangement, and
+ * applies four kinds of move in rounds until the improvement per round falls
+ * below a threshold or the round limit is reached:
+ *
+ *   - **relocation** moves a cell into whitespace in another row
+ *   - **global swap** exchanges two cells anywhere in the placement
+ *   - **vertical swap** exchanges cells between neighbouring rows
+ *   - **local reorder** permutes a short window within one row
+ *
+ * Every move is evaluated before it is applied and rejected unless it improves
+ * the cost, so the placement is legal at every point and each round is an
+ * improvement on the last. Cost combines wirelength against the net model with
+ * distance to each cell's optimal region.
+ *
+ * Two constraints make gridded moves different from standard-cell ones. A row
+ * is only as tall as the cells in it, so a move that would raise a row's height
+ * can push the whole stripe over capacity -- `IsNonHeightIncreasingSwap` is what
+ * keeps that from happening. And rows are packed, so inserting a cell means
+ * re-legalizing the target row's X ordering rather than dropping the cell into
+ * a gap.
+ *
+ * Relocation is worth enabling alongside the swaps: it opens the whitespace
+ * that makes swaps productive, and the two together recover more than either
+ * alone.
+ */
 #include "dali/placer/well_legalizer/gridded_detailed_placer.h"
 
 #include <algorithm>
@@ -149,6 +179,12 @@ void GriddedDetailedPlacer::SetNetIgnoreThreshold(int net_ignore_threshold) {
   net_ignore_threshold_ = static_cast<size_t>(net_ignore_threshold);
 }
 
+/**
+ * Wirelength cost of the cells between `left_index` and `right_index` in a row.
+ *
+ * Scoped to a window so a candidate reordering can be priced without
+ * recomputing the whole row. Nets at or above the ignore threshold are skipped.
+ */
 double GriddedDetailedPlacer::WireLengthCost(GriddedRow* row, int left_index,
                                              int right_index) const {
   auto& net_list = ckt_ptr_->Nets();
@@ -172,6 +208,12 @@ double GriddedDetailedPlacer::WireLengthCost(GriddedRow* row, int left_index,
   return hpwl_x * ckt_ptr_->GridValueX() + hpwl_y * ckt_ptr_->GridValueY();
 }
 
+/**
+ * Search permutations of a short window of a row for the cheapest ordering.
+ *
+ * Exhaustive over the window, which is why the window is kept small; the caller
+ * slides it along the row. Writes the best ordering found into `result`.
+ */
 void GriddedDetailedPlacer::FindBestLocalOrder(std::vector<Component*>& result,
                                                double& cost, GriddedRow* row,
                                                int current_index,
@@ -342,6 +384,13 @@ GriddedDetailedPlacer::ComputeRowRequirementsAfterAssignment(
   return requirements;
 }
 
+/**
+ * Whether a swap leaves both rows no taller than they are now.
+ *
+ * A gridded row is as tall as its tallest cell, so a swap that moves a taller
+ * cell into a row grows that row and can push its stripe past the height it was
+ * legalized into. Such swaps are refused regardless of their cost benefit.
+ */
 bool GriddedDetailedPlacer::IsNonHeightIncreasingSwap(
     GriddedRow* first_row, Component* first_component, GriddedRow* second_row,
     Component* second_component) const {
@@ -803,6 +852,13 @@ void GriddedDetailedPlacer::TransferInitialLocation(
   source_locations.erase(location);
 }
 
+/**
+ * Exchange two cells if doing so lowers cost, leaving the placement legal.
+ *
+ * Returns false and changes nothing when either cell is ineligible, when the
+ * swap would raise a row's height, or when the cost does not improve. A true
+ * return means the swap has already been applied and both rows re-legalized.
+ */
 bool GriddedDetailedPlacer::TrySwap(GriddedRow* first_row, int first_index,
                                     GriddedRow* second_row, int second_index) {
   Component* first_component = first_row->Components()[first_index];
@@ -832,6 +888,15 @@ bool GriddedDetailedPlacer::TrySwap(GriddedRow* first_row, int first_index,
   return true;
 }
 
+/**
+ * Move a component into another row at `target_lx` if it lowers cost.
+ *
+ * `insertion_position` selects where in the target row's ordering the cell
+ * lands; the row is re-legalized in X afterwards, so the requested X is a
+ * preference rather than a final location. Returns false and changes nothing if
+ * the move is rejected. `stats` accumulates attempt and acceptance counts and
+ * must not be null.
+ */
 bool GriddedDetailedPlacer::TryMove(GriddedRow* source_row,
                                     Component* component,
                                     GriddedRow* target_row, double target_lx,
