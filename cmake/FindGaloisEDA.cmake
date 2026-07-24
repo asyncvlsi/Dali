@@ -50,3 +50,8 @@ if(UNIX AND (NOT APPLE))
         set(Galois_FOUND FALSE)
     endif()
 endif()
+
+if(Galois_FOUND)
+# we need Boost now!
+     find_package(Boost 1.58.0 REQUIRED COMPONENTS serialization iostreams)
+endif()

@@ -48,6 +48,11 @@ include(cmake/FindGaloisEDA.cmake)
 include(cmake/FindOpenMPPackage.cmake)
 include(cmake/FindGitCommitVersion.cmake)
 
+# aux include if Galois is found
+if(Galois_FOUND)
+  include_directories(${Boost_INCLUDE_DIRS})
+endif()
+
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 #Build Types and Options
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
@@ -102,6 +107,7 @@ add_library(
     STATIC
     ${SOURCES}
 )
+
 add_dependencies(dalilib dali_git_version)
 
 if (DEFINED NEED_LIBCXXFS)
@@ -117,6 +123,19 @@ else ()
     set(DALI_OPTIONAL_LIBRARIES "")
 endif ()
 
+if(Galois_FOUND)
+target_link_libraries(
+    dalilib
+    ${ACT_LIBRARY} ${ACTVLSILIB_LIBRARY} ${PHYDB_LIBRARY}
+    ${Boost_LIBRARIES}
+    ${Galois_LIBRARIES}
+    ${LEF_LIBRARY} ${DEF_LIBRARY}
+    m pthread dl
+    OpenMP::OpenMP_CXX
+    ${LIBCXXFS_LIB}
+    ${DALI_OPTIONAL_LIBRARIES}
+)
+else()
 target_link_libraries(
     dalilib
     ${ACT_LIBRARY} ${ACTVLSILIB_LIBRARY} ${PHYDB_LIBRARY}
@@ -127,6 +146,7 @@ target_link_libraries(
     ${LIBCXXFS_LIB}
     ${DALI_OPTIONAL_LIBRARIES}
 )
+endif()
 
 if (DALI_HAS_QT_GUI)
     file(GLOB_RECURSE GUI_SOURCES dali/gui/*.cc dali/gui/*.h)
