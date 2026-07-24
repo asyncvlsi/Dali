@@ -66,3 +66,14 @@ add_test(
 )
 set_tests_properties(constrain_io_pin_to_edge
                      PROPERTIES LABELS "integration;io_placer")
+
+# Area-array (interior) I/O placement
+add_executable(area_array_place_io_pin area_array_place_io_pin.cc helper.h helper.cc)
+target_link_libraries(area_array_place_io_pin PRIVATE dalilib)
+add_test(
+    NAME area_array_place_io_pin
+    COMMAND area_array_place_io_pin
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+set_tests_properties(area_array_place_io_pin
+                     PROPERTIES LABELS "integration;io_placer")

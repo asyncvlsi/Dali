@@ -77,6 +77,27 @@ against something close to legal. The refiner enables the other two.
 `-target_density 1` suits designs already close to fully utilized; lower it when
 the design has room to spread.
 
+## I/O pin placement
+
+Unplaced I/O pins are placed by the `place-io` command, after component
+placement so pin positions can follow the nets that reach them. Pins already
+marked `FIXED`/`PLACED` in the input keep their locations.
+
+  * `place-io <metal>` — auto-place every unplaced pin on the four perimeter
+    edges (wire-bond model), all on `<metal>`. Long form: `place-io -c -m left
+    <metal> right <metal> bottom <metal> top <metal>`.
+  * `place-io -place <pin> <metal> <lx> <ly> <ux> <uy> <x> <y> <orient>` — fix
+    one named pin at an explicit location (microns), anywhere including the die
+    interior; later auto-placement leaves it untouched.
+  * `place-io -constraint <pin | dir:input|output|inout> <left|right|bottom|top>`
+    — force a named pin, or every pin of a signal direction, onto a chosen edge
+    instead of the automatically selected closest one. A per-pin constraint wins
+    over a per-direction one.
+  * `place-io -area <metal> <rows> <cols>` — area-array (flip-chip) placement:
+    put every unplaced pin on an interior `rows x cols` lattice on `<metal>`,
+    each pin assigned to the free site nearest its net's bounding-box center.
+    `rows*cols` must cover the pin count.
+
 ## Iteration control
 
 Global placement stops on its own when it stops improving, so these rarely need

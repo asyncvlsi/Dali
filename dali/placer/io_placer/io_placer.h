@@ -94,6 +94,21 @@ class IoPlacer {
   /** Parse and apply a `place-io -constraint ...` command. */
   bool ConstraintCmd(int argc, char** argv);
 
+  /**
+   * Place every movable I/O pin on an interior area-array grid.
+   *
+   * The flip-chip / area-I/O model: instead of the four perimeter edges, pins go
+   * on a rows x cols lattice of sites strictly inside the placement region, each
+   * pin assigned to the free site nearest its net's bounding-box center.
+   * @param metal_layer layer the interior pins are drawn on.
+   * @param rows number of interior lattice rows (> 0).
+   * @param cols number of interior lattice columns (> 0).
+   * @return false if rows*cols cannot hold every movable pin.
+   */
+  bool AreaArrayPlace(MetalLayer *metal_layer, int rows, int cols);
+  /** Parse and run a `place-io -area <metal> <rows> <cols>` command. */
+  bool AreaArrayPlaceCmd(int argc, char **argv);
+
   /** Convert final I/O locations to PhyDB/database units. */
   void AdjustIoPinLocationForPhyDB();
 

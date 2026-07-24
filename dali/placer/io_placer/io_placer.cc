@@ -32,6 +32,7 @@
 
 #include <algorithm>
 
+#include "dali/common/helper.h"
 #include "dali/common/logging.h"
 #include "dali/common/phydb_helper.h"
 
@@ -426,6 +427,107 @@ bool IoPlacer::ConstraintCmd(int argc, char** argv) {
     return ConstrainDirectionToEdge(dir, boundary);
   }
   return ConstrainPinToEdge(target, boundary);
+}
+
+bool IoPlacer::AreaArrayPlace(MetalLayer* metal_layer, int rows, int cols) {
+  if (rows <= 0 || cols <= 0) {
+    LOG(error) << "Area-array grid needs positive rows and cols\n";
+    return false;
+  }
+
+  std::vector<IoPin*> movable;
+  for (auto& iopin : circuit_->IoPins()) {
+    if (iopin.IsPrePlaced()) continue;
+    Net* net = iopin.NetPtr();
+    if (net == nullptr || net->ComponentPins().empty()) {
+      LOG(warning) << "I/O pin " << iopin.Name()
+                   << " has no connected component, skip area-array placing\n";
+      continue;
+    }
+    movable.push_back(&iopin);
+  }
+
+  int capacity = rows * cols;
+  if (static_cast<int>(movable.size()) > capacity) {
+    LOG(error) << "Area-array grid " << rows << "x" << cols << " = " << capacity
+               << " sites cannot hold " << movable.size() << " I/O pins\n";
+    return false;
+  }
+
+  double left = circuit_->design().RegionLeft();
+  double right = circuit_->design().RegionRight();
+  double bottom = circuit_->design().RegionBottom();
+  double top = circuit_->design().RegionTop();
+  struct Site {
+    double x, y;
+    bool used;
+  };
+  std::vector<Site> sites;
+  sites.reserve(capacity);
+  for (int r = 1; r <= rows; ++r) {
+    double gy = bottom + (top - bottom) * r / (rows + 1);
+    for (int c = 1; c <= cols; ++c) {
+      double gx = left + (right - left) * c / (cols + 1);
+      sites.push_back({gx, gy, false});
+    }
+  }
+
+  // A manufacturing-grid-aligned pin geometry, same recipe as the boundary
+  // placer's vertical default shape, so interior pins are manufacturable too.
+  double mfg = phy_db_ptr_->tech().GetManufacturingGrid();
+  double width = metal_layer->Width();
+  double height = std::max(metal_layer->MinArea() / width, width);
+  height = RoundOrCeiling(height / mfg) * mfg;
+  double half_width = RoundOrCeiling(width / 2.0 / mfg) * mfg;
+
+  for (IoPin* pin : movable) {
+    Net* net = pin->NetPtr();
+    net->UpdateMaxMinIndex();
+    double cx = 0.5 * (net->MinX() + net->MaxX());
+    double cy = 0.5 * (net->MinY() + net->MaxY());
+    int best = -1;
+    double best_dist = 0;
+    for (int s = 0; s < static_cast<int>(sites.size()); ++s) {
+      if (sites[s].used) continue;
+      double dx = sites[s].x - cx;
+      double dy = sites[s].y - cy;
+      double dist = dx * dx + dy * dy;
+      if (best < 0 || dist < best_dist) {
+        best = s;
+        best_dist = dist;
+      }
+    }
+    sites[best].used = true;
+    pin->SetLayerPtr(metal_layer);
+    pin->SetShape(-half_width, 0, half_width, height);
+    pin->SetOrient(N);
+    pin->SetLoc(sites[best].x, sites[best].y, PLACED);
+    pin->SetFinalX(circuit_->LocDali2PhydbX(sites[best].x));
+    pin->SetFinalY(circuit_->LocDali2PhydbY(sites[best].y));
+  }
+  return true;
+}
+
+bool IoPlacer::AreaArrayPlaceCmd(int argc, char** argv) {
+  // -area <metal> <rows> <cols>
+  if (argc != 3) {
+    LOG(error) << "place-io -area needs 3 arguments: <metal> <rows> <cols>\n";
+    return false;
+  }
+  std::string metal_name(argv[0]);
+  if (!circuit_->IsMetalLayerExisting(metal_name)) {
+    LOG(error) << "No such metal layer: " << metal_name << "\n";
+    return false;
+  }
+  int rows, cols;
+  try {
+    rows = std::stoi(argv[1]);
+    cols = std::stoi(argv[2]);
+  } catch (...) {
+    LOG(error) << "place-io -area rows and cols must be integers\n";
+    return false;
+  }
+  return AreaArrayPlace(circuit_->GetMetalLayerPtr(metal_name), rows, cols);
 }
 
 bool IoPlacer::AssignIoPinToBoundaryLayers() {

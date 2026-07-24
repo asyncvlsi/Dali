@@ -863,6 +863,8 @@ bool Dali::IoPinPlacement(int argc, char** argv) {
     return io_placer_->PartialPlaceCmd(argc - 2, argv + 2);
   } else if (option_str == "-cons" or option_str == "--constraint") {
     return io_placer_->ConstraintCmd(argc - 2, argv + 2);
+  } else if (option_str == "-area" or option_str == "--area-array") {
+    return io_placer_->AreaArrayPlaceCmd(argc - 2, argv + 2);
   } else if (option_str == "-ap" or option_str == "--auto-place") {
     return io_placer_->AutoPlaceCmd(argc - 2, argv + 2);
   } else {
@@ -1783,8 +1785,11 @@ void Dali::ExportIoPinsToPhyDB() {
         pin_orient = phydb::CompOrient::W;
       } else if (iopin.Y() == circuit_.design().RegionBottom()) {
         pin_orient = phydb::CompOrient::N;
-      } else {
+      } else if (iopin.Y() == circuit_.design().RegionTop()) {
         pin_orient = phydb::CompOrient::S;
+      } else {
+        // Interior area-array pin, not on any edge: face up.
+        pin_orient = phydb::CompOrient::N;
       }
 
       phydb_iopin->SetPlacement(PlaceStatusDali2PhyDB(iopin.Status()), pin_x,
