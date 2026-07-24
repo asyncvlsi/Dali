@@ -86,7 +86,60 @@ bool IoPlacer::PartialPlaceIoPin() {
 }
 
 bool IoPlacer::PartialPlaceCmd(int argc, char** argv) {
-  DaliExpects(false, "to be implemented");
+  // -place <pin> <metal> <lx> <ly> <ux> <uy> <x> <y> <orient>
+  // All coordinates are in microns. The pin is fixed at the given location on
+  // the given layer -- which may be anywhere, interior included -- and later
+  // auto-placement leaves it untouched.
+  if (argc != 9) {
+    LOG(error) << "place-io -place needs 9 arguments: <pin> <metal> <lx> <ly> "
+                  "<ux> <uy> <x> <y> <orient>\n";
+    return false;
+  }
+  std::string pin_name(argv[0]);
+  std::string metal_name(argv[1]);
+  if (!circuit_->IsIoPinExisting(pin_name)) {
+    LOG(error) << "No such I/O pin: " << pin_name << "\n";
+    return false;
+  }
+  if (!circuit_->IsMetalLayerExisting(metal_name)) {
+    LOG(error) << "No such metal layer: " << metal_name << "\n";
+    return false;
+  }
+  double lx, ly, ux, uy, x, y;
+  try {
+    lx = std::stod(argv[2]); ly = std::stod(argv[3]);
+    ux = std::stod(argv[4]); uy = std::stod(argv[5]);
+    x = std::stod(argv[6]); y = std::stod(argv[7]);
+  } catch (...) {
+    LOG(error) << "place-io -place coordinates must be numbers\n";
+    return false;
+  }
+  ComponentOrient orient = StrToOrient(std::string(argv[8]));
+
+  IoPin* pin = circuit_->GetIoPinPtr(pin_name);
+  MetalLayer* metal_layer = circuit_->GetMetalLayerPtr(metal_name);
+  pin->SetLayerPtr(metal_layer);
+  pin->SetShape(lx, ly, ux, uy);
+  pin->SetOrient(orient);
+  pin->SetLoc(circuit_->LocPhydb2DaliX(circuit_->Micron2DatabaseUnit(x)),
+              circuit_->LocPhydb2DaliY(circuit_->Micron2DatabaseUnit(y)), FIXED);
+  // Fixed pins are like DEF pre-placed pins: their location lives in PhyDB, and
+  // the auto-placer and the standard export both skip them, so write PhyDB here.
+  pin->SetInitPlaceStatus(FIXED);
+  DaliExpects(phy_db_ptr_ != nullptr, "PhyDB not set on the I/O placer");
+  DaliExpects(phy_db_ptr_->IsIoPinExisting(pin_name),
+              "I/O pin not in PhyDB: " + pin_name);
+  phydb::IOPin* phydb_pin = phy_db_ptr_->GetIoPinPtr(pin_name);
+  phydb_pin->SetShape(metal_name, circuit_->Micron2DatabaseUnit(lx),
+                      circuit_->Micron2DatabaseUnit(ly),
+                      circuit_->Micron2DatabaseUnit(ux),
+                      circuit_->Micron2DatabaseUnit(uy));
+  phydb_pin->SetPlacement(phydb::PlaceStatus::FIXED,
+                          circuit_->Micron2DatabaseUnit(x),
+                          circuit_->Micron2DatabaseUnit(y),
+                          OrientDali2PhyDB(orient));
+  LOG(info) << "Fixed I/O pin " << pin_name << " at (" << x << ", " << y
+            << ") on " << metal_name << "\n";
   return true;
 }
 
@@ -249,8 +302,9 @@ bool IoPlacer::BuildResourceMap() {
         double urx = iopin.UX(spacing);
         all_used_segments[TOP].emplace_back(llx, urx);
       } else {
-        DaliExpects(false, "Pre-placed IOPIN is not on placement boundary? "
-                               << iopin.Name());
+        // A fixed pin placed in the interior (e.g. via `place-io -place`)
+        // consumes no boundary resource, so it is simply left out of the
+        // boundary-usage accounting rather than treated as an error.
       }
     }
   }

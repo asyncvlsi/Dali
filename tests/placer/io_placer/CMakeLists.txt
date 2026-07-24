@@ -44,3 +44,14 @@ add_test(
 )
 set_tests_properties(io_pin_placement_argv_command
                      PROPERTIES LABELS "integration;io_placer")
+
+# Manually place an I/O pin at an interior location
+add_executable(manual_place_io_pin manual_place_io_pin.cc helper.h helper.cc)
+target_link_libraries(manual_place_io_pin PRIVATE dalilib)
+add_test(
+    NAME manual_place_io_pin
+    COMMAND manual_place_io_pin
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+set_tests_properties(manual_place_io_pin
+                     PROPERTIES LABELS "integration;io_placer")

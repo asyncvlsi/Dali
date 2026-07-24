@@ -859,6 +859,8 @@ bool Dali::IoPinPlacement(int argc, char** argv) {
   // remove "place-io" and option flag before calling each function
   if (option_str == "-c" or option_str == "--config") {
     return io_placer_->ConfigCmd(argc - 2, argv + 2);
+  } else if (option_str == "-p" or option_str == "--place") {
+    return io_placer_->PartialPlaceCmd(argc - 2, argv + 2);
   } else if (option_str == "-ap" or option_str == "--auto-place") {
     return io_placer_->AutoPlaceCmd(argc - 2, argv + 2);
   } else {
