@@ -861,6 +861,8 @@ bool Dali::IoPinPlacement(int argc, char** argv) {
     return io_placer_->ConfigCmd(argc - 2, argv + 2);
   } else if (option_str == "-p" or option_str == "--place") {
     return io_placer_->PartialPlaceCmd(argc - 2, argv + 2);
+  } else if (option_str == "-cons" or option_str == "--constraint") {
+    return io_placer_->ConstraintCmd(argc - 2, argv + 2);
   } else if (option_str == "-ap" or option_str == "--auto-place") {
     return io_placer_->AutoPlaceCmd(argc - 2, argv + 2);
   } else {

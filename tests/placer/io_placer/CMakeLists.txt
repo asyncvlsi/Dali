@@ -55,3 +55,14 @@ add_test(
 )
 set_tests_properties(manual_place_io_pin
                      PROPERTIES LABELS "integration;io_placer")
+
+# Constrain an I/O pin to a specific edge
+add_executable(constrain_io_pin_to_edge constrain_io_pin_to_edge.cc helper.h helper.cc)
+target_link_libraries(constrain_io_pin_to_edge PRIVATE dalilib)
+add_test(
+    NAME constrain_io_pin_to_edge
+    COMMAND constrain_io_pin_to_edge
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+set_tests_properties(constrain_io_pin_to_edge
+                     PROPERTIES LABELS "integration;io_placer")

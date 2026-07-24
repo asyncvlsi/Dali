@@ -371,6 +371,63 @@ bool IoPlacer::BuildResourceMap() {
  * nets that reach them, subject to the layer configuration and spacing.
  * @return false if some pin could not be placed.
  */
+namespace {
+// Map an edge name to a boundary index; returns -1 for an unknown name.
+int EdgeNameToIndex(std::string const& name) {
+  if (name == "left") return LEFT;
+  if (name == "right") return RIGHT;
+  if (name == "bottom") return BOTTOM;
+  if (name == "top") return TOP;
+  return -1;
+}
+}  // namespace
+
+bool IoPlacer::ConstrainPinToEdge(std::string const& pin_name,
+                                  int boundary_index) {
+  if (!circuit_->IsIoPinExisting(pin_name)) {
+    LOG(error) << "No such I/O pin: " << pin_name << "\n";
+    return false;
+  }
+  pin_edge_constraint_[pin_name] = boundary_index;
+  return true;
+}
+
+bool IoPlacer::ConstrainDirectionToEdge(SignalDirection direction,
+                                        int boundary_index) {
+  direction_edge_constraint_[direction] = boundary_index;
+  return true;
+}
+
+int IoPlacer::ConstrainedEdge(IoPin const& iopin) const {
+  auto by_pin = pin_edge_constraint_.find(iopin.Name());
+  if (by_pin != pin_edge_constraint_.end()) return by_pin->second;
+  auto by_dir = direction_edge_constraint_.find(iopin.SigDirection());
+  if (by_dir != direction_edge_constraint_.end()) return by_dir->second;
+  return -1;
+}
+
+bool IoPlacer::ConstraintCmd(int argc, char** argv) {
+  // -constraint <pin_name | dir:input|output|inout> <left|right|bottom|top>
+  if (argc != 2) {
+    LOG(error) << "place-io -constraint needs 2 arguments: <pin|dir:DIR> "
+                  "<left|right|bottom|top>\n";
+    return false;
+  }
+  std::string target(argv[0]);
+  int boundary = EdgeNameToIndex(std::string(argv[1]));
+  if (boundary < 0) {
+    LOG(error) << "Unknown edge: " << argv[1]
+               << " (use left/right/bottom/top)\n";
+    return false;
+  }
+  const std::string dir_prefix = "dir:";
+  if (target.rfind(dir_prefix, 0) == 0) {
+    SignalDirection dir = StrToSignalDirection(target.substr(dir_prefix.size()));
+    return ConstrainDirectionToEdge(dir, boundary);
+  }
+  return ConstrainPinToEdge(target, boundary);
+}
+
 bool IoPlacer::AssignIoPinToBoundaryLayers() {
   for (auto& iopin : circuit_->IoPins()) {
     // do nothing for placed IOPINs
@@ -406,18 +463,24 @@ bool IoPlacer::AssignIoPinToBoundaryLayers() {
         (double)circuit_->design().RegionBottom(),
         (double)circuit_->design().RegionTop()};
 
-    // determine which placement boundary this net bounding box is most close to
+    // determine which placement boundary this net bounding box is most close to,
+    // unless the pin is constrained to a specific edge
     std::vector<bool> close_to_boundary{false, false, false, false};
-    double min_distance_x =
-        std::min(distance_to_boundary[0], distance_to_boundary[1]);
-    double min_distance_y =
-        std::min(distance_to_boundary[2], distance_to_boundary[3]);
-    if (min_distance_x < min_distance_y) {
-      close_to_boundary[0] = distance_to_boundary[0] < distance_to_boundary[1];
-      close_to_boundary[1] = !close_to_boundary[0];
+    int constrained = ConstrainedEdge(iopin);
+    if (constrained >= 0) {
+      close_to_boundary[constrained] = true;
     } else {
-      close_to_boundary[2] = distance_to_boundary[2] < distance_to_boundary[3];
-      close_to_boundary[3] = !close_to_boundary[2];
+      double min_distance_x =
+          std::min(distance_to_boundary[0], distance_to_boundary[1]);
+      double min_distance_y =
+          std::min(distance_to_boundary[2], distance_to_boundary[3]);
+      if (min_distance_x < min_distance_y) {
+        close_to_boundary[0] = distance_to_boundary[0] < distance_to_boundary[1];
+        close_to_boundary[1] = !close_to_boundary[0];
+      } else {
+        close_to_boundary[2] = distance_to_boundary[2] < distance_to_boundary[3];
+        close_to_boundary[3] = !close_to_boundary[2];
+      }
     }
 
     for (int i = 0; i < NUM_OF_PLACE_BOUNDARY; ++i) {

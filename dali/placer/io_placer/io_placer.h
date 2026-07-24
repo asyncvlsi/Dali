@@ -23,6 +23,7 @@
 
 #include <phydb/phydb.h>
 
+#include <unordered_map>
 #include <vector>
 
 #include "dali/circuit/circuit.h"
@@ -84,6 +85,15 @@ class IoPlacer {
   /** Legalize and place pins on each configured boundary. */
   bool PlaceIoPinOnEachBoundary();
 
+  /** Force a named pin onto a boundary (LEFT/RIGHT/BOTTOM/TOP). */
+  bool ConstrainPinToEdge(std::string const& pin_name, int boundary_index);
+  /** Force all pins of a signal direction onto a boundary. */
+  bool ConstrainDirectionToEdge(SignalDirection direction, int boundary_index);
+  /** The constrained boundary for a pin, or -1 if unconstrained. */
+  int ConstrainedEdge(IoPin const& iopin) const;
+  /** Parse and apply a `place-io -constraint ...` command. */
+  bool ConstraintCmd(int argc, char** argv);
+
   /** Convert final I/O locations to PhyDB/database units. */
   void AdjustIoPinLocationForPhyDB();
 
@@ -97,6 +107,11 @@ class IoPlacer {
   Circuit* circuit_ = nullptr;
   phydb::PhyDB* phy_db_ptr_ = nullptr;
   std::vector<IoBoundarySpace> boundary_spaces_;
+  // Optional edge constraints. A pin listed here, or (failing that) a pin whose
+  // signal direction is listed, is forced to that boundary index rather than
+  // the automatically chosen closest one.
+  std::unordered_map<std::string, int> pin_edge_constraint_;
+  std::unordered_map<int, int> direction_edge_constraint_;
 };
 
 }  // namespace dali
