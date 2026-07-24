@@ -33,3 +33,14 @@ add_test(
 )
 set_tests_properties(add_and_place_io_pins
                      PROPERTIES LABELS "integration;io_placer")
+
+# Place I/O pins through the argv-style Dali::IoPinPlacement command
+add_executable(io_pin_placement_argv_command io_pin_placement_argv_command.cc helper.h helper.cc)
+target_link_libraries(io_pin_placement_argv_command PRIVATE dalilib)
+add_test(
+    NAME io_pin_placement_argv_command
+    COMMAND io_pin_placement_argv_command
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+set_tests_properties(io_pin_placement_argv_command
+                     PROPERTIES LABELS "integration;io_placer")

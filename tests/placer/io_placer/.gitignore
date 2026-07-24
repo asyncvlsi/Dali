@@ -6,3 +6,5 @@ bin/
 *.def
 
 *.log
+dali*.log
+io_pin_placement_argv_command.def
