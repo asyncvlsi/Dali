@@ -1,16 +1,20 @@
-## Unit tests for I/O placement commands
+## Integration tests for I/O placement commands
 
 ### Command list (used in _interact_)
-* `place-io <metal_layer>`
-  * Automatically place all IO pins and create physical geometries on the given metal layer.
-  * This is equivalent to calling `place-io -c ...` to specify which metal layer to use, and then calling `place-io -ap ...` to place all IO pins.
-* `place-io -c/--config ...`
-  * Instead of letting the IO placer decides how to place IO pins, users can tell the placer their preferences, or specify some placement constraints.
-  * For example:
-    * Number of IO pins on each placement boundary.
-    * Metal layers used for creating physical geometries on each placement boundary.
-    * Place IO pins uniformly on each placement boundary or not.
-* `place-io -ap/--auto-place ...`
-  * Place IO pins automatically for a given configuration.
 
-At least one TestCase is created for each command. The input LEF/DEF files is `ispd19_test3` from [ISPD 2019](http://www.ispd.cc/contests/19/#benchmarks).
+* `place-io <metal_layer>` automatically places all unplaced I/O pins on the
+  perimeter using one metal layer.
+* `place-io -c/--config ...` configures the boundary metal layers used by later
+  automatic placement.
+* `place-io -ap/--auto-place ...` runs automatic perimeter placement using the
+  current configuration.
+* `place-io -place ...` fixes one pin at an explicit location.
+* `place-io -constraint ...` constrains one pin or direction to an edge.
+* `place-io -area ...` places unplaced pins on an interior lattice.
+* `place-io -group ...` fixes an ordered, adjacent group on one edge.
+* `place-io -mirror ...` fixes one pin symmetrically to a placed reference.
+
+CTest prepares `ispd19_test3` from the checked-in archive as a fixture before
+running any test in this directory. Each command has focused coverage, while
+the group and mirror tests also combine fixed pins with later automatic or
+area-array placement.

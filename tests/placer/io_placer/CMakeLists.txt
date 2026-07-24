@@ -10,7 +10,9 @@ add_test(
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 set_tests_properties(io_placer_benchmark_preparation
-                     PROPERTIES LABELS "integration;io_placer")
+                     PROPERTIES
+                         LABELS "integration;io_placer"
+                         FIXTURES_SETUP io_placer_benchmark)
 
 # Place all I/O pins on the same metal layer
 add_executable(all_iopin_use_same_metal_layer all_iopin_use_same_metal_layer.cc helper.h helper.cc)
@@ -77,3 +79,36 @@ add_test(
 )
 set_tests_properties(area_array_place_io_pin
                      PROPERTIES LABELS "integration;io_placer")
+
+# Group I/O pins as a contiguous run along an edge
+add_executable(group_io_pins group_io_pins.cc helper.h helper.cc)
+target_link_libraries(group_io_pins PRIVATE dalilib)
+add_test(
+    NAME group_io_pins
+    COMMAND group_io_pins
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+set_tests_properties(group_io_pins PROPERTIES LABELS "integration;io_placer")
+
+# Mirror an I/O pin across a die center axis
+add_executable(mirror_io_pin mirror_io_pin.cc helper.h helper.cc)
+target_link_libraries(mirror_io_pin PRIVATE dalilib)
+add_test(
+    NAME mirror_io_pin
+    COMMAND mirror_io_pin
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+set_tests_properties(mirror_io_pin PROPERTIES LABELS "integration;io_placer")
+
+set(io_placer_tests
+    all_iopin_use_same_metal_layer
+    add_and_place_io_pins
+    io_pin_placement_argv_command
+    manual_place_io_pin
+    constrain_io_pin_to_edge
+    area_array_place_io_pin
+    group_io_pins
+    mirror_io_pin
+)
+set_tests_properties(${io_placer_tests}
+                     PROPERTIES FIXTURES_REQUIRED io_placer_benchmark)

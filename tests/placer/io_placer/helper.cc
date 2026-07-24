@@ -117,6 +117,26 @@ void SetAllIoPinsToUnplaced(phydb::PhyDB* p_phydb) {
   }
 }
 
+/** Return true when every I/O pin has PLACED or FIXED status. */
+bool IsEveryIoPinPlaced(phydb::PhyDB* p_phydb) {
+  if (p_phydb == nullptr) {
+    LOG(warning) << "Cannot check I/O pin status for a nullptr input\n";
+    return false;
+  }
+
+  bool all_placed = true;
+  for (auto& iopin : p_phydb->GetDesignPtr()->GetIoPinsRef()) {
+    auto status = iopin.GetPlacementStatus();
+    if (status != phydb::PlaceStatus::PLACED &&
+        status != phydb::PlaceStatus::FIXED) {
+      LOG(info) << "I/O pin " << iopin.GetName()
+                << " is neither PLACED nor FIXED\n";
+      all_placed = false;
+    }
+  }
+  return all_placed;
+}
+
 bool IoPinPlacedOnBoundary(phydb::IOPin& iopin, int left, int right, int bottom,
                            int top) {
   if (iopin.GetPlacementStatus() != phydb::PlaceStatus::PLACED &&
@@ -242,6 +262,17 @@ bool IsIoPinNoSpacingViolation(phydb::PhyDB* p_phydb, phydb::IOPin& io_pin0,
   std::string layer_name = io_pin0.GetLayerName();
   phydb::Layer* p_layer = p_phydb->GetLayerPtr(layer_name);
   double d_spacing = p_layer->GetSpacing();
+  phydb::SpacingTable* spacing_table = p_layer->GetSpacingTable();
+  if (spacing_table != nullptr && spacing_table->GetNRow() > 0 &&
+      spacing_table->GetNCol() > 0) {
+    d_spacing = spacing_table->GetSpacingAt(0, 0);
+  }
+  if (d_spacing <= 0) {
+    d_spacing = p_layer->GetMinWidth();
+  }
+  if (d_spacing <= 0) {
+    d_spacing = p_layer->GetWidth();
+  }
   int database_micron = p_phydb->tech().GetDatabaseMicron();
   double half_spacing = d_spacing * database_micron / 2.0;
 

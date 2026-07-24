@@ -31,6 +31,8 @@
 #include "io_placer.h"
 
 #include <algorithm>
+#include <cmath>
+#include <unordered_set>
 
 #include "dali/common/helper.h"
 #include "dali/common/logging.h"
@@ -108,9 +110,12 @@ bool IoPlacer::PartialPlaceCmd(int argc, char** argv) {
   }
   double lx, ly, ux, uy, x, y;
   try {
-    lx = std::stod(argv[2]); ly = std::stod(argv[3]);
-    ux = std::stod(argv[4]); uy = std::stod(argv[5]);
-    x = std::stod(argv[6]); y = std::stod(argv[7]);
+    lx = std::stod(argv[2]);
+    ly = std::stod(argv[3]);
+    ux = std::stod(argv[4]);
+    uy = std::stod(argv[5]);
+    x = std::stod(argv[6]);
+    y = std::stod(argv[7]);
   } catch (...) {
     LOG(error) << "place-io -place coordinates must be numbers\n";
     return false;
@@ -119,26 +124,9 @@ bool IoPlacer::PartialPlaceCmd(int argc, char** argv) {
 
   IoPin* pin = circuit_->GetIoPinPtr(pin_name);
   MetalLayer* metal_layer = circuit_->GetMetalLayerPtr(metal_name);
-  pin->SetLayerPtr(metal_layer);
-  pin->SetShape(lx, ly, ux, uy);
-  pin->SetOrient(orient);
-  pin->SetLoc(circuit_->LocPhydb2DaliX(circuit_->Micron2DatabaseUnit(x)),
-              circuit_->LocPhydb2DaliY(circuit_->Micron2DatabaseUnit(y)), FIXED);
-  // Fixed pins are like DEF pre-placed pins: their location lives in PhyDB, and
-  // the auto-placer and the standard export both skip them, so write PhyDB here.
-  pin->SetInitPlaceStatus(FIXED);
-  DaliExpects(phy_db_ptr_ != nullptr, "PhyDB not set on the I/O placer");
-  DaliExpects(phy_db_ptr_->IsIoPinExisting(pin_name),
-              "I/O pin not in PhyDB: " + pin_name);
-  phydb::IOPin* phydb_pin = phy_db_ptr_->GetIoPinPtr(pin_name);
-  phydb_pin->SetShape(metal_name, circuit_->Micron2DatabaseUnit(lx),
-                      circuit_->Micron2DatabaseUnit(ly),
-                      circuit_->Micron2DatabaseUnit(ux),
-                      circuit_->Micron2DatabaseUnit(uy));
-  phydb_pin->SetPlacement(phydb::PlaceStatus::FIXED,
-                          circuit_->Micron2DatabaseUnit(x),
-                          circuit_->Micron2DatabaseUnit(y),
-                          OrientDali2PhyDB(orient));
+  double dali_x = circuit_->LocPhydb2DaliX(circuit_->Micron2DatabaseUnit(x));
+  double dali_y = circuit_->LocPhydb2DaliY(circuit_->Micron2DatabaseUnit(y));
+  FixIoPin(pin, metal_layer, lx, ly, ux, uy, dali_x, dali_y, orient);
   LOG(info) << "Fixed I/O pin " << pin_name << " at (" << x << ", " << y
             << ") on " << metal_name << "\n";
   return true;
@@ -285,23 +273,32 @@ bool IoPlacer::BuildResourceMap() {
       std::vector<Seg<double>>(0));  // TODO: carry layer info
   for (auto& iopin : circuit_->IoPins()) {
     if (iopin.IsPrePlaced()) {
+      if (!iopin.IsShapeSet() || iopin.LayerPtr() == nullptr) {
+        LOG(error) << "Pre-placed I/O pin " << iopin.Name()
+                   << " is missing its layer or shape\n";
+        return false;
+      }
       double spacing = iopin.LayerPtr()->Spacing();
-      if (iopin.X() == circuit_->design().RegionLeft()) {
-        double lly = iopin.LY(spacing);
-        double ury = iopin.UY(spacing);
-        all_used_segments[LEFT].emplace_back(lly, ury);
-      } else if (iopin.X() == circuit_->design().RegionRight()) {
-        double lly = iopin.LY(spacing);
-        double ury = iopin.UY(spacing);
-        all_used_segments[RIGHT].emplace_back(lly, ury);
-      } else if (iopin.Y() == circuit_->design().RegionBottom()) {
-        double llx = iopin.LX(spacing);
-        double urx = iopin.UX(spacing);
-        all_used_segments[BOTTOM].emplace_back(llx, urx);
-      } else if (iopin.Y() == circuit_->design().RegionTop()) {
-        double llx = iopin.LX(spacing);
-        double urx = iopin.UX(spacing);
-        all_used_segments[TOP].emplace_back(llx, urx);
+      if (IsPinOnBoundary(iopin, LEFT)) {
+        auto bounds = BoundaryRunBounds(iopin, true);
+        double spacing_in_grid = spacing / circuit_->GridValueY();
+        all_used_segments[LEFT].emplace_back(bounds.first - spacing_in_grid,
+                                             bounds.second + spacing_in_grid);
+      } else if (IsPinOnBoundary(iopin, RIGHT)) {
+        auto bounds = BoundaryRunBounds(iopin, true);
+        double spacing_in_grid = spacing / circuit_->GridValueY();
+        all_used_segments[RIGHT].emplace_back(bounds.first - spacing_in_grid,
+                                              bounds.second + spacing_in_grid);
+      } else if (IsPinOnBoundary(iopin, BOTTOM)) {
+        auto bounds = BoundaryRunBounds(iopin, false);
+        double spacing_in_grid = spacing / circuit_->GridValueX();
+        all_used_segments[BOTTOM].emplace_back(bounds.first - spacing_in_grid,
+                                               bounds.second + spacing_in_grid);
+      } else if (IsPinOnBoundary(iopin, TOP)) {
+        auto bounds = BoundaryRunBounds(iopin, false);
+        double spacing_in_grid = spacing / circuit_->GridValueX();
+        all_used_segments[TOP].emplace_back(bounds.first - spacing_in_grid,
+                                            bounds.second + spacing_in_grid);
       } else {
         // A fixed pin placed in the interior (e.g. via `place-io -place`)
         // consumes no boundary resource, so it is simply left out of the
@@ -310,78 +307,134 @@ bool IoPlacer::BuildResourceMap() {
     }
   }
 
-  std::vector<double> boundary_loc{(double)circuit_->design().RegionLeft(),
-                                   (double)circuit_->design().RegionRight(),
-                                   (double)circuit_->design().RegionBottom(),
-                                   (double)circuit_->design().RegionTop()};
-
   for (int i = 0; i < NUM_OF_PLACE_BOUNDARY; ++i) {
+    for (auto& layer_space : boundary_spaces_[i].layer_spaces_) {
+      layer_space.iopin_ptr_list.clear();
+      layer_space.pin_clusters.clear();
+    }
+
     std::vector<Seg<double>>& used_segments = all_used_segments[i];
     std::sort(used_segments.begin(), used_segments.end(),
               [](const Seg<double>& lhs, const Seg<double>& rhs) {
                 return (lhs.lo < rhs.lo);
               });
-    std::vector<Seg<double>> avail_space;
-    if (i == LEFT || i == RIGHT) {
-      double lo = circuit_->design().RegionBottom();
-      double span = 0;
-      int len = (int)used_segments.size();
-      if (len == 0) {
-        span = circuit_->design().RegionTop() - lo;
-        boundary_spaces_[i].layer_spaces_[0].AddCluster(lo, span);
+
+    double region_lo = (i == LEFT || i == RIGHT)
+                           ? circuit_->design().RegionBottom()
+                           : circuit_->design().RegionLeft();
+    double region_hi = (i == LEFT || i == RIGHT)
+                           ? circuit_->design().RegionTop()
+                           : circuit_->design().RegionRight();
+    double cursor = region_lo;
+    for (auto const& used : used_segments) {
+      double used_lo = std::max(region_lo, used.lo);
+      double used_hi = std::min(region_hi, used.hi);
+      if (used_hi <= cursor) {
+        continue;
       }
-      for (int j = 0; j < len; ++j) {
-        if (lo < used_segments[j].lo) {
-          double hi = circuit_->design().RegionTop();
-          if (j + 1 < len) {
-            hi = used_segments[j + 1].lo;
-          }
-          span = hi - lo;
-          boundary_spaces_[i].layer_spaces_[0].AddCluster(lo, span);
-        }
-        lo = used_segments[j].hi;
+      if (used_lo > cursor) {
+        boundary_spaces_[i].layer_spaces_[0].AddCluster(cursor,
+                                                        used_lo - cursor);
       }
-    } else {
-      double lo = circuit_->design().RegionLeft();
-      double span = 0;
-      int len = (int)used_segments.size();
-      if (len == 0) {
-        span = circuit_->design().RegionRight() - lo;
-        boundary_spaces_[i].layer_spaces_[0].AddCluster(lo, span);
-      }
-      for (int j = 0; j < len; ++j) {
-        if (lo < used_segments[j].lo) {
-          double hi = circuit_->design().RegionRight();
-          if (j + 1 < len) {
-            hi = used_segments[j + 1].lo;
-          }
-          span = hi - lo;
-          boundary_spaces_[i].layer_spaces_[0].AddCluster(lo, span);
-        }
-        lo = used_segments[j].hi;
-      }
+      cursor = std::max(cursor, used_hi);
+    }
+    if (cursor < region_hi) {
+      boundary_spaces_[i].layer_spaces_[0].AddCluster(cursor,
+                                                      region_hi - cursor);
     }
   }
   return true;
 }
 
-/**
- * Assign each movable I/O pin to a boundary, layer, and position.
- *
- * Pins already marked fixed keep their location; the rest are placed near the
- * nets that reach them, subject to the layer configuration and spacing.
- * @return false if some pin could not be placed.
- */
-namespace {
-// Map an edge name to a boundary index; returns -1 for an unknown name.
-int EdgeNameToIndex(std::string const& name) {
+int IoPlacer::BoundaryNameToIndex(std::string const& name) {
   if (name == "left") return LEFT;
   if (name == "right") return RIGHT;
   if (name == "bottom") return BOTTOM;
   if (name == "top") return TOP;
   return -1;
 }
-}  // namespace
+
+ComponentOrient IoPlacer::ReflectOrientationAcrossVerticalCenterline(
+    ComponentOrient orient) {
+  switch (orient) {
+    case N:
+      return FN;
+    case FN:
+      return N;
+    case S:
+      return FS;
+    case FS:
+      return S;
+    case E:
+      return FE;
+    case FE:
+      return E;
+    case W:
+      return FW;
+    case FW:
+      return W;
+    default:
+      return orient;
+  }
+}
+
+ComponentOrient IoPlacer::ReflectOrientationAcrossHorizontalCenterline(
+    ComponentOrient orient) {
+  switch (orient) {
+    case N:
+      return FS;
+    case FS:
+      return N;
+    case S:
+      return FN;
+    case FN:
+      return S;
+    case E:
+      return FW;
+    case FW:
+      return E;
+    case W:
+      return FE;
+    case FE:
+      return W;
+    default:
+      return orient;
+  }
+}
+
+std::pair<double, double> IoPlacer::BoundaryRunBounds(
+    IoPin const& pin, bool vertical_edge) const {
+  if (vertical_edge) {
+    double grid_value = circuit_->GridValueY();
+    return {pin.Y() + (pin.LY() - pin.Y()) / grid_value,
+            pin.Y() + (pin.UY() - pin.Y()) / grid_value};
+  }
+  double grid_value = circuit_->GridValueX();
+  return {pin.X() + (pin.LX() - pin.X()) / grid_value,
+          pin.X() + (pin.UX() - pin.X()) / grid_value};
+}
+
+bool IoPlacer::IsPinOnBoundary(IoPin const& pin, int boundary_index) const {
+  phydb::IOPin* phydb_pin = phy_db_ptr_->GetIoPinPtr(pin.Name());
+  if (phydb_pin == nullptr) {
+    return false;
+  }
+  auto location = phydb_pin->GetLocation();
+  const auto& die_area = phy_db_ptr_->GetDesignPtr()->GetDieArea();
+  if (boundary_index == LEFT) {
+    return location.x == die_area.LLX();
+  }
+  if (boundary_index == RIGHT) {
+    return location.x == die_area.URX();
+  }
+  if (boundary_index == BOTTOM) {
+    return location.y == die_area.LLY();
+  }
+  if (boundary_index == TOP) {
+    return location.y == die_area.URY();
+  }
+  return false;
+}
 
 bool IoPlacer::ConstrainPinToEdge(std::string const& pin_name,
                                   int boundary_index) {
@@ -415,7 +468,7 @@ bool IoPlacer::ConstraintCmd(int argc, char** argv) {
     return false;
   }
   std::string target(argv[0]);
-  int boundary = EdgeNameToIndex(std::string(argv[1]));
+  int boundary = BoundaryNameToIndex(std::string(argv[1]));
   if (boundary < 0) {
     LOG(error) << "Unknown edge: " << argv[1]
                << " (use left/right/bottom/top)\n";
@@ -423,7 +476,8 @@ bool IoPlacer::ConstraintCmd(int argc, char** argv) {
   }
   const std::string dir_prefix = "dir:";
   if (target.rfind(dir_prefix, 0) == 0) {
-    SignalDirection dir = StrToSignalDirection(target.substr(dir_prefix.size()));
+    SignalDirection dir =
+        StrToSignalDirection(target.substr(dir_prefix.size()));
     return ConstrainDirectionToEdge(dir, boundary);
   }
   return ConstrainPinToEdge(target, boundary);
@@ -530,6 +584,315 @@ bool IoPlacer::AreaArrayPlaceCmd(int argc, char** argv) {
   return AreaArrayPlace(circuit_->GetMetalLayerPtr(metal_name), rows, cols);
 }
 
+void IoPlacer::FixIoPin(IoPin* pin, MetalLayer* layer, double lx, double ly,
+                        double ux, double uy, double dali_x, double dali_y,
+                        ComponentOrient orient) {
+  pin->SetLayerPtr(layer);
+  pin->SetShape(lx, ly, ux, uy);
+  pin->SetOrient(orient);
+  pin->SetLoc(dali_x, dali_y, FIXED);
+  pin->SetInitPlaceStatus(FIXED);
+  int db_x = circuit_->LocDali2PhydbX(dali_x);
+  int db_y = circuit_->LocDali2PhydbY(dali_y);
+  // On the right/top boundary the die extent may not be an integer grid
+  // multiple; snap to the exact die edge, as AdjustIoPinLocationForPhyDB does.
+  const auto& die_area = phy_db_ptr_->GetDesignPtr()->GetDieArea();
+  if (dali_x == circuit_->RegionURX()) db_x = die_area.URX();
+  if (dali_y == circuit_->RegionURY()) db_y = die_area.URY();
+  pin->SetFinalX(db_x);
+  pin->SetFinalY(db_y);
+  phydb::IOPin* phydb_pin = phy_db_ptr_->GetIoPinPtr(pin->Name());
+  phydb_pin->SetShape(layer->Name(), circuit_->Micron2DatabaseUnit(lx),
+                      circuit_->Micron2DatabaseUnit(ly),
+                      circuit_->Micron2DatabaseUnit(ux),
+                      circuit_->Micron2DatabaseUnit(uy));
+  phydb_pin->SetPlacement(phydb::PlaceStatus::FIXED, db_x, db_y,
+                          OrientDali2PhyDB(orient));
+}
+
+bool IoPlacer::GroupPlace(MetalLayer* metal_layer, int boundary_index,
+                          std::vector<std::string> const& pin_names) {
+  if (metal_layer == nullptr) {
+    LOG(error) << "Cannot place an I/O pin group without a metal layer\n";
+    return false;
+  }
+  if (boundary_index < LEFT || boundary_index > TOP) {
+    LOG(error) << "Invalid I/O pin group boundary index: " << boundary_index
+               << "\n";
+    return false;
+  }
+
+  std::unordered_set<std::string> unique_names;
+  for (auto const& name : pin_names) {
+    if (!circuit_->IsIoPinExisting(name)) {
+      LOG(error) << "No such I/O pin: " << name << "\n";
+      return false;
+    }
+    if (!unique_names.insert(name).second) {
+      LOG(error) << "I/O pin " << name
+                 << " appears more than once in the group\n";
+      return false;
+    }
+  }
+  int n = static_cast<int>(pin_names.size());
+  if (n == 0) return true;
+
+  double mfg = phy_db_ptr_->tech().GetManufacturingGrid();
+  double width = metal_layer->Width();
+  double height = std::max(metal_layer->MinArea() / width, width);
+  height = RoundOrCeiling(height / mfg) * mfg;
+  double half_width = RoundOrCeiling(width / 2.0 / mfg) * mfg;
+
+  bool vertical_edge = (boundary_index == LEFT || boundary_index == RIGHT);
+  double left = circuit_->design().RegionLeft();
+  double right = circuit_->design().RegionRight();
+  double bottom = circuit_->design().RegionBottom();
+  double top = circuit_->design().RegionTop();
+
+  // MetalLayer::Spacing() is Dali's normalized LEF minimum spacing, including
+  // the first entry of a spacing table when no scalar SPACING value exists. A
+  // manufacturing-grid margin keeps exported integer database coordinates
+  // strictly beyond that minimum after rounding.
+  double spacing = metal_layer->Spacing();
+  double footprint = 2.0 * half_width;
+  double grid_value =
+      vertical_edge ? circuit_->GridValueY() : circuit_->GridValueX();
+  double pitch = (footprint + spacing + mfg) / grid_value;
+
+  double sum = 0;
+  int cnt = 0;
+  for (auto const& name : pin_names) {
+    IoPin* pin = circuit_->GetIoPinPtr(name);
+    Net* net = pin->NetPtr();
+    if (net == nullptr || net->ComponentPins().empty()) continue;
+    net->UpdateMaxMinIndex();
+    double center = vertical_edge ? 0.5 * (net->MinY() + net->MaxY())
+                                  : 0.5 * (net->MinX() + net->MaxX());
+    sum += center;
+    ++cnt;
+  }
+  double region_lo = vertical_edge ? bottom : left;
+  double region_hi = vertical_edge ? top : right;
+  double center = (cnt > 0) ? sum / cnt : 0.5 * (region_lo + region_hi);
+
+  double total = (n - 1) * pitch;
+  double edge_coord;
+  ComponentOrient orient;
+  if (boundary_index == LEFT) {
+    edge_coord = left;
+    orient = E;
+  } else if (boundary_index == RIGHT) {
+    edge_coord = right;
+    orient = W;
+  } else if (boundary_index == BOTTOM) {
+    edge_coord = bottom;
+    orient = N;
+  } else {
+    edge_coord = top;
+    orient = S;
+  }
+
+  double run_half_extent = half_width / grid_value;
+  double required_span = total + 2.0 * run_half_extent;
+  if (required_span > region_hi - region_lo) {
+    LOG(error) << "I/O pin group needs " << required_span
+               << " grid units, but the selected edge only has "
+               << region_hi - region_lo << "\n";
+    return false;
+  }
+
+  // Existing fixed pins divide the edge into free intervals. Expand their
+  // occupied intervals by the required clearance, then choose the legal group
+  // interval closest to the net-driven target.
+  double clearance = (spacing + mfg) / grid_value;
+  std::vector<Seg<double>> blocked;
+  for (auto const& iopin : circuit_->IoPins()) {
+    if (unique_names.find(iopin.Name()) != unique_names.end()) {
+      continue;
+    }
+    if (!iopin.IsPrePlaced() || !iopin.IsShapeSet() ||
+        iopin.LayerPtr() == nullptr ||
+        iopin.LayerPtr()->Name() != metal_layer->Name()) {
+      continue;
+    }
+    if (!IsPinOnBoundary(iopin, boundary_index)) {
+      continue;
+    }
+    auto bounds = BoundaryRunBounds(iopin, vertical_edge);
+    blocked.emplace_back(bounds.first - clearance, bounds.second + clearance);
+  }
+  std::sort(blocked.begin(), blocked.end(),
+            [](Seg<double> const& lhs, Seg<double> const& rhs) {
+              return lhs.lo < rhs.lo;
+            });
+
+  double desired_start = center - total / 2.0;
+  double desired_envelope_lo = desired_start - run_half_extent;
+  double best_start = 0.0;
+  double best_distance = 0.0;
+  bool found_interval = false;
+  auto consider_free_interval = [&](double free_lo, double free_hi) {
+    if (free_hi - free_lo < required_span) {
+      return;
+    }
+    double envelope_lo = std::max(
+        free_lo, std::min(desired_envelope_lo, free_hi - required_span));
+    double candidate_start = envelope_lo + run_half_extent;
+    double distance = std::fabs(candidate_start - desired_start);
+    if (!found_interval || distance < best_distance) {
+      best_start = candidate_start;
+      best_distance = distance;
+      found_interval = true;
+    }
+  };
+
+  double free_lo = region_lo;
+  for (auto const& segment : blocked) {
+    double blocked_lo = std::max(region_lo, segment.lo);
+    double blocked_hi = std::min(region_hi, segment.hi);
+    if (blocked_hi <= free_lo) {
+      continue;
+    }
+    if (blocked_lo > free_lo) {
+      consider_free_interval(free_lo, blocked_lo);
+    }
+    free_lo = std::max(free_lo, blocked_hi);
+  }
+  if (free_lo < region_hi) {
+    consider_free_interval(free_lo, region_hi);
+  }
+  if (!found_interval) {
+    LOG(error) << "No contiguous interval on the selected edge can hold the "
+                  "I/O pin group\n";
+    return false;
+  }
+
+  for (int i = 0; i < n; ++i) {
+    double pos = best_start + i * pitch;
+    IoPin* pin = circuit_->GetIoPinPtr(pin_names[i]);
+    if (vertical_edge) {
+      FixIoPin(pin, metal_layer, -half_width, 0, half_width, height, edge_coord,
+               pos, orient);
+    } else {
+      FixIoPin(pin, metal_layer, -half_width, 0, half_width, height, pos,
+               edge_coord, orient);
+    }
+  }
+  return true;
+}
+
+bool IoPlacer::GroupPlaceCmd(int argc, char** argv) {
+  // -group <metal> <edge> <pin1> <pin2> ...
+  if (argc < 3) {
+    LOG(error) << "place-io -group needs: <metal> <left|right|bottom|top> "
+                  "<pin1> [pin2 ...]\n";
+    return false;
+  }
+  std::string metal_name(argv[0]);
+  if (!circuit_->IsMetalLayerExisting(metal_name)) {
+    LOG(error) << "No such metal layer: " << metal_name << "\n";
+    return false;
+  }
+  int boundary = BoundaryNameToIndex(std::string(argv[1]));
+  if (boundary < 0) {
+    LOG(error) << "Unknown edge: " << argv[1]
+               << " (use left/right/bottom/top)\n";
+    return false;
+  }
+  std::vector<std::string> pin_names;
+  for (int i = 2; i < argc; ++i) pin_names.emplace_back(argv[i]);
+  return GroupPlace(circuit_->GetMetalLayerPtr(metal_name), boundary,
+                    pin_names);
+}
+
+bool IoPlacer::MirrorPlace(std::string const& pin_name,
+                           std::string const& ref_pin_name, char axis) {
+  if (axis != 'x' && axis != 'y') {
+    LOG(error) << "I/O pin mirror axis must be x or y\n";
+    return false;
+  }
+  if (pin_name == ref_pin_name) {
+    LOG(error) << "An I/O pin cannot be mirrored onto itself: " << pin_name
+               << "\n";
+    return false;
+  }
+  if (!circuit_->IsIoPinExisting(pin_name)) {
+    LOG(error) << "No such I/O pin: " << pin_name << "\n";
+    return false;
+  }
+  if (!circuit_->IsIoPinExisting(ref_pin_name)) {
+    LOG(error) << "No such reference I/O pin: " << ref_pin_name << "\n";
+    return false;
+  }
+  IoPin* ref = circuit_->GetIoPinPtr(ref_pin_name);
+  if (!ref->IsPlaced() && !ref->IsPrePlaced()) {
+    LOG(error) << "Reference I/O pin " << ref_pin_name
+               << " has no location to mirror\n";
+    return false;
+  }
+  if (ref->LayerPtr() == nullptr) {
+    LOG(error) << "Reference I/O pin " << ref_pin_name << " has no layer\n";
+    return false;
+  }
+  if (!ref->IsShapeSet()) {
+    LOG(error) << "Reference I/O pin " << ref_pin_name << " has no shape\n";
+    return false;
+  }
+
+  const auto& die_area = phy_db_ptr_->GetDesignPtr()->GetDieArea();
+  int ref_db_x;
+  int ref_db_y;
+  if (ref->IsPrePlaced()) {
+    auto ref_location = phy_db_ptr_->GetIoPinPtr(ref_pin_name)->GetLocation();
+    ref_db_x = ref_location.x;
+    ref_db_y = ref_location.y;
+  } else {
+    ref_db_x = ref->FinalX();
+    ref_db_y = ref->FinalY();
+  }
+
+  double new_x, new_y;
+  ComponentOrient orient;
+  if (axis == 'x') {
+    int new_db_x = die_area.LLX() + die_area.URX() - ref_db_x;
+    new_x = circuit_->LocPhydb2DaliX(new_db_x);
+    new_y = circuit_->LocPhydb2DaliY(ref_db_y);
+    orient = ReflectOrientationAcrossVerticalCenterline(ref->Orient());
+  } else {
+    int new_db_y = die_area.LLY() + die_area.URY() - ref_db_y;
+    new_x = circuit_->LocPhydb2DaliX(ref_db_x);
+    new_y = circuit_->LocPhydb2DaliY(new_db_y);
+    orient = ReflectOrientationAcrossHorizontalCenterline(ref->Orient());
+  }
+
+  RectD const& shape = ref->Shape();
+  IoPin* pin = circuit_->GetIoPinPtr(pin_name);
+  FixIoPin(pin, ref->LayerPtr(), shape.LLX(), shape.LLY(), shape.URX(),
+           shape.URY(), new_x, new_y, orient);
+  return true;
+}
+
+bool IoPlacer::MirrorPlaceCmd(int argc, char** argv) {
+  // -mirror <pin> <ref_pin> <x|y>
+  if (argc != 3) {
+    LOG(error) << "place-io -mirror needs 3 arguments: <pin> <ref_pin> <x|y>\n";
+    return false;
+  }
+  std::string axis_str(argv[2]);
+  if (axis_str != "x" && axis_str != "y") {
+    LOG(error) << "place-io -mirror axis must be x or y\n";
+    return false;
+  }
+  return MirrorPlace(std::string(argv[0]), std::string(argv[1]), axis_str[0]);
+}
+
+/**
+ * Assign each movable I/O pin to a boundary, layer, and position.
+ *
+ * Pins already marked fixed keep their location; the rest are placed near the
+ * nets that reach them, subject to the layer configuration and spacing.
+ * @return false if some pin could not be placed.
+ */
 bool IoPlacer::AssignIoPinToBoundaryLayers() {
   for (auto& iopin : circuit_->IoPins()) {
     // do nothing for placed IOPINs
@@ -537,10 +900,10 @@ bool IoPlacer::AssignIoPinToBoundaryLayers() {
 
     // find the bounding box of the net containing this IOPIN
     Net* net = iopin.NetPtr();
-    if (net->ComponentPins().empty()) {
+    if (net == nullptr || net->ComponentPins().empty()) {
       // if this net only contain this IOPIN, do nothing
-      LOG(warning) << "Net " << net->Name() << " only contains IOPIN "
-                   << iopin.Name() << ", skip placing this IOPIN\n";
+      LOG(warning) << "I/O pin " << iopin.Name()
+                   << " has no connected component; skip placement\n";
       continue;
     }
     net->UpdateMaxMinIndex();
@@ -565,8 +928,8 @@ bool IoPlacer::AssignIoPinToBoundaryLayers() {
         (double)circuit_->design().RegionBottom(),
         (double)circuit_->design().RegionTop()};
 
-    // determine which placement boundary this net bounding box is most close to,
-    // unless the pin is constrained to a specific edge
+    // determine which placement boundary this net bounding box is most close
+    // to, unless the pin is constrained to a specific edge
     std::vector<bool> close_to_boundary{false, false, false, false};
     int constrained = ConstrainedEdge(iopin);
     if (constrained >= 0) {
@@ -577,16 +940,23 @@ bool IoPlacer::AssignIoPinToBoundaryLayers() {
       double min_distance_y =
           std::min(distance_to_boundary[2], distance_to_boundary[3]);
       if (min_distance_x < min_distance_y) {
-        close_to_boundary[0] = distance_to_boundary[0] < distance_to_boundary[1];
+        close_to_boundary[0] =
+            distance_to_boundary[0] < distance_to_boundary[1];
         close_to_boundary[1] = !close_to_boundary[0];
       } else {
-        close_to_boundary[2] = distance_to_boundary[2] < distance_to_boundary[3];
+        close_to_boundary[2] =
+            distance_to_boundary[2] < distance_to_boundary[3];
         close_to_boundary[3] = !close_to_boundary[2];
       }
     }
 
     for (int i = 0; i < NUM_OF_PLACE_BOUNDARY; ++i) {
       if (close_to_boundary[i]) {
+        if (boundary_spaces_[i].layer_spaces_[0].pin_clusters.empty()) {
+          LOG(error) << "No free boundary interval is available for I/O pin "
+                     << iopin.Name() << "\n";
+          return false;
+        }
         iopin.SetLoc(loc_candidate_x[i], loc_candidate_y[i], PLACED);
         boundary_spaces_[i].layer_spaces_[0].iopin_ptr_list.push_back(&iopin);
         break;
@@ -645,9 +1015,11 @@ bool IoPlacer::RunAutoPlacement() {
     return false;
   }
 
-  BuildResourceMap();
-  AssignIoPinToBoundaryLayers();
-  PlaceIoPinOnEachBoundary();
+  if (!BuildResourceMap() || !AssignIoPinToBoundaryLayers() ||
+      !PlaceIoPinOnEachBoundary()) {
+    LOG(error) << "I/O placement failed while assigning boundary resources\n";
+    return false;
+  }
   AdjustIoPinLocationForPhyDB();
 
   LOG(info) << "\033[0;36m"

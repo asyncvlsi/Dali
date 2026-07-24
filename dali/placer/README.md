@@ -97,6 +97,21 @@ marked `FIXED`/`PLACED` in the input keep their locations.
     put every unplaced pin on an interior `rows x cols` lattice on `<metal>`,
     each pin assigned to the free site nearest its net's bounding-box center.
     `rows*cols` must cover the pin count.
+  * `place-io -group <metal> <left|right|bottom|top> <pin> [pin ...]` — place
+    the named pins as one adjacent run at legal pitch. Command order maps to
+    increasing y on a vertical edge and increasing x on a horizontal edge. The
+    run uses the free interval nearest its nets and is fixed before later
+    automatic placement.
+  * `place-io -mirror <pin> <reference_pin> <x|y>` — place and fix `<pin>` at
+    the symmetric location of an already placed reference. `x` reflects the x
+    coordinate across the vertical die centerline; `y` reflects the y coordinate
+    across the horizontal centerline. Layer, shape, and reflected orientation
+    come from the reference pin.
+
+Manual pins, groups, and mirrored pins can be configured first, followed by
+perimeter auto-placement or an area array for all remaining pins. Fixed
+boundary pins reserve their occupied intervals so later automatic pins do not
+overlap them.
 
 ## Iteration control
 

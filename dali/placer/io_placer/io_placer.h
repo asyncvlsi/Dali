@@ -24,6 +24,7 @@
 #include <phydb/phydb.h>
 
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "dali/circuit/circuit.h"
@@ -97,17 +98,54 @@ class IoPlacer {
   /**
    * Place every movable I/O pin on an interior area-array grid.
    *
-   * The flip-chip / area-I/O model: instead of the four perimeter edges, pins go
-   * on a rows x cols lattice of sites strictly inside the placement region, each
-   * pin assigned to the free site nearest its net's bounding-box center.
+   * The flip-chip / area-I/O model: instead of the four perimeter edges, pins
+   * go on a rows x cols lattice of sites strictly inside the placement region,
+   * each pin assigned to the free site nearest its net's bounding-box center.
    * @param metal_layer layer the interior pins are drawn on.
    * @param rows number of interior lattice rows (> 0).
    * @param cols number of interior lattice columns (> 0).
    * @return false if rows*cols cannot hold every movable pin.
    */
-  bool AreaArrayPlace(MetalLayer *metal_layer, int rows, int cols);
+  bool AreaArrayPlace(MetalLayer* metal_layer, int rows, int cols);
   /** Parse and run a `place-io -area <metal> <rows> <cols>` command. */
-  bool AreaArrayPlaceCmd(int argc, char **argv);
+  bool AreaArrayPlaceCmd(int argc, char** argv);
+
+  /**
+   * Fix a group of pins as a contiguous run along one boundary.
+   *
+   * The pins are placed adjacent to each other, spaced by one pin pitch, and
+   * placed in the free interval nearest the group's average net bounding-box
+   * center along that edge. Each is marked fixed, so nothing separates them
+   * afterwards. Guarantees adjacency the uniform boundary legalizer cannot,
+   * since it interleaves pins by net-center position.
+   * @param metal_layer layer the group is drawn on.
+   * @param boundary_index LEFT/RIGHT/BOTTOM/TOP edge to place the run on.
+   * @param pin_names group members, placed in the given order along the edge.
+   * @return false if the edge is invalid, a pin is repeated or missing, or no
+   *   legal contiguous interval can hold the group.
+   */
+  bool GroupPlace(MetalLayer* metal_layer, int boundary_index,
+                  std::vector<std::string> const& pin_names);
+  /** Parse and run `place-io -group <metal> <edge> <pin>...`. */
+  bool GroupPlaceCmd(int argc, char** argv);
+
+  /**
+   * Fix a pin at the mirror image of a reference pin across a die center axis.
+   *
+   * The reference must already have a location. The new pin copies the
+   * reference's layer and shape, takes the reflected location, and takes the
+   * orientation that reflects the reference's geometry so the mirrored shape
+   * still points into the die.
+   * @param pin_name pin to place.
+   * @param ref_pin_name already-placed reference pin.
+   * @param axis 'x' reflects across the vertical center line (x changes); 'y'
+   *   reflects across the horizontal center line (y changes).
+   * @return false if either pin is missing or the reference has no location.
+   */
+  bool MirrorPlace(std::string const& pin_name, std::string const& ref_pin_name,
+                   char axis);
+  /** Parse and run `place-io -mirror <pin> <ref_pin> <x|y>`. */
+  bool MirrorPlaceCmd(int argc, char** argv);
 
   /** Convert final I/O locations to PhyDB/database units. */
   void AdjustIoPinLocationForPhyDB();
@@ -119,6 +157,41 @@ class IoPlacer {
   bool AutoPlaceCmd(int argc, char** argv);
 
  private:
+  /**
+   * Fix one pin at an explicit location on a layer, like a DEF pre-placed pin.
+   *
+   * Sets the in-memory pin FIXED and writes the same geometry, status, and
+   * orientation into PhyDB, so both the auto-placer and the standard export
+   * skip it. Shape corners are microns; the location is in Dali grid units.
+   */
+  void FixIoPin(IoPin* pin, MetalLayer* layer, double lx, double ly, double ux,
+                double uy, double dali_x, double dali_y,
+                ComponentOrient orient);
+
+  /** Convert a boundary name to LEFT/RIGHT/BOTTOM/TOP, or -1 if invalid. */
+  static int BoundaryNameToIndex(std::string const& name);
+
+  /** Reflect an orientation when its x coordinate is mirrored. */
+  static ComponentOrient ReflectOrientationAcrossVerticalCenterline(
+      ComponentOrient orient);
+
+  /** Reflect an orientation when its y coordinate is mirrored. */
+  static ComponentOrient ReflectOrientationAcrossHorizontalCenterline(
+      ComponentOrient orient);
+
+  /**
+   * Return a placed pin's occupied interval along its boundary in grid units.
+   *
+   * Pin shapes are stored in microns while pin locations use Dali grid units;
+   * this helper performs that conversion after applying the pin orientation.
+   */
+  std::pair<double, double> BoundaryRunBounds(IoPin const& pin,
+                                              bool vertical_edge) const;
+
+  /** Return true when PhyDB places the pin on the selected declared die edge.
+   */
+  bool IsPinOnBoundary(IoPin const& pin, int boundary_index) const;
+
   Circuit* circuit_ = nullptr;
   phydb::PhyDB* phy_db_ptr_ = nullptr;
   std::vector<IoBoundarySpace> boundary_spaces_;

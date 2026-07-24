@@ -834,12 +834,20 @@ void Dali::ReportIoPlacementUsage() {
       << "      add an IOPIN\n"
       << "  -p/--place <pin_name> <metal_name> <lx> <ly> <ux> <uy> <x> <y> "
          "<orientation>\n"
-      << "      manually place an IOPIN\n"
+      << "      manually place and fix one I/O pin (coordinates in microns)\n"
+      << "  -cons/--constraint <pin|dir:DIR> <edge>\n"
+      << "      constrain a pin or signal direction to one die edge\n"
+      << "  -area/--area-array <metal> <rows> <cols>\n"
+      << "      place every unplaced pin on an interior area-array grid\n"
+      << "  -group/--group <metal> <edge> <pin> [pin ...]\n"
+      << "      place and fix an adjacent pin group in command order\n"
+      << "  -mirror/--mirror <pin> <reference_pin> <x|y>\n"
+      << "      fix a pin by reflecting the reference x or y coordinate\n"
       << "  -c/--config (use -h to see more usage)\n"
       << "      set parameters for automatic IOPIN placement\n"
       << "  -ap/--auto-place\n"
       << "      automatically place all unplaced IOPINs, which is also the "
-         "default option"
+         "default option\n"
       << "\033[0m\n";
 }
 
@@ -865,6 +873,10 @@ bool Dali::IoPinPlacement(int argc, char** argv) {
     return io_placer_->ConstraintCmd(argc - 2, argv + 2);
   } else if (option_str == "-area" or option_str == "--area-array") {
     return io_placer_->AreaArrayPlaceCmd(argc - 2, argv + 2);
+  } else if (option_str == "-group" or option_str == "--group") {
+    return io_placer_->GroupPlaceCmd(argc - 2, argv + 2);
+  } else if (option_str == "-mirror" or option_str == "--mirror") {
+    return io_placer_->MirrorPlaceCmd(argc - 2, argv + 2);
   } else if (option_str == "-ap" or option_str == "--auto-place") {
     return io_placer_->AutoPlaceCmd(argc - 2, argv + 2);
   } else {

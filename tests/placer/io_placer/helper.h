@@ -27,6 +27,7 @@
 namespace dali {
 
 void SetAllIoPinsToUnplaced(phydb::PhyDB* p_phydb);
+bool IsEveryIoPinPlaced(phydb::PhyDB* p_phydb);
 bool IsEveryIoPinPlacedOnBoundary(phydb::PhyDB* p_phydb);
 bool IsNoIoPinOverlapAndSpacingViolation(phydb::PhyDB* p_phydb);
 bool IsEveryIoPinOnMetal(phydb::PhyDB* p_phydb, std::string const& layer_name);
