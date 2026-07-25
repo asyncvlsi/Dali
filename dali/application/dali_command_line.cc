@@ -76,7 +76,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -lef <file.lef>                             input LEF; may instead be read by a .dali recipe\n"
       << "  -def <file.def>                             input DEF; may instead be read by a .dali recipe\n"
       << "  -cell <file.cell>                          (optional, if provided, well placement flow will be triggered)\n"
-      << "  -o/-output_name <output_base>              (optional, Dali appends .def; default dali_out)\n"
+      << "  -o/-output_name <output>                   (optional, accepts a base or .def name; default dali_out.def)\n"
       << "  -metrics_file <file.json>                  (optional, default dali_metrics.json)\n"
       << "  -script/-command_file <file.dali>          execute a Dali command recipe instead of the implicit placement run\n"
       << "  -interactive                              enter the Dali command prompt; does not run placement implicitly\n"

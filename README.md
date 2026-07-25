@@ -62,11 +62,11 @@ flow:
         -def design.def \
         -cell design.cell \
         -target_density 0.7 \
-        -output_name placed
+        -output_name placed.def
 
 Commonly used options:
-  * `-o`/`-output_name <base>` — output base name; Dali appends `.def`
-    (default `dali_out`)
+  * `-o`/`-output_name <output>` — output base or `.def` filename
+    (both `placed` and `placed.def` create `placed.def`; default `dali_out.def`)
   * `-d`/`-target_density <0..1>` — target placement density
   * `-well_legalization_mode <strict/scavenge>` — gridded well legalization mode
   * `-well_tap_pattern <row-end/row-end-every-other>` — well-tap
@@ -95,7 +95,7 @@ directory:
     set target_density 0.70
     set num_threads 4
     set disable_io_place true
-    set output_name "results/placed"
+    set output_name "results/placed.def"
 
     show settings
     run placement
@@ -106,7 +106,7 @@ directory:
     move-io clock 120.0 400.0 N
     check-io
 
-    write-def "results/signed_off"
+    write-def "results/signed_off.def"
 
 Commands are executed in order and the file stops at the first error. Blank
 lines, `#` comments, quoted arguments, escaped characters, and backslash line

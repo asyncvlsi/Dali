@@ -186,7 +186,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_string("dali.standard_cell_legalizer_cost", "hpwl");
   config_set_int("dali.detailed_max_rounds", 2);
   config_set_int("dali.detailed_max_move_candidates", 500);
-  config_set_string("dali.output_name", "placed");
+  config_set_string("dali.output_name", "placed.def");
   config_set_int("dali.gui_debug", 1);
   config_set_string("dali.gui_pause", "off");
   config_set_real("dali.debug_placement_region_scale", 1.1);

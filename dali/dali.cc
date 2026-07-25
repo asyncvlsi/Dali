@@ -43,6 +43,7 @@
 #include "dali.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdlib>
 #include <filesystem>
@@ -278,6 +279,26 @@ static std::string NormalizeInputFileName(const std::string& file_name) {
       std::filesystem::canonical(file_name, error);
   return error ? std::filesystem::path(file_name).lexically_normal().string()
                : canonical_name.string();
+}
+
+/**
+ * Return the output base accepted by Dali's exporters.
+ *
+ * Public interfaces accept either `placed` or `placed.def`. The circuit
+ * exporters append their own suffixes, so remove one optional DEF extension
+ * here to keep the primary and companion output names consistent.
+ */
+static std::string NormalizeDefOutputBaseName(const std::string& output_name) {
+  std::filesystem::path output_path(output_name);
+  std::string extension = output_path.extension().string();
+  std::transform(extension.begin(), extension.end(), extension.begin(),
+                 [](unsigned char character) {
+                   return static_cast<char>(std::tolower(character));
+                 });
+  if (extension == ".def") {
+    output_path.replace_extension();
+  }
+  return output_path.string();
 }
 
 bool Dali::ReadLef(const std::string& file_name) {
@@ -841,6 +862,8 @@ void Dali::LoadParamsFromConfig() {
   DaliExpects(detailed_max_move_candidates_ >= 0,
               "detailed_max_move_candidates must be non-negative");
   LoadStringConfig(ConfigName(prefix_, "output_name"), &output_name_);
+  output_name_ = NormalizeDefOutputBaseName(output_name_);
+  DaliExpects(!output_name_.empty(), "output_name must not be empty");
   LoadBoolConfig(ConfigName(prefix_, "gui_debug"), &gui_debug_);
   LoadStringConfig(ConfigName(prefix_, "gui_pause"), &gui_pause_);
   LoadRealConfig(ConfigName(prefix_, "debug_placement_region_scale"),
@@ -947,11 +970,12 @@ bool Dali::SetRuntimeOption(const std::string& name, const std::string& value) {
     standard_cell_legalizer_cost_mode_ =
         ParseStandardCellLegalizerCostMode(value);
   } else if (name == "output_name") {
-    if (value.empty()) {
+    const std::string output_base = NormalizeDefOutputBaseName(value);
+    if (output_base.empty()) {
       LOG(error) << "output_name must not be empty\n";
       return false;
     }
-    output_name_ = value;
+    output_name_ = output_base;
   } else if (name == "disable_global_place" || name == "disable_legalization" ||
              name == "disable_detailed_place" || name == "disable_io_place" ||
              name == "disable_welltap" || name == "disable_cell_flip" ||
@@ -1963,8 +1987,8 @@ bool Dali::ExportPlacement(const std::string& output_name) {
     return false;
   }
   InitializeCircuitFromPhyDBIfNeeded();
-  const std::string& resolved_output_name =
-      output_name.empty() ? output_name_ : output_name;
+  const std::string resolved_output_name = NormalizeDefOutputBaseName(
+      output_name.empty() ? output_name_ : output_name);
   if (resolved_output_name.empty()) {
     LOG(error) << "Placement output name must not be empty\n";
     return false;

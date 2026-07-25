@@ -47,7 +47,7 @@ int main() {
            << "set disable_detailed_place true\n"
            << "set disable_io_place true\n"
            << "run placement\n"
-           << "write-def \"results/placed\"\n";
+           << "write-def \"results/placed.def\"\n";
   }
 
   std::filesystem::current_path(test_directory);
@@ -58,6 +58,8 @@ int main() {
   const bool placement_exported = dali.HasExplicitPlacementExport();
   const bool output_exists =
       std::filesystem::is_regular_file("results/placed.def");
+  const bool double_extension_output_absent =
+      !std::filesystem::exists("results/placed.def.def");
   const bool phydb_output_exists =
       std::filesystem::is_regular_file("phydb.def");
   dali.Close();
@@ -65,7 +67,8 @@ int main() {
   std::filesystem::current_path(benchmark_directory);
   std::filesystem::remove_all(test_directory);
   return command_success && design_loaded && placement_exported &&
-                 output_exists && phydb_output_exists
+                 output_exists && double_extension_output_absent &&
+                 phydb_output_exists
              ? 0
              : 1;
 }

@@ -66,7 +66,7 @@ TEST_F(DaliCommandProcessorTest, AppliesTypedRuntimeSettings) {
   EXPECT_TRUE(placer.ExecuteCommand({"set", "disable_io_place", "true"}));
   EXPECT_TRUE(
       placer.ExecuteCommand({"set", "global_initializer", "density_aware"}));
-  EXPECT_TRUE(placer.ExecuteCommand({"set", "output_name", "placed"}));
+  EXPECT_TRUE(placer.ExecuteCommand({"set", "output_name", "placed.def"}));
 
   const dali::Dali::RuntimeOptions options = placer.GetRuntimeOptions();
   EXPECT_DOUBLE_EQ(options.target_density, 0.73);

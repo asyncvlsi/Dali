@@ -31,11 +31,11 @@ read-def "design.def"
 set target_density 0.70
 set num_threads 4
 set is_standard_cell true
-set output_name "results/placed"
+set output_name "results/placed.def"
 
 run placement
 check-io
-write-def "results/signed_off"
+write-def "results/signed_off.def"
 ```
 
 Commands execute in order and a recipe stops at its first error. Blank lines,
@@ -48,10 +48,11 @@ another recipe:
 source "common_settings.dali"
 ```
 
-`write-def [output]` exports immediately. The output is a base name, so
-`write-def "results/placed"` creates `results/placed.def` and Dali's companion
-DEF views. When no `write-def` command is present, the standalone application
-automatically exports the final design using `output_name`.
+`write-def [output]` exports immediately. The output may be a base name or a
+`.def` filename: both `write-def "results/placed"` and
+`write-def "results/placed.def"` create `results/placed.def` and Dali's
+companion DEF views. When no `write-def` command is present, the standalone
+application automatically exports the final design using `output_name`.
 
 ## Interactive mode
 
