@@ -30,6 +30,7 @@ struct DaliCommandLineOptions {
   std::string net_hpwl_file_name;
   std::string visualization_dir;
   std::string command_file_name;
+  bool interactive = false;
   severity verbose_level = severity::info;
   double x_grid = 0;
   double y_grid = 0;

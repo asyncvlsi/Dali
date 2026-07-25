@@ -12,6 +12,7 @@
 #define DALI_COMMAND_DALI_COMMAND_PROCESSOR_H_
 
 #include <cstddef>
+#include <iosfwd>
 #include <string>
 #include <vector>
 
@@ -24,8 +25,8 @@ class Dali;
  *
  * The processor contains no placement logic. It translates commands into the
  * same public Dali APIs used by the existing argv-style `interact` integration,
- * keeping scripts, a future interactive prompt, and external command hosts on
- * one execution path.
+ * keeping scripts, the interactive prompt, and external command hosts on one
+ * execution path.
  */
 class DaliCommandProcessor {
  public:
@@ -43,6 +44,16 @@ class DaliCommandProcessor {
   bool RunCommandFile(const std::string& file_name);
 
   /**
+   * Read and execute commands until EOF, `quit`, or `exit`.
+   *
+   * Unlike a command file, a failed interactive command is reported and the
+   * session continues so users can correct the design. Returns false only for
+   * an input-stream error or an incomplete final line continuation.
+   */
+  bool RunInteractive(std::istream& input, std::ostream& output,
+                      bool show_prompt = true);
+
+  /**
    * Split one command line using shell-like quotes and backslash escaping.
    *
    * A `#` outside quotes starts a comment. This intentionally omits shell
@@ -57,11 +68,13 @@ class DaliCommandProcessor {
   bool ExecuteRun(const std::vector<std::string>& arguments);
   bool ExecuteLegacyPlaceDesign(const std::vector<std::string>& arguments);
   bool ExecuteLegacyGlobalPlace(const std::vector<std::string>& arguments);
+  void ReportHistory(std::ostream& output) const;
   bool ForwardArgvCommand(const std::vector<std::string>& arguments,
                           bool (Dali::*command)(int, char**));
   void ReportUsage() const;
 
   Dali* dali_ = nullptr;
+  std::vector<std::string> command_history_;
 };
 
 }  // namespace dali

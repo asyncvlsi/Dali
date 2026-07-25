@@ -14,6 +14,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -123,4 +124,61 @@ TEST_F(DaliCommandProcessorTest, StopsCommandFileAtFirstFailure) {
   placer.Close();
 
   std::filesystem::remove(script_path);
+}
+
+TEST_F(DaliCommandProcessorTest,
+       InteractiveModeContinuesAfterErrorsAndRecordsHistory) {
+  std::istringstream input(
+      "set target_density \\\n"
+      "  0.66\n"
+      "not-a-command\n"
+      "set num_threads 7\n"
+      "history\n"
+      "quit\n"
+      "set num_threads 9\n");
+  std::ostringstream output;
+  dali::Dali placer(nullptr, dali::severity::info);
+  dali::DaliCommandProcessor processor(&placer);
+
+  EXPECT_TRUE(processor.RunInteractive(input, output, false));
+  const dali::Dali::RuntimeOptions options = placer.GetRuntimeOptions();
+  EXPECT_DOUBLE_EQ(options.target_density, 0.66);
+  EXPECT_EQ(options.num_threads, 7);
+  EXPECT_NE(output.str().find("Dali interactive mode"), std::string::npos);
+  EXPECT_NE(output.str().find("set num_threads 7"), std::string::npos);
+  EXPECT_EQ(output.str().find("set num_threads 9"), std::string::npos);
+  placer.Close();
+}
+
+TEST_F(DaliCommandProcessorTest, InteractiveModeCanSourceCommandFile) {
+  const std::filesystem::path script_path =
+      std::filesystem::temp_directory_path() /
+      "dali_interactive_source_test.dali";
+  {
+    std::ofstream script(script_path);
+    script << "set target_density 0.74\n"
+           << "set num_threads 5\n";
+  }
+  std::istringstream input("source \"" + script_path.string() + "\"\nexit\n");
+  std::ostringstream output;
+  dali::Dali placer(nullptr, dali::severity::info);
+  dali::DaliCommandProcessor processor(&placer);
+
+  EXPECT_TRUE(processor.RunInteractive(input, output, false));
+  const dali::Dali::RuntimeOptions options = placer.GetRuntimeOptions();
+  EXPECT_DOUBLE_EQ(options.target_density, 0.74);
+  EXPECT_EQ(options.num_threads, 5);
+  placer.Close();
+  std::filesystem::remove(script_path);
+}
+
+TEST_F(DaliCommandProcessorTest,
+       InteractiveModeRejectsIncompleteFinalContinuation) {
+  std::istringstream input("set target_density \\");
+  std::ostringstream output;
+  dali::Dali placer(nullptr, dali::severity::info);
+  dali::DaliCommandProcessor processor(&placer);
+
+  EXPECT_FALSE(processor.RunInteractive(input, output, false));
+  placer.Close();
 }

@@ -135,6 +135,35 @@ Manual I/O signoff commands use microns for locations:
 `check-io` is an early feedback tool, not a replacement for process-specific
 foundry signoff DRC.
 
+### Interactive mode
+
+Use `-interactive` to open the input design without implicitly running
+placement:
+
+    $ dali -lef design.lef -def placed.def -interactive
+
+The prompt accepts the same commands as `.dali` files:
+
+    dali> show-io
+    dali> check-io
+    dali> move-io clock 120.0 400.0 N
+    dali> check-io
+    dali> quit
+
+Command failures are reported without closing the session. `history` prints
+commands entered during the current session, `source <file.dali>` runs a
+recipe, and `quit` or `exit` finishes the session and exports the current
+design.
+
+To run a placement recipe and then keep the design open for manual signoff,
+combine both modes:
+
+    $ dali \
+        -lef design.lef \
+        -def design.def \
+        -script placement_flow.dali \
+        -interactive
+
 The same recipe API is designed for a future `interact` adapter:
 
     dali:init 3

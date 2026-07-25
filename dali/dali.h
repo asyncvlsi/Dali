@@ -24,6 +24,7 @@
 #include <phydb/phydb.h>
 
 #include <functional>
+#include <iosfwd>
 #include <memory>
 #include <string>
 #include <vector>
@@ -215,6 +216,16 @@ class Dali {
    * command. Errors include the source filename and logical line number.
    */
   bool RunCommandFile(const std::string& file_name);
+
+  /**
+   * Open a command-driven session on the loaded design.
+   *
+   * The design is initialized but placement is not run implicitly. Commands
+   * may inspect or edit an existing placement, execute `run placement`, or
+   * source a recipe.
+   */
+  bool RunInteractiveSession(std::istream& input, std::ostream& output,
+                             bool show_prompt = true);
 
   /** Return true when global placement has movable components and nets to use.
    */

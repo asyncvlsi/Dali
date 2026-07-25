@@ -12,6 +12,7 @@
 
 #include <cctype>
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -201,6 +202,11 @@ void DaliCommandProcessor::ReportUsage() const {
       << "                           move and fix a pin in microns\n"
       << "  unfix-io <pin>           release a pin for automatic placement\n"
       << "  check-io                 validate I/O pin placement\n"
+      << "  source <file.dali>       execute another command recipe\n"
+      << "  history                  interactive: show commands in this "
+         "session\n"
+      << "  quit/exit                interactive: finish and export the "
+         "design\n"
       << "  place-design <d> [n]     legacy placement command\n"
       << "  global-place <d> [n]     legacy global-placement command\n"
       << "  add-welltap ...          legacy well-tap command\n"
@@ -253,6 +259,13 @@ bool DaliCommandProcessor::ExecuteCommand(
     std::vector<std::string> normalized_arguments = arguments;
     normalized_arguments[0] = "add-welltap";
     return ForwardArgvCommand(normalized_arguments, &Dali::AddWellTaps);
+  }
+  if (command == "source") {
+    if (arguments.size() != 2) {
+      LOG(error) << "Usage: source <file.dali>\n";
+      return false;
+    }
+    return RunCommandFile(arguments[1]);
   }
   if (command == "place-design") {
     return ExecuteLegacyPlaceDesign(arguments);
@@ -333,6 +346,89 @@ bool DaliCommandProcessor::RunCommandFile(const std::string& file_name) {
   return true;
 }
 
+void DaliCommandProcessor::ReportHistory(std::ostream& output) const {
+  for (std::size_t i = 0; i < command_history_.size(); ++i) {
+    output << "  " << i + 1 << "  " << command_history_[i] << "\n";
+  }
+}
+
+bool DaliCommandProcessor::RunInteractive(std::istream& input,
+                                          std::ostream& output,
+                                          bool show_prompt) {
+  output << "Dali interactive mode. Type 'help' for commands and 'quit' to "
+            "finish.\n";
+
+  std::string physical_line;
+  std::string logical_line;
+  std::size_t line_number = 0;
+  std::size_t logical_line_number = 0;
+  while (true) {
+    if (show_prompt) {
+      output << (logical_line.empty() ? "dali> " : "  ... ") << std::flush;
+    }
+    if (!std::getline(input, physical_line)) {
+      if (input.bad()) {
+        LOG(error) << "Failed while reading the interactive command stream\n";
+        return false;
+      }
+      break;
+    }
+
+    ++line_number;
+    if (logical_line.empty()) {
+      logical_line_number = line_number;
+    }
+    std::size_t backslash_position = 0;
+    bool continues = HasLineContinuation(physical_line, &backslash_position);
+    if (continues) {
+      physical_line.erase(backslash_position);
+    }
+    logical_line += physical_line;
+    if (continues) {
+      logical_line.push_back(' ');
+      continue;
+    }
+
+    std::vector<std::string> arguments;
+    std::string error_message;
+    if (!TokenizeCommandLine(logical_line, &arguments, &error_message)) {
+      LOG(error) << "<stdin>:" << logical_line_number << ": " << error_message
+                 << "\n";
+      logical_line.clear();
+      continue;
+    }
+    if (arguments.empty()) {
+      logical_line.clear();
+      continue;
+    }
+
+    command_history_.push_back(logical_line);
+    std::string command = arguments.front();
+    const std::string namespace_prefix = "dali:";
+    if (command.compare(0, namespace_prefix.size(), namespace_prefix) == 0) {
+      command.erase(0, namespace_prefix.size());
+    }
+    if ((command == "quit" || command == "exit") && arguments.size() == 1) {
+      return true;
+    }
+    if (command == "history" && arguments.size() == 1) {
+      ReportHistory(output);
+      logical_line.clear();
+      continue;
+    }
+
+    ExecuteCommandLine(logical_line, "<stdin>", logical_line_number);
+    logical_line.clear();
+  }
+
+  if (!logical_line.empty()) {
+    LOG(error) << "<stdin>:" << logical_line_number
+               << ": incomplete line continuation\n";
+    return false;
+  }
+  return true;
+}
+
 bool Dali::ExecuteCommand(const std::vector<std::string>& arguments) {
   return DaliCommandProcessor(this).ExecuteCommand(arguments);
 }
@@ -343,6 +439,12 @@ bool Dali::ExecuteCommandLine(const std::string& command_line) {
 
 bool Dali::RunCommandFile(const std::string& file_name) {
   return DaliCommandProcessor(this).RunCommandFile(file_name);
+}
+
+bool Dali::RunInteractiveSession(std::istream& input, std::ostream& output,
+                                 bool show_prompt) {
+  InitializeCircuitFromPhyDBIfNeeded();
+  return DaliCommandProcessor(this).RunInteractive(input, output, show_prompt);
 }
 
 }  // namespace dali

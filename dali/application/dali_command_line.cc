@@ -76,6 +76,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -o/-output_name <output_name>.def          (optional, default output def file name dali_out.def)\n"
       << "  -metrics_file <file.json>                  (optional, default dali_metrics.json)\n"
       << "  -script/-command_file <file.dali>          execute a Dali command recipe instead of the implicit placement run\n"
+      << "  -interactive                              enter the Dali command prompt; does not run placement implicitly\n"
       << "  -gui_debug                                 show live placement debug GUI when built with Qt\n"
       << "  -gui_pause <every_snapshot/off>            GUI pause policy, default every_snapshot\n"
       << "  -g/-grid <grid_value_x> <grid_value_y>     (optional, default metal1 and metal2 pitch values)\n"
@@ -220,6 +221,8 @@ bool ParseDaliCommandLine(int argc, char* argv[],
         error_output << "Invalid Dali command file name!\n";
         return false;
       }
+    } else if (arg == "-interactive") {
+      options->interactive = true;
     } else if (arg == "-net_hpwl_file") {
       if (!TryGetValue(argc, argv, &i, &options->net_hpwl_file_name)) {
         error_output << "Invalid net HPWL file name!\n";

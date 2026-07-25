@@ -68,6 +68,15 @@ TEST_F(DaliCommandLineTest, ParsesDaliCommandFileAliases) {
   EXPECT_EQ(compatibility_options.command_file_name, "compatibility.dali");
 }
 
+TEST_F(DaliCommandLineTest, ParsesInteractiveMode) {
+  dali::DaliCommandLineOptions options;
+  EXPECT_TRUE(
+      Parse({"dali", "-lef", "input.lef", "-def", "input.def", "-interactive"},
+            &options));
+
+  EXPECT_TRUE(options.interactive);
+}
+
 TEST_F(DaliCommandLineTest, ParsesRowScaleLegalizationFeedback) {
   dali::DaliCommandLineOptions options;
   EXPECT_TRUE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",

@@ -19,6 +19,7 @@
  *
  ******************************************************************************/
 #include <phydb/phydb.h>
+#include <unistd.h>
 
 #include <chrono>
 #include <ctime>
@@ -118,12 +119,19 @@ int main(int argc, char* argv[]) {
   // save command line arguments for future reference
   SaveArgs(argc, argv);
 
-  // Preserve the original one-command flow unless a recipe is explicitly
-  // provided. A `.dali` file owns stage execution, which also makes the same
-  // file usable by a future `interact` `dali:source` adapter.
-  bool is_success = options.command_file_name.empty()
-                        ? dali.StartPlacement()
-                        : dali.RunCommandFile(options.command_file_name);
+  // Preserve the original implicit placement flow. Recipes own stage
+  // execution, while interactive mode initializes the design and waits for
+  // commands without moving components first.
+  bool is_success = true;
+  if (!options.command_file_name.empty()) {
+    is_success = dali.RunCommandFile(options.command_file_name);
+  } else if (!options.interactive) {
+    is_success = dali.StartPlacement();
+  }
+  if (is_success && options.interactive) {
+    is_success = dali.RunInteractiveSession(std::cin, std::cout,
+                                            isatty(STDIN_FILENO) != 0);
+  }
   if (!is_success) {
     WritePlacementMetricsJson(options.metrics_file_name, false);
     return 1;
