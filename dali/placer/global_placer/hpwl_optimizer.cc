@@ -42,6 +42,7 @@
 
 #include "dali/common/elapsed_time.h"
 #include "dali/common/logging.h"
+#include "dali/common/placement_metrics.h"
 
 namespace dali {
 
@@ -95,6 +96,8 @@ void BoundToBoundHpwlOptimizer::Initialize() {
   y_anchor.resize(eigen_sz);
   x_anchor_weight.resize(eigen_sz);
   y_anchor_weight.resize(eigen_sz);
+  net_hpwl_x_.resize(ckt_ptr_->Nets().size());
+  net_hpwl_y_.resize(ckt_ptr_->Nets().size());
 
   cg_x_.setMaxIterations(cg_iteration_);
   cg_x_.setTolerance(cg_tolerance_);
@@ -442,17 +445,37 @@ double BoundToBoundHpwlOptimizer::OptimizeQuadraticMetricX(
   int sz = static_cast<int>(vx.size());
   std::vector<Component>& components = ckt_ptr_->Components();
 
-  elapsed_time.RecordStartTime();
+  ElapsedTime solver_elapsed_time;
+  solver_elapsed_time.RecordStartTime();
   std::vector<double> eval_history;
   int max_rounds = cg_iteration_max_num_ / cg_iteration_;
+  int solver_threads = std::max(1, num_threads_ / 2);
+
+  ElapsedTime phase_elapsed_time;
+  phase_elapsed_time.RecordStartTime();
   cg_x_.compute(Ax);  // Ax * vx = bx
+  phase_elapsed_time.RecordEndTime();
+  tot_cg_compute_time_x += phase_elapsed_time.GetWallTime();
+
   for (int i = 0; i < max_rounds; ++i) {
+    phase_elapsed_time.RecordStartTime();
     vx = cg_x_.solveWithGuess(bx, vx);
-    // #pragma omp for
+    phase_elapsed_time.RecordEndTime();
+    tot_cg_solve_time_x += phase_elapsed_time.GetWallTime();
+
+    phase_elapsed_time.RecordStartTime();
+#pragma omp parallel for num_threads(solver_threads) schedule(static)
     for (int num = 0; num < sz; ++num) {
       components[num].SetLLX(vx[num]);
     }
-    double evaluate_result = ckt_ptr_->WeightedHPWLX();
+    phase_elapsed_time.RecordEndTime();
+    tot_intermediate_loc_update_time_x += phase_elapsed_time.GetWallTime();
+
+    phase_elapsed_time.RecordStartTime();
+    double evaluate_result = EvaluateWeightedHpwlX(solver_threads);
+    phase_elapsed_time.RecordEndTime();
+    tot_hpwl_evaluation_time_x += phase_elapsed_time.GetWallTime();
+
     eval_history.push_back(evaluate_result);
     if (evaluate_result < hpwl_early_stop_threshold_) {
       break;
@@ -472,11 +495,11 @@ double BoundToBoundHpwlOptimizer::OptimizeQuadraticMetricX(
   }
   LOG(trace) << "      Metric optimization in X, sequence: " << eval_history
              << "\n";
-  elapsed_time.RecordEndTime();
-  tot_cg_solver_time_x += elapsed_time.GetWallTime();
+  solver_elapsed_time.RecordEndTime();
+  tot_cg_solver_time_x += solver_elapsed_time.GetWallTime();
 
   elapsed_time.RecordStartTime();
-  // #pragma omp for
+#pragma omp parallel for num_threads(solver_threads) schedule(static)
   for (int num = 0; num < sz; ++num) {
     components[num].SetLLX(vx[num]);
   }
@@ -504,17 +527,37 @@ double BoundToBoundHpwlOptimizer::OptimizeQuadraticMetricY(
   int sz = static_cast<int>(vy.size());
   std::vector<Component>& component_list = ckt_ptr_->Components();
 
-  elapsed_time.RecordStartTime();
+  ElapsedTime solver_elapsed_time;
+  solver_elapsed_time.RecordStartTime();
   std::vector<double> eval_history;
   int max_rounds = cg_iteration_max_num_ / cg_iteration_;
+  int solver_threads = std::max(1, num_threads_ / 2);
+
+  ElapsedTime phase_elapsed_time;
+  phase_elapsed_time.RecordStartTime();
   cg_y_.compute(Ay);
+  phase_elapsed_time.RecordEndTime();
+  tot_cg_compute_time_y += phase_elapsed_time.GetWallTime();
+
   for (int i = 0; i < max_rounds; ++i) {
+    phase_elapsed_time.RecordStartTime();
     vy = cg_y_.solveWithGuess(by, vy);
-    // #pragma omp for
+    phase_elapsed_time.RecordEndTime();
+    tot_cg_solve_time_y += phase_elapsed_time.GetWallTime();
+
+    phase_elapsed_time.RecordStartTime();
+#pragma omp parallel for num_threads(solver_threads) schedule(static)
     for (int num = 0; num < sz; ++num) {
       component_list[num].SetLLY(vy[num]);
     }
-    double evaluate_result = ckt_ptr_->WeightedHPWLY();
+    phase_elapsed_time.RecordEndTime();
+    tot_intermediate_loc_update_time_y += phase_elapsed_time.GetWallTime();
+
+    phase_elapsed_time.RecordStartTime();
+    double evaluate_result = EvaluateWeightedHpwlY(solver_threads);
+    phase_elapsed_time.RecordEndTime();
+    tot_hpwl_evaluation_time_y += phase_elapsed_time.GetWallTime();
+
     eval_history.push_back(evaluate_result);
     if (evaluate_result < hpwl_early_stop_threshold_) {
       break;
@@ -534,11 +577,11 @@ double BoundToBoundHpwlOptimizer::OptimizeQuadraticMetricY(
   }
   LOG(trace) << "      Metric optimization in Y, sequence: " << eval_history
              << "\n";
-  elapsed_time.RecordEndTime();
-  tot_cg_solver_time_y += elapsed_time.GetWallTime();
+  solver_elapsed_time.RecordEndTime();
+  tot_cg_solver_time_y += solver_elapsed_time.GetWallTime();
 
   elapsed_time.RecordStartTime();
-  // #pragma omp for
+#pragma omp parallel for num_threads(solver_threads) schedule(static)
   for (int num = 0; num < sz; ++num) {
     component_list[num].SetLLY(vy[num]);
   }
@@ -549,6 +592,38 @@ double BoundToBoundHpwlOptimizer::OptimizeQuadraticMetricY(
       !eval_history.empty(),
       "Cannot return a valid value because the result is not evaluated!");
   return eval_history.back();
+}
+
+double BoundToBoundHpwlOptimizer::EvaluateWeightedHpwlX(int num_threads) {
+  std::vector<Net>& nets = ckt_ptr_->Nets();
+  int net_count = static_cast<int>(nets.size());
+
+#pragma omp parallel for num_threads(num_threads) schedule(static)
+  for (int i = 0; i < net_count; ++i) {
+    net_hpwl_x_[i] = nets[i].WeightedHPWLX();
+  }
+
+  double hpwl = 0;
+  for (double net_hpwl : net_hpwl_x_) {
+    hpwl += net_hpwl;
+  }
+  return hpwl * ckt_ptr_->GridValueX();
+}
+
+double BoundToBoundHpwlOptimizer::EvaluateWeightedHpwlY(int num_threads) {
+  std::vector<Net>& nets = ckt_ptr_->Nets();
+  int net_count = static_cast<int>(nets.size());
+
+#pragma omp parallel for num_threads(num_threads) schedule(static)
+  for (int i = 0; i < net_count; ++i) {
+    net_hpwl_y_[i] = nets[i].WeightedHPWLY();
+  }
+
+  double hpwl = 0;
+  for (double net_hpwl : net_hpwl_y_) {
+    hpwl += net_hpwl;
+  }
+  return hpwl * ckt_ptr_->GridValueY();
 }
 
 /** Add a weak pull keeping components inside the placement region. */
@@ -742,7 +817,6 @@ void BoundToBoundHpwlOptimizer::BackUpComponentLocation() {
  * scratch.
  */
 void BoundToBoundHpwlOptimizer::OptimizeHpwlXWithAnchor(int num_threads) {
-  Eigen::setNbThreads(num_threads);
   LOG(trace) << "threads in branch x: " << num_threads
              << " actual number of threads: " << omp_get_max_threads()
              << " Eigen threads: " << Eigen::nbThreads() << "\n";
@@ -849,6 +923,14 @@ double BoundToBoundHpwlOptimizer::OptimizeHpwl() {
   if (avail_threads_num == 0) {
     avail_threads_num = 1;
   }
+  int previous_eigen_threads = Eigen::nbThreads();
+  int previous_max_active_levels = omp_get_max_active_levels();
+
+  // X and Y run in parallel, and each Eigen CG solve uses half of the thread
+  // budget. Enable the nested Eigen workers only for this solver region.
+  Eigen::setNbThreads(avail_threads_num);
+  omp_set_max_active_levels(std::max(previous_max_active_levels, 2));
+
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 
@@ -867,6 +949,9 @@ double BoundToBoundHpwlOptimizer::OptimizeHpwl() {
       OptimizeHpwlYWithAnchor(avail_threads_num);
     }
   }
+
+  omp_set_max_active_levels(previous_max_active_levels);
+  Eigen::setNbThreads(previous_eigen_threads);
 
   PullComponentBackToRegion();
 
@@ -896,6 +981,15 @@ void BoundToBoundHpwlOptimizer::Close() {
   LOG(debug) << "total cg solver time: " << tot_cg_solver_time_x << "s, "
              << tot_cg_solver_time_y << "s, "
              << tot_cg_solver_time_x + tot_cg_solver_time_y << "s\n";
+  LOG(debug) << "  cg compute time: " << tot_cg_compute_time_x << "s, "
+             << tot_cg_compute_time_y << "s\n";
+  LOG(debug) << "  cg solve time: " << tot_cg_solve_time_x << "s, "
+             << tot_cg_solve_time_y << "s\n";
+  LOG(debug) << "  intermediate location update time: "
+             << tot_intermediate_loc_update_time_x << "s, "
+             << tot_intermediate_loc_update_time_y << "s\n";
+  LOG(debug) << "  HPWL evaluation time: " << tot_hpwl_evaluation_time_x
+             << "s, " << tot_hpwl_evaluation_time_y << "s\n";
   LOG(debug) << "total loc update time: " << tot_loc_update_time_x << "s, "
              << tot_loc_update_time_y << "s, "
              << tot_loc_update_time_x + tot_loc_update_time_y << "s\n";
@@ -905,6 +999,36 @@ void BoundToBoundHpwlOptimizer::Close() {
                       tot_cg_solver_time_y + tot_loc_update_time_y;
   LOG(debug) << "total x/y time: " << tot_time_x << "s, " << tot_time_y << "s, "
              << tot_time_x + tot_time_y << "s\n";
+
+  RecordPlacementMetric("time.global_placement.quadratic.wall_s", tot_cg_time);
+  RecordPlacementMetric("time.global_placement.quadratic.x.model_build.wall_s",
+                        tot_triplets_time_x);
+  RecordPlacementMetric("time.global_placement.quadratic.y.model_build.wall_s",
+                        tot_triplets_time_y);
+  RecordPlacementMetric("time.global_placement.quadratic.x.matrix_build.wall_s",
+                        tot_matrix_from_triplets_x);
+  RecordPlacementMetric("time.global_placement.quadratic.y.matrix_build.wall_s",
+                        tot_matrix_from_triplets_y);
+  RecordPlacementMetric("time.global_placement.quadratic.x.compute.wall_s",
+                        tot_cg_compute_time_x);
+  RecordPlacementMetric("time.global_placement.quadratic.y.compute.wall_s",
+                        tot_cg_compute_time_y);
+  RecordPlacementMetric("time.global_placement.quadratic.x.solve.wall_s",
+                        tot_cg_solve_time_x);
+  RecordPlacementMetric("time.global_placement.quadratic.y.solve.wall_s",
+                        tot_cg_solve_time_y);
+  RecordPlacementMetric(
+      "time.global_placement.quadratic.x.location_update.wall_s",
+      tot_intermediate_loc_update_time_x + tot_loc_update_time_x);
+  RecordPlacementMetric(
+      "time.global_placement.quadratic.y.location_update.wall_s",
+      tot_intermediate_loc_update_time_y + tot_loc_update_time_y);
+  RecordPlacementMetric(
+      "time.global_placement.quadratic.x.hpwl_evaluation.wall_s",
+      tot_hpwl_evaluation_time_x);
+  RecordPlacementMetric(
+      "time.global_placement.quadratic.y.hpwl_evaluation.wall_s",
+      tot_hpwl_evaluation_time_y);
 }
 
 }  // namespace dali

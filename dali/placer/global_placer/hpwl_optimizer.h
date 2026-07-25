@@ -127,6 +127,15 @@ class BoundToBoundHpwlOptimizer : public HpwlOptimizer {
   virtual double OptimizeQuadraticMetricX(double cg_stop_criterion);
   /** Solve the Y system by conjugate gradient. */
   virtual double OptimizeQuadraticMetricY(double cg_stop_criterion);
+  /**
+   * Evaluate weighted X HPWL in parallel and sum nets in their original order.
+   *
+   * Keeping the final reduction serial preserves deterministic convergence
+   * decisions across thread counts.
+   */
+  double EvaluateWeightedHpwlX(int num_threads);
+  /** Y counterpart of EvaluateWeightedHpwlX. */
+  double EvaluateWeightedHpwlY(int num_threads);
   void PullComponentBackToRegion();
 
   void UpdateAnchorLocation();
@@ -185,6 +194,8 @@ class BoundToBoundHpwlOptimizer : public HpwlOptimizer {
   bool y_anchor_set = false;
   std::vector<SparseTriplet> coefficients_x_;
   std::vector<SparseTriplet> coefficients_y_;
+  std::vector<double> net_hpwl_x_;
+  std::vector<double> net_hpwl_y_;
   Eigen::ConjugateGradient<RowMajorSparseMatrix, Eigen::Lower | Eigen::Upper>
       cg_x_;
   Eigen::ConjugateGradient<RowMajorSparseMatrix, Eigen::Lower | Eigen::Upper>
@@ -198,6 +209,14 @@ class BoundToBoundHpwlOptimizer : public HpwlOptimizer {
   double tot_matrix_from_triplets_y = 0;
   double tot_cg_solver_time_x = 0;
   double tot_cg_solver_time_y = 0;
+  double tot_cg_compute_time_x = 0;
+  double tot_cg_compute_time_y = 0;
+  double tot_cg_solve_time_x = 0;
+  double tot_cg_solve_time_y = 0;
+  double tot_intermediate_loc_update_time_x = 0;
+  double tot_intermediate_loc_update_time_y = 0;
+  double tot_hpwl_evaluation_time_x = 0;
+  double tot_hpwl_evaluation_time_y = 0;
   double tot_loc_update_time_x = 0;
   double tot_loc_update_time_y = 0;
   double tot_cg_time = 0;
