@@ -12,6 +12,7 @@
 #define DALI_COMMAND_DALI_COMMAND_PROCESSOR_H_
 
 #include <cstddef>
+#include <functional>
 #include <iosfwd>
 #include <string>
 #include <vector>
@@ -51,7 +52,8 @@ class DaliCommandProcessor {
    * an input-stream error or an incomplete final line continuation.
    */
   bool RunInteractive(std::istream& input, std::ostream& output,
-                      bool show_prompt = true);
+                      bool show_prompt = true,
+                      const std::function<void()>& wait_for_input = {});
 
   /**
    * Split one command line using shell-like quotes and backslash escaping.
@@ -65,6 +67,7 @@ class DaliCommandProcessor {
                                   std::string* error_message);
 
  private:
+  bool DispatchCommand(const std::vector<std::string>& arguments);
   bool ExecuteRun(const std::vector<std::string>& arguments);
   bool ExecuteLegacyPlaceDesign(const std::vector<std::string>& arguments);
   bool ExecuteLegacyGlobalPlace(const std::vector<std::string>& arguments);

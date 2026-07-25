@@ -263,6 +263,10 @@ void Dali::SetGuiSnapshotSinkFactory(SnapshotSinkFactory factory) {
   gui_snapshot_sink_factory_ = std::move(factory);
 }
 
+void Dali::SetInteractiveSessionExpected(bool expected) {
+  interactive_session_expected_ = expected;
+}
+
 /**
  * Log the resolved value of every option, for reproducing a run.
  *
@@ -1584,6 +1588,9 @@ void Dali::InitializeVisualizationSnapshots() {
     snapshot_sink_.reset();
     return;
   }
+  if (snapshot_sink_ != nullptr && snapshot_sink_->IsEnabled()) {
+    return;
+  }
   if (!gui_snapshot_sink_factory_) {
     LOG(error) << "GUI debug mode requested, but this Dali executable does "
                   "not include a GUI snapshot sink. Rebuild with Qt6 "
@@ -1628,6 +1635,19 @@ void Dali::WriteVisualizationSnapshot(
   snapshot_sink_->PublishSnapshot(&circuit_, metadata);
 }
 
+void Dali::WriteInteractiveCommandSnapshot(const std::string& command) {
+  if (!interactive_session_expected_) {
+    return;
+  }
+  std::vector<PlacementWellRect> well_rects;
+  if (!is_standard_cell_ && !disable_legalization_) {
+    well_rects = well_legalizer_.CollectWellVisualizationRects();
+  }
+  WriteVisualizationSnapshot("interactive." + command,
+                             "After command: " + command, "interactive", "", -1,
+                             std::move(well_rects));
+}
+
 void Dali::FlushVisualizationEvents() {
   if (snapshot_sink_ == nullptr || !snapshot_sink_->IsEnabled()) {
     return;
@@ -1659,7 +1679,9 @@ bool Dali::StartPlacement(double density, int number_of_threads) {
   }
   WriteVisualizationSnapshot("final", "Final", "final", "", -1,
                              std::move(final_well_rects));
-  FinishVisualizationSnapshots();
+  if (!interactive_session_expected_) {
+    FinishVisualizationSnapshots();
+  }
 
   return true;
 }

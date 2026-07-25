@@ -164,6 +164,10 @@ combine both modes:
         -script placement_flow.dali \
         -interactive
 
+See the [Dali command language guide](dali/command/README.md) for recipe
+syntax, all execution modes, I/O signoff commands, and the public embedding
+API.
+
 The same recipe API is designed for a future `interact` adapter:
 
     dali:init 3

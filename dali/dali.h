@@ -160,6 +160,15 @@ class Dali {
       std::function<std::unique_ptr<PlacementSnapshotSink>()>;
   void SetGuiSnapshotSinkFactory(SnapshotSinkFactory factory);
 
+  /**
+   * Keep an active GUI available for a command session after placement.
+   *
+   * The standalone application enables this before running a recipe when
+   * `-interactive` is present. The interactive session performs the final GUI
+   * close-wait after the user exits the command prompt.
+   */
+  void SetInteractiveSessionExpected(bool expected);
+
   /** Load runtime options from the ACT config database. */
   void ShowParamsList();
   void LoadParamsFromConfig();
@@ -201,8 +210,8 @@ class Dali {
    * Execute one already-tokenized Dali command.
    *
    * This is the integration point for command hosts such as `interact`, which
-   * already provide an argv-style command. The standalone command reader and
-   * future interactive prompt use the same dispatcher.
+   * already provide an argv-style command. Recipes and the standalone
+   * interactive prompt use the same dispatcher.
    */
   bool ExecuteCommand(const std::vector<std::string>& arguments);
 
@@ -364,6 +373,7 @@ class Dali {
   std::string output_name_ = "dali_out";
   bool gui_debug_ = false;
   std::string gui_pause_ = "every_snapshot";
+  bool interactive_session_expected_ = false;
   double debug_placement_region_scale_ = 1.0;
 
   // circuit and placer
@@ -437,6 +447,8 @@ class Dali {
       const std::string& id, const std::string& label, const std::string& group,
       const std::string& subgroup = "", int iteration = -1,
       std::vector<PlacementWellRect> well_rects = {});
+  /** Refresh the live GUI after a state-changing interactive command. */
+  void WriteInteractiveCommandSnapshot(const std::string& command);
   /** Let live visualization backends repaint before long placement stages. */
   void FlushVisualizationEvents();
   void FinishVisualizationSnapshots();

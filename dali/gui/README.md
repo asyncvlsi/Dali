@@ -55,7 +55,24 @@ drives the capture hook described below.
 Mouse wheel zooms, left-drag pans. Controls are split by what they act on:
 
   * **Run** — pause at every snapshot, Step, Continue, and Save PNG
-  * **View** — movable dots, the two displacement overlays, and Fit
+  * **View** — movable dots, I/O pins, the two displacement overlays, and Fit
+
+## Interactive signoff
+
+Combine `-gui_debug` with `-interactive` to use the terminal for commands while
+the Qt window monitors the design:
+
+    $ dali \
+        -lef design.lef \
+        -def placed.def \
+        -gui_debug \
+        -interactive
+
+Placed I/O pins are drawn above cells. Fixed pins are magenta and other placed
+pins are blue; the **I/O pins** checkbox toggles the layer. Successful
+placement-changing commands such as `move-io` publish a fresh snapshot. The
+window remains responsive while the prompt waits for input and stays open
+until the session ends and the window is closed.
 
 ## Displacement overlays
 

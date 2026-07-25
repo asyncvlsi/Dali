@@ -78,6 +78,14 @@ struct SnapshotWellRect {
   PlacementWellLayer layer = PlacementWellLayer::kPwell;
 };
 
+struct SnapshotIoPin {
+  float lx = 0;
+  float ly = 0;
+  float ux = 0;
+  float uy = 0;
+  bool fixed = false;
+};
+
 static std::string FormatHpwl(double hpwl) {
   std::ostringstream out;
   out.precision(8);
@@ -196,6 +204,7 @@ class PlacementCanvas : public QWidget {
                    const PlacementSnapshotMetadata& metadata) {
     components_.clear();
     well_rects_.clear();
+    io_pins_.clear();
     if (circuit == nullptr) {
       update();
       return;
@@ -220,6 +229,7 @@ class PlacementCanvas : public QWidget {
     AppendComponents(circuit,
                      circuit->design().EndCapComponentCollection().Instances(),
                      SnapshotComponentKind::kEndCap);
+    AppendIoPins(circuit);
 
     well_rects_.reserve(metadata.well_rects.size());
     for (const PlacementWellRect& well_rect : metadata.well_rects) {
@@ -261,7 +271,7 @@ class PlacementCanvas : public QWidget {
    * preserve aspect, then grabs the canvas. Used to capture documentation
    * screenshots without a human at the window; see SnapshotCaptureRequests.
    */
-  void CaptureRegion(const QString& path, double llx, double lly, double urx,
+  bool CaptureRegion(const QString& path, double llx, double lly, double urx,
                      double ury) {
     const double w = std::max(width() - 2.0 * kCanvasMargin, 1.0);
     const double h =
@@ -273,7 +283,7 @@ class PlacementCanvas : public QWidget {
     pan_y_ = kCanvasMargin + ury * scale_ + (h - rh * scale_) / 2.0;
     has_view_ = true;
     repaint();
-    grab().save(path);
+    return grab().save(path, "PNG");
   }
 
   /** Bounding box the view fits to, in canvas world coordinates. */
@@ -308,6 +318,11 @@ class PlacementCanvas : public QWidget {
 
   void SetMovableDotMode(bool enabled) {
     movable_dot_mode_ = enabled;
+    update();
+  }
+
+  void SetShowIoPins(bool show) {
+    show_io_pins_ = show;
     update();
   }
 
@@ -349,6 +364,9 @@ class PlacementCanvas : public QWidget {
       if (component.kind != SnapshotComponentKind::kOrdinary) {
         DrawComponent(&painter, component);
       }
+    }
+    if (show_io_pins_) {
+      DrawIoPins(&painter);
     }
 
     DrawStatusBand(&painter);
@@ -512,6 +530,27 @@ class PlacementCanvas : public QWidget {
     }
   }
 
+  /** Copy placed I/O pin geometry into the lightweight GUI snapshot. */
+  void AppendIoPins(Circuit* circuit) {
+    for (const IoPin& io_pin : circuit->IoPins()) {
+      if (!io_pin.IsPlaced()) {
+        continue;
+      }
+      const double lx = io_pin.LX() * circuit->GridValueX();
+      const double ly = io_pin.LY() * circuit->GridValueY();
+      const double ux = io_pin.UX() * circuit->GridValueX();
+      const double uy = io_pin.UY() * circuit->GridValueY();
+      io_pins_.push_back(
+          {static_cast<float>(lx), static_cast<float>(ly),
+           static_cast<float>(ux), static_cast<float>(uy),
+           io_pin.Status() == FIXED || io_pin.Status() == COVER});
+      view_llx_ = std::min(view_llx_, lx);
+      view_lly_ = std::min(view_lly_, ly);
+      view_urx_ = std::max(view_urx_, ux);
+      view_ury_ = std::max(view_ury_, uy);
+    }
+  }
+
   QRectF ComponentScreenRect(const SnapshotComponent& component) const {
     return QRectF(WorldToScreenX(component.x),
                   WorldToScreenY(component.y + component.height),
@@ -608,6 +647,34 @@ class PlacementCanvas : public QWidget {
     }
   }
 
+  /** Draw pins above cells so manual I/O edits remain visible at any zoom. */
+  void DrawIoPins(QPainter* painter) const {
+    const QRectF visible_area = VisiblePlacementArea();
+    for (const SnapshotIoPin& io_pin : io_pins_) {
+      QRectF rect(WorldToScreenX(io_pin.lx), WorldToScreenY(io_pin.uy),
+                  std::max((io_pin.ux - io_pin.lx) * scale_, 0.0),
+                  std::max((io_pin.uy - io_pin.ly) * scale_, 0.0));
+      if (rect.width() < 4.0) {
+        const double center = rect.center().x();
+        rect.setLeft(center - 2.0);
+        rect.setRight(center + 2.0);
+      }
+      if (rect.height() < 4.0) {
+        const double center = rect.center().y();
+        rect.setTop(center - 2.0);
+        rect.setBottom(center + 2.0);
+      }
+      if (!rect.intersects(visible_area)) {
+        continue;
+      }
+      painter->setBrush(io_pin.fixed ? QColor(219, 39, 119, 225)
+                                     : QColor(14, 165, 233, 225));
+      painter->setPen(
+          QPen(io_pin.fixed ? QColor(131, 24, 67) : QColor(3, 105, 161), 1));
+      painter->drawRect(rect);
+    }
+  }
+
   double WorldToScreenX(double x) const { return pan_x_ + x * scale_; }
   double WorldToScreenY(double y) const { return pan_y_ - y * scale_; }
   double ScreenToWorldX(double x) const { return (x - pan_x_) / scale_; }
@@ -620,6 +687,7 @@ class PlacementCanvas : public QWidget {
   bool show_displacement_from_global_ = false;
   bool show_displacement_from_previous_ = false;
   std::vector<SnapshotWellRect> well_rects_;
+  std::vector<SnapshotIoPin> io_pins_;
   std::string snapshot_label_ = "Waiting for first placement snapshot";
   std::string hpwl_label_;
   double boundary_llx_ = 0;
@@ -637,6 +705,7 @@ class PlacementCanvas : public QWidget {
   bool has_snapshot_ = false;
   bool is_dragging_ = false;
   bool movable_dot_mode_ = true;
+  bool show_io_pins_ = true;
   QPoint last_mouse_pos_;
 };
 
@@ -885,11 +954,13 @@ class QtPlacementWindow : public QWidget {
     pause_checkbox_ = new QCheckBox("Pause at every snapshot", this);
     pause_checkbox_->setChecked(true);
     movable_dot_checkbox_ = new QCheckBox("Movable dots", this);
+    io_pin_checkbox_ = new QCheckBox("I/O pins", this);
     displacement_global_checkbox_ =
         new QCheckBox("Displacement vs global", this);
     displacement_previous_checkbox_ =
         new QCheckBox("Displacement vs previous", this);
     movable_dot_checkbox_->setChecked(true);
+    io_pin_checkbox_->setChecked(true);
     step_button_ = new QPushButton("Step", this);
     continue_button_ = new QPushButton("Continue", this);
     fit_button_ = new QPushButton("Fit", this);
@@ -907,6 +978,7 @@ class QtPlacementWindow : public QWidget {
     auto* view_controls = new QHBoxLayout();
     view_controls->addWidget(MakeGroupLabel("View:"));
     view_controls->addWidget(movable_dot_checkbox_);
+    view_controls->addWidget(io_pin_checkbox_);
     view_controls->addWidget(displacement_global_checkbox_);
     view_controls->addWidget(displacement_previous_checkbox_);
     view_controls->addStretch();
@@ -932,6 +1004,8 @@ class QtPlacementWindow : public QWidget {
     QObject::connect(
         movable_dot_checkbox_, &QCheckBox::toggled, this,
         [this](bool checked) { canvas_->SetMovableDotMode(checked); });
+    QObject::connect(io_pin_checkbox_, &QCheckBox::toggled, this,
+                     [this](bool checked) { canvas_->SetShowIoPins(checked); });
     QObject::connect(displacement_global_checkbox_, &QCheckBox::toggled, this,
                      [this](bool checked) {
                        canvas_->SetShowDisplacementFromGlobal(checked);
@@ -1034,6 +1108,7 @@ class QtPlacementWindow : public QWidget {
   HpwlHistoryPanel* hpwl_panel_ = nullptr;
   QCheckBox* pause_checkbox_ = nullptr;
   QCheckBox* movable_dot_checkbox_ = nullptr;
+  QCheckBox* io_pin_checkbox_ = nullptr;
   bool has_shown_a_snapshot_ = false;
   QCheckBox* displacement_global_checkbox_ = nullptr;
   QCheckBox* displacement_previous_checkbox_ = nullptr;
@@ -1139,6 +1214,11 @@ class SnapshotCaptureRequests {
   void CaptureIfRequested(PlacementCanvas* canvas,
                           const std::string& snapshot_id) const {
     if (canvas == nullptr) return;
+    if (!QDir().mkpath(directory_)) {
+      LOG(error) << "Cannot create GUI snapshot directory "
+                 << directory_.toStdString() << "\n";
+      return;
+    }
     const QString id = QString::fromStdString(snapshot_id);
     for (const Request& request : requests_) {
       if (request.id != id) continue;
@@ -1151,9 +1231,14 @@ class SnapshotCaptureRequests {
       const double ury = design.top() + f.bottom() * design.height();
       const bool previous_dot_mode = canvas->MovableDotMode();
       if (request.draw_cells) canvas->SetMovableDotMode(false);
-      canvas->CaptureRegion(path, llx, lly, urx, ury);
+      const bool captured = canvas->CaptureRegion(path, llx, lly, urx, ury);
       canvas->SetMovableDotMode(previous_dot_mode);
-      LOG(info) << "Captured GUI snapshot " << path.toStdString() << "\n";
+      if (captured) {
+        LOG(info) << "Captured GUI snapshot " << path.toStdString() << "\n";
+      } else {
+        LOG(error) << "Failed to capture GUI snapshot " << path.toStdString()
+                   << "\n";
+      }
     }
   }
 

@@ -101,6 +101,7 @@ int main(int argc, char* argv[]) {
   dali.SetGuiSnapshotSinkFactory(
       [] { return std::make_unique<QtPlacementSnapshotSink>(); });
 #endif
+  dali.SetInteractiveSessionExpected(options.interactive);
 
   // print the current time
   using std::chrono::system_clock;

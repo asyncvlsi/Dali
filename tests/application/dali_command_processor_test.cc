@@ -182,3 +182,16 @@ TEST_F(DaliCommandProcessorTest,
   EXPECT_FALSE(processor.RunInteractive(input, output, false));
   placer.Close();
 }
+
+TEST_F(DaliCommandProcessorTest, InteractiveModeWaitsWithoutBlockingGuiPump) {
+  std::istringstream input("quit\n");
+  std::ostringstream output;
+  dali::Dali placer(nullptr, dali::severity::info);
+  dali::DaliCommandProcessor processor(&placer);
+  int wait_count = 0;
+
+  EXPECT_TRUE(processor.RunInteractive(input, output, true,
+                                       [&wait_count]() { ++wait_count; }));
+  EXPECT_EQ(wait_count, 1);
+  placer.Close();
+}

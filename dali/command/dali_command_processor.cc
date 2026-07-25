@@ -10,7 +10,11 @@
  ******************************************************************************/
 #include "dali/command/dali_command_processor.h"
 
+#include <poll.h>
+#include <unistd.h>
+
 #include <cctype>
+#include <cerrno>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -57,6 +61,27 @@ static bool HasLineContinuation(const std::string& line,
   }
   *backslash_position = last;
   return true;
+}
+
+/** Return true when a successful command can change physical placement. */
+static bool ChangesPlacement(const std::vector<std::string>& arguments) {
+  std::string command = arguments.front();
+  const std::string namespace_prefix = "dali:";
+  if (command.compare(0, namespace_prefix.size(), namespace_prefix) == 0) {
+    command.erase(0, namespace_prefix.size());
+  }
+  if (command == "run" || command == "place-design" ||
+      command == "global-place" || command == "add-welltap" ||
+      command == "move-io" || command == "unfix-io") {
+    return true;
+  }
+  if (command != "place-io" || arguments.size() < 2) {
+    return false;
+  }
+  const std::string& option = arguments[1];
+  return option != "-h" && option != "--help" && option != "-c" &&
+         option != "-config" && option != "--config" && option != "-show" &&
+         option != "--show" && option != "-check" && option != "--check";
 }
 
 DaliCommandProcessor::DaliCommandProcessor(Dali* dali) : dali_(dali) {}
@@ -213,7 +238,7 @@ void DaliCommandProcessor::ReportUsage() const {
       << "  help                     show this command list\n";
 }
 
-bool DaliCommandProcessor::ExecuteCommand(
+bool DaliCommandProcessor::DispatchCommand(
     const std::vector<std::string>& arguments) {
   if (arguments.empty()) {
     return true;
@@ -286,6 +311,15 @@ bool DaliCommandProcessor::ExecuteCommand(
   return false;
 }
 
+bool DaliCommandProcessor::ExecuteCommand(
+    const std::vector<std::string>& arguments) {
+  const bool is_success = DispatchCommand(arguments);
+  if (is_success && !arguments.empty() && ChangesPlacement(arguments)) {
+    dali_->WriteInteractiveCommandSnapshot(arguments.front());
+  }
+  return is_success;
+}
+
 bool DaliCommandProcessor::ExecuteCommandLine(const std::string& command_line,
                                               const std::string& source_name,
                                               std::size_t line_number) {
@@ -352,9 +386,9 @@ void DaliCommandProcessor::ReportHistory(std::ostream& output) const {
   }
 }
 
-bool DaliCommandProcessor::RunInteractive(std::istream& input,
-                                          std::ostream& output,
-                                          bool show_prompt) {
+bool DaliCommandProcessor::RunInteractive(
+    std::istream& input, std::ostream& output, bool show_prompt,
+    const std::function<void()>& wait_for_input) {
   output << "Dali interactive mode. Type 'help' for commands and 'quit' to "
             "finish.\n";
 
@@ -365,6 +399,9 @@ bool DaliCommandProcessor::RunInteractive(std::istream& input,
   while (true) {
     if (show_prompt) {
       output << (logical_line.empty() ? "dali> " : "  ... ") << std::flush;
+    }
+    if (wait_for_input) {
+      wait_for_input();
     }
     if (!std::getline(input, physical_line)) {
       if (input.bad()) {
@@ -443,8 +480,28 @@ bool Dali::RunCommandFile(const std::string& file_name) {
 
 bool Dali::RunInteractiveSession(std::istream& input, std::ostream& output,
                                  bool show_prompt) {
+  interactive_session_expected_ = true;
   InitializeCircuitFromPhyDBIfNeeded();
-  return DaliCommandProcessor(this).RunInteractive(input, output, show_prompt);
+  InitializeVisualizationSnapshots();
+  WriteInteractiveCommandSnapshot("start");
+  std::function<void()> wait_for_input;
+  if (show_prompt && &input == &std::cin) {
+    wait_for_input = [this]() {
+      pollfd stdin_poll = {STDIN_FILENO, POLLIN, 0};
+      while (true) {
+        const int result = poll(&stdin_poll, 1, 16);
+        FlushVisualizationEvents();
+        if (result > 0 || (result < 0 && errno != EINTR)) {
+          return;
+        }
+      }
+    };
+  }
+  const bool is_success = DaliCommandProcessor(this).RunInteractive(
+      input, output, show_prompt, wait_for_input);
+  interactive_session_expected_ = false;
+  FinishVisualizationSnapshots();
+  return is_success;
 }
 
 }  // namespace dali
