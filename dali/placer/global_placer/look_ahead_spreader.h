@@ -24,6 +24,7 @@
 #include <memory>
 #include <queue>
 #include <set>
+#include <stdint.h>
 
 #include "dali/placer/global_placer/global_spreader.h"
 #include "dali/placer/global_placer/grid_bin.h"
