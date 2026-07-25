@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600">
+<title>Dali I/O placement modes</title>
+<style>text{font-family:Arial,Helvetica,sans-serif;fill:#24313a}.title{font-size:28px;font-weight:700}.heading{font-size:20px;font-weight:700}.label{font-size:16px}.small{font-size:14px;fill:#61717d}</style>
+<rect width="1200" height="600" fill="#ffffff"/>
+<text x="50" y="50" class="title" text-anchor="start">I/O placement modes</text>
+<text x="50" y="80" class="small" text-anchor="start">Manual coordinates are authoritative; automatic modes provide starting points.</text>
+<rect x="80" y="125" width="710" height="390" rx="2" fill="#fbfcfc" stroke="#24313a" stroke-width="2"/>
+<line x1="150" y1="125" x2="150" y2="515" stroke="#dce4e8" stroke-width="1"/>
+<line x1="220" y1="125" x2="220" y2="515" stroke="#dce4e8" stroke-width="1"/>
+<line x1="290" y1="125" x2="290" y2="515" stroke="#dce4e8" stroke-width="1"/>
+<line x1="360" y1="125" x2="360" y2="515" stroke="#dce4e8" stroke-width="1"/>
+<line x1="430" y1="125" x2="430" y2="515" stroke="#dce4e8" stroke-width="1"/>
+<line x1="500" y1="125" x2="500" y2="515" stroke="#dce4e8" stroke-width="1"/>
+<line x1="570" y1="125" x2="570" y2="515" stroke="#dce4e8" stroke-width="1"/>
+<line x1="640" y1="125" x2="640" y2="515" stroke="#dce4e8" stroke-width="1"/>
+<line x1="710" y1="125" x2="710" y2="515" stroke="#dce4e8" stroke-width="1"/>
+<line x1="780" y1="125" x2="780" y2="515" stroke="#dce4e8" stroke-width="1"/>
+<line x1="80" y1="190" x2="790" y2="190" stroke="#dce4e8" stroke-width="1"/>
+<line x1="80" y1="255" x2="790" y2="255" stroke="#dce4e8" stroke-width="1"/>
+<line x1="80" y1="320" x2="790" y2="320" stroke="#dce4e8" stroke-width="1"/>
+<line x1="80" y1="385" x2="790" y2="385" stroke="#dce4e8" stroke-width="1"/>
+<line x1="80" y1="450" x2="790" y2="450" stroke="#dce4e8" stroke-width="1"/>
+<rect x="75.0" y="161.0" width="10" height="28" rx="1" fill="#247ba0" stroke="#247ba0" stroke-width="2"/>
+<rect x="75.0" y="231.0" width="10" height="28" rx="1" fill="#247ba0" stroke="#247ba0" stroke-width="2"/>
+<rect x="75.0" y="356.0" width="10" height="28" rx="1" fill="#247ba0" stroke="#247ba0" stroke-width="2"/>
+<rect x="75.0" y="441.0" width="10" height="28" rx="1" fill="#247ba0" stroke="#247ba0" stroke-width="2"/>
+<rect x="166.0" y="510.0" width="28" height="10" rx="1" fill="#247ba0" stroke="#247ba0" stroke-width="2"/>
+<rect x="316.0" y="510.0" width="28" height="10" rx="1" fill="#247ba0" stroke="#247ba0" stroke-width="2"/>
+<rect x="606.0" y="510.0" width="28" height="10" rx="1" fill="#247ba0" stroke="#247ba0" stroke-width="2"/>
+<rect x="706.0" y="510.0" width="28" height="10" rx="1" fill="#247ba0" stroke="#247ba0" stroke-width="2"/>
+<rect x="785.0" y="266.0" width="10" height="28" rx="1" fill="#2a9d6f" stroke="#2a9d6f" stroke-width="2"/>
+<rect x="785.0" y="296.0" width="10" height="28" rx="1" fill="#2a9d6f" stroke="#2a9d6f" stroke-width="2"/>
+<rect x="785.0" y="326.0" width="10" height="28" rx="1" fill="#2a9d6f" stroke="#2a9d6f" stroke-width="2"/>
+<rect x="210.0" y="231.0" width="10" height="28" rx="1" fill="#bd3f78" stroke="#bd3f78" stroke-width="2"/>
+<text x="240" y="240" class="label" text-anchor="start">exact manual pin</text>
+<text x="240" y="262" class="small" text-anchor="start">(interior or boundary)</text>
+<rect x="235.0" y="346.0" width="10" height="28" rx="1" fill="#d88918" stroke="#d88918" stroke-width="2"/>
+<rect x="625.0" y="346.0" width="10" height="28" rx="1" fill="#d88918" stroke="#d88918" stroke-width="2"/>
+<line x1="240" y1="360" x2="630" y2="360" stroke="#d88918" stroke-width="2" stroke-dasharray="7 6"/>
+<line x1="435" y1="335" x2="435" y2="385" stroke="#d88918" stroke-width="1" stroke-dasharray="4 4"/>
+<text x="435" y="408" class="small" text-anchor="middle">mirrored pair</text>
+<circle cx="435" cy="170" r="6" fill="#247ba0" stroke="#247ba0" stroke-width="1.5"/>
+<circle cx="500" cy="170" r="6" fill="#247ba0" stroke="#247ba0" stroke-width="1.5"/>
+<circle cx="565" cy="170" r="6" fill="#247ba0" stroke="#247ba0" stroke-width="1.5"/>
+<circle cx="630" cy="170" r="6" fill="#247ba0" stroke="#247ba0" stroke-width="1.5"/>
+<circle cx="435" cy="220" r="6" fill="#247ba0" stroke="#247ba0" stroke-width="1.5"/>
+<circle cx="500" cy="220" r="6" fill="#247ba0" stroke="#247ba0" stroke-width="1.5"/>
+<circle cx="565" cy="220" r="6" fill="#247ba0" stroke="#247ba0" stroke-width="1.5"/>
+<circle cx="630" cy="220" r="6" fill="#247ba0" stroke="#247ba0" stroke-width="1.5"/>
+<circle cx="435" cy="270" r="6" fill="#247ba0" stroke="#247ba0" stroke-width="1.5"/>
+<circle cx="500" cy="270" r="6" fill="#247ba0" stroke="#247ba0" stroke-width="1.5"/>
+<circle cx="565" cy="270" r="6" fill="#247ba0" stroke="#247ba0" stroke-width="1.5"/>
+<circle cx="630" cy="270" r="6" fill="#247ba0" stroke="#247ba0" stroke-width="1.5"/>
+<text x="532" y="305" class="small" text-anchor="middle">area array</text>
+<text x="845" y="145" class="heading" text-anchor="start">Legend</text>
+<rect x="848.0" y="171.0" width="10" height="28" rx="1" fill="#247ba0" stroke="#247ba0" stroke-width="2"/>
+<text x="880" y="190" class="label" text-anchor="start">automatic pin</text>
+<rect x="848.0" y="219.0" width="10" height="28" rx="1" fill="#bd3f78" stroke="#bd3f78" stroke-width="2"/>
+<text x="880" y="238" class="label" text-anchor="start">manual fixed pin</text>
+<rect x="848.0" y="267.0" width="10" height="28" rx="1" fill="#2a9d6f" stroke="#2a9d6f" stroke-width="2"/>
+<text x="880" y="286" class="label" text-anchor="start">ordered edge group</text>
+<rect x="848.0" y="315.0" width="10" height="28" rx="1" fill="#d88918" stroke="#d88918" stroke-width="2"/>
+<text x="880" y="334" class="label" text-anchor="start">mirrored pins</text>
+<text x="845" y="405" class="heading" text-anchor="start">Pins may be mixed:</text>
+<text x="845" y="438" class="label" text-anchor="start">1. Fix critical pins</text>
+<text x="845" y="468" class="label" text-anchor="start">2. Place groups/mirrors</text>
+<text x="845" y="498" class="label" text-anchor="start">3. Auto-place the remainder</text>
+</svg>

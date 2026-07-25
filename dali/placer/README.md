@@ -83,6 +83,9 @@ Unplaced I/O pins are placed by the `place-io` command, after component
 placement so pin positions can follow the nets that reach them. Pins already
 marked `FIXED`/`PLACED` in the input keep their locations.
 
+See the dedicated [I/O placement README](io_placer/README.md) for the manual
+signoff workflow, diagrams, full command reference, and explicit limitations.
+
   * `place-io <metal>` — auto-place every unplaced pin on the four perimeter
     edges (wire-bond model), all on `<metal>`. Long form: `place-io -c -m left
     <metal> right <metal> bottom <metal> top <metal>`.
