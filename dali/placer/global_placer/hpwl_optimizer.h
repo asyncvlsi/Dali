@@ -206,6 +206,9 @@ class BoundToBoundHpwlOptimizer : public HpwlOptimizer {
   std::vector<double> cached_net_inv_p_;
   std::vector<double> cached_component_x_;
   std::vector<double> cached_component_y_;
+  /** Current pin coordinates, rebuilt in parallel for each net-model update. */
+  std::vector<double> cached_pin_x_;
+  std::vector<double> cached_pin_y_;
   std::vector<double> net_hpwl_x_;
   std::vector<double> net_hpwl_y_;
   Eigen::ConjugateGradient<RowMajorSparseMatrix, Eigen::Lower | Eigen::Upper>

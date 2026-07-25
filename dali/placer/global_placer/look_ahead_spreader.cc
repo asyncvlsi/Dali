@@ -77,17 +77,14 @@ static void ScaleComponentCenters(
     double box_max, bool scale_x, double affine_scaling_weight) {
   if (locs.empty()) return;
 
-  auto [min_it, max_it] = std::minmax_element(
-      locs.begin(), locs.end(),
-      [](const auto& lhs, const auto& rhs) { return lhs.second < rhs.second; });
-  double min_loc = min_it->second;
-  double max_loc = max_it->second;
-  double source_span = max_loc - min_loc;
-  double target_span = box_max - box_min;
-
   std::sort(locs.begin(), locs.end(), [](const auto& lhs, const auto& rhs) {
     return lhs.second < rhs.second;
   });
+  double min_loc = locs.front().second;
+  double max_loc = locs.back().second;
+  double source_span = max_loc - min_loc;
+  double target_span = box_max - box_min;
+
   double total_length = 0.0;
   for (auto& [component_ptr, loc] : locs) {
     (void)loc;

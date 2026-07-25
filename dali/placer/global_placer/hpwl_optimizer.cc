@@ -122,6 +122,8 @@ void BoundToBoundHpwlOptimizer::Initialize() {
     }
     cached_net_pin_begin_.push_back(cached_solution_pins_.size());
   }
+  cached_pin_x_.resize(cached_solution_pins_.size());
+  cached_pin_y_.resize(cached_solution_pins_.size());
 
   cg_x_.setMaxIterations(cg_iteration_);
   cg_x_.setTolerance(cg_tolerance_);
@@ -166,9 +168,15 @@ void BoundToBoundHpwlOptimizer::BuildProblemX() {
   size_t coefficients_capacity = coefficients_x_.capacity();
   coefficients_x_.resize(0);
   int sz = static_cast<int>(bx.size());
+#pragma omp parallel for num_threads(num_threads_) schedule(static)
   for (int i = 0; i < sz; ++i) {
     bx[i] = 0;
     cached_component_x_[i] = components[i].LLX();
+  }
+#pragma omp parallel for num_threads(num_threads_) schedule(static)
+  for (int i = 0; i < static_cast<int>(cached_solution_pins_.size()); ++i) {
+    const CachedSolutionPin& pin = cached_solution_pins_[i];
+    cached_pin_x_[i] = cached_component_x_[pin.component_id] + pin.offset_x;
   }
 
   double center_weight = 0.03 / std::sqrt(sz);
@@ -188,8 +196,7 @@ void BoundToBoundHpwlOptimizer::BuildProblemX() {
     double pin_loc_max = -DBL_MAX;
     double pin_loc_min = DBL_MAX;
     for (size_t pin_index = pin_begin; pin_index < pin_end; ++pin_index) {
-      const CachedSolutionPin& pin = cached_solution_pins_[pin_index];
-      double pin_loc = cached_component_x_[pin.component_id] + pin.offset_x;
+      double pin_loc = cached_pin_x_[pin_index];
       if (pin_loc_max < pin_loc) {
         pin_loc_max = pin_loc;
         max_pin_index = pin_index;
@@ -218,7 +225,7 @@ void BoundToBoundHpwlOptimizer::BuildProblemX() {
     for (size_t pin_index = pin_begin; pin_index < pin_end; ++pin_index) {
       const CachedSolutionPin& pin = cached_solution_pins_[pin_index];
       int component_id = pin.component_id;
-      double pin_loc = cached_component_x_[component_id] + pin.offset_x;
+      double pin_loc = cached_pin_x_[pin_index];
       bool is_movable = pin.is_movable;
       double offset = pin.offset_x;
 
@@ -307,9 +314,15 @@ void BoundToBoundHpwlOptimizer::BuildProblemY() {
   size_t coefficients_capacity = coefficients_y_.capacity();
   coefficients_y_.resize(0);
   int sz = static_cast<int>(by.size());
+#pragma omp parallel for num_threads(num_threads_) schedule(static)
   for (int i = 0; i < sz; ++i) {
     by[i] = 0;
     cached_component_y_[i] = components[i].LLY();
+  }
+#pragma omp parallel for num_threads(num_threads_) schedule(static)
+  for (int i = 0; i < static_cast<int>(cached_solution_pins_.size()); ++i) {
+    const CachedSolutionPin& pin = cached_solution_pins_[i];
+    cached_pin_y_[i] = cached_component_y_[pin.component_id] + pin.offset_y;
   }
 
   double center_weight = 0.03 / std::sqrt(sz);
@@ -329,8 +342,7 @@ void BoundToBoundHpwlOptimizer::BuildProblemY() {
     double pin_loc_max = -DBL_MAX;
     double pin_loc_min = DBL_MAX;
     for (size_t pin_index = pin_begin; pin_index < pin_end; ++pin_index) {
-      const CachedSolutionPin& pin = cached_solution_pins_[pin_index];
-      double pin_loc = cached_component_y_[pin.component_id] + pin.offset_y;
+      double pin_loc = cached_pin_y_[pin_index];
       if (pin_loc_max < pin_loc) {
         pin_loc_max = pin_loc;
         max_pin_index = pin_index;
@@ -359,7 +371,7 @@ void BoundToBoundHpwlOptimizer::BuildProblemY() {
     for (size_t pin_index = pin_begin; pin_index < pin_end; ++pin_index) {
       const CachedSolutionPin& pin = cached_solution_pins_[pin_index];
       int component_id = pin.component_id;
-      double pin_loc = cached_component_y_[component_id] + pin.offset_y;
+      double pin_loc = cached_pin_y_[pin_index];
       bool is_movable = pin.is_movable;
       double offset = pin.offset_y;
 

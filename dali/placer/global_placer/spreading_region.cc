@@ -592,7 +592,7 @@ bool SpreadingRegion::UpdateCutPointComponentListsLeaf(
   /* Sort components instead of using bisection. When cut_direction_x is true,
    * the white-space cutline is chosen between top and bottom. Otherwise the
    * cutline is chosen close to one half of the total component area. */
-  Component *node, *node1;
+  Component* node;
   if (cut_direction_x) {
     int box_height = top - bottom;
     int row_num = box_height / average_component_height;
@@ -601,25 +601,11 @@ bool SpreadingRegion::UpdateCutPointComponentListsLeaf(
     // and bottom of this box
     low_white_space_total_ratio = std::floor(row_num / 2.0) / row_num;
     cut_line_w = bottom + (int)(low_white_space_total_ratio * box_height);
-    /* second part, split the total component_ptrs to two part,
-     * by sort component_ptrs based on y location in ascending order */
-    size_t mini_index;
-    double mini_loc;
-    for (size_t i = 0; i < component_ptrs.size(); i++) {
-      node = component_ptrs[i];
-      mini_index = i;
-      mini_loc = node->Y();
-      for (size_t j = i + 1; j < component_ptrs.size(); j++) {
-        node1 = component_ptrs[j];
-        if (node1->Y() < mini_loc) {
-          mini_index = j;
-          mini_loc = node1->Y();
-        }
-      }
-      Component* tmp_component_ptr = component_ptrs[mini_index];
-      component_ptrs[mini_index] = component_ptrs[i];
-      component_ptrs[i] = tmp_component_ptr;
-    }
+    // Sort once so the cumulative-area scan can divide the components by Y.
+    std::sort(component_ptrs.begin(), component_ptrs.end(),
+              [](const Component* lhs, const Component* rhs) {
+                return lhs->Y() < rhs->Y();
+              });
 
     /* Find the component index whose cumulative area is closest to the target
      * lower-box white-space ratio. */
@@ -669,25 +655,11 @@ bool SpreadingRegion::UpdateCutPointComponentListsLeaf(
     cut_ll_point.y = cut_line;
     cut_ur_point.y = cut_line;
   } else {
-    /* first, split the total component_ptrs to two part,
-     * by sort component_ptrs based on y location in ascending order */
-    size_t mini_index;
-    double mini_loc;
-    for (size_t i = 0; i < component_ptrs.size(); i++) {
-      node = component_ptrs[i];
-      mini_index = i;
-      mini_loc = node->X();
-      for (size_t j = i + 1; j < component_ptrs.size(); j++) {
-        node1 = component_ptrs[j];
-        if (node1->X() < mini_loc) {
-          mini_index = j;
-          mini_loc = node1->X();
-        }
-      }
-      Component* tmp_component_ptr = component_ptrs[mini_index];
-      component_ptrs[mini_index] = component_ptrs[i];
-      component_ptrs[i] = tmp_component_ptr;
-    }
+    // Sort once so the cumulative-area scan can divide the components by X.
+    std::sort(component_ptrs.begin(), component_ptrs.end(),
+              [](const Component* lhs, const Component* rhs) {
+                return lhs->X() < rhs->X();
+              });
     /* Find the component index whose cumulative area is closest to one half of
      * the total component area. */
     unsigned long long tmp_total_component_area_low = 0;
