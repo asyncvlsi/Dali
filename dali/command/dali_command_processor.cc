@@ -15,6 +15,7 @@
 
 #include <cctype>
 #include <cerrno>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -218,6 +219,9 @@ bool DaliCommandProcessor::ExecuteLegacyGlobalPlace(
 void DaliCommandProcessor::ReportUsage() const {
   LOG(info)
       << "Dali command language:\n"
+      << "  read-lef <file>          load LEF technology and cell libraries\n"
+      << "  read-def <file>          load a DEF design after LEF\n"
+      << "  read-cell <file>         load optional gridded-cell well data\n"
       << "  set <option> <value>     configure a placement run\n"
       << "  show settings            report the resolved runtime settings\n"
       << "  run placement            execute the configured placement flow\n"
@@ -227,6 +231,7 @@ void DaliCommandProcessor::ReportUsage() const {
       << "                           move and fix a pin in microns\n"
       << "  unfix-io <pin>           release a pin for automatic placement\n"
       << "  check-io                 validate I/O pin placement\n"
+      << "  write-def [output]       export the current placement\n"
       << "  source <file.dali>       execute another command recipe\n"
       << "  history                  interactive: show commands in this "
          "session\n"
@@ -249,12 +254,30 @@ bool DaliCommandProcessor::DispatchCommand(
     command.erase(0, namespace_prefix.size());
   }
 
+  if (command == "read-lef" || command == "read-def" ||
+      command == "read-cell") {
+    if (arguments.size() != 2) {
+      LOG(error) << "Usage: " << command << " <file>\n";
+      return false;
+    }
+    const std::string file_name = ResolvePath(arguments[1]);
+    if (command == "read-lef") {
+      return dali_->ReadLef(file_name);
+    }
+    if (command == "read-def") {
+      return dali_->ReadDef(file_name);
+    }
+    return dali_->ReadCell(file_name);
+  }
   if (command == "set") {
     if (arguments.size() != 3) {
       LOG(error) << "Usage: set <option> <value>\n";
       return false;
     }
-    return dali_->SetRuntimeOption(arguments[1], arguments[2]);
+    const std::string value = arguments[1] == "output_name"
+                                  ? ResolvePath(arguments[2])
+                                  : arguments[2];
+    return dali_->SetRuntimeOption(arguments[1], value);
   }
   if (command == "show") {
     if (arguments.size() != 2 || arguments[1] != "settings") {
@@ -291,6 +314,15 @@ bool DaliCommandProcessor::DispatchCommand(
       return false;
     }
     return RunCommandFile(arguments[1]);
+  }
+  if (command == "write-def") {
+    if (arguments.size() > 2) {
+      LOG(error) << "Usage: write-def [output]\n";
+      return false;
+    }
+    const std::string output_name =
+        arguments.size() == 2 ? ResolvePath(arguments[1]) : "";
+    return dali_->ExportPlacement(output_name);
   }
   if (command == "place-design") {
     return ExecuteLegacyPlaceDesign(arguments);
@@ -340,17 +372,41 @@ bool DaliCommandProcessor::ExecuteCommandLine(const std::string& command_line,
   return true;
 }
 
+std::string DaliCommandProcessor::ResolvePath(const std::string& path) const {
+  std::filesystem::path resolved(path);
+  if (resolved.is_absolute()) {
+    return resolved.lexically_normal().string();
+  }
+  if (!command_directories_.empty()) {
+    return (std::filesystem::path(command_directories_.back()) / resolved)
+        .lexically_normal()
+        .string();
+  }
+  std::error_code error;
+  const std::filesystem::path current_directory =
+      std::filesystem::current_path(error);
+  if (error) {
+    return resolved.lexically_normal().string();
+  }
+  return (current_directory / resolved).lexically_normal().string();
+}
+
 bool DaliCommandProcessor::RunCommandFile(const std::string& file_name) {
-  std::ifstream input(file_name);
+  const std::string resolved_file_name = ResolvePath(file_name);
+  std::ifstream input(resolved_file_name);
   if (!input) {
-    LOG(error) << "Cannot open Dali command file: " << file_name << "\n";
+    LOG(error) << "Cannot open Dali command file: " << resolved_file_name
+               << "\n";
     return false;
   }
 
+  const std::filesystem::path command_file_path(resolved_file_name);
+  command_directories_.push_back(command_file_path.parent_path().string());
   std::string physical_line;
   std::string logical_line;
   std::size_t physical_line_number = 0;
   std::size_t logical_line_number = 0;
+  bool is_success = true;
   while (std::getline(input, physical_line)) {
     ++physical_line_number;
     if (logical_line.empty()) {
@@ -367,17 +423,20 @@ bool DaliCommandProcessor::RunCommandFile(const std::string& file_name) {
       logical_line.push_back(' ');
       continue;
     }
-    if (!ExecuteCommandLine(logical_line, file_name, logical_line_number)) {
-      return false;
+    if (!ExecuteCommandLine(logical_line, resolved_file_name,
+                            logical_line_number)) {
+      is_success = false;
+      break;
     }
     logical_line.clear();
   }
-  if (!logical_line.empty()) {
-    LOG(error) << file_name << ":" << logical_line_number
+  if (is_success && !logical_line.empty()) {
+    LOG(error) << resolved_file_name << ":" << logical_line_number
                << ": incomplete line continuation\n";
-    return false;
+    is_success = false;
   }
-  return true;
+  command_directories_.pop_back();
+  return is_success;
 }
 
 void DaliCommandProcessor::ReportHistory(std::ostream& output) const {
@@ -481,9 +540,11 @@ bool Dali::RunCommandFile(const std::string& file_name) {
 bool Dali::RunInteractiveSession(std::istream& input, std::ostream& output,
                                  bool show_prompt) {
   interactive_session_expected_ = true;
-  InitializeCircuitFromPhyDBIfNeeded();
-  InitializeVisualizationSnapshots();
-  WriteInteractiveCommandSnapshot("start");
+  if (HasInputDesign()) {
+    InitializeCircuitFromPhyDBIfNeeded();
+    InitializeVisualizationSnapshots();
+    WriteInteractiveCommandSnapshot("start");
+  }
   std::function<void()> wait_for_input;
   if (show_prompt && &input == &std::cin) {
     wait_for_input = [this]() {

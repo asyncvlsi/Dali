@@ -69,11 +69,14 @@ void ReportDaliUsage(std::ostream& output) {
   output
       // clang-format off
       << "\033[0;36m"
-      << "Usage: dali\n"
-      << "  -lef <file.lef>\n"
-      << "  -def <file.def>\n"
+      << "Usage:\n"
+      << "  dali -lef <file.lef> -def <file.def> [options]\n"
+      << "  dali -script <flow.dali> [options]\n"
+      << "  dali -interactive [options]\n"
+      << "  -lef <file.lef>                             input LEF; may instead be read by a .dali recipe\n"
+      << "  -def <file.def>                             input DEF; may instead be read by a .dali recipe\n"
       << "  -cell <file.cell>                          (optional, if provided, well placement flow will be triggered)\n"
-      << "  -o/-output_name <output_name>.def          (optional, default output def file name dali_out.def)\n"
+      << "  -o/-output_name <output_base>              (optional, Dali appends .def; default dali_out)\n"
       << "  -metrics_file <file.json>                  (optional, default dali_metrics.json)\n"
       << "  -script/-command_file <file.dali>          execute a Dali command recipe instead of the implicit placement run\n"
       << "  -interactive                              enter the Dali command prompt; does not run placement implicitly\n"
@@ -734,8 +737,21 @@ bool ParseDaliCommandLine(int argc, char* argv[],
     }
   }
 
-  if (options->lef_file_name.empty() || options->def_file_name.empty()) {
-    error_output << "Invalid input files!\n";
+  const bool has_lef = !options->lef_file_name.empty();
+  const bool has_def = !options->def_file_name.empty();
+  if (has_lef != has_def) {
+    error_output << "LEF and DEF command-line inputs must be provided "
+                    "together!\n";
+    return false;
+  }
+  if (!options->cell_file_name.empty() && !has_lef) {
+    error_output << "A command-line CELL input requires command-line LEF and "
+                    "DEF inputs; use read-cell in a recipe instead!\n";
+    return false;
+  }
+  if (!has_lef && options->command_file_name.empty() && !options->interactive) {
+    error_output << "Provide LEF/DEF inputs, a Dali script, or interactive "
+                    "mode!\n";
     return false;
   }
   return true;

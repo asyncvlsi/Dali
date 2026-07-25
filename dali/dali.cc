@@ -45,6 +45,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <filesystem>
 #include <iostream>
 #include <string>
 #include <utility>
@@ -242,13 +243,8 @@ static StandardCellLegalizerCostMode ParseStandardCellLegalizerCostMode(
 }
 
 Dali::Dali(phydb::PhyDB* phy_db_ptr, const std::string& severity_level,
-           const std::string& log_file_name) {
-  phy_db_ptr_ = phy_db_ptr;
-  severity_level_ = StrToLoggingLevel(severity_level);
-  log_file_name_ = log_file_name;
-  LoadParamsFromConfig();
-  InitLogging(log_file_name_, severity_level_, disable_log_prefix_);
-}
+           const std::string& log_file_name)
+    : Dali(phy_db_ptr, StrToLoggingLevel(severity_level), log_file_name) {}
 
 Dali::Dali(phydb::PhyDB* phy_db_ptr, severity severity_level,
            const std::string& log_file_name) {
@@ -257,6 +253,10 @@ Dali::Dali(phydb::PhyDB* phy_db_ptr, severity severity_level,
   log_file_name_ = log_file_name;
   LoadParamsFromConfig();
   InitLogging(log_file_name_, severity_level_, disable_log_prefix_);
+  if (phy_db_ptr_ != nullptr) {
+    input_lef_file_name_ = phy_db_ptr_->GetTechPtr()->GetLefName();
+    input_def_file_name_ = phy_db_ptr_->GetDesignPtr()->GetDefName();
+  }
 }
 
 void Dali::SetGuiSnapshotSinkFactory(SnapshotSinkFactory factory) {
@@ -265,6 +265,126 @@ void Dali::SetGuiSnapshotSinkFactory(SnapshotSinkFactory factory) {
 
 void Dali::SetInteractiveSessionExpected(bool expected) {
   interactive_session_expected_ = expected;
+}
+
+static bool IsReadableInputFile(const std::string& file_name) {
+  std::error_code error;
+  return std::filesystem::is_regular_file(file_name, error);
+}
+
+static std::string NormalizeInputFileName(const std::string& file_name) {
+  std::error_code error;
+  const std::filesystem::path canonical_name =
+      std::filesystem::canonical(file_name, error);
+  return error ? std::filesystem::path(file_name).lexically_normal().string()
+               : canonical_name.string();
+}
+
+bool Dali::ReadLef(const std::string& file_name) {
+  if (phy_db_ptr_ == nullptr) {
+    LOG(error) << "Cannot read LEF without a PhyDB instance\n";
+    return false;
+  }
+  if (is_circuit_initialized_) {
+    LOG(error) << "Cannot read LEF after the Dali circuit is initialized\n";
+    return false;
+  }
+  if (!IsReadableInputFile(file_name)) {
+    LOG(error) << "Cannot read LEF file: " << file_name << "\n";
+    return false;
+  }
+  const std::string normalized_name = NormalizeInputFileName(file_name);
+  if (!input_lef_file_name_.empty()) {
+    if (NormalizeInputFileName(input_lef_file_name_) == normalized_name) {
+      return true;
+    }
+    LOG(error) << "A LEF input is already loaded: " << input_lef_file_name_
+               << "\n";
+    return false;
+  }
+  phy_db_ptr_->ReadLef(normalized_name);
+  input_lef_file_name_ = normalized_name;
+  return true;
+}
+
+bool Dali::ReadDef(const std::string& file_name) {
+  if (phy_db_ptr_ == nullptr) {
+    LOG(error) << "Cannot read DEF without a PhyDB instance\n";
+    return false;
+  }
+  if (is_circuit_initialized_) {
+    LOG(error) << "Cannot read DEF after the Dali circuit is initialized\n";
+    return false;
+  }
+  if (input_lef_file_name_.empty()) {
+    LOG(error) << "Read LEF before DEF\n";
+    return false;
+  }
+  if (!IsReadableInputFile(file_name)) {
+    LOG(error) << "Cannot read DEF file: " << file_name << "\n";
+    return false;
+  }
+  const std::string normalized_name = NormalizeInputFileName(file_name);
+  if (!input_def_file_name_.empty()) {
+    if (NormalizeInputFileName(input_def_file_name_) == normalized_name) {
+      return true;
+    }
+    LOG(error) << "A DEF input is already loaded: " << input_def_file_name_
+               << "\n";
+    return false;
+  }
+  phy_db_ptr_->ReadDef(normalized_name);
+  input_def_file_name_ = normalized_name;
+  return true;
+}
+
+bool Dali::ReadCell(const std::string& file_name) {
+  if (phy_db_ptr_ == nullptr) {
+    LOG(error) << "Cannot read CELL without a PhyDB instance\n";
+    return false;
+  }
+  if (is_circuit_initialized_) {
+    LOG(error) << "Cannot read CELL after the Dali circuit is initialized\n";
+    return false;
+  }
+  if (input_lef_file_name_.empty() || input_def_file_name_.empty()) {
+    LOG(error) << "Read LEF and DEF before CELL\n";
+    return false;
+  }
+  if (!IsReadableInputFile(file_name)) {
+    LOG(error) << "Cannot read CELL file: " << file_name << "\n";
+    return false;
+  }
+  const std::string normalized_name = NormalizeInputFileName(file_name);
+  if (!input_cell_file_name_.empty()) {
+    if (NormalizeInputFileName(input_cell_file_name_) == normalized_name) {
+      return true;
+    }
+    LOG(error) << "A CELL input is already loaded: " << input_cell_file_name_
+               << "\n";
+    return false;
+  }
+  phy_db_ptr_->ReadCell(normalized_name);
+  input_cell_file_name_ = normalized_name;
+  return true;
+}
+
+bool Dali::SetPlacementGrids(double grid_x, double grid_y) {
+  if (phy_db_ptr_ == nullptr) {
+    LOG(error) << "Cannot set placement grids without a PhyDB instance\n";
+    return false;
+  }
+  if (is_circuit_initialized_ || grid_x <= 0 || grid_y <= 0) {
+    LOG(error) << "Placement grids must be positive and set before circuit "
+                  "initialization\n";
+    return false;
+  }
+  phy_db_ptr_->SetPlacementGrids(grid_x, grid_y);
+  return true;
+}
+
+bool Dali::HasInputDesign() const {
+  return !input_lef_file_name_.empty() && !input_def_file_name_.empty();
 }
 
 /**
@@ -826,6 +946,12 @@ bool Dali::SetRuntimeOption(const std::string& name, const std::string& value) {
     }
     standard_cell_legalizer_cost_mode_ =
         ParseStandardCellLegalizerCostMode(value);
+  } else if (name == "output_name") {
+    if (value.empty()) {
+      LOG(error) << "output_name must not be empty\n";
+      return false;
+    }
+    output_name_ = value;
   } else if (name == "disable_global_place" || name == "disable_legalization" ||
              name == "disable_detailed_place" || name == "disable_io_place" ||
              name == "disable_welltap" || name == "disable_cell_flip" ||
@@ -1636,9 +1762,10 @@ void Dali::WriteVisualizationSnapshot(
 }
 
 void Dali::WriteInteractiveCommandSnapshot(const std::string& command) {
-  if (!interactive_session_expected_) {
+  if (!interactive_session_expected_ || !is_circuit_initialized_) {
     return;
   }
+  InitializeVisualizationSnapshots();
   std::vector<PlacementWellRect> well_rects;
   if (!is_standard_cell_ && !disable_legalization_) {
     well_rects = well_legalizer_.CollectWellVisualizationRects();
@@ -1663,6 +1790,10 @@ void Dali::FinishVisualizationSnapshots() {
 }
 
 bool Dali::StartPlacement(double density, int number_of_threads) {
+  if (!HasInputDesign()) {
+    LOG(error) << "Placement requires both LEF and DEF inputs\n";
+    return false;
+  }
   ApplyPlacementOverrides(density, number_of_threads);
   InitializeMainPlacementCircuit();
   ResolveTargetDensity();
@@ -1824,6 +1955,42 @@ void Dali::ExportToPhyDB() {
     ExportPpNpToPhyDB();
     ExportWellToPhyDB();
   }
+}
+
+bool Dali::ExportPlacement(const std::string& output_name) {
+  if (!HasInputDesign()) {
+    LOG(error) << "Cannot export placement without LEF and DEF inputs\n";
+    return false;
+  }
+  InitializeCircuitFromPhyDBIfNeeded();
+  const std::string& resolved_output_name =
+      output_name.empty() ? output_name_ : output_name;
+  if (resolved_output_name.empty()) {
+    LOG(error) << "Placement output name must not be empty\n";
+    return false;
+  }
+  const std::filesystem::path output_path(resolved_output_name);
+  if (!output_path.parent_path().empty()) {
+    std::error_code error;
+    std::filesystem::create_directories(output_path.parent_path(), error);
+    if (error) {
+      LOG(error) << "Cannot create placement output directory "
+                 << output_path.parent_path().string() << ": "
+                 << error.message() << "\n";
+      return false;
+    }
+  }
+
+  MaybeExportToLEF(input_lef_file_name_, resolved_output_name);
+  ExportToDEF(input_def_file_name_, resolved_output_name);
+  ExportToPhyDB();
+  phy_db_ptr_->WriteDef("phydb.def");
+  has_explicit_placement_export_ = true;
+  return true;
+}
+
+bool Dali::HasExplicitPlacementExport() const {
+  return has_explicit_placement_export_;
 }
 
 void Dali::Close() { CloseLogging(); }

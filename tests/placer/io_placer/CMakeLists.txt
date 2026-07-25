@@ -112,6 +112,17 @@ add_test(
 set_tests_properties(io_command_file_flow
                      PROPERTIES LABELS "integration;io_placer")
 
+# Load LEF/DEF from a recipe, run Dali, and export through `write-def`.
+add_executable(script_owned_design_flow script_owned_design_flow.cc)
+target_link_libraries(script_owned_design_flow PRIVATE dalilib)
+add_test(
+    NAME script_owned_design_flow
+    COMMAND script_owned_design_flow
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+set_tests_properties(script_owned_design_flow
+                     PROPERTIES LABELS "integration;io_placer;application")
+
 # Inspect, move, validate, release, and automatically replace I/O pins through
 # the command processor.
 add_executable(io_signoff_commands io_signoff_commands.cc helper.h helper.cc)

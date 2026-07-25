@@ -65,19 +65,6 @@ static void PrintSoftwareStatement() {
   // clang-format on
 }
 
-/** Load LEF/DEF/CELL inputs into PhyDB using parsed command-line options. */
-static void InitializePhyDb(const DaliCommandLineOptions& options,
-                            phydb::PhyDB* phy_db) {
-  if (options.x_grid > 0 && options.y_grid > 0) {
-    phy_db->SetPlacementGrids(options.x_grid, options.y_grid);
-  }
-  phy_db->ReadLef(options.lef_file_name);
-  phy_db->ReadDef(options.def_file_name);
-  if (!options.cell_file_name.empty()) {
-    phy_db->ReadCell(options.cell_file_name);
-  }
-}
-
 int main(int argc, char* argv[]) {
   PrintSoftwareStatement();
 
@@ -91,17 +78,29 @@ int main(int argc, char* argv[]) {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
 
-  // Load the physical design database before handing control to the
-  // placement flow facade.
   phydb::PhyDB phy_db;
-  InitializePhyDb(options, &phy_db);
-
   Dali dali(&phy_db, options.verbose_level, options.log_file_name);
 #ifdef DALI_HAS_QT_GUI
   dali.SetGuiSnapshotSinkFactory(
       [] { return std::make_unique<QtPlacementSnapshotSink>(); });
 #endif
   dali.SetInteractiveSessionExpected(options.interactive);
+
+  bool is_success = true;
+  if (options.x_grid > 0 && options.y_grid > 0) {
+    is_success = dali.SetPlacementGrids(options.x_grid, options.y_grid);
+  }
+  if (is_success && !options.lef_file_name.empty()) {
+    is_success = dali.ReadLef(options.lef_file_name) &&
+                 dali.ReadDef(options.def_file_name);
+  }
+  if (is_success && !options.cell_file_name.empty()) {
+    is_success = dali.ReadCell(options.cell_file_name);
+  }
+  if (!is_success) {
+    WritePlacementMetricsJson(options.metrics_file_name, false);
+    return 1;
+  }
 
   // print the current time
   using std::chrono::system_clock;
@@ -123,7 +122,6 @@ int main(int argc, char* argv[]) {
   // Preserve the original implicit placement flow. Recipes own stage
   // execution, while interactive mode initializes the design and waits for
   // commands without moving components first.
-  bool is_success = true;
   if (!options.command_file_name.empty()) {
     is_success = dali.RunCommandFile(options.command_file_name);
   } else if (!options.interactive) {
@@ -142,11 +140,12 @@ int main(int argc, char* argv[]) {
     dali.GetCircuit().WriteNetHpwlTable(options.net_hpwl_file_name);
   }
 
-  // Export both Dali's textual outputs and the updated in-memory PhyDB view.
-  dali.MaybeExportToLEF(options.lef_file_name, options.output_name);
-  dali.ExportToDEF(options.def_file_name, options.output_name);
-  dali.ExportToPhyDB();
-  phy_db.WriteDef("phydb.def");
+  // Recipes may export an explicit checkpoint with `write-def`; otherwise
+  // preserve the standalone application's automatic final export.
+  if (!dali.HasExplicitPlacementExport() && !dali.ExportPlacement()) {
+    WritePlacementMetricsJson(options.metrics_file_name, false);
+    return 1;
+  }
 
   elapsed_time.RecordEndTime();
   LOG(info) << "****End of placement "

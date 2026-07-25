@@ -17,29 +17,41 @@ dali -lef design.lef -def design.def -o placed
 Pass a recipe with `-script` or its alias `-command_file`:
 
 ```sh
-dali -lef design.lef -def design.def -script placement.dali -o placed
+dali -script placement.dali
 ```
 
-An explicit recipe owns stage execution, so include `run placement` when the
-full placement flow should run:
+A recipe may own design loading, configuration, execution, and export:
 
 ```text
 # dali-script 1
+read-lef "design.lef"
+read-def "design.def"
+# read-cell "design.cell"
+
 set target_density 0.70
 set num_threads 4
 set is_standard_cell true
+set output_name "results/placed"
 
 run placement
 check-io
+write-def "results/signed_off"
 ```
 
 Commands execute in order and a recipe stops at its first error. Blank lines,
 `#` comments, single or double quotes, backslash escaping, and a trailing `\`
-for line continuation are supported. A recipe can include another recipe:
+for line continuation are supported. Input, output, and nested-recipe paths are
+resolved relative to the recipe containing the command. A recipe can include
+another recipe:
 
 ```text
 source "common_settings.dali"
 ```
+
+`write-def [output]` exports immediately. The output is a base name, so
+`write-def "results/placed"` creates `results/placed.def` and Dali's companion
+DEF views. When no `write-def` command is present, the standalone application
+automatically exports the final design using `output_name`.
 
 ## Interactive mode
 
@@ -47,6 +59,13 @@ Open an existing placement without running placement implicitly:
 
 ```sh
 dali -lef design.lef -def placed.def -interactive -o signed_off
+```
+
+Inputs may instead be loaded at the prompt:
+
+```text
+dali> read-lef "design.lef"
+dali> read-def "placed.def"
 ```
 
 The session is recoverable: a failed command is reported and the next prompt
@@ -68,8 +87,6 @@ Run a recipe first and then retain control:
 
 ```sh
 dali \
-  -lef design.lef \
-  -def design.def \
   -script placement.dali \
   -interactive \
   -o signed_off
@@ -84,10 +101,14 @@ ends and its window is closed.
 
 Flow control:
 
+- `read-lef <file>` loads technology and cell libraries.
+- `read-def <file>` loads a design after LEF.
+- `read-cell <file>` loads optional gridded-cell well data after LEF/DEF.
 - `set <option> <value>` configures a later placement run.
 - `show settings` reports the resolved runtime settings.
 - `run placement` runs the configured placement pipeline.
 - `source <file.dali>` executes another recipe.
+- `write-def [output]` exports the current placement.
 - `help` reports the command list.
 - `history`, `quit`, and `exit` are available at the interactive prompt.
 
@@ -105,7 +126,7 @@ The legacy `place-design <density> [threads]`,
 available for existing integrations.
 
 Supported `set` options are listed in the top-level
-[README](../../README.md#command-recipes). Boolean values accept
+[README](../../README.md#dali-command-recipes). Boolean values accept
 `true`/`false`, `on`/`off`, and `1`/`0`.
 
 ## Embedding

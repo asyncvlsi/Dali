@@ -68,6 +68,21 @@ TEST_F(DaliCommandLineTest, ParsesDaliCommandFileAliases) {
   EXPECT_EQ(compatibility_options.command_file_name, "compatibility.dali");
 }
 
+TEST_F(DaliCommandLineTest, AcceptsScriptOwnedInputs) {
+  dali::DaliCommandLineOptions options;
+  EXPECT_TRUE(Parse({"dali", "-script", "flow.dali"}, &options));
+
+  EXPECT_TRUE(options.lef_file_name.empty());
+  EXPECT_TRUE(options.def_file_name.empty());
+  EXPECT_EQ(options.command_file_name, "flow.dali");
+}
+
+TEST_F(DaliCommandLineTest, AcceptsInputFreeInteractiveMode) {
+  dali::DaliCommandLineOptions options;
+  EXPECT_TRUE(Parse({"dali", "-interactive"}, &options));
+  EXPECT_TRUE(options.interactive);
+}
+
 TEST_F(DaliCommandLineTest, ParsesInteractiveMode) {
   dali::DaliCommandLineOptions options;
   EXPECT_TRUE(
@@ -378,6 +393,13 @@ TEST_F(DaliCommandLineTest, RejectsMissingRequiredInputs) {
 
   dali::DaliCommandLineOptions missing_lef_options;
   EXPECT_FALSE(Parse({"dali", "-def", "input.def"}, &missing_lef_options));
+
+  dali::DaliCommandLineOptions no_input_options;
+  EXPECT_FALSE(Parse({"dali"}, &no_input_options));
+
+  dali::DaliCommandLineOptions script_with_cli_cell_options;
+  EXPECT_FALSE(Parse({"dali", "-script", "flow.dali", "-cell", "design.cell"},
+                     &script_with_cli_cell_options));
 }
 
 TEST_F(DaliCommandLineTest, RejectsPlacementRegionShrinkDebugScale) {

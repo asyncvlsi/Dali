@@ -71,6 +71,8 @@ class DaliCommandProcessor {
   bool ExecuteRun(const std::vector<std::string>& arguments);
   bool ExecuteLegacyPlaceDesign(const std::vector<std::string>& arguments);
   bool ExecuteLegacyGlobalPlace(const std::vector<std::string>& arguments);
+  /** Resolve a command path against the recipe that contains it. */
+  std::string ResolvePath(const std::string& path) const;
   void ReportHistory(std::ostream& output) const;
   bool ForwardArgvCommand(const std::vector<std::string>& arguments,
                           bool (Dali::*command)(int, char**));
@@ -78,6 +80,7 @@ class DaliCommandProcessor {
 
   Dali* dali_ = nullptr;
   std::vector<std::string> command_history_;
+  std::vector<std::string> command_directories_;
 };
 
 }  // namespace dali

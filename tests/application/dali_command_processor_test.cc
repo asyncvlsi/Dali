@@ -66,6 +66,7 @@ TEST_F(DaliCommandProcessorTest, AppliesTypedRuntimeSettings) {
   EXPECT_TRUE(placer.ExecuteCommand({"set", "disable_io_place", "true"}));
   EXPECT_TRUE(
       placer.ExecuteCommand({"set", "global_initializer", "density_aware"}));
+  EXPECT_TRUE(placer.ExecuteCommand({"set", "output_name", "placed"}));
 
   const dali::Dali::RuntimeOptions options = placer.GetRuntimeOptions();
   EXPECT_DOUBLE_EQ(options.target_density, 0.73);
@@ -73,6 +74,7 @@ TEST_F(DaliCommandProcessorTest, AppliesTypedRuntimeSettings) {
   EXPECT_TRUE(options.disable_io_place);
   EXPECT_EQ(options.global_initializer,
             dali::PlacementInitializerType::kDensityAware);
+  EXPECT_EQ(std::filesystem::path(options.output_name).filename(), "placed");
 
   EXPECT_FALSE(placer.ExecuteCommand({"set", "target_density", "1.1"}));
   EXPECT_FALSE(placer.ExecuteCommand({"set", "num_threads", "many"}));
@@ -103,6 +105,30 @@ TEST_F(DaliCommandProcessorTest, RunsCommandFileWithContinuation) {
   placer.Close();
 
   std::filesystem::remove(script_path);
+}
+
+TEST_F(DaliCommandProcessorTest, ResolvesNestedSourcesRelativeToTheirRecipe) {
+  const std::filesystem::path test_directory =
+      std::filesystem::temp_directory_path() / "dali_relative_source_test";
+  const std::filesystem::path nested_directory = test_directory / "nested";
+  std::filesystem::create_directories(nested_directory);
+  const std::filesystem::path parent_script = test_directory / "flow.dali";
+  const std::filesystem::path child_script = nested_directory / "settings.dali";
+  {
+    std::ofstream child(child_script);
+    child << "set target_density 0.71\n";
+  }
+  {
+    std::ofstream parent(parent_script);
+    parent << "source \"nested/settings.dali\"\n";
+  }
+
+  dali::Dali placer(nullptr, dali::severity::info);
+  EXPECT_TRUE(placer.RunCommandFile(parent_script.string()));
+  EXPECT_DOUBLE_EQ(placer.GetRuntimeOptions().target_density, 0.71);
+  placer.Close();
+
+  std::filesystem::remove_all(test_directory);
 }
 
 TEST_F(DaliCommandProcessorTest, StopsCommandFileAtFirstFailure) {

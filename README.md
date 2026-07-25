@@ -53,18 +53,20 @@ force a non-GUI build:
 
 ### Running Dali
 
-A placement run needs a LEF and a DEF. Providing a `-cell` file triggers the
-gridded well-placement flow:
+A placement run needs a LEF and a DEF, supplied on the command line or by a
+`.dali` recipe. Providing a `-cell` file triggers the gridded well-placement
+flow:
 
     $ dali \
         -lef design.lef \
         -def design.def \
         -cell design.cell \
         -target_density 0.7 \
-        -output_name placed.def
+        -output_name placed
 
 Commonly used options:
-  * `-o`/`-output_name <name>.def` — output DEF (default `dali_out.def`)
+  * `-o`/`-output_name <base>` — output base name; Dali appends `.def`
+    (default `dali_out`)
   * `-d`/`-target_density <0..1>` — target placement density
   * `-well_legalization_mode <strict/scavenge>` — gridded well legalization mode
   * `-well_tap_pattern <row-end/row-end-every-other>` — well-tap
@@ -76,23 +78,24 @@ Run `dali` with no arguments to print the full option list.
 
 ### Dali command recipes
 
-The normal command above remains the default. For a reproducible staged flow,
-pass a `.dali` recipe with `-script` (the longer `-command_file` spelling is
-also accepted):
+The normal command above remains the default. A `.dali` recipe can own the
+complete flow, including inputs and output (the longer `-command_file` spelling
+is also accepted):
 
-    $ dali \
-        -lef design.lef \
-        -def design.def \
-        -cell design.cell \
-        -script placement_flow.dali \
-        -output_name placed.def
+    $ dali -script placement_flow.dali
 
-The recipe owns placement execution:
+Paths in a recipe are resolved relative to that recipe, not the shell's current
+directory:
 
     # dali-script 1
+    read-lef "design.lef"
+    read-def "design.def"
+    # read-cell "design.cell"
+
     set target_density 0.70
     set num_threads 4
     set disable_io_place true
+    set output_name "results/placed"
 
     show settings
     run placement
@@ -103,11 +106,15 @@ The recipe owns placement execution:
     move-io clock 120.0 400.0 N
     check-io
 
+    write-def "results/signed_off"
+
 Commands are executed in order and the file stops at the first error. Blank
 lines, `#` comments, quoted arguments, escaped characters, and backslash line
-continuations are supported. The first implementation exposes these settings:
+continuations are supported. `write-def` exports immediately; without it, the
+standalone application exports the final design using `output_name`. Supported
+settings include:
 
-  * `target_density`, `num_threads`, `io_metal_layer`,
+  * `output_name`, `target_density`, `num_threads`, `io_metal_layer`,
     `net_ignore_threshold`
   * `global_min_iterations`, `global_max_iterations`,
     `global_initializer`
@@ -159,8 +166,6 @@ To run a placement recipe and then keep the design open for manual signoff,
 combine both modes:
 
     $ dali \
-        -lef design.lef \
-        -def design.def \
         -script placement_flow.dali \
         -interactive
 

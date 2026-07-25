@@ -206,6 +206,18 @@ class Dali {
   /** Run the default placement pipeline used by the main `dali` app. */
   bool StartPlacement(double density = -1, int number_of_threads = -1);
 
+  /** Load the LEF technology/library input before the circuit is initialized.
+   */
+  bool ReadLef(const std::string& file_name);
+  /** Load the DEF design input after LEF and before circuit initialization. */
+  bool ReadDef(const std::string& file_name);
+  /** Load optional gridded-cell well data after LEF/DEF. */
+  bool ReadCell(const std::string& file_name);
+  /** Set explicit placement grids before loading the circuit model. */
+  bool SetPlacementGrids(double grid_x, double grid_y);
+  /** Return true when both LEF and DEF inputs are available in PhyDB. */
+  bool HasInputDesign() const;
+
   /**
    * Execute one already-tokenized Dali command.
    *
@@ -262,6 +274,15 @@ class Dali {
                                         bool load_dp_result = true);
 
   void ExportToPhyDB();
+  /**
+   * Export the current placement and its updated PhyDB representation.
+   *
+   * A nonempty output name overrides the configured `output_name`. This is the
+   * implementation behind the command-language `write-def` command.
+   */
+  bool ExportPlacement(const std::string& output_name = "");
+  /** Return true after an explicit `write-def` command exports the design. */
+  bool HasExplicitPlacementExport() const;
   void Close();
 
   /** Export generated end-cap LEF when that flow is enabled. */
@@ -371,6 +392,10 @@ class Dali {
   int detailed_max_rounds_ = 1;
   int detailed_max_move_candidates_ = 1000;
   std::string output_name_ = "dali_out";
+  std::string input_lef_file_name_;
+  std::string input_def_file_name_;
+  std::string input_cell_file_name_;
+  bool has_explicit_placement_export_ = false;
   bool gui_debug_ = false;
   std::string gui_pause_ = "every_snapshot";
   bool interactive_session_expected_ = false;
