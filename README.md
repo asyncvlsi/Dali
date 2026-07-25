@@ -76,113 +76,16 @@ Commonly used options:
 
 Run `dali` with no arguments to print the full option list.
 
-### Dali command recipes
+### Command recipes and interactive mode
 
-The normal command above remains the default. A `.dali` recipe can own the
-complete flow, including inputs and output (the longer `-command_file` spelling
-is also accepted):
+Dali can run reproducible `.dali` command recipes or accept the same commands
+from an interactive terminal. These modes support design loading, placement
+configuration, execution, I/O-pin signoff, DEF export, and future host-tool
+integration while preserving the ordinary command-line flow.
 
-    $ dali -script placement_flow.dali
-
-Paths in a recipe are resolved relative to that recipe, not the shell's current
-directory:
-
-    # dali-script 1
-    read-lef "design.lef"
-    read-def "design.def"
-    # read-cell "design.cell"
-
-    set target_density 0.70
-    set num_threads 4
-    set disable_io_place true
-    set output_name "results/placed.def"
-
-    show settings
-    run placement
-
-    place-io -constraint clock top
-    place-io M4
-    show-io clock
-    move-io clock 120.0 400.0 N
-    check-io
-
-    write-def "results/signed_off.def"
-
-Commands are executed in order and the file stops at the first error. Blank
-lines, `#` comments, quoted arguments, escaped characters, and backslash line
-continuations are supported. `write-def` exports immediately; without it, the
-standalone application exports the final design using `output_name`. Supported
-settings include:
-
-  * `output_name`, `target_density`, `num_threads`, `io_metal_layer`,
-    `net_ignore_threshold`
-  * `global_min_iterations`, `global_max_iterations`,
-    `global_initializer`
-  * `detailed_max_rounds`, `detailed_max_move_candidates`
-  * `well_legalization_mode`, `standard_cell_legalizer_cost`
-  * `disable_global_place`, `disable_legalization`,
-    `disable_detailed_place`, `disable_io_place`
-  * `disable_welltap`, `disable_cell_flip`, `is_standard_cell`,
-    `enable_filler_cell`, `enable_end_cap_cell`
-
-Boolean values accept `true`/`false`, `on`/`off`, or `1`/`0`. The legacy
-`place-design <density> [threads]` and `global-place <density> [threads]`
-commands remain available, but new recipes should configure settings separately
-and use `run placement`.
-
-Manual I/O signoff commands use microns for locations:
-
-  * `show-io [pin]` reports status, location, orientation, layer, and shape.
-  * `move-io <pin> <x> <y> [orientation]` preserves the pin shape and layer,
-    fixes it at the new location, and optionally changes its orientation.
-  * `unfix-io <pin>` releases a pin for a later `place-io -auto-place`.
-  * `check-io` checks that pins are placed, have geometry, remain inside the
-    die, do not overlap, and satisfy basic same-layer scalar spacing.
-
-`check-io` is an early feedback tool, not a replacement for process-specific
-foundry signoff DRC.
-
-### Interactive mode
-
-Use `-interactive` to open the input design without implicitly running
-placement:
-
-    $ dali -lef design.lef -def placed.def -interactive
-
-The prompt accepts the same commands as `.dali` files:
-
-    dali> show-io
-    dali> check-io
-    dali> move-io clock 120.0 400.0 N
-    dali> check-io
-    dali> quit
-
-Command failures are reported without closing the session. `history` prints
-commands entered during the current session, `source <file.dali>` runs a
-recipe, and `quit` or `exit` finishes the session and exports the current
-design.
-
-To run a placement recipe and then keep the design open for manual signoff,
-combine both modes:
-
-    $ dali \
-        -script placement_flow.dali \
-        -interactive
-
-See the [Dali command language guide](dali/command/README.md) for recipe
-syntax, all execution modes, I/O signoff commands, and the public embedding
+See the [Dali command language guide](dali/command/README.md) for recipe syntax,
+supported settings and commands, interactive usage, and the public embedding
 API.
-
-The same recipe API is designed for a future `interact` adapter:
-
-    dali:init 3
-    dali:source "placement_flow.dali"
-    dali:export-phydb
-    dali:close
-
-`interact` does not provide `dali:source` yet; Dali already exposes
-`ExecuteCommand`, `ExecuteCommandLine`, and `RunCommandFile` so that adapter can
-remain small.
 
 ### Production configurations
 

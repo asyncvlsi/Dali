@@ -126,9 +126,26 @@ The legacy `place-design <density> [threads]`,
 `global-place <density> [threads]`, and `add-welltap ...` commands remain
 available for existing integrations.
 
-Supported `set` options are listed in the top-level
-[README](../../README.md#dali-command-recipes). Boolean values accept
-`true`/`false`, `on`/`off`, and `1`/`0`.
+## Settings
+
+Recipes should configure placement settings separately and invoke
+`run placement`. Supported `set` options include:
+
+- `output_name`, `target_density`, `num_threads`, `io_metal_layer`, and
+  `net_ignore_threshold`
+- `global_min_iterations`, `global_max_iterations`, and `global_initializer`
+- `detailed_max_rounds` and `detailed_max_move_candidates`
+- `well_legalization_mode` and `standard_cell_legalizer_cost`
+- `disable_global_place`, `disable_legalization`, `disable_detailed_place`,
+  and `disable_io_place`
+- `disable_welltap`, `disable_cell_flip`, `is_standard_cell`,
+  `enable_filler_cell`, and `enable_end_cap_cell`
+
+Boolean values accept `true`/`false`, `on`/`off`, and `1`/`0`.
+
+`check-io` verifies that pins are placed, have geometry, remain inside the die,
+do not overlap, and satisfy basic same-layer scalar spacing. It provides early
+feedback but does not replace process-specific foundry signoff DRC.
 
 ## Embedding
 
