@@ -18,11 +18,12 @@ exported as visualization snapshots.
   * [ACT](https://github.com/asyncvlsi/act)
   * Si2 LEF/DEF parser, a mirror can be found [here](https://github.com/asyncvlsi/lefdef)
   * [PhyDB](https://github.com/asyncvlsi/phyDB)
-  * OpenMP (for MacOS user, `libomp` from Homebrew will work)
+  * OpenMP (macOS users can install `libomp` with Homebrew)
   * Qt 6 Widgets is optional and enables Dali's live placement GUI. Install it
     with `brew install qt` on macOS or `sudo apt install qt6-base-dev` on
     Ubuntu 22.04 and newer. CMake enables the GUI automatically when Qt is
-    available.
+    available. Dali uses Qt's widget and painter APIs and does not require a
+    separate OpenGL development package.
   * GoogleTest is optional. If CMake cannot find it, tests in `tests/common` are
     skipped while the rest of the build remains available. On Ubuntu/Debian,
     install it with `sudo apt install libgtest-dev`.
