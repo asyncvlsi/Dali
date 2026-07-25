@@ -53,4 +53,5 @@ endif()
 
 if (Galois_FOUND)
     find_package(Boost 1.58.0 REQUIRED COMPONENTS serialization iostreams)
+    list(APPEND Galois_LIBRARIES Boost::serialization Boost::iostreams)
 endif ()

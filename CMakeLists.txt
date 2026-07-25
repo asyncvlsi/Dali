@@ -106,10 +106,6 @@ add_library(
 )
 add_dependencies(dalilib dali_git_version)
 
-if (Galois_FOUND)
-    target_include_directories(dalilib PRIVATE ${Boost_INCLUDE_DIRS})
-endif ()
-
 if (DEFINED NEED_LIBCXXFS)
     set(LIBCXXFS_LIB "stdc++fs")
 else ()
@@ -126,7 +122,6 @@ endif ()
 target_link_libraries(
     dalilib
     ${ACT_LIBRARY} ${ACTVLSILIB_LIBRARY} ${PHYDB_LIBRARY}
-    ${Boost_LIBRARIES}
     ${Galois_LIBRARIES}
     ${LEF_LIBRARY} ${DEF_LIBRARY}
     m pthread dl
