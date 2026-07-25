@@ -51,7 +51,8 @@ class LookAheadSpreader : public GlobalSpreader {
  public:
   LookAheadSpreader(
       Circuit* circuit,
-      std::shared_ptr<const PlacementCapacityModel> capacity_model);
+      std::shared_ptr<const PlacementCapacityModel> capacity_model,
+      int num_threads);
   ~LookAheadSpreader() override = default;
 
   /** Select how overfilled clusters expand into whitespace. */
@@ -105,7 +106,8 @@ class LookAheadSpreader : public GlobalSpreader {
                             GridBinIndex const& ur_index) const;
   /** White space in a bin window (overload taking an explicit window). */
   uint32_t LookUpWhiteSpace(GridBinWindow& window) const;
-  /** Grow a spreading box by the neighbour adding the most white space per area.
+  /** Grow a spreading box by the neighbour adding the most white space per
+   * area.
    * @return true if a neighbour was absorbed. */
   bool ExpandBoxByBestNeighbor(SpreadingRegion* box);
   void FindMinimumBoxForLargestCluster();
@@ -113,9 +115,14 @@ class LookAheadSpreader : public GlobalSpreader {
   void SplitGridBox(SpreadingRegion& box);
   /** Distribute a box's components across its area by white space. */
   void PlaceComponentInBox(SpreadingRegion& box);
-  /** Split a box's components between its halves in proportion to white space. */
+  /** Split a box's components between its halves in proportion to white space.
+   */
   void SplitBox(SpreadingRegion& box);
   bool RecursiveBisectionComponentSpreading();
+  /** Evaluate X HPWL in parallel with deterministic net-order reduction. */
+  double EvaluateWeightedHpwlX();
+  /** Evaluate Y HPWL in parallel with deterministic net-order reduction. */
+  double EvaluateWeightedHpwlY();
   double Spread() override;
 
   double GetTime() const override;
@@ -168,6 +175,9 @@ class LookAheadSpreader : public GlobalSpreader {
   double last_max_hotspot_overflow_ = 0.0;
   HotspotDebugInfo last_hotspot_debug_;
   std::shared_ptr<const PlacementCapacityModel> capacity_model_;
+  int num_threads_ = 1;
+  std::vector<double> net_hpwl_x_;
+  std::vector<double> net_hpwl_y_;
 
   GlobalLalExpansionMode expansion_mode_ = GlobalLalExpansionMode::kSymmetric;
   GlobalLalHotspotMode hotspot_mode_ = GlobalLalHotspotMode::kComponentArea;

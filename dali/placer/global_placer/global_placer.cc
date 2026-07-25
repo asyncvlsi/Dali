@@ -144,8 +144,8 @@ void GlobalPlacer::InitializePlacementEngines() {
   optimizer_->SetNetIgnoreThreshold(net_ignore_threshold_);
   optimizer_->Initialize();
 
-  auto look_ahead_spreader =
-      std::make_unique<LookAheadSpreader>(ckt_ptr_, capacity_model_);
+  auto look_ahead_spreader = std::make_unique<LookAheadSpreader>(
+      ckt_ptr_, capacity_model_, num_threads_);
   look_ahead_spreader->SetExpansionMode(lal_expansion_mode_);
   look_ahead_spreader->SetHotspotMode(lal_hotspot_mode_);
   look_ahead_spreader->SetAffineScalingWeight(lal_affine_scaling_weight_);

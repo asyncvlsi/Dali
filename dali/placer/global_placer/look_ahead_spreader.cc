@@ -29,15 +29,22 @@
 
 #include "dali/common/elapsed_time.h"
 #include "dali/common/logging.h"
+#include "dali/common/placement_metrics.h"
 
 namespace dali {
 
 LookAheadSpreader::LookAheadSpreader(
     Circuit* circuit,
-    std::shared_ptr<const PlacementCapacityModel> capacity_model)
-    : GlobalSpreader(circuit), capacity_model_(std::move(capacity_model)) {
+    std::shared_ptr<const PlacementCapacityModel> capacity_model,
+    int num_threads)
+    : GlobalSpreader(circuit),
+      capacity_model_(std::move(capacity_model)),
+      num_threads_(num_threads) {
   DaliExpects(capacity_model_ != nullptr,
               "Look-ahead spreader requires a capacity model");
+  DaliExpects(num_threads_ >= 1, "Look-ahead spreader requires one thread");
+  net_hpwl_x_.resize(circuit_->Nets().size());
+  net_hpwl_y_.resize(circuit_->Nets().size());
 }
 
 /** Keep a component center inside a target leaf box.
@@ -1226,6 +1233,36 @@ bool LookAheadSpreader::RecursiveBisectionComponentSpreading() {
   return true;
 }
 
+double LookAheadSpreader::EvaluateWeightedHpwlX() {
+  std::vector<Net>& nets = circuit_->Nets();
+  int net_count = static_cast<int>(nets.size());
+#pragma omp parallel for num_threads(num_threads_) schedule(static)
+  for (int i = 0; i < net_count; ++i) {
+    net_hpwl_x_[i] = nets[i].WeightedHPWLX();
+  }
+
+  double hpwl = 0;
+  for (double net_hpwl : net_hpwl_x_) {
+    hpwl += net_hpwl;
+  }
+  return hpwl * circuit_->GridValueX();
+}
+
+double LookAheadSpreader::EvaluateWeightedHpwlY() {
+  std::vector<Net>& nets = circuit_->Nets();
+  int net_count = static_cast<int>(nets.size());
+#pragma omp parallel for num_threads(num_threads_) schedule(static)
+  for (int i = 0; i < net_count; ++i) {
+    net_hpwl_y_[i] = nets[i].WeightedHPWLY();
+  }
+
+  double hpwl = 0;
+  for (double net_hpwl : net_hpwl_y_) {
+    hpwl += net_hpwl;
+  }
+  return hpwl * circuit_->GridValueY();
+}
+
 /**
  * One spreading pass: build density bins, find the overfilled clusters, and
  * relieve each by expanding it into legal whitespace. Returns the HPWL after
@@ -1237,15 +1274,17 @@ bool LookAheadSpreader::RecursiveBisectionComponentSpreading() {
 double LookAheadSpreader::Spread() {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
-  last_hpwl_before_ = circuit_->WeightedHPWL();
+  last_hpwl_before_ = EvaluateWeightedHpwlX() + EvaluateWeightedHpwlY();
   std::vector<double> lower_bound_center_x;
   std::vector<double> lower_bound_center_y;
   auto& components = circuit_->Components();
-  lower_bound_center_x.reserve(components.size());
-  lower_bound_center_y.reserve(components.size());
-  for (const Component& component : components) {
-    lower_bound_center_x.push_back(component.CenterX());
-    lower_bound_center_y.push_back(component.CenterY());
+  lower_bound_center_x.resize(components.size());
+  lower_bound_center_y.resize(components.size());
+  int component_count = static_cast<int>(components.size());
+#pragma omp parallel for num_threads(num_threads_) schedule(static)
+  for (int i = 0; i < component_count; ++i) {
+    lower_bound_center_x[i] = components[i].CenterX();
+    lower_bound_center_y[i] = components[i].CenterY();
   }
 
   RebuildGridBinsIfTargetChanged();
@@ -1263,9 +1302,9 @@ double LookAheadSpreader::Spread() {
     // "\n";
   } while (!cluster_set.empty());
 
-  double evaluate_result_x = circuit_->WeightedHPWLX();
+  double evaluate_result_x = EvaluateWeightedHpwlX();
   upper_bound_hpwl_x_.push_back(evaluate_result_x);
-  double evaluate_result_y = circuit_->WeightedHPWLY();
+  double evaluate_result_y = EvaluateWeightedHpwlY();
   upper_bound_hpwl_y_.push_back(evaluate_result_y);
   last_hpwl_after_ = evaluate_result_x + evaluate_result_y;
   ClearGridBinFlag();
@@ -1305,7 +1344,6 @@ double LookAheadSpreader::Spread() {
   elapsed_time.RecordEndTime();
   tot_lal_time += elapsed_time.GetWallTime();
 
-
   LOG(debug) << "(UpdateGridBinState time: " << update_grid_bin_state_time_
              << "s)\n";
   LOG(debug) << "(UpdateClusterList time: " << update_cluster_list_time_
@@ -1332,6 +1370,15 @@ double LookAheadSpreader::Spread() {
 double LookAheadSpreader::GetTime() const { return tot_lal_time; }
 
 void LookAheadSpreader::Close() {
+  RecordPlacementMetric("time.global_placement.lal.wall_s", tot_lal_time);
+  RecordPlacementMetric("time.global_placement.lal.grid_bins.wall_s",
+                        update_grid_bin_state_time_);
+  RecordPlacementMetric("time.global_placement.lal.clusters.wall_s",
+                        update_cluster_list_time_);
+  RecordPlacementMetric("time.global_placement.lal.expansion.wall_s",
+                        find_minimum_box_for_largest_cluster_time_);
+  RecordPlacementMetric("time.global_placement.lal.spreading.wall_s",
+                        recursive_bisection_component_spreading_time_);
   grid_bin_mesh.clear();
   grid_bin_white_space_LUT.clear();
 }
