@@ -50,10 +50,3 @@ if(UNIX AND (NOT APPLE))
         set(Galois_FOUND FALSE)
     endif()
 endif()
-
-if (Galois_FOUND)
-    # Galois exposes Boost serialization and iostreams in its public API.
-    # Carry them with Galois so Dali does not model the dependency twice.
-    find_package(Boost 1.58.0 REQUIRED COMPONENTS serialization iostreams)
-    list(APPEND Galois_LIBRARIES Boost::serialization Boost::iostreams)
-endif ()
