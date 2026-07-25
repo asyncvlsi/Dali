@@ -196,6 +196,11 @@ void DaliCommandProcessor::ReportUsage() const {
       << "  show settings            report the resolved runtime settings\n"
       << "  run placement            execute the configured placement flow\n"
       << "  place-io ...             configure or run I/O placement\n"
+      << "  show-io [pin]            report current I/O pin placement\n"
+      << "  move-io <pin> <x> <y> [orient]\n"
+      << "                           move and fix a pin in microns\n"
+      << "  unfix-io <pin>           release a pin for automatic placement\n"
+      << "  check-io                 validate I/O pin placement\n"
       << "  place-design <d> [n]     legacy placement command\n"
       << "  global-place <d> [n]     legacy global-placement command\n"
       << "  add-welltap ...          legacy well-tap command\n"
@@ -234,6 +239,14 @@ bool DaliCommandProcessor::ExecuteCommand(
   if (command == "place-io") {
     std::vector<std::string> normalized_arguments = arguments;
     normalized_arguments[0] = "place-io";
+    return ForwardArgvCommand(normalized_arguments, &Dali::IoPinPlacement);
+  }
+  if (command == "show-io" || command == "move-io" || command == "unfix-io" ||
+      command == "check-io") {
+    std::vector<std::string> normalized_arguments{"place-io"};
+    normalized_arguments.push_back("-" + command.substr(0, command.size() - 3));
+    normalized_arguments.insert(normalized_arguments.end(),
+                                arguments.begin() + 1, arguments.end());
     return ForwardArgvCommand(normalized_arguments, &Dali::IoPinPlacement);
   }
   if (command == "add-welltap") {

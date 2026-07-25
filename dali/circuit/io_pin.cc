@@ -156,7 +156,8 @@ void IoPin::SetInitPlaceStatus(PlaceStatus init_place_status) {
 }
 
 bool IoPin::IsPrePlaced() const {
-  return init_place_status_ == FIXED || init_place_status_ == PLACED;
+  return init_place_status_ == COVER || init_place_status_ == FIXED ||
+         init_place_status_ == PLACED;
 }
 
 void IoPin::SetPlaceStatus(PlaceStatus place_status) {
@@ -164,7 +165,8 @@ void IoPin::SetPlaceStatus(PlaceStatus place_status) {
 }
 
 bool IoPin::IsPlaced() const {
-  return place_status_ == FIXED || place_status_ == PLACED;
+  return place_status_ == COVER || place_status_ == FIXED ||
+         place_status_ == PLACED;
 }
 
 PlaceStatus IoPin::Status() const { return place_status_; }

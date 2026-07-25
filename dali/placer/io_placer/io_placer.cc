@@ -31,7 +31,10 @@
 #include "io_placer.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <map>
+#include <string>
 #include <unordered_set>
 
 #include "dali/common/helper.h"
@@ -45,6 +48,90 @@
 #define TOP 3
 
 namespace dali {
+
+struct PlacedIoPinRectangle {
+  IoPin const* pin = nullptr;
+  double lx = 0;
+  double ly = 0;
+  double ux = 0;
+  double uy = 0;
+};
+
+static bool ParseOrientation(std::string const& text,
+                             ComponentOrient* orientation) {
+  static const std::map<std::string, ComponentOrient> kOrientations{
+      {"N", N},   {"R0", N},    {"S", S},     {"R180", S},  {"W", W},
+      {"R90", W}, {"E", E},     {"R270", E},  {"FN", FN},   {"MY", FN},
+      {"FS", FS}, {"MX", FS},   {"FW", FW},   {"MX90", FW}, {"MXR90", FW},
+      {"FE", FE}, {"MY90", FE}, {"MYR90", FE}};
+  auto found = kOrientations.find(text);
+  if (found == kOrientations.end()) {
+    return false;
+  }
+  *orientation = found->second;
+  return true;
+}
+
+static std::pair<double, double> TransformIoPinPoint(
+    double x, double y, ComponentOrient orientation) {
+  switch (orientation) {
+    case N:
+      return {x, y};
+    case S:
+      return {-x, -y};
+    case W:
+      return {-y, x};
+    case E:
+      return {y, -x};
+    case FN:
+      return {-x, y};
+    case FS:
+      return {x, -y};
+    case FW:
+      return {y, x};
+    case FE:
+      return {-y, -x};
+  }
+  return {x, y};
+}
+
+static PlacedIoPinRectangle GetPlacedIoPinRectangle(IoPin const& pin,
+                                                    Circuit const& circuit) {
+  RectD const& shape = pin.Shape();
+  std::array<std::pair<double, double>, 4> corners{
+      std::make_pair(shape.LLX(), shape.LLY()),
+      std::make_pair(shape.LLX(), shape.URY()),
+      std::make_pair(shape.URX(), shape.LLY()),
+      std::make_pair(shape.URX(), shape.URY())};
+
+  PlacedIoPinRectangle result;
+  result.pin = &pin;
+  bool first = true;
+  for (auto const& corner : corners) {
+    auto transformed =
+        TransformIoPinPoint(corner.first, corner.second, pin.Orient());
+    double x = pin.FinalX() + circuit.Micron2DatabaseUnit(transformed.first);
+    double y = pin.FinalY() + circuit.Micron2DatabaseUnit(transformed.second);
+    if (first) {
+      result.lx = result.ux = x;
+      result.ly = result.uy = y;
+      first = false;
+    } else {
+      result.lx = std::min(result.lx, x);
+      result.ly = std::min(result.ly, y);
+      result.ux = std::max(result.ux, x);
+      result.uy = std::max(result.uy, y);
+    }
+  }
+  return result;
+}
+
+int IoPlacementCheckResult::ViolationCount() const {
+  return unplaced_pins + missing_geometry + outside_die + overlapping_pairs +
+         spacing_violation_pairs;
+}
+
+bool IoPlacementCheckResult::IsLegal() const { return ViolationCount() == 0; }
 
 IoPlacer::IoPlacer() { InitializeBoundarySpaces(); }
 
@@ -120,7 +207,11 @@ bool IoPlacer::PartialPlaceCmd(int argc, char** argv) {
     LOG(error) << "place-io -place coordinates must be numbers\n";
     return false;
   }
-  ComponentOrient orient = StrToOrient(std::string(argv[8]));
+  ComponentOrient orient = N;
+  if (!ParseOrientation(argv[8], &orient)) {
+    LOG(error) << "Unknown I/O pin orientation: " << argv[8] << "\n";
+    return false;
+  }
 
   IoPin* pin = circuit_->GetIoPinPtr(pin_name);
   MetalLayer* metal_layer = circuit_->GetMetalLayerPtr(metal_name);
@@ -130,6 +221,205 @@ bool IoPlacer::PartialPlaceCmd(int argc, char** argv) {
   LOG(info) << "Fixed I/O pin " << pin_name << " at (" << x << ", " << y
             << ") on " << metal_name << "\n";
   return true;
+}
+
+bool IoPlacer::MoveIoPin(std::string const& pin_name, double x, double y,
+                         ComponentOrient orient) {
+  if (!circuit_->IsIoPinExisting(pin_name)) {
+    LOG(error) << "No such I/O pin: " << pin_name << "\n";
+    return false;
+  }
+  IoPin* pin = circuit_->GetIoPinPtr(pin_name);
+  if (pin->LayerPtr() == nullptr || !pin->IsShapeSet()) {
+    LOG(error) << "I/O pin " << pin_name
+               << " has no layer or shape to preserve; use place-io -place "
+                  "for its first placement\n";
+    return false;
+  }
+
+  double dali_x = circuit_->LocPhydb2DaliX(circuit_->Micron2DatabaseUnit(x));
+  double dali_y = circuit_->LocPhydb2DaliY(circuit_->Micron2DatabaseUnit(y));
+  RectD const shape = pin->Shape();
+  FixIoPin(pin, pin->LayerPtr(), shape.LLX(), shape.LLY(), shape.URX(),
+           shape.URY(), dali_x, dali_y, orient);
+  LOG(info) << "Moved and fixed I/O pin " << pin_name << " at (" << x << ", "
+            << y << ") with orientation " << OrientStr(orient) << "\n";
+  return true;
+}
+
+bool IoPlacer::MoveIoPinCmd(int argc, char** argv) {
+  if (argc != 3 && argc != 4) {
+    LOG(error) << "Usage: move-io <pin> <x> <y> [orient]\n";
+    return false;
+  }
+  double x = 0;
+  double y = 0;
+  try {
+    std::size_t x_length = 0;
+    std::size_t y_length = 0;
+    x = std::stod(argv[1], &x_length);
+    y = std::stod(argv[2], &y_length);
+    if (x_length != std::string(argv[1]).size() ||
+        y_length != std::string(argv[2]).size() || !std::isfinite(x) ||
+        !std::isfinite(y)) {
+      throw std::invalid_argument("trailing coordinate text");
+    }
+  } catch (...) {
+    LOG(error) << "move-io coordinates must be numbers in microns\n";
+    return false;
+  }
+
+  ComponentOrient orientation = N;
+  if (circuit_->IsIoPinExisting(argv[0])) {
+    orientation = circuit_->GetIoPinPtr(argv[0])->Orient();
+  }
+  if (argc == 4 && !ParseOrientation(argv[3], &orientation)) {
+    LOG(error) << "Unknown I/O pin orientation: " << argv[3] << "\n";
+    return false;
+  }
+  return MoveIoPin(argv[0], x, y, orientation);
+}
+
+bool IoPlacer::UnfixIoPin(std::string const& pin_name) {
+  if (!circuit_->IsIoPinExisting(pin_name)) {
+    LOG(error) << "No such I/O pin: " << pin_name << "\n";
+    return false;
+  }
+  IoPin* pin = circuit_->GetIoPinPtr(pin_name);
+  pin->SetPlaceStatus(UNPLACED);
+  pin->SetInitPlaceStatus(UNPLACED);
+  phydb::IOPin* phydb_pin = phy_db_ptr_->GetIoPinPtr(pin_name);
+  phydb_pin->SetPlacementStatus(phydb::PlaceStatus::UNPLACED);
+  LOG(info) << "Marked I/O pin " << pin_name << " UNPLACED\n";
+  return true;
+}
+
+bool IoPlacer::UnfixIoPinCmd(int argc, char** argv) {
+  if (argc != 1) {
+    LOG(error) << "Usage: unfix-io <pin>\n";
+    return false;
+  }
+  return UnfixIoPin(argv[0]);
+}
+
+bool IoPlacer::ShowIoPins(std::string const& pin_name) const {
+  if (!pin_name.empty() && !circuit_->IsIoPinExisting(pin_name)) {
+    LOG(error) << "No such I/O pin: " << pin_name << "\n";
+    return false;
+  }
+
+  LOG(info) << "I/O pin summary:\n";
+  for (IoPin const& pin : circuit_->IoPins()) {
+    if (!pin_name.empty() && pin.Name() != pin_name) {
+      continue;
+    }
+    LOG(info) << "  " << pin.Name() << "\n"
+              << "    status      : " << PlaceStatusStr(pin.Status()) << "\n"
+              << "    location    : ("
+              << circuit_->DatabaseUnit2Micron(pin.FinalX()) << ", "
+              << circuit_->DatabaseUnit2Micron(pin.FinalY()) << ") um\n"
+              << "    orientation : " << OrientStr(pin.Orient()) << "\n"
+              << "    layer       : "
+              << (pin.LayerPtr() == nullptr ? "unset" : pin.LayerName()) << "\n"
+              << "    shape       : ";
+    if (pin.IsShapeSet()) {
+      RectD const& shape = pin.Shape();
+      LOG(info) << "(" << shape.LLX() << ", " << shape.LLY() << ")-("
+                << shape.URX() << ", " << shape.URY() << ") um\n";
+    } else {
+      LOG(info) << "unset\n";
+    }
+  }
+  return true;
+}
+
+bool IoPlacer::ShowIoPinsCmd(int argc, char** argv) const {
+  if (argc > 1) {
+    LOG(error) << "Usage: show-io [pin]\n";
+    return false;
+  }
+  return ShowIoPins(argc == 1 ? argv[0] : "");
+}
+
+IoPlacementCheckResult IoPlacer::CheckIoPlacement() const {
+  IoPlacementCheckResult result;
+  std::map<std::string, std::vector<PlacedIoPinRectangle>> pins_by_layer;
+  auto const& die = phy_db_ptr_->GetDesignPtr()->GetDieArea();
+
+  for (IoPin const& pin : circuit_->IoPins()) {
+    if (!pin.IsPlaced()) {
+      ++result.unplaced_pins;
+      LOG(error) << "I/O pin " << pin.Name() << " is UNPLACED\n";
+      continue;
+    }
+    if (pin.LayerPtr() == nullptr || !pin.IsShapeSet()) {
+      ++result.missing_geometry;
+      LOG(error) << "I/O pin " << pin.Name()
+                 << " is missing its layer or shape\n";
+      continue;
+    }
+    PlacedIoPinRectangle rectangle = GetPlacedIoPinRectangle(pin, *circuit_);
+    if (rectangle.lx < die.LLX() || rectangle.ly < die.LLY() ||
+        rectangle.ux > die.URX() || rectangle.uy > die.URY()) {
+      ++result.outside_die;
+      LOG(error) << "I/O pin " << pin.Name()
+                 << " extends outside the die area\n";
+    }
+    pins_by_layer[pin.LayerName()].push_back(rectangle);
+  }
+
+  for (auto& entry : pins_by_layer) {
+    auto& rectangles = entry.second;
+    std::sort(rectangles.begin(), rectangles.end(),
+              [](PlacedIoPinRectangle const& lhs,
+                 PlacedIoPinRectangle const& rhs) { return lhs.lx < rhs.lx; });
+    double spacing = circuit_->Micron2DatabaseUnit(
+        rectangles.front().pin->LayerPtr()->Spacing());
+    for (std::size_t i = 0; i < rectangles.size(); ++i) {
+      PlacedIoPinRectangle const& lhs = rectangles[i];
+      for (std::size_t j = i + 1; j < rectangles.size(); ++j) {
+        PlacedIoPinRectangle const& rhs = rectangles[j];
+        if (rhs.lx >= lhs.ux + spacing) {
+          break;
+        }
+        double x_gap = std::max(0.0, rhs.lx - lhs.ux);
+        double y_gap = std::max({0.0, lhs.ly - rhs.uy, rhs.ly - lhs.uy});
+        bool x_overlap = rhs.lx < lhs.ux && lhs.lx < rhs.ux;
+        bool y_overlap = rhs.ly < lhs.uy && lhs.ly < rhs.uy;
+        if (x_overlap && y_overlap) {
+          ++result.overlapping_pairs;
+          LOG(error) << "I/O pins " << lhs.pin->Name() << " and "
+                     << rhs.pin->Name() << " overlap on " << entry.first
+                     << "\n";
+        } else if (x_gap < spacing && y_gap < spacing) {
+          ++result.spacing_violation_pairs;
+          LOG(error) << "I/O pins " << lhs.pin->Name() << " and "
+                     << rhs.pin->Name() << " violate spacing on " << entry.first
+                     << "\n";
+        }
+      }
+    }
+  }
+  return result;
+}
+
+bool IoPlacer::CheckIoPlacementCmd(int argc, char**) const {
+  if (argc != 0) {
+    LOG(error) << "Usage: check-io\n";
+    return false;
+  }
+  IoPlacementCheckResult result = CheckIoPlacement();
+  LOG(info) << "I/O placement check:\n"
+            << "  unplaced pins           : " << result.unplaced_pins << "\n"
+            << "  missing geometry        : " << result.missing_geometry << "\n"
+            << "  outside die             : " << result.outside_die << "\n"
+            << "  overlapping pairs       : " << result.overlapping_pairs
+            << "\n"
+            << "  spacing violation pairs : " << result.spacing_violation_pairs
+            << "\n"
+            << "  result                  : "
+            << (result.IsLegal() ? "PASS" : "FAIL") << "\n";
+  return result.IsLegal();
 }
 
 bool IoPlacer::ConfigSetMetalLayer(int boundary_index, int metal_layer_index) {
@@ -601,6 +891,12 @@ void IoPlacer::FixIoPin(IoPin* pin, MetalLayer* layer, double lx, double ly,
   if (dali_y == circuit_->RegionURY()) db_y = die_area.URY();
   pin->SetFinalX(db_x);
   pin->SetFinalY(db_y);
+  if (circuit_->IsComponentExisting(pin->Name())) {
+    // Imported fixed pins have a zero-area terminal component in the net
+    // model. Keep it synchronized so HPWL and later I/O decisions see the
+    // reviewed location rather than the original DEF location.
+    circuit_->GetComponentPtr(pin->Name())->SetLoc(dali_x, dali_y);
+  }
   phydb::IOPin* phydb_pin = phy_db_ptr_->GetIoPinPtr(pin->Name());
   phydb_pin->SetShape(layer->Name(), circuit_->Micron2DatabaseUnit(lx),
                       circuit_->Micron2DatabaseUnit(ly),
@@ -906,11 +1202,30 @@ bool IoPlacer::AssignIoPinToBoundaryLayers() {
                    << " has no connected component; skip placement\n";
       continue;
     }
-    net->UpdateMaxMinIndex();
-    double net_minx = net->MinX();
-    double net_maxx = net->MaxX();
-    double net_miny = net->MinY();
-    double net_maxy = net->MaxY();
+    double net_minx = 0;
+    double net_maxx = 0;
+    double net_miny = 0;
+    double net_maxy = 0;
+    if (circuit_->IsComponentExisting(iopin.Name())) {
+      // A released imported pin still has its legacy zero-area terminal in
+      // the net model. Exclude that old terminal while selecting a new edge.
+      Component* terminal = circuit_->GetComponentPtr(iopin.Name());
+      net->GetXBoundIfComponentAbsent(terminal, net_minx, net_maxx);
+      net->GetYBoundIfComponentAbsent(terminal, net_miny, net_maxy);
+      if (!std::isfinite(net_minx) || !std::isfinite(net_maxx) ||
+          !std::isfinite(net_miny) || !std::isfinite(net_maxy) ||
+          net_minx > net_maxx || net_miny > net_maxy) {
+        LOG(warning) << "I/O pin " << iopin.Name()
+                     << " has no other connected component; skip placement\n";
+        continue;
+      }
+    } else {
+      net->UpdateMaxMinIndex();
+      net_minx = net->MinX();
+      net_maxx = net->MaxX();
+      net_miny = net->MinY();
+      net_maxy = net->MaxY();
+    }
 
     // placement boundary
     std::vector<double> distance_to_boundary{
@@ -1029,10 +1344,12 @@ bool IoPlacer::RunAutoPlacement() {
 }
 
 bool IoPlacer::AutoPlaceCmd(int argc, char** argv) {
-  bool is_config_successful = ConfigCmd(argc, argv);
-  if (!is_config_successful) {
-    LOG(fatal) << "Cannot successfully configure the IoPlacer\n";
-    return false;
+  if (argc > 0) {
+    bool is_config_successful = ConfigCmd(argc, argv);
+    if (!is_config_successful) {
+      LOG(error) << "Cannot successfully configure the IoPlacer\n";
+      return false;
+    }
   }
   return RunAutoPlacement();
 }

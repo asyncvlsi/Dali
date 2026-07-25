@@ -112,6 +112,18 @@ add_test(
 set_tests_properties(io_command_file_flow
                      PROPERTIES LABELS "integration;io_placer")
 
+# Inspect, move, validate, release, and automatically replace I/O pins through
+# the command processor.
+add_executable(io_signoff_commands io_signoff_commands.cc helper.h helper.cc)
+target_link_libraries(io_signoff_commands PRIVATE dalilib)
+add_test(
+    NAME io_signoff_commands
+    COMMAND io_signoff_commands
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+set_tests_properties(io_signoff_commands
+                     PROPERTIES LABELS "integration;io_placer")
+
 set(io_placer_tests
     all_iopin_use_same_metal_layer
     add_and_place_io_pins
@@ -122,6 +134,7 @@ set(io_placer_tests
     group_io_pins
     mirror_io_pin
     io_command_file_flow
+    io_signoff_commands
 )
 set_tests_properties(${io_placer_tests}
                      PROPERTIES FIXTURES_REQUIRED io_placer_benchmark)

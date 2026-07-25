@@ -55,6 +55,7 @@
 #include "dali/common/elapsed_time.h"
 #include "dali/common/helper.h"
 #include "dali/common/opt_reg_dist.h"
+#include "dali/common/phydb_helper.h"
 
 namespace dali {
 
@@ -571,21 +572,32 @@ IoPin* Circuit::AddIoPin(std::string const& iopin_name,
 void Circuit::AddIoPinFromPhyDB(phydb::IOPin& iopin) {
   std::string iopin_name(iopin.GetName());
   auto location = iopin.GetLocation();
-  int iopin_x = LocPhydb2DaliX(location.x);
-  int iopin_y = LocPhydb2DaliY(location.y);
-  bool is_loc_set =
-      (iopin.GetPlacementStatus() != phydb::PlaceStatus::UNPLACED);
+  double iopin_x = LocPhydb2DaliX(location.x);
+  double iopin_y = LocPhydb2DaliY(location.y);
+  PlaceStatus place_status = PlaceStatusPhyDB2Dali(iopin.GetPlacementStatus());
   auto sig_use = SignalUse(iopin.GetUse());
   auto sig_dir = SignalDirection(iopin.GetDirection());
 
-  if (is_loc_set) {
-    IoPin* pin =
-        AddIoPin(iopin_name, PLACED, sig_use, sig_dir, iopin_x, iopin_y);
-    std::string layer_name = iopin.GetLayerName();
+  IoPin* pin =
+      AddIoPin(iopin_name, place_status, sig_use, sig_dir, iopin_x, iopin_y);
+  pin->SetPlaceStatus(place_status);
+  pin->SetOrient(OrientPhyDB2Dali(iopin.GetOrientation()));
+  pin->SetFinalX(location.x);
+  pin->SetFinalY(location.y);
+
+  std::string layer_name = iopin.GetLayerName();
+  if (!layer_name.empty()) {
+    if (!IsMetalLayerExisting(layer_name)) {
+      LOG(warning) << "I/O pin " << iopin_name << " uses unknown layer "
+                   << layer_name << "\n";
+      return;
+    }
     MetalLayer* metal_layer = GetMetalLayerPtr(layer_name);
     pin->SetLayerPtr(metal_layer);
-  } else {
-    AddIoPin(iopin_name, UNPLACED, sig_use, sig_dir);
+    auto shape = iopin.GetRect();
+    pin->SetShape(
+        DatabaseUnit2Micron(shape.LLX()), DatabaseUnit2Micron(shape.LLY()),
+        DatabaseUnit2Micron(shape.URX()), DatabaseUnit2Micron(shape.URY()));
   }
 }
 
@@ -2480,6 +2492,13 @@ void Circuit::LoadTech(phydb::PhyDB* phy_db_ptr) {
   if (!tech_.is_grid_set_) {
     SetGridFromMetalPitch();
   }
+
+  // Cached macro pointers must survive the import loop. Reserve once before
+  // adding LEF macros, then refresh the dummy I/O macro pointer in case this
+  // reserve moved the existing registry storage.
+  tech_.Macros().reserve(tech_.Macros().size() +
+                         phy_db_tech.GetMacrosRef().size());
+  tech_.io_dummy_macro_ptr_ = GetMacroPtr("__PIN__");
 
   // 3. load all macros
   for (auto& macro : phy_db_tech.GetMacrosRef()) {

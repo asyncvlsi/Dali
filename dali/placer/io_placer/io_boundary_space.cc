@@ -148,7 +148,7 @@ void IoBoundaryLayerSpace::UpdateIoPinShapeAndLayer() {
 
   for (auto& pin_cluster : pin_clusters) {
     for (auto& pin_ptr : pin_cluster.iopin_ptr_list) {
-      if (!pin_ptr->IsShapeSet()) {
+      if (!pin_ptr->IsShapeSet() || pin_ptr->LayerPtr() != metal_layer) {
         pin_ptr->SetShape(llx, lly, urx, ury);
         pin_ptr->SetLayerPtr(metal_layer);
       }

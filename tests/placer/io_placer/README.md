@@ -13,6 +13,8 @@
 * `place-io -area ...` places unplaced pins on an interior lattice.
 * `place-io -group ...` fixes an ordered, adjacent group on one edge.
 * `place-io -mirror ...` fixes one pin symmetrically to a placed reference.
+* `show-io`, `move-io`, `unfix-io`, and `check-io` provide the manual signoff
+  loop used by command recipes.
 
 CTest prepares `ispd19_test3` from the checked-in archive as a fixture before
 running any test in this directory. Each command has focused coverage, while
@@ -23,3 +25,7 @@ area-array placement.
 It issues a manual pin and an edge constraint before `run placement`, verifying
 that placement initialization preserves the edit and that the automatic I/O
 stage reuses the configured placer.
+
+`io_signoff_commands` starts from an already placed design, deliberately
+creates an overlap, restores legality, releases a pin, automatically replaces
+it, and checks the final exported status.

@@ -1001,6 +1001,14 @@ void Dali::ReportIoPlacementUsage() {
       << "      place and fix an adjacent pin group in command order\n"
       << "  -mirror/--mirror <pin> <reference_pin> <x|y>\n"
       << "      fix a pin by reflecting the reference x or y coordinate\n"
+      << "  -move/--move <pin> <x> <y> [orientation]\n"
+      << "      move a pin in microns while preserving its shape and layer\n"
+      << "  -unfix/--unfix <pin>\n"
+      << "      mark a pin unplaced so automatic placement may place it again\n"
+      << "  -show/--show [pin]\n"
+      << "      report one pin, or every pin when the name is omitted\n"
+      << "  -check/--check\n"
+      << "      run lightweight I/O placement legality checks\n"
       << "  -c/--config (use -h to see more usage)\n"
       << "      set parameters for automatic IOPIN placement\n"
       << "  -ap/--auto-place\n"
@@ -1039,6 +1047,14 @@ bool Dali::IoPinPlacement(int argc, char** argv) {
     return io_placer_->GroupPlaceCmd(argc - 2, argv + 2);
   } else if (option_str == "-mirror" or option_str == "--mirror") {
     return io_placer_->MirrorPlaceCmd(argc - 2, argv + 2);
+  } else if (option_str == "-move" or option_str == "--move") {
+    return io_placer_->MoveIoPinCmd(argc - 2, argv + 2);
+  } else if (option_str == "-unfix" or option_str == "--unfix") {
+    return io_placer_->UnfixIoPinCmd(argc - 2, argv + 2);
+  } else if (option_str == "-show" or option_str == "--show") {
+    return io_placer_->ShowIoPinsCmd(argc - 2, argv + 2);
+  } else if (option_str == "-check" or option_str == "--check") {
+    return io_placer_->CheckIoPlacementCmd(argc - 2, argv + 2);
   } else if (option_str == "-ap" or option_str == "-auto-place" or
              option_str == "--auto-place") {
     return io_placer_->AutoPlaceCmd(argc - 2, argv + 2);

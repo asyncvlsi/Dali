@@ -32,6 +32,20 @@
 
 namespace dali {
 
+/** Summary produced by the lightweight I/O placement signoff check. */
+struct IoPlacementCheckResult {
+  int unplaced_pins = 0;
+  int missing_geometry = 0;
+  int outside_die = 0;
+  int overlapping_pairs = 0;
+  int spacing_violation_pairs = 0;
+
+  /** Return the total number of reported placement violations. */
+  int ViolationCount() const;
+  /** Return true when no placement violation was found. */
+  bool IsLegal() const;
+};
+
 /** Places I/O pins manually before placement or automatically after placement.
  */
 class IoPlacer {
@@ -55,6 +69,37 @@ class IoPlacer {
 
   /** Parse and run partial I/O placement command. */
   bool PartialPlaceCmd(int argc, char** argv);
+
+  /**
+   * Move a pin while preserving its current layer and shape.
+   *
+   * The new location is expressed in microns. The pin becomes FIXED so later
+   * automatic placement cannot silently overwrite a reviewed location.
+   */
+  bool MoveIoPin(std::string const& pin_name, double x, double y,
+                 ComponentOrient orient);
+  /** Parse `move-io <pin> <x> <y> [orient]`. */
+  bool MoveIoPinCmd(int argc, char** argv);
+
+  /** Mark a pin UNPLACED so a later automatic I/O pass may place it again. */
+  bool UnfixIoPin(std::string const& pin_name);
+  /** Parse `unfix-io <pin>`. */
+  bool UnfixIoPinCmd(int argc, char** argv);
+
+  /** Log one named pin, or all pins when pin_name is empty. */
+  bool ShowIoPins(std::string const& pin_name = "") const;
+  /** Parse `show-io [pin]`. */
+  bool ShowIoPinsCmd(int argc, char** argv) const;
+
+  /**
+   * Check basic placement legality without replacing foundry signoff DRC.
+   *
+   * Checks placement status, geometry, die containment, same-layer overlap,
+   * and the layer's scalar minimum spacing.
+   */
+  IoPlacementCheckResult CheckIoPlacement() const;
+  /** Parse and run `check-io`, returning false when violations are found. */
+  bool CheckIoPlacementCmd(int argc, char** argv) const;
 
   /** Set the metal layer for one boundary. */
   bool ConfigSetMetalLayer(int boundary_index, int metal_layer_index);

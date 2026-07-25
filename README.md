@@ -99,6 +99,9 @@ The recipe owns placement execution:
 
     place-io -constraint clock top
     place-io M4
+    show-io clock
+    move-io clock 120.0 400.0 N
+    check-io
 
 Commands are executed in order and the file stops at the first error. Blank
 lines, `#` comments, quoted arguments, escaped characters, and backslash line
@@ -119,6 +122,18 @@ Boolean values accept `true`/`false`, `on`/`off`, or `1`/`0`. The legacy
 `place-design <density> [threads]` and `global-place <density> [threads]`
 commands remain available, but new recipes should configure settings separately
 and use `run placement`.
+
+Manual I/O signoff commands use microns for locations:
+
+  * `show-io [pin]` reports status, location, orientation, layer, and shape.
+  * `move-io <pin> <x> <y> [orientation]` preserves the pin shape and layer,
+    fixes it at the new location, and optionally changes its orientation.
+  * `unfix-io <pin>` releases a pin for a later `place-io -auto-place`.
+  * `check-io` checks that pins are placed, have geometry, remain inside the
+    die, do not overlap, and satisfy basic same-layer scalar spacing.
+
+`check-io` is an early feedback tool, not a replacement for process-specific
+foundry signoff DRC.
 
 The same recipe API is designed for a future `interact` adapter:
 
