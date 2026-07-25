@@ -98,6 +98,30 @@ void BoundToBoundHpwlOptimizer::Initialize() {
   y_anchor_weight.resize(eigen_sz);
   net_hpwl_x_.resize(ckt_ptr_->Nets().size());
   net_hpwl_y_.resize(ckt_ptr_->Nets().size());
+  cached_component_x_.resize(sz);
+  cached_component_y_.resize(sz);
+
+  // Global placement changes locations but not component orientations or net
+  // topology. Flatten the pin data used by every convergence check so those
+  // checks avoid repeatedly chasing Component and Pin pointers.
+  cached_net_pin_begin_.clear();
+  cached_solution_pins_.clear();
+  cached_net_weights_.clear();
+  cached_net_inv_p_.clear();
+  cached_net_pin_begin_.reserve(ckt_ptr_->Nets().size() + 1);
+  cached_net_weights_.reserve(ckt_ptr_->Nets().size());
+  cached_net_inv_p_.reserve(ckt_ptr_->Nets().size());
+  cached_net_pin_begin_.push_back(0);
+  for (Net& net : ckt_ptr_->Nets()) {
+    cached_net_weights_.push_back(net.Weight());
+    cached_net_inv_p_.push_back(net.InvP());
+    for (NetPin& pin : net.ComponentPins()) {
+      cached_solution_pins_.push_back({pin.ComponentId(),
+                                       pin.ComponentPtr()->IsMovable(),
+                                       pin.OffsetX(), pin.OffsetY()});
+    }
+    cached_net_pin_begin_.push_back(cached_solution_pins_.size());
+  }
 
   cg_x_.setMaxIterations(cg_iteration_);
   cg_x_.setTolerance(cg_tolerance_);
@@ -139,12 +163,12 @@ void BoundToBoundHpwlOptimizer::BuildProblemX() {
   elapsed_time.RecordStartTime();
 
   std::vector<Component>& components = ckt_ptr_->Components();
-  std::vector<Net>& nets = ckt_ptr_->Nets();
   size_t coefficients_capacity = coefficients_x_.capacity();
   coefficients_x_.resize(0);
   int sz = static_cast<int>(bx.size());
   for (int i = 0; i < sz; ++i) {
     bx[i] = 0;
+    cached_component_x_[i] = components[i].LLX();
   }
 
   double center_weight = 0.03 / std::sqrt(sz);
@@ -152,30 +176,51 @@ void BoundToBoundHpwlOptimizer::BuildProblemX() {
       (ckt_ptr_->RegionLLX() + ckt_ptr_->RegionURX()) / 2.0 * center_weight;
   // double decay_length = decay_factor * ckt_ptr_->AverageComponentHeight();
 
-  for (auto& net : nets) {
-    if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
-    double inv_p = net.InvP();
-    net.UpdateMaxMinIdX();
-    int max_pin_index = net.MaxComponentPinIdX();
-    int min_pin_index = net.MinComponentPinIdX();
+  int net_count = static_cast<int>(cached_net_weights_.size());
+  for (int net_index = 0; net_index < net_count; ++net_index) {
+    size_t pin_begin = cached_net_pin_begin_[net_index];
+    size_t pin_end = cached_net_pin_begin_[net_index + 1];
+    size_t pin_count = pin_end - pin_begin;
+    if (pin_count <= 1 || pin_count >= net_ignore_threshold_) continue;
 
-    int max_component_id = net.ComponentPins()[max_pin_index].ComponentId();
-    double pin_loc_max = net.ComponentPins()[max_pin_index].AbsX();
-    bool is_movable_max =
-        net.ComponentPins()[max_pin_index].ComponentPtr()->IsMovable();
-    double offset_max = net.ComponentPins()[max_pin_index].OffsetX();
+    size_t max_pin_index = pin_begin;
+    size_t min_pin_index = pin_begin;
+    double pin_loc_max = -DBL_MAX;
+    double pin_loc_min = DBL_MAX;
+    for (size_t pin_index = pin_begin; pin_index < pin_end; ++pin_index) {
+      const CachedSolutionPin& pin = cached_solution_pins_[pin_index];
+      double pin_loc = cached_component_x_[pin.component_id] + pin.offset_x;
+      if (pin_loc_max < pin_loc) {
+        pin_loc_max = pin_loc;
+        max_pin_index = pin_index;
+      }
+      if (pin_loc_min > pin_loc) {
+        pin_loc_min = pin_loc;
+        min_pin_index = pin_index;
+      }
+    }
+    if (pin_loc_max == pin_loc_min) {
+      max_pin_index = pin_begin;
+      min_pin_index = pin_begin + 1;
+    }
 
-    int min_component_id = net.ComponentPins()[min_pin_index].ComponentId();
-    double pin_loc_min = net.ComponentPins()[min_pin_index].AbsX();
-    bool is_movable_min =
-        net.ComponentPins()[min_pin_index].ComponentPtr()->IsMovable();
-    double offset_min = net.ComponentPins()[min_pin_index].OffsetX();
+    double inv_p = cached_net_inv_p_[net_index];
+    const CachedSolutionPin& max_pin = cached_solution_pins_[max_pin_index];
+    int max_component_id = max_pin.component_id;
+    bool is_movable_max = max_pin.is_movable;
+    double offset_max = max_pin.offset_x;
 
-    for (auto& pair : net.ComponentPins()) {
-      int component_id = pair.ComponentId();
-      double pin_loc = pair.AbsX();
-      bool is_movable = pair.ComponentPtr()->IsMovable();
-      double offset = pair.OffsetX();
+    const CachedSolutionPin& min_pin = cached_solution_pins_[min_pin_index];
+    int min_component_id = min_pin.component_id;
+    bool is_movable_min = min_pin.is_movable;
+    double offset_min = min_pin.offset_x;
+
+    for (size_t pin_index = pin_begin; pin_index < pin_end; ++pin_index) {
+      const CachedSolutionPin& pin = cached_solution_pins_[pin_index];
+      int component_id = pin.component_id;
+      double pin_loc = cached_component_x_[component_id] + pin.offset_x;
+      bool is_movable = pin.is_movable;
+      double offset = pin.offset_x;
 
       if (component_id != max_component_id) {
         double distance = std::fabs(pin_loc - pin_loc_max);
@@ -259,12 +304,12 @@ void BoundToBoundHpwlOptimizer::BuildProblemY() {
   elapsed_time.RecordStartTime();
 
   std::vector<Component>& components = ckt_ptr_->Components();
-  std::vector<Net>& nets = ckt_ptr_->Nets();
   size_t coefficients_capacity = coefficients_y_.capacity();
   coefficients_y_.resize(0);
   int sz = static_cast<int>(by.size());
   for (int i = 0; i < sz; ++i) {
     by[i] = 0;
+    cached_component_y_[i] = components[i].LLY();
   }
 
   double center_weight = 0.03 / std::sqrt(sz);
@@ -272,30 +317,51 @@ void BoundToBoundHpwlOptimizer::BuildProblemY() {
       (ckt_ptr_->RegionLLY() + ckt_ptr_->RegionURY()) / 2.0 * center_weight;
   // double decay_length = decay_factor * ckt_ptr_->AverageComponentHeight();
 
-  for (auto& net : nets) {
-    if (net.PinCnt() <= 1 || net.PinCnt() >= net_ignore_threshold_) continue;
-    double inv_p = net.InvP();
-    net.UpdateMaxMinIdY();
-    int max_pin_index = net.MaxComponentPinIdY();
-    int min_pin_index = net.MinComponentPinIdY();
+  int net_count = static_cast<int>(cached_net_weights_.size());
+  for (int net_index = 0; net_index < net_count; ++net_index) {
+    size_t pin_begin = cached_net_pin_begin_[net_index];
+    size_t pin_end = cached_net_pin_begin_[net_index + 1];
+    size_t pin_count = pin_end - pin_begin;
+    if (pin_count <= 1 || pin_count >= net_ignore_threshold_) continue;
 
-    int max_component_id = net.ComponentPins()[max_pin_index].ComponentId();
-    double pin_loc_max = net.ComponentPins()[max_pin_index].AbsY();
-    bool is_movable_max =
-        net.ComponentPins()[max_pin_index].ComponentPtr()->IsMovable();
-    double offset_max = net.ComponentPins()[max_pin_index].OffsetY();
+    size_t max_pin_index = pin_begin;
+    size_t min_pin_index = pin_begin;
+    double pin_loc_max = -DBL_MAX;
+    double pin_loc_min = DBL_MAX;
+    for (size_t pin_index = pin_begin; pin_index < pin_end; ++pin_index) {
+      const CachedSolutionPin& pin = cached_solution_pins_[pin_index];
+      double pin_loc = cached_component_y_[pin.component_id] + pin.offset_y;
+      if (pin_loc_max < pin_loc) {
+        pin_loc_max = pin_loc;
+        max_pin_index = pin_index;
+      }
+      if (pin_loc_min > pin_loc) {
+        pin_loc_min = pin_loc;
+        min_pin_index = pin_index;
+      }
+    }
+    if (pin_loc_max == pin_loc_min) {
+      max_pin_index = pin_begin;
+      min_pin_index = pin_begin + 1;
+    }
 
-    int min_component_id = net.ComponentPins()[min_pin_index].ComponentId();
-    double pin_loc_min = net.ComponentPins()[min_pin_index].AbsY();
-    bool is_movable_min =
-        net.ComponentPins()[min_pin_index].ComponentPtr()->IsMovable();
-    double offset_min = net.ComponentPins()[min_pin_index].OffsetY();
+    double inv_p = cached_net_inv_p_[net_index];
+    const CachedSolutionPin& max_pin = cached_solution_pins_[max_pin_index];
+    int max_component_id = max_pin.component_id;
+    bool is_movable_max = max_pin.is_movable;
+    double offset_max = max_pin.offset_y;
 
-    for (auto& pair : net.ComponentPins()) {
-      int component_id = pair.ComponentId();
-      double pin_loc = pair.AbsY();
-      bool is_movable = pair.ComponentPtr()->IsMovable();
-      double offset = pair.OffsetY();
+    const CachedSolutionPin& min_pin = cached_solution_pins_[min_pin_index];
+    int min_component_id = min_pin.component_id;
+    bool is_movable_min = min_pin.is_movable;
+    double offset_min = min_pin.offset_y;
+
+    for (size_t pin_index = pin_begin; pin_index < pin_end; ++pin_index) {
+      const CachedSolutionPin& pin = cached_solution_pins_[pin_index];
+      int component_id = pin.component_id;
+      double pin_loc = cached_component_y_[component_id] + pin.offset_y;
+      bool is_movable = pin.is_movable;
+      double offset = pin.offset_y;
 
       if (component_id != max_component_id) {
         double distance = std::fabs(pin_loc - pin_loc_max);
@@ -464,14 +530,6 @@ double BoundToBoundHpwlOptimizer::OptimizeQuadraticMetricX(
     tot_cg_solve_time_x += phase_elapsed_time.GetWallTime();
 
     phase_elapsed_time.RecordStartTime();
-#pragma omp parallel for num_threads(solver_threads) schedule(static)
-    for (int num = 0; num < sz; ++num) {
-      components[num].SetLLX(vx[num]);
-    }
-    phase_elapsed_time.RecordEndTime();
-    tot_intermediate_loc_update_time_x += phase_elapsed_time.GetWallTime();
-
-    phase_elapsed_time.RecordStartTime();
     double evaluate_result = EvaluateWeightedHpwlX(solver_threads);
     phase_elapsed_time.RecordEndTime();
     tot_hpwl_evaluation_time_x += phase_elapsed_time.GetWallTime();
@@ -546,14 +604,6 @@ double BoundToBoundHpwlOptimizer::OptimizeQuadraticMetricY(
     tot_cg_solve_time_y += phase_elapsed_time.GetWallTime();
 
     phase_elapsed_time.RecordStartTime();
-#pragma omp parallel for num_threads(solver_threads) schedule(static)
-    for (int num = 0; num < sz; ++num) {
-      component_list[num].SetLLY(vy[num]);
-    }
-    phase_elapsed_time.RecordEndTime();
-    tot_intermediate_loc_update_time_y += phase_elapsed_time.GetWallTime();
-
-    phase_elapsed_time.RecordStartTime();
     double evaluate_result = EvaluateWeightedHpwlY(solver_threads);
     phase_elapsed_time.RecordEndTime();
     tot_hpwl_evaluation_time_y += phase_elapsed_time.GetWallTime();
@@ -595,12 +645,26 @@ double BoundToBoundHpwlOptimizer::OptimizeQuadraticMetricY(
 }
 
 double BoundToBoundHpwlOptimizer::EvaluateWeightedHpwlX(int num_threads) {
-  std::vector<Net>& nets = ckt_ptr_->Nets();
-  int net_count = static_cast<int>(nets.size());
+  int net_count = static_cast<int>(cached_net_weights_.size());
 
 #pragma omp parallel for num_threads(num_threads) schedule(static)
   for (int i = 0; i < net_count; ++i) {
-    net_hpwl_x_[i] = nets[i].WeightedHPWLX();
+    size_t pin_begin = cached_net_pin_begin_[i];
+    size_t pin_end = cached_net_pin_begin_[i + 1];
+    if (pin_end - pin_begin <= 1) {
+      net_hpwl_x_[i] = 0;
+      continue;
+    }
+
+    double min_x = DBL_MAX;
+    double max_x = -DBL_MAX;
+    for (size_t pin_index = pin_begin; pin_index < pin_end; ++pin_index) {
+      const CachedSolutionPin& pin = cached_solution_pins_[pin_index];
+      double pin_x = vx[pin.component_id] + pin.offset_x;
+      min_x = std::min(min_x, pin_x);
+      max_x = std::max(max_x, pin_x);
+    }
+    net_hpwl_x_[i] = (max_x - min_x) * cached_net_weights_[i];
   }
 
   double hpwl = 0;
@@ -611,12 +675,26 @@ double BoundToBoundHpwlOptimizer::EvaluateWeightedHpwlX(int num_threads) {
 }
 
 double BoundToBoundHpwlOptimizer::EvaluateWeightedHpwlY(int num_threads) {
-  std::vector<Net>& nets = ckt_ptr_->Nets();
-  int net_count = static_cast<int>(nets.size());
+  int net_count = static_cast<int>(cached_net_weights_.size());
 
 #pragma omp parallel for num_threads(num_threads) schedule(static)
   for (int i = 0; i < net_count; ++i) {
-    net_hpwl_y_[i] = nets[i].WeightedHPWLY();
+    size_t pin_begin = cached_net_pin_begin_[i];
+    size_t pin_end = cached_net_pin_begin_[i + 1];
+    if (pin_end - pin_begin <= 1) {
+      net_hpwl_y_[i] = 0;
+      continue;
+    }
+
+    double min_y = DBL_MAX;
+    double max_y = -DBL_MAX;
+    for (size_t pin_index = pin_begin; pin_index < pin_end; ++pin_index) {
+      const CachedSolutionPin& pin = cached_solution_pins_[pin_index];
+      double pin_y = vy[pin.component_id] + pin.offset_y;
+      min_y = std::min(min_y, pin_y);
+      max_y = std::max(max_y, pin_y);
+    }
+    net_hpwl_y_[i] = (max_y - min_y) * cached_net_weights_[i];
   }
 
   double hpwl = 0;
@@ -701,26 +779,7 @@ void BoundToBoundHpwlOptimizer::UpdateAnchorAlpha() {
             << ")\n";
 }
 
-void BoundToBoundHpwlOptimizer::UpdateMaxMinX() {
-  std::vector<Net>& net_list = ckt_ptr_->Nets();
-  size_t sz = net_list.size();
-  // #pragma omp parallel for
-  for (size_t i = 0; i < sz; ++i) {
-    net_list[i].UpdateMaxMinIdX();
-  }
-}
-
-void BoundToBoundHpwlOptimizer::UpdateMaxMinY() {
-  std::vector<Net>& net_list = ckt_ptr_->Nets();
-  size_t sz = net_list.size();
-  // #pragma omp parallel for
-  for (size_t i = 0; i < sz; ++i) {
-    net_list[i].UpdateMaxMinIdY();
-  }
-}
-
 void BoundToBoundHpwlOptimizer::BuildProblemWithAnchorX() {
-  UpdateMaxMinX();
   BuildProblemX();
 
   if (cur_iter_ == 0) return;
@@ -745,7 +804,6 @@ void BoundToBoundHpwlOptimizer::BuildProblemWithAnchorX() {
 }
 /** Build the Y system including anchor pseudo-nets. */
 void BoundToBoundHpwlOptimizer::BuildProblemWithAnchorY() {
-  UpdateMaxMinY();
   BuildProblemY();
 
   if (cur_iter_ == 0) return;
@@ -985,9 +1043,6 @@ void BoundToBoundHpwlOptimizer::Close() {
              << tot_cg_compute_time_y << "s\n";
   LOG(debug) << "  cg solve time: " << tot_cg_solve_time_x << "s, "
              << tot_cg_solve_time_y << "s\n";
-  LOG(debug) << "  intermediate location update time: "
-             << tot_intermediate_loc_update_time_x << "s, "
-             << tot_intermediate_loc_update_time_y << "s\n";
   LOG(debug) << "  HPWL evaluation time: " << tot_hpwl_evaluation_time_x
              << "s, " << tot_hpwl_evaluation_time_y << "s\n";
   LOG(debug) << "total loc update time: " << tot_loc_update_time_x << "s, "
@@ -1019,10 +1074,10 @@ void BoundToBoundHpwlOptimizer::Close() {
                         tot_cg_solve_time_y);
   RecordPlacementMetric(
       "time.global_placement.quadratic.x.location_update.wall_s",
-      tot_intermediate_loc_update_time_x + tot_loc_update_time_x);
+      tot_loc_update_time_x);
   RecordPlacementMetric(
       "time.global_placement.quadratic.y.location_update.wall_s",
-      tot_intermediate_loc_update_time_y + tot_loc_update_time_y);
+      tot_loc_update_time_y);
   RecordPlacementMetric(
       "time.global_placement.quadratic.x.hpwl_evaluation.wall_s",
       tot_hpwl_evaluation_time_x);

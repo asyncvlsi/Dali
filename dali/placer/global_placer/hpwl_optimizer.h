@@ -128,10 +128,10 @@ class BoundToBoundHpwlOptimizer : public HpwlOptimizer {
   /** Solve the Y system by conjugate gradient. */
   virtual double OptimizeQuadraticMetricY(double cg_stop_criterion);
   /**
-   * Evaluate weighted X HPWL in parallel and sum nets in their original order.
+   * Evaluate weighted X HPWL directly from the current solution vector.
    *
-   * Keeping the final reduction serial preserves deterministic convergence
-   * decisions across thread counts.
+   * Net spans are evaluated in parallel, then summed in their original order
+   * to preserve deterministic convergence decisions across thread counts.
    */
   double EvaluateWeightedHpwlX(int num_threads);
   /** Y counterpart of EvaluateWeightedHpwlX. */
@@ -140,8 +140,6 @@ class BoundToBoundHpwlOptimizer : public HpwlOptimizer {
 
   void UpdateAnchorLocation();
   virtual void UpdateAnchorAlpha();
-  void UpdateMaxMinX();
-  void UpdateMaxMinY();
   virtual void BuildProblemWithAnchorX();
   virtual void BuildProblemWithAnchorY();
   /** Add translation-invariant physical row relationships to the Y problem. */
@@ -157,12 +155,20 @@ class BoundToBoundHpwlOptimizer : public HpwlOptimizer {
   void Close() override;
 
  protected:
+  /** Compact pin data reused by solution-vector HPWL evaluations. */
+  struct CachedSolutionPin {
+    int component_id;
+    bool is_movable;
+    double offset_x;
+    double offset_y;
+  };
+
   /**** parameters for CG solver optimization configuration ****/
   // this is to make sure cg_tolerance is the same for different machines
   double cg_tolerance_ = 1e-35;
   // cg solver runs this amount of iterations to optimize the quadratic metric
   // everytime
-  int cg_iteration_ = 10;
+  int cg_iteration_ = 9;
   // cg solver runs at most this amount of iterations to optimize the quadratic
   // metric, this number should be adaptive to circuit size
   int cg_iteration_max_num_ = 1000;
@@ -194,6 +200,12 @@ class BoundToBoundHpwlOptimizer : public HpwlOptimizer {
   bool y_anchor_set = false;
   std::vector<SparseTriplet> coefficients_x_;
   std::vector<SparseTriplet> coefficients_y_;
+  std::vector<size_t> cached_net_pin_begin_;
+  std::vector<CachedSolutionPin> cached_solution_pins_;
+  std::vector<double> cached_net_weights_;
+  std::vector<double> cached_net_inv_p_;
+  std::vector<double> cached_component_x_;
+  std::vector<double> cached_component_y_;
   std::vector<double> net_hpwl_x_;
   std::vector<double> net_hpwl_y_;
   Eigen::ConjugateGradient<RowMajorSparseMatrix, Eigen::Lower | Eigen::Upper>
@@ -213,8 +225,6 @@ class BoundToBoundHpwlOptimizer : public HpwlOptimizer {
   double tot_cg_compute_time_y = 0;
   double tot_cg_solve_time_x = 0;
   double tot_cg_solve_time_y = 0;
-  double tot_intermediate_loc_update_time_x = 0;
-  double tot_intermediate_loc_update_time_y = 0;
   double tot_hpwl_evaluation_time_x = 0;
   double tot_hpwl_evaluation_time_y = 0;
   double tot_loc_update_time_x = 0;
