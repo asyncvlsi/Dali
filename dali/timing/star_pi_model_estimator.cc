@@ -28,12 +28,9 @@ namespace dali {
 void StarPiModelEstimator::PushNetRCToManager() {
 #if PHYDB_USE_GALOIS
   FindFirstHorizontalAndVerticalMetalLayer();
-  auto maxMode = galois::eda::utility::AnalysisMode::ANALYSIS_MAX;
   auto& timing_api = phy_db_->GetTimingApi();
   auto* spef_manager = phy_db_->GetParaManager();
-  auto& libs = phy_db_->GetCellLibs();
   auto& design = *(phy_db_->GetDesignPtr());
-  DaliExpects(!libs.empty(), "CellLibs empty?");
   auto& nets = phy_db_->design().GetNetsRef();
   for (auto& net : nets) {
     if (!net.GetIoPinIdsRef().empty()) continue;
@@ -54,20 +51,19 @@ void StarPiModelEstimator::PushNetRCToManager() {
       double res, cap;
       phydb::Point2D<int> load_pin_loc =
           design.GetComponentPinLocation(load.InstanceId(), load.PinId());
-      ;
       GetResistanceAndCapacitance(driver_pin_loc, load_pin_loc, res, cap);
-      load_node->setC(libs[0], maxMode, cap / 2.0);
+      load_node->setC(0, cap / 2.0);
       std::cout << "Set C for load pin: " << load_name << " " << cap / 2.0
                 << "\n";
       driver_cap += cap / 2.0;
       auto edge = spef_manager->findEdge(driver_node, load_node);
       DaliExpects(edge != nullptr, "Cannot find edge!");
-      edge->setR(libs[0], maxMode, res);
+      edge->setR(0, res);
       std::cout << "Set R for edge, "
                 << "driver: " << driver_name << ", "
                 << "load: " << load_name << ", " << res << "\n";
     }
-    driver_node->setC(libs[0], maxMode, driver_cap);
+    driver_node->setC(0, driver_cap);
     // std::cout << "Set C for driver pin: " << driver_name << " " << driver_cap
     // << "\n";
   }
