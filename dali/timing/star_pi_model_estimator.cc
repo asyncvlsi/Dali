@@ -24,6 +24,50 @@
 
 namespace dali {
 
+/**
+ * Set node capacitance through the legacy Galois timing API.
+ *
+ * The final integer parameter gives this overload priority when both timing
+ * APIs are available.
+ */
+template <typename Node, typename CellLibrary, typename AnalysisMode>
+static auto SetTimingNodeCapacitance(Node* node, CellLibrary* cell_library,
+                                     AnalysisMode analysis_mode, double value,
+                                     int)
+    -> decltype(node->setC(cell_library, analysis_mode, value), void()) {
+  node->setC(cell_library, analysis_mode, value);
+}
+
+/** Set node capacitance through the current corner-indexed Galois API. */
+template <typename Node, typename CellLibrary, typename AnalysisMode>
+static auto SetTimingNodeCapacitance(Node* node, CellLibrary*, AnalysisMode,
+                                     double value, long)
+    -> decltype(node->setC(0, value), void()) {
+  node->setC(0, value);
+}
+
+/**
+ * Set edge resistance through the legacy Galois timing API.
+ *
+ * The final integer parameter gives this overload priority when both timing
+ * APIs are available.
+ */
+template <typename Edge, typename CellLibrary, typename AnalysisMode>
+static auto SetTimingEdgeResistance(Edge* edge, CellLibrary* cell_library,
+                                    AnalysisMode analysis_mode, double value,
+                                    int)
+    -> decltype(edge->setR(cell_library, analysis_mode, value), void()) {
+  edge->setR(cell_library, analysis_mode, value);
+}
+
+/** Set edge resistance through the current corner-indexed Galois API. */
+template <typename Edge, typename CellLibrary, typename AnalysisMode>
+static auto SetTimingEdgeResistance(Edge* edge, CellLibrary*, AnalysisMode,
+                                    double value, long)
+    -> decltype(edge->setR(0, value), void()) {
+  edge->setR(0, value);
+}
+
 /** Hand the estimated per-net RC parasitics to the timing manager. */
 void StarPiModelEstimator::PushNetRCToManager() {
 #if PHYDB_USE_GALOIS
@@ -54,20 +98,19 @@ void StarPiModelEstimator::PushNetRCToManager() {
       double res, cap;
       phydb::Point2D<int> load_pin_loc =
           design.GetComponentPinLocation(load.InstanceId(), load.PinId());
-      ;
       GetResistanceAndCapacitance(driver_pin_loc, load_pin_loc, res, cap);
-      load_node->setC(libs[0], maxMode, cap / 2.0);
+      SetTimingNodeCapacitance(load_node, libs[0], maxMode, cap / 2.0, 0);
       std::cout << "Set C for load pin: " << load_name << " " << cap / 2.0
                 << "\n";
       driver_cap += cap / 2.0;
       auto edge = spef_manager->findEdge(driver_node, load_node);
       DaliExpects(edge != nullptr, "Cannot find edge!");
-      edge->setR(libs[0], maxMode, res);
+      SetTimingEdgeResistance(edge, libs[0], maxMode, res, 0);
       std::cout << "Set R for edge, "
                 << "driver: " << driver_name << ", "
                 << "load: " << load_name << ", " << res << "\n";
     }
-    driver_node->setC(libs[0], maxMode, driver_cap);
+    SetTimingNodeCapacitance(driver_node, libs[0], maxMode, driver_cap, 0);
     // std::cout << "Set C for driver pin: " << driver_name << " " << driver_cap
     // << "\n";
   }
