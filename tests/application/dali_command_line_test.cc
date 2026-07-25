@@ -54,6 +54,20 @@ TEST_F(DaliCommandLineTest, ParsesRequiredInputsAndKeepsDefaults) {
   EXPECT_EQ(options.verbose_level, dali::severity::info);
 }
 
+TEST_F(DaliCommandLineTest, ParsesDaliCommandFileAliases) {
+  dali::DaliCommandLineOptions options;
+  EXPECT_TRUE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                     "-script", "flow.dali"},
+                    &options));
+  EXPECT_EQ(options.command_file_name, "flow.dali");
+
+  dali::DaliCommandLineOptions compatibility_options;
+  EXPECT_TRUE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                     "-command_file", "compatibility.dali"},
+                    &compatibility_options));
+  EXPECT_EQ(compatibility_options.command_file_name, "compatibility.dali");
+}
+
 TEST_F(DaliCommandLineTest, ParsesRowScaleLegalizationFeedback) {
   dali::DaliCommandLineOptions options;
   EXPECT_TRUE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",

@@ -87,6 +87,8 @@ file(
     GLOB_RECURSE SOURCES
     dali/dali.cc
     dali/application/dali_command_line.cc
+    dali/command/*.cc
+    dali/command/*.h
     dali/circuit/*.cc
     dali/circuit/*.h
     dali/common/*.cc

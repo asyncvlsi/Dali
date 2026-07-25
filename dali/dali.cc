@@ -35,9 +35,10 @@
  * appears three times: a member with its default, a Load*Config call, and a
  * line in the reporting block. Adding an option means touching all three.
  *
- * Stages publish snapshots through PlacementSnapshotSink. `ExpectedSnapshotStages`
- * declares up front which stages this configuration will actually execute, so
- * the GUI can reserve exactly those chart slots instead of discovering them.
+ * Stages publish snapshots through PlacementSnapshotSink.
+ * `ExpectedSnapshotStages` declares up front which stages this configuration
+ * will actually execute, so the GUI can reserve exactly those chart slots
+ * instead of discovering them.
  */
 #include "dali.h"
 
@@ -95,6 +96,38 @@ static void LoadRealConfig(const std::string& name, double* value) {
 static void LoadStringConfig(const std::string& name, std::string* value) {
   if (ConfigExists(name)) {
     *value = config_get_string(name.c_str());
+  }
+}
+
+static bool ParseCommandBool(const std::string& value, bool* result) {
+  if (value == "true" || value == "on" || value == "1") {
+    *result = true;
+    return true;
+  }
+  if (value == "false" || value == "off" || value == "0") {
+    *result = false;
+    return true;
+  }
+  return false;
+}
+
+static bool ParseCommandInt(const std::string& value, int* result) {
+  try {
+    std::size_t parsed_length = 0;
+    *result = std::stoi(value, &parsed_length);
+    return parsed_length == value.size();
+  } catch (...) {
+    return false;
+  }
+}
+
+static bool ParseCommandDouble(const std::string& value, double* result) {
+  try {
+    std::size_t parsed_length = 0;
+    *result = std::stod(value, &parsed_length);
+    return parsed_length == value.size() && std::isfinite(*result);
+  } catch (...) {
+    return false;
   }
 }
 
@@ -438,13 +471,13 @@ void Dali::LoadParamsFromConfig() {
   LoadBoolConfig(ConfigName(prefix_, "disable_welltap"), &disable_welltap_);
   param_name = ConfigName(prefix_, "well_tap_pattern");
   if (ConfigExists(param_name)) {
-    well_tap_pattern_ = ParseWellTapPattern(config_get_string(param_name.c_str()));
+    well_tap_pattern_ =
+        ParseWellTapPattern(config_get_string(param_name.c_str()));
   }
-  DaliExpects(
-      disable_welltap_ || IsWellTapPatternSupported(well_tap_pattern_),
-      "well_tap_pattern '" + WellTapPatternName(well_tap_pattern_) +
-          "' is not yet supported end-to-end. Supported patterns: " +
-          SupportedWellTapPatternList() + ".");
+  DaliExpects(disable_welltap_ || IsWellTapPatternSupported(well_tap_pattern_),
+              "well_tap_pattern '" + WellTapPatternName(well_tap_pattern_) +
+                  "' is not yet supported end-to-end. Supported patterns: " +
+                  SupportedWellTapPatternList() + ".");
   LoadBoolConfig(ConfigName(prefix_, "disable_cell_flip"), &disable_cell_flip_);
   LoadRealConfig(ConfigName(prefix_, "max_row_width"), &max_row_width_);
   LoadBoolConfig(ConfigName(prefix_, "enable_adaptive_stripe_boundaries"),
@@ -701,6 +734,131 @@ void Dali::SetNumThreads(int num_threads) {
   num_threads_ = num_threads;
 }
 
+/**
+ * Apply one setting from a `.dali` command.
+ *
+ * The command language intentionally starts with the stable, commonly useful
+ * flow options instead of accepting arbitrary ACT config keys. Explicit
+ * validation catches misspellings and keeps script behavior aligned with the
+ * corresponding standalone command-line options.
+ */
+bool Dali::SetRuntimeOption(const std::string& name, const std::string& value) {
+  bool bool_value = false;
+  int int_value = 0;
+  double double_value = 0;
+
+  if (name == "target_density") {
+    if (!ParseCommandDouble(value, &double_value) || double_value <= 0 ||
+        double_value > 1) {
+      LOG(error) << "target_density must be in the range (0, 1]\n";
+      return false;
+    }
+    target_density_ = double_value;
+  } else if (name == "num_threads") {
+    if (!ParseCommandInt(value, &int_value) || int_value < 1) {
+      LOG(error) << "num_threads must be positive\n";
+      return false;
+    }
+    SetNumThreads(int_value);
+  } else if (name == "io_metal_layer") {
+    if (!ParseCommandInt(value, &int_value) || int_value < 1) {
+      LOG(error) << "io_metal_layer must be a positive, one-based layer "
+                    "number\n";
+      return false;
+    }
+    io_metal_layer_ = int_value - 1;
+  } else if (name == "net_ignore_threshold") {
+    if (!ParseCommandInt(value, &int_value) || int_value < 100 ||
+        int_value > 1000) {
+      LOG(error) << "net_ignore_threshold must be in [100, 1000]\n";
+      return false;
+    }
+    net_ignore_threshold_ = int_value;
+  } else if (name == "global_min_iterations") {
+    if (!ParseCommandInt(value, &int_value) || int_value < 0) {
+      LOG(error) << "global_min_iterations must be non-negative\n";
+      return false;
+    }
+    global_min_iterations_ = int_value;
+  } else if (name == "global_max_iterations") {
+    if (!ParseCommandInt(value, &int_value) || int_value < 0) {
+      LOG(error) << "global_max_iterations must be non-negative\n";
+      return false;
+    }
+    global_max_iterations_ = int_value;
+  } else if (name == "detailed_max_rounds") {
+    if (!ParseCommandInt(value, &int_value) || int_value < 0) {
+      LOG(error) << "detailed_max_rounds must be non-negative\n";
+      return false;
+    }
+    detailed_max_rounds_ = int_value;
+  } else if (name == "detailed_max_move_candidates") {
+    if (!ParseCommandInt(value, &int_value) || int_value < 0) {
+      LOG(error) << "detailed_max_move_candidates must be non-negative\n";
+      return false;
+    }
+    detailed_max_move_candidates_ = int_value;
+  } else if (name == "global_initializer") {
+    if (value != "keep" && value != "uniform" && value != "gaussian" &&
+        value != "monte_carlo" && value != "density_aware") {
+      LOG(error) << "Unknown global_initializer: " << value << "\n";
+      return false;
+    }
+    global_initializer_ = ParseGlobalInitializer(value);
+  } else if (name == "well_legalization_mode") {
+    if (value == "strict") {
+      well_legalization_mode_ = WellPartitionMode::kStrict;
+    } else if (value == "scavenge") {
+      well_legalization_mode_ = WellPartitionMode::kScavenge;
+    } else {
+      LOG(error) << "well_legalization_mode must be strict or scavenge\n";
+      return false;
+    }
+  } else if (name == "standard_cell_legalizer_cost") {
+    if (value != "displacement" && value != "hpwl") {
+      LOG(error) << "standard_cell_legalizer_cost must be displacement or "
+                    "hpwl\n";
+      return false;
+    }
+    standard_cell_legalizer_cost_mode_ =
+        ParseStandardCellLegalizerCostMode(value);
+  } else if (name == "disable_global_place" || name == "disable_legalization" ||
+             name == "disable_detailed_place" || name == "disable_io_place" ||
+             name == "disable_welltap" || name == "disable_cell_flip" ||
+             name == "is_standard_cell" || name == "enable_filler_cell" ||
+             name == "enable_end_cap_cell") {
+    if (!ParseCommandBool(value, &bool_value)) {
+      LOG(error) << name << " must be true or false\n";
+      return false;
+    }
+    if (name == "disable_global_place") {
+      disable_global_place_ = bool_value;
+    } else if (name == "disable_legalization") {
+      disable_legalization_ = bool_value;
+    } else if (name == "disable_detailed_place") {
+      disable_detailed_place_ = bool_value;
+    } else if (name == "disable_io_place") {
+      disable_io_place_ = bool_value;
+    } else if (name == "disable_welltap") {
+      disable_welltap_ = bool_value;
+    } else if (name == "disable_cell_flip") {
+      disable_cell_flip_ = bool_value;
+    } else if (name == "is_standard_cell") {
+      is_standard_cell_ = bool_value;
+    } else if (name == "enable_filler_cell") {
+      enable_filler_cell_ = bool_value;
+    } else {
+      enable_end_cap_cell_ = bool_value;
+    }
+  } else {
+    LOG(error) << "Unknown or unsupported Dali setting: " << name << "\n";
+    return false;
+  }
+
+  LOG(info) << "Set " << name << " = " << value << "\n";
+  return true;
+}
+
 Circuit& Dali::GetCircuit() { return circuit_; }
 
 phydb::PhyDB* Dali::GetPhyDBPtr() { return phy_db_ptr_; }
@@ -865,19 +1023,24 @@ bool Dali::IoPinPlacement(int argc, char** argv) {
   }
 
   // remove "place-io" and option flag before calling each function
-  if (option_str == "-c" or option_str == "--config") {
+  if (option_str == "-c" or option_str == "-config" or
+      option_str == "--config") {
     return io_placer_->ConfigCmd(argc - 2, argv + 2);
-  } else if (option_str == "-p" or option_str == "--place") {
+  } else if (option_str == "-p" or option_str == "-place" or
+             option_str == "--place") {
     return io_placer_->PartialPlaceCmd(argc - 2, argv + 2);
-  } else if (option_str == "-cons" or option_str == "--constraint") {
+  } else if (option_str == "-cons" or option_str == "-constraint" or
+             option_str == "--constraint") {
     return io_placer_->ConstraintCmd(argc - 2, argv + 2);
-  } else if (option_str == "-area" or option_str == "--area-array") {
+  } else if (option_str == "-area" or option_str == "-area-array" or
+             option_str == "--area-array") {
     return io_placer_->AreaArrayPlaceCmd(argc - 2, argv + 2);
   } else if (option_str == "-group" or option_str == "--group") {
     return io_placer_->GroupPlaceCmd(argc - 2, argv + 2);
   } else if (option_str == "-mirror" or option_str == "--mirror") {
     return io_placer_->MirrorPlaceCmd(argc - 2, argv + 2);
-  } else if (option_str == "-ap" or option_str == "--auto-place") {
+  } else if (option_str == "-ap" or option_str == "-auto-place" or
+             option_str == "--auto-place") {
     return io_placer_->AutoPlaceCmd(argc - 2, argv + 2);
   } else {
     LOG(warning) << "IoPlace flag not specified, use --auto-place by default\n";
@@ -958,10 +1121,12 @@ void Dali::ApplyPlacementOverrides(double density, int number_of_threads) {
 }
 
 void Dali::InitializeMainPlacementCircuit() {
-  circuit_.SetEnableShrinkOffGridDieArea(enable_shrink_off_grid_die_area_);
-  circuit_.InitializeFromPhyDB(phy_db_ptr_);
-  ApplyDebugPlacementRegionScale();
-  is_circuit_initialized_ = true;
+  if (!is_circuit_initialized_) {
+    circuit_.SetEnableShrinkOffGridDieArea(enable_shrink_off_grid_die_area_);
+    circuit_.InitializeFromPhyDB(phy_db_ptr_);
+    ApplyDebugPlacementRegionScale();
+    is_circuit_initialized_ = true;
+  }
   circuit_.ReportBriefSummary();
   ClearPlacementMetrics();
   RecordPlacementHpwlMetrics("input", circuit_);
@@ -1361,12 +1526,12 @@ bool Dali::RunIoPinPlacementStage() {
   if (disable_io_place_) {
     return true;
   }
-  auto io_placer = std::make_unique<IoPlacer>(phy_db_ptr_, &circuit_);
+  InstantiateIoPlacer();
   bool is_io_placer_config_success =
-      io_placer->SetGlobalMetalLayer(io_metal_layer_);
+      io_placer_->SetGlobalMetalLayer(io_metal_layer_);
   DaliExpects(is_io_placer_config_success,
               "Cannot successfully configure I/O placer");
-  if (!io_placer->RunAutoPlacement()) {
+  if (!io_placer_->RunAutoPlacement()) {
     LOG(error) << "I/O pin placement failed\n";
     return false;
   }
@@ -1386,11 +1551,10 @@ std::vector<PlacementSnapshotStage> Dali::ExpectedSnapshotStages() const {
     stages.push_back({"legalization", "Legalization"});
     // Detailed placement produces a curve only when it actually runs, which
     // differs between the standard-cell and gridded-cell flows.
-    const bool has_detailed =
-        is_standard_cell_
-            ? !disable_detailed_place_
-            : (enable_gridded_detailed_placement_ ||
-               enable_gridded_local_reorder_);
+    const bool has_detailed = is_standard_cell_
+                                  ? !disable_detailed_place_
+                                  : (enable_gridded_detailed_placement_ ||
+                                     enable_gridded_local_reorder_);
     if (has_detailed) {
       stages.push_back({"detailed_placement", "Detailed placement"});
     }
@@ -1499,8 +1663,8 @@ void Dali::AddWellTaps(phydb::Macro* cell, double cell_interval_microns,
 /**
  * Insert well taps at a fixed pitch, driven by argv-style arguments.
  *
- * Part of the interactive API rather than the batch flow; the batch flow inserts
- * taps through the legalizer's physical completion instead.
+ * Part of the interactive API rather than the batch flow; the batch flow
+ * inserts taps through the legalizer's physical completion instead.
  */
 bool Dali::AddWellTaps(int argc, char** argv) {
   phydb::Macro* cell = nullptr;

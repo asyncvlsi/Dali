@@ -29,6 +29,7 @@ struct DaliCommandLineOptions {
   std::string metrics_file_name = "dali_metrics.json";
   std::string net_hpwl_file_name;
   std::string visualization_dir;
+  std::string command_file_name;
   severity verbose_level = severity::info;
   double x_grid = 0;
   double y_grid = 0;

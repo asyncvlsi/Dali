@@ -24,6 +24,8 @@ endfunction()
 
 add_dali_application_test(application_dali_command_line_test
                           dali_command_line_test.cc)
+add_dali_application_test(application_dali_command_processor_test
+                          dali_command_processor_test.cc)
 add_dali_application_test(application_dali_config_test dali_config_test.cc)
 add_dali_application_test(application_dali_placement_flow_test
                           dali_placement_flow_test.cc)

@@ -100,6 +100,18 @@ add_test(
 )
 set_tests_properties(mirror_io_pin PROPERTIES LABELS "integration;io_placer")
 
+# Preserve pre-placement I/O commands when a `.dali` recipe later runs the
+# ordinary placement pipeline.
+add_executable(io_command_file_flow io_command_file_flow.cc helper.h helper.cc)
+target_link_libraries(io_command_file_flow PRIVATE dalilib)
+add_test(
+    NAME io_command_file_flow
+    COMMAND io_command_file_flow
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+set_tests_properties(io_command_file_flow
+                     PROPERTIES LABELS "integration;io_placer")
+
 set(io_placer_tests
     all_iopin_use_same_metal_layer
     add_and_place_io_pins
@@ -109,6 +121,7 @@ set(io_placer_tests
     area_array_place_io_pin
     group_io_pins
     mirror_io_pin
+    io_command_file_flow
 )
 set_tests_properties(${io_placer_tests}
                      PROPERTIES FIXTURES_REQUIRED io_placer_benchmark)

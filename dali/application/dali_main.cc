@@ -118,7 +118,12 @@ int main(int argc, char* argv[]) {
   // save command line arguments for future reference
   SaveArgs(argc, argv);
 
-  bool is_success = dali.StartPlacement();
+  // Preserve the original one-command flow unless a recipe is explicitly
+  // provided. A `.dali` file owns stage execution, which also makes the same
+  // file usable by a future `interact` `dali:source` adapter.
+  bool is_success = options.command_file_name.empty()
+                        ? dali.StartPlacement()
+                        : dali.RunCommandFile(options.command_file_name);
   if (!is_success) {
     WritePlacementMetricsJson(options.metrics_file_name, false);
     return 1;

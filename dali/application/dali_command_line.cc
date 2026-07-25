@@ -75,6 +75,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -cell <file.cell>                          (optional, if provided, well placement flow will be triggered)\n"
       << "  -o/-output_name <output_name>.def          (optional, default output def file name dali_out.def)\n"
       << "  -metrics_file <file.json>                  (optional, default dali_metrics.json)\n"
+      << "  -script/-command_file <file.dali>          execute a Dali command recipe instead of the implicit placement run\n"
       << "  -gui_debug                                 show live placement debug GUI when built with Qt\n"
       << "  -gui_pause <every_snapshot/off>            GUI pause policy, default every_snapshot\n"
       << "  -g/-grid <grid_value_x> <grid_value_y>     (optional, default metal1 and metal2 pitch values)\n"
@@ -194,8 +195,8 @@ bool ParseDaliCommandLine(int argc, char* argv[],
         error_output << "Invalid input cell file!\n";
         return false;
       }
-    // Deliberately absent from ReportDaliUsage: accepted so existing scripts
-    // keep running, but it does nothing and should not be advertised.
+      // Deliberately absent from ReportDaliUsage: accepted so existing scripts
+      // keep running, but it does nothing and should not be advertised.
     } else if (arg == "-mcell") {
       if (!TryGetValue(argc, argv, &i, &options->ignored_mcell_file_name)) {
         error_output << "Invalid input mcell file!\n";
@@ -212,6 +213,11 @@ bool ParseDaliCommandLine(int argc, char* argv[],
     } else if (arg == "-metrics_file") {
       if (!TryGetValue(argc, argv, &i, &options->metrics_file_name)) {
         error_output << "Invalid metrics file name!\n";
+        return false;
+      }
+    } else if (arg == "-script" || arg == "-command_file") {
+      if (!TryGetValue(argc, argv, &i, &options->command_file_name)) {
+        error_output << "Invalid Dali command file name!\n";
         return false;
       }
     } else if (arg == "-net_hpwl_file") {

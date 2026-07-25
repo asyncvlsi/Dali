@@ -18,3 +18,8 @@ CTest prepares `ispd19_test3` from the checked-in archive as a fixture before
 running any test in this directory. Each command has focused coverage, while
 the group and mirror tests also combine fixed pins with later automatic or
 area-array placement.
+
+`io_command_file_flow` exercises the same commands through a `.dali` recipe.
+It issues a manual pin and an edge constraint before `run placement`, verifying
+that placement initialization preserves the edit and that the automatic I/O
+stage reuses the configured placer.

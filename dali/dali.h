@@ -38,6 +38,8 @@
 
 namespace dali {
 
+class DaliCommandProcessor;
+
 /** Main application facade that owns the circuit model and placement stages. */
 class Dali {
  public:
@@ -194,6 +196,26 @@ class Dali {
   /** Run the default placement pipeline used by the main `dali` app. */
   bool StartPlacement(double density = -1, int number_of_threads = -1);
 
+  /**
+   * Execute one already-tokenized Dali command.
+   *
+   * This is the integration point for command hosts such as `interact`, which
+   * already provide an argv-style command. The standalone command reader and
+   * future interactive prompt use the same dispatcher.
+   */
+  bool ExecuteCommand(const std::vector<std::string>& arguments);
+
+  /** Tokenize and execute one line in the Dali command language. */
+  bool ExecuteCommandLine(const std::string& command_line);
+
+  /**
+   * Execute a `.dali` command file.
+   *
+   * Commands run in order and execution stops at the first malformed or failed
+   * command. Errors include the source filename and logical line number.
+   */
+  bool RunCommandFile(const std::string& file_name);
+
   /** Return true when global placement has movable components and nets to use.
    */
   bool ShouldRunGlobalPlacement() const;
@@ -232,6 +254,8 @@ class Dali {
   void InstantiateIoPlacer();
 
  private:
+  friend class DaliCommandProcessor;
+
   // options
   std::string prefix_ = "dali.";
   severity severity_level_ = severity::info;
@@ -362,6 +386,8 @@ class Dali {
 
   /** Apply explicit `StartPlacement` arguments before the flow starts. */
   void ApplyPlacementOverrides(double density, int number_of_threads);
+  /** Set one command-language runtime option after validating its value. */
+  bool SetRuntimeOption(const std::string& name, const std::string& value);
   /** Initialize the circuit model and reset metrics for a standalone run. */
   void InitializeMainPlacementCircuit();
   /** Compute and record certified HPWL lower bounds for this circuit. */

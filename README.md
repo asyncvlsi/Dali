@@ -74,6 +74,63 @@ Commonly used options:
 
 Run `dali` with no arguments to print the full option list.
 
+### Dali command recipes
+
+The normal command above remains the default. For a reproducible staged flow,
+pass a `.dali` recipe with `-script` (the longer `-command_file` spelling is
+also accepted):
+
+    $ dali \
+        -lef design.lef \
+        -def design.def \
+        -cell design.cell \
+        -script placement_flow.dali \
+        -output_name placed.def
+
+The recipe owns placement execution:
+
+    # dali-script 1
+    set target_density 0.70
+    set num_threads 4
+    set disable_io_place true
+
+    show settings
+    run placement
+
+    place-io -constraint clock top
+    place-io M4
+
+Commands are executed in order and the file stops at the first error. Blank
+lines, `#` comments, quoted arguments, escaped characters, and backslash line
+continuations are supported. The first implementation exposes these settings:
+
+  * `target_density`, `num_threads`, `io_metal_layer`,
+    `net_ignore_threshold`
+  * `global_min_iterations`, `global_max_iterations`,
+    `global_initializer`
+  * `detailed_max_rounds`, `detailed_max_move_candidates`
+  * `well_legalization_mode`, `standard_cell_legalizer_cost`
+  * `disable_global_place`, `disable_legalization`,
+    `disable_detailed_place`, `disable_io_place`
+  * `disable_welltap`, `disable_cell_flip`, `is_standard_cell`,
+    `enable_filler_cell`, `enable_end_cap_cell`
+
+Boolean values accept `true`/`false`, `on`/`off`, or `1`/`0`. The legacy
+`place-design <density> [threads]` and `global-place <density> [threads]`
+commands remain available, but new recipes should configure settings separately
+and use `run placement`.
+
+The same recipe API is designed for a future `interact` adapter:
+
+    dali:init 3
+    dali:source "placement_flow.dali"
+    dali:export-phydb
+    dali:close
+
+`interact` does not provide `dali:source` yet; Dali already exposes
+`ExecuteCommand`, `ExecuteCommandLine`, and `RunCommandFile` so that adapter can
+remain small.
+
 ### Production configurations
 
 Two flag combinations are the ones used for real runs — the gridded well flow a
