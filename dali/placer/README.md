@@ -161,26 +161,20 @@ produce identical HPWL for every benchmark.
 
 Runtime is Dali's internal wall time for each placement stage and excludes
 LEF/DEF parsing and result export. `Total` is the sum of global placement,
-legalization, and detailed placement.
+legalization, and detailed placement. Global and total cells show `1 thread ->
+8 threads`, followed by the speedup. Legalization and detailed placement are
+currently serial, so their 8-thread-run measurements are shown once.
 
-| design | threads | global | legal | detailed | total | total speedup |
-|---|---:|---:|---:|---:|---:|---:|
-| adaptec1 | 1 | 64.4 s | 14.5 s | 41.2 s | 120.0 s | - |
-| adaptec1 | 8 | 29.5 s | 14.3 s | 38.1 s | 81.9 s | 1.47x |
-| adaptec2 | 1 | 79.1 s | 27.5 s | 115.4 s | 222.1 s | - |
-| adaptec2 | 8 | 37.9 s | 28.7 s | 115.4 s | 181.9 s | 1.22x |
-| adaptec3 | 1 | 154.2 s | 60.4 s | 46.4 s | 261.1 s | - |
-| adaptec3 | 8 | 83.1 s | 61.5 s | 46.8 s | 191.5 s | 1.36x |
-| adaptec4 | 1 | 116.0 s | 93.2 s | 81.9 s | 291.1 s | - |
-| adaptec4 | 8 | 59.9 s | 92.8 s | 75.0 s | 227.7 s | 1.28x |
-| bigblue1 | 1 | 102.1 s | 41.3 s | 268.3 s | 411.7 s | - |
-| bigblue1 | 8 | 44.3 s | 40.3 s | 279.1 s | 363.7 s | 1.13x |
-| bigblue2 | 1 | 139.7 s | 85.6 s | 77.3 s | 302.6 s | - |
-| bigblue2 | 8 | 77.6 s | 85.7 s | 76.0 s | 239.3 s | 1.26x |
-| bigblue3 | 1 | 320.7 s | 237.9 s | 773.4 s | 1331.9 s | - |
-| bigblue3 | 8 | 176.2 s | 244.6 s | 844.2 s | 1265.0 s | 1.05x |
-| bigblue4 | 1 | 730.2 s | 589.6 s | 1782.3 s | 3102.1 s | - |
-| bigblue4 | 8 | 421.7 s | 595.6 s | 1811.6 s | 2828.9 s | 1.10x |
+| design | global, 1T -> 8T | legalization | detailed placement | total, 1T -> 8T |
+|---|---:|---:|---:|---:|
+| adaptec1 | 64.4 -> 29.5 s **(2.18x)** | 14.3 s | 38.1 s | 120.0 -> 81.9 s **(1.47x)** |
+| adaptec2 | 79.1 -> 37.9 s **(2.09x)** | 28.7 s | 115.4 s | 222.1 -> 181.9 s **(1.22x)** |
+| adaptec3 | 154.2 -> 83.1 s **(1.86x)** | 61.5 s | 46.8 s | 261.1 -> 191.5 s **(1.36x)** |
+| adaptec4 | 116.0 -> 59.9 s **(1.94x)** | 92.8 s | 75.0 s | 291.1 -> 227.7 s **(1.28x)** |
+| bigblue1 | 102.1 -> 44.3 s **(2.31x)** | 40.3 s | 279.1 s | 411.7 -> 363.7 s **(1.13x)** |
+| bigblue2 | 139.7 -> 77.6 s **(1.80x)** | 85.7 s | 76.0 s | 302.6 -> 239.3 s **(1.26x)** |
+| bigblue3 | 320.7 -> 176.2 s **(1.82x)** | 244.6 s | 844.2 s | 1331.9 -> 1265.0 s **(1.05x)** |
+| bigblue4 | 730.2 -> 421.7 s **(1.73x)** | 595.6 s | 1811.6 s | 3102.1 -> 2828.9 s **(1.10x)** |
 
 Across the complete suite, global-placement time falls from 1706.4 seconds to
 930.2 seconds, a 1.83x aggregate speedup. Complete placement time falls from
