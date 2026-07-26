@@ -124,16 +124,16 @@ attention.
   * `-global_max_iterations <n>` — upper limit, default 100.
   * `-global_min_iterations <n>` — floor, default 10.
 
-## Standard-cell global-placement results on ISPD 2005
+## Standard-cell results on ISPD 2005
 
-Measured at commit `ba828ad7` on a MacBook Pro (`MacBookPro18,2`) with an Apple
-M1 Max CPU, 10 cores (8 performance and 2 efficiency), and 32 GB unified
-memory, running macOS 26.5.2. HPWL is weighted HPWL after global placement, in
-units of 1e6 um. Runtime is global-placement wall time reported by Dali, so it
-does not include LEF/DEF parsing or result export.
+Measured at commit `afc54ea4` on a MacBook Pro with an Apple M1 Max CPU, 10
+cores (8 performance and 2 efficiency), and 32 GB unified memory, running macOS
+26.5.2 on AC power in Automatic power mode. These are single-run engineering
+measurements intended to show representative behavior, not publication-quality
+performance measurements.
 
-These performance runs use the standard-cell configuration above with
-`density_aware` initialization and stop after global placement:
+The runs use `density_aware` initialization and continue through global
+placement, legalization, and detailed placement:
 
     $ dali \
         -lef design.lef \
@@ -142,49 +142,52 @@ These performance runs use the standard-cell configuration above with
         -global_initializer density_aware \
         -target_density 1 \
         -num_threads <1-or-8> \
-        -disable_legalization \
-        -disable_detailed_place \
         -disable_io_place \
         -metrics_file dali_metrics.json
 
-| design | cells | GP HPWL | 1 thread | 8 threads | speedup |
-|---|---:|---:|---:|---:|---:|
-| adaptec1 | 211 K | 78.69 | 61.44 s | 29.45 s | 2.09x |
-| adaptec2 | 255 K | 88.60 | 74.53 s | 36.88 s | 2.02x |
-| adaptec3 | 452 K | 206.96 | 152.82 s | 83.78 s | 1.82x |
-| adaptec4 | 496 K | 182.47 | 115.69 s | 60.27 s | 1.92x |
-| bigblue1 | 278 K | 96.01 | 97.81 s | 43.23 s | 2.26x |
-| bigblue2 | 558 K | 146.57 | 137.29 s | 79.09 s | 1.74x |
-| bigblue3 | 1.10 M | 351.27 | 318.45 s | 176.94 s | 1.80x |
-| bigblue4 | 2.18 M | 789.29 | 738.24 s | 422.97 s | 1.75x |
+Weighted HPWL is reported in units of 1e6 um. The 1-thread and 8-thread runs
+produce identical HPWL for every benchmark.
 
-HPWL is identical between the 1-thread and 8-thread runs for every benchmark.
-Across the complete suite, global-placement time falls from 1696.28 seconds to
-932.60 seconds, a 1.82x aggregate speedup. The quadratic-placement portion
-improves by 2.58x; look-ahead legalization improves by only 1.09x and is the
-main remaining parallel bottleneck on the largest designs.
+| design | cells | global HPWL | legal HPWL | final HPWL |
+|---|---:|---:|---:|---:|
+| adaptec1 | 211 K | 78.69 | 81.97 | 80.93 |
+| adaptec2 | 255 K | 88.60 | 91.04 | 90.20 |
+| adaptec3 | 452 K | 206.96 | 212.25 | 210.02 |
+| adaptec4 | 496 K | 182.47 | 187.41 | 186.05 |
+| bigblue1 | 278 K | 96.01 | 99.03 | 98.73 |
+| bigblue2 | 558 K | 146.57 | 152.11 | 149.85 |
+| bigblue3 | 1.10 M | 351.27 | 361.87 | 358.24 |
+| bigblue4 | 2.18 M | 789.29 | 808.29 | 804.61 |
 
-## Standard-cell full-flow quality on ISPD 2005
+Runtime is Dali's internal wall time for each placement stage and excludes
+LEF/DEF parsing and result export. `Total` is the sum of global placement,
+legalization, and detailed placement.
 
-The following four-thread runs continue through legalization and detailed
-placement. They demonstrate that Dali produces a legal placement rather than
-stopping at the overlapping global-placement solution. HPWL is weighted HPWL
-in units of 1e6 um; runtime covers the complete placement flow.
-
-| design | cells | GP iters | global | legal | final | runtime |
+| design | threads | global | legal | detailed | total | total speedup |
 |---|---:|---:|---:|---:|---:|---:|
-| adaptec1 | 211 K | 49 | 79.05 | 81.60 | 80.87 | 134 s |
-| adaptec2 | 255 K | 44 | 88.95 | 91.33 | 90.54 | 247 s |
-| adaptec3 | 452 K | 45 | 200.80 | 205.52 | 203.50 | 280 s |
-| adaptec4 | 496 K | 45 | 182.69 | 188.96 | 186.84 | 315 s |
-| bigblue1 | 278 K | 45 | 95.84 | 98.75 | 98.49 | 411 s |
-| bigblue2 | 558 K | 40 | 145.71 | 151.27 | 148.89 | 332 s |
-| bigblue3 | 1.10 M | 39 | 338.71 | 348.84 | 345.70 | 1444 s |
+| adaptec1 | 1 | 64.4 s | 14.5 s | 41.2 s | 120.0 s | - |
+| adaptec1 | 8 | 29.5 s | 14.3 s | 38.1 s | 81.9 s | 1.47x |
+| adaptec2 | 1 | 79.1 s | 27.5 s | 115.4 s | 222.1 s | - |
+| adaptec2 | 8 | 37.9 s | 28.7 s | 115.4 s | 181.9 s | 1.22x |
+| adaptec3 | 1 | 154.2 s | 60.4 s | 46.4 s | 261.1 s | - |
+| adaptec3 | 8 | 83.1 s | 61.5 s | 46.8 s | 191.5 s | 1.36x |
+| adaptec4 | 1 | 116.0 s | 93.2 s | 81.9 s | 291.1 s | - |
+| adaptec4 | 8 | 59.9 s | 92.8 s | 75.0 s | 227.7 s | 1.28x |
+| bigblue1 | 1 | 102.1 s | 41.3 s | 268.3 s | 411.7 s | - |
+| bigblue1 | 8 | 44.3 s | 40.3 s | 279.1 s | 363.7 s | 1.13x |
+| bigblue2 | 1 | 139.7 s | 85.6 s | 77.3 s | 302.6 s | - |
+| bigblue2 | 8 | 77.6 s | 85.7 s | 76.0 s | 239.3 s | 1.26x |
+| bigblue3 | 1 | 320.7 s | 237.9 s | 773.4 s | 1331.9 s | - |
+| bigblue3 | 8 | 176.2 s | 244.6 s | 844.2 s | 1265.0 s | 1.05x |
+| bigblue4 | 1 | 730.2 s | 589.6 s | 1782.3 s | 3102.1 s | - |
+| bigblue4 | 8 | 421.7 s | 595.6 s | 1811.6 s | 2828.9 s | 1.10x |
 
-Legalization increases wirelength modestly, and detailed placement recovers
-part of that increase. bigblue4 is omitted from this table because a complete
-legalization and detailed-placement run has not yet been measured; its entry in
-the preceding table covers global placement only.
+Across the complete suite, global-placement time falls from 1706.4 seconds to
+930.2 seconds, a 1.83x aggregate speedup. Complete placement time falls from
+6042.6 seconds to 5379.8 seconds, a 1.12x speedup, because standard-cell
+legalization and detailed placement are currently serial. These two stages are
+the main remaining parallelization opportunity, especially on bigblue3 and
+bigblue4.
 
 ## Experimental: CP-SAT legalization
 
