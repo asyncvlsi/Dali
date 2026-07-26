@@ -36,6 +36,7 @@
 
 #include "spreading_region.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <limits>

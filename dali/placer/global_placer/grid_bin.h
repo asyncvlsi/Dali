@@ -23,6 +23,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <ostream>
 #include <set>
 #include <vector>
 
