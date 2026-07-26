@@ -11,7 +11,7 @@
 #ifndef DALI_PLACER_WELL_LEGALIZER_ORTOOLS_GRIDDED_STRIPE_OPTIMIZER_H_
 #define DALI_PLACER_WELL_LEGALIZER_ORTOOLS_GRIDDED_STRIPE_OPTIMIZER_H_
 
-#include <cstdint>
+#include <stdint.h>
 #include <utility>
 #include <vector>
 

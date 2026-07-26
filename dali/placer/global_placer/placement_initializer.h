@@ -21,8 +21,8 @@
 #ifndef DALI_PLACER_GLOBAL_PLACER_PLACEMENT_INITIALIZER_H_
 #define DALI_PLACER_GLOBAL_PLACER_PLACEMENT_INITIALIZER_H_
 
-#include <cstdint>
 #include <queue>
+#include <stdint.h>
 #include <string>
 #include <unordered_map>
 
