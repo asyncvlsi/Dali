@@ -55,7 +55,24 @@ drives the capture hook described below.
 Mouse wheel zooms, left-drag pans. Controls are split by what they act on:
 
   * **Run** — pause at every snapshot, Step, Continue, and Save PNG
-  * **View** — movable dots, I/O pins, the two displacement overlays, and Fit
+  * **View** — movable dots, I/O pins, delay lines, ACT-added cells, the two
+    displacement overlays, and Fit
+
+The **Delay lines** checkbox is off by default, preserving the ordinary view.
+When enabled, cells belonging to a registered delay line are orange and dashed
+red edges connect consecutive cells in the ordered chain. The edges are
+snapshot metadata from the placement engine, so they continue to show the
+structured perturbation as the chain moves between rows. Set
+`DALI_GUI_SHOW_DELAY_LINES=1` (or `true`) before launching for unattended
+captures.
+
+The **Added cells** checkbox is also off by default. When enabled, components
+introduced by an ACT-authoritative topology change are cyan. The topology
+change publishes `topology_change.request` before the host mutates ACT and
+`topology_change.seeded` after the returned delta has been applied and its new
+cells seeded. Later legalization and final snapshots retain the same membership,
+so animation shows each new cell moving from its local seed to its legal site.
+Set `DALI_GUI_SHOW_TOPOLOGY_ADDED=1` (or `true`) for unattended captures.
 
 ## Interactive signoff
 
@@ -99,4 +116,18 @@ snapshot can be captured at several zoom levels. `<region>` is `fit` for the
 whole design, or `<fx0>,<fy0>,<fx1>,<fy1>` as fractions of the design bounding
 box. Append `+cells` to draw cells as rectangles instead of dots.
 
+Further suffixes, in any order: `+window` grabs the whole window rather than
+the canvas, `+timing` grabs the diagnostics pane, `+select=<line>:worst` or
+`+select=<line>:#<id>` chooses which constraint the frame shows, and `+fade`
+ticks Fade unrelated for that frame and unticks it afterwards. A frame with a
+selection also writes `<dir>/<stem>.inspector.txt`, the inspector's own words
+beside the picture.
+
 Set `QT_QPA_PLATFORM=offscreen` to run without a display.
+Capture mode closes the Qt window after placement finishes, allowing a calling
+flow to continue with timing reports and artifact export. Without
+`DALI_GUI_CAPTURE`, the final window remains open until the operator closes it.
+
+`DALI_GUI_SHOW_DELAY_LINES=1` and `DALI_GUI_SHOW_TOPOLOGY_ADDED=1` can be
+combined with `DALI_GUI_CAPTURE` when the captured image should include the
+delay-line and topology-added-cell layers.

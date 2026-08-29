@@ -99,7 +99,7 @@ GlobalUpperBoundRefinement RoughGriddedUpperBoundRefiner::Refine(
   std::vector<GlobalUpperBoundViolation> violations =
       ConvertProvisionalViolations(provisional.violations);
 
-  LOG(info) << "  Rough gridded upper bound, iteration " << iteration << ":\n"
+  LOG(debug) << "  Rough gridded upper bound, iteration " << iteration << ":\n"
             << "    feasible : " << provisional.feasible << "\n"
             << "    mode     : "
             << (provisional.used_scavenge ? "scavenge" : "configured") << "\n"

@@ -27,7 +27,7 @@
 
 namespace dali {
 
-static bool ParseDouble(const std::string& text, double* value) {
+static bool ParseDouble(const std::string &text, double *value) {
   try {
     std::size_t parsed_length = 0;
     *value = std::stod(text, &parsed_length);
@@ -37,7 +37,7 @@ static bool ParseDouble(const std::string& text, double* value) {
   }
 }
 
-static bool ParseInt(const std::string& text, int* value) {
+static bool ParseInt(const std::string &text, int *value) {
   try {
     std::size_t parsed_length = 0;
     *value = std::stoi(text, &parsed_length);
@@ -47,8 +47,8 @@ static bool ParseInt(const std::string& text, int* value) {
   }
 }
 
-static bool HasLineContinuation(const std::string& line,
-                                std::size_t* backslash_position) {
+static bool HasLineContinuation(const std::string &line,
+                                std::size_t *backslash_position) {
   const std::size_t last = line.find_last_not_of(" \t\r");
   if (last == std::string::npos || line[last] != '\\') {
     return false;
@@ -65,7 +65,7 @@ static bool HasLineContinuation(const std::string& line,
 }
 
 /** Return true when a successful command can change physical placement. */
-static bool ChangesPlacement(const std::vector<std::string>& arguments) {
+static bool ChangesPlacement(const std::vector<std::string> &arguments) {
   std::string command = arguments.front();
   const std::string namespace_prefix = "dali:";
   if (command.compare(0, namespace_prefix.size(), namespace_prefix) == 0) {
@@ -79,17 +79,17 @@ static bool ChangesPlacement(const std::vector<std::string>& arguments) {
   if (command != "place-io" || arguments.size() < 2) {
     return false;
   }
-  const std::string& option = arguments[1];
+  const std::string &option = arguments[1];
   return option != "-h" && option != "--help" && option != "-c" &&
          option != "-config" && option != "--config" && option != "-show" &&
          option != "--show" && option != "-check" && option != "--check";
 }
 
-DaliCommandProcessor::DaliCommandProcessor(Dali* dali) : dali_(dali) {}
+DaliCommandProcessor::DaliCommandProcessor(Dali *dali) : dali_(dali) {}
 
 bool DaliCommandProcessor::TokenizeCommandLine(
-    const std::string& command_line, std::vector<std::string>* arguments,
-    std::string* error_message) {
+    const std::string &command_line, std::vector<std::string> *arguments,
+    std::string *error_message) {
   arguments->clear();
   std::string argument;
   char quote = '\0';
@@ -152,19 +152,19 @@ bool DaliCommandProcessor::TokenizeCommandLine(
 }
 
 bool DaliCommandProcessor::ForwardArgvCommand(
-    const std::vector<std::string>& arguments,
-    bool (Dali::*command)(int, char**)) {
+    const std::vector<std::string> &arguments,
+    bool (Dali::*command)(int, char **)) {
   std::vector<std::string> mutable_arguments = arguments;
-  std::vector<char*> argv;
+  std::vector<char *> argv;
   argv.reserve(mutable_arguments.size());
-  for (std::string& argument : mutable_arguments) {
+  for (std::string &argument : mutable_arguments) {
     argv.push_back(argument.data());
   }
   return (dali_->*command)(static_cast<int>(argv.size()), argv.data());
 }
 
 bool DaliCommandProcessor::ExecuteRun(
-    const std::vector<std::string>& arguments) {
+    const std::vector<std::string> &arguments) {
   if (arguments.size() != 2) {
     LOG(error) << "Usage: run placement\n";
     return false;
@@ -177,7 +177,7 @@ bool DaliCommandProcessor::ExecuteRun(
 }
 
 bool DaliCommandProcessor::ExecuteLegacyPlaceDesign(
-    const std::vector<std::string>& arguments) {
+    const std::vector<std::string> &arguments) {
   if (arguments.size() < 2 || arguments.size() > 3) {
     LOG(error) << "Usage: place-design <target_density> [number_of_threads]\n";
     return false;
@@ -197,7 +197,7 @@ bool DaliCommandProcessor::ExecuteLegacyPlaceDesign(
 }
 
 bool DaliCommandProcessor::ExecuteLegacyGlobalPlace(
-    const std::vector<std::string>& arguments) {
+    const std::vector<std::string> &arguments) {
   if (arguments.size() < 2 || arguments.size() > 3) {
     LOG(error) << "Usage: global-place <target_density> [number_of_threads]\n";
     return false;
@@ -225,6 +225,35 @@ void DaliCommandProcessor::ReportUsage() const {
       << "  set <option> <value>     configure a placement run\n"
       << "  show settings            report the resolved runtime settings\n"
       << "  run placement            execute the configured placement flow\n"
+      << "  read-delay-sites <file> load declared timing-delay metadata\n"
+      << "  timing-report            synchronize placement and report timing\n"
+      << "  runtime-report           report accumulated wall time by flow phase\n"
+      << "  timing-check             fail if timing constraints are violated\n"
+      << "  write-timing-repair-plan <file.json>\n"
+      << "                           write globally ranked delay candidates\n"
+      << "  write-timing-constraint-identities <file.json> [site ...]\n"
+      << "  write-current-timing-constraint-identities <file.json> [site ...]\n"
+      << "                           write identities without refreshing timing\n"
+      << "  write-timing-decomposition <file.json> [site ...]\n"
+      << "                           write stable constraint endpoints and slacks\n"
+      << "  weight-fast-paths <mult>  weight datapath nets on constraint fast paths\n"
+      << "  weight-critical-cycle <multiplier>\n"
+      << "                           weight mapped critical-cycle nets\n"
+      << "  detour-delay-line <prefix> <amplitude_um>\n"
+      << "                           zigzag a delay line's interior to add "
+         "wire delay\n"
+      << "  spread-delay-line <prefix> <separation_rows> [<stride>]\n"
+      << "  stage-band <prefix> [<prefix> ...]\n"
+      << "                           spread a delay line across rows to add "
+         "wire delay\n"
+      << "  close-timing-with-delay-lines <margin_ps> <initial_step> "
+         "<max_rounds>\n"
+      << "                           place, measure, and widen delay lines "
+         "until timing closes\n"
+      << "  delay-line-timing-feedback <margin_ps> <initial_step> <warmup> "
+         "<interval> <freeze> <damping> <max_separation>\n"
+      << "                           retune delay lines from timing during "
+         "global placement\n"
       << "  place-io ...             configure or run I/O placement\n"
       << "  show-io [pin]            report current I/O pin placement\n"
       << "  move-io <pin> <x> <y> [orient]\n"
@@ -244,7 +273,7 @@ void DaliCommandProcessor::ReportUsage() const {
 }
 
 bool DaliCommandProcessor::DispatchCommand(
-    const std::vector<std::string>& arguments) {
+    const std::vector<std::string> &arguments) {
   if (arguments.empty()) {
     return true;
   }
@@ -289,6 +318,258 @@ bool DaliCommandProcessor::DispatchCommand(
   }
   if (command == "run") {
     return ExecuteRun(arguments);
+  }
+  if (command == "read-delay-sites") {
+    if (arguments.size() != 2) {
+      LOG(error) << "Usage: read-delay-sites <file.json>\n";
+      return false;
+    }
+    return dali_->ReadDelayRepairSites(ResolvePath(arguments[1]));
+  }
+  if (command == "timing-report") {
+    if (arguments.size() != 1) {
+      LOG(error) << "Usage: timing-report\n";
+      return false;
+    }
+    return dali_->ReportTiming();
+  }
+  if (command == "runtime-report") {
+    if (arguments.size() != 1) {
+      LOG(error) << "Usage: runtime-report\n";
+      return false;
+    }
+    return dali_->ReportRuntimeBreakdown();
+  }
+  if (command == "timing-check") {
+    if (arguments.size() != 1) {
+      LOG(error) << "Usage: timing-check\n";
+      return false;
+    }
+    return dali_->CheckTiming();
+  }
+  if (command == "write-timing-repair-plan") {
+    if (arguments.size() != 2) {
+      LOG(error) << "Usage: write-timing-repair-plan <file.json>\n";
+      return false;
+    }
+    return dali_->WriteTimingRepairPlan(ResolvePath(arguments[1]));
+  }
+  if (command == "write-timing-constraint-identities") {
+    if (arguments.size() < 2) {
+      LOG(error) << "Usage: write-timing-constraint-identities <file.json> "
+                    "[<replaceable_site_prefix> ...]\n";
+      return false;
+    }
+    return dali_->WriteTimingConstraintIdentities(
+        ResolvePath(arguments[1]),
+        std::vector<std::string>(arguments.begin() + 2, arguments.end()));
+  }
+  if (command == "write-current-timing-constraint-identities") {
+    if (arguments.size() < 2) {
+      LOG(error)
+          << "Usage: write-current-timing-constraint-identities <file.json> "
+             "[<replaceable_site_prefix> ...]\n";
+      return false;
+    }
+    return dali_->WriteCurrentTimingConstraintIdentities(
+        ResolvePath(arguments[1]),
+        std::vector<std::string>(arguments.begin() + 2, arguments.end()));
+  }
+  if (command == "write-timing-decomposition") {
+    if (arguments.size() < 2) {
+      LOG(error) << "Usage: write-timing-decomposition <file.json> "
+                    "[<delay_site_prefix> ...]\n";
+      return false;
+    }
+    return dali_->WriteCurrentTimingDecomposition(
+        ResolvePath(arguments[1]),
+        std::vector<std::string>(arguments.begin() + 2, arguments.end()));
+  }
+  if (command == "weight-fast-paths") {
+    double multiplier = 0.0;
+    if (arguments.size() != 2 || !ParseDouble(arguments[1], &multiplier)) {
+      LOG(error) << "Usage: weight-fast-paths <multiplier>\n";
+      return false;
+    }
+    return dali_->WeightFastPathNets(multiplier);
+  }
+
+  if (command == "detour-delay-line") {
+    double amplitude = 0.0;
+    if (arguments.size() != 3 || !ParseDouble(arguments[2], &amplitude) ||
+        amplitude <= 0.0) {
+      LOG(error) << "Usage: detour-delay-line <name_prefix> <amplitude_um>\n";
+      return false;
+    }
+    return dali_->DetourDelayLine(arguments[1], amplitude);
+  }
+
+  if (command == "spread-delay-line") {
+    int separation = 0;
+    int column_stride = 1;
+    const bool arity_ok = arguments.size() == 3 || arguments.size() == 4;
+    if (!arity_ok || !ParseInt(arguments[2], &separation) || separation < 0 ||
+        (arguments.size() == 4 &&
+         (!ParseInt(arguments[3], &column_stride) || column_stride < 0))) {
+      LOG(error) << "Usage: spread-delay-line <name_prefix> <separation_rows> "
+                    "[<column_stride>|0 for widest]\n";
+      return false;
+    }
+    return dali_->SpreadDelayLineAcrossRows(arguments[1], separation,
+                                            column_stride);
+  }
+
+  if (command == "register-delay-line") {
+    if (arguments.size() != 2) {
+      LOG(error) << "Usage: register-delay-line <name_prefix>\n";
+      return false;
+    }
+    return dali_->RegisterDelayLine(arguments[1]);
+  }
+
+  if (command == "observe-timing-domains") {
+    // Observation only. Records which coordinates each timing measurement was
+    // actually taken on, which is the question the sizing mismatch turns on.
+    if (arguments.size() < 2) {
+      LOG(error) << "Usage: observe-timing-domains <prefix> [<site> ...]\n";
+      return false;
+    }
+    dali_->EnableTimingDomainObservation(
+        ResolvePath(arguments[1]),
+        std::vector<std::string>(arguments.begin() + 2, arguments.end()));
+    return true;
+  }
+
+  if (command == "topology-request") {
+    // The fixed experiment, stated rather than decided. Travels the same
+    // transport and the same delta validation as the automatic path.
+    if (arguments.size() != 4) {
+      LOG(error) << "Usage: topology-request <site> <current_pairs> "
+                    "<requested_pairs>\n";
+      return false;
+    }
+    int current_pairs = 0;
+    int requested_pairs = 0;
+    if (!ParseInt(arguments[2], &current_pairs) || current_pairs < 1 ||
+        !ParseInt(arguments[3], &requested_pairs) ||
+        requested_pairs <= current_pairs) {
+      LOG(error) << "topology-request needs 1 <= current_pairs < "
+                    "requested_pairs\n";
+      return false;
+    }
+    dali_->SetFixedTopologyRequest(arguments[1], current_pairs,
+                                   requested_pairs);
+    return true;
+  }
+
+  if (command == "delay-line-characterization") {
+    // The measured gain for one site, and the pair range it was measured over.
+    // Stated in the recipe rather than derived in the run: one size and one
+    // slack cannot yield a slope, and a coefficient describes only the sizes it
+    // came from.
+    if (arguments.size() != 5) {
+      LOG(error) << "Usage: delay-line-characterization <site> <ps_per_pair> "
+                    "<min_pairs> <max_pairs>\n";
+      return false;
+    }
+    double ps_per_pair = 0.0;
+    int min_pairs = 0;
+    int max_pairs = 0;
+    if (!ParseDouble(arguments[2], &ps_per_pair) || ps_per_pair <= 0.0) {
+      LOG(error) << "delay-line-characterization needs a positive ps-per-pair "
+                    "gain\n";
+      return false;
+    }
+    if (!ParseInt(arguments[3], &min_pairs) || min_pairs < 1 ||
+        !ParseInt(arguments[4], &max_pairs) || max_pairs < min_pairs) {
+      LOG(error) << "delay-line-characterization needs 1 <= min_pairs <= "
+                    "max_pairs\n";
+      return false;
+    }
+    dali_->SetDelayLineCharacterization(arguments[1], ps_per_pair, min_pairs,
+                                        max_pairs);
+    return true;
+  }
+
+  if (command == "delay-line-response") {
+    if (arguments.size() != 5) {
+      LOG(error) << "Usage: delay-line-response <site> <current_pairs> "
+                    "<target_pairs> <covered_deficit_ps>\n";
+      return false;
+    }
+    int current_pairs = 0;
+    int target_pairs = 0;
+    double covered_deficit_ps = 0.0;
+    if (!ParseInt(arguments[2], &current_pairs) || current_pairs < 1 ||
+        !ParseInt(arguments[3], &target_pairs) ||
+        target_pairs <= current_pairs ||
+        !ParseDouble(arguments[4], &covered_deficit_ps) ||
+        covered_deficit_ps <= 0.0) {
+      LOG(error) << "delay-line-response needs 1 <= current_pairs < "
+                    "target_pairs and positive covered_deficit_ps\n";
+      return false;
+    }
+    return dali_->AddDelayLineResponse(arguments[1], current_pairs,
+                                       target_pairs, covered_deficit_ps);
+  }
+
+  if (command == "stage-band") {
+    if (arguments.size() < 2) {
+      LOG(error) << "Usage: stage-band <name_prefix> [<name_prefix> ...]\n";
+      return false;
+    }
+    return dali_->DeclareStageBand(
+        std::vector<std::string>(arguments.begin() + 1, arguments.end()));
+  }
+
+  if (command == "close-timing-with-delay-lines") {
+    double margin = 0.0;
+    int initial_step = 0;
+    int max_rounds = 0;
+    if (arguments.size() != 4 || !ParseDouble(arguments[1], &margin) ||
+        !ParseInt(arguments[2], &initial_step) ||
+        !ParseInt(arguments[3], &max_rounds)) {
+      LOG(error) << "Usage: close-timing-with-delay-lines <margin_ps> "
+                    "<initial_step_rows> <max_rounds>\n";
+      return false;
+    }
+    return dali_->CloseTimingWithDelayLineSpread(margin, initial_step,
+                                                 max_rounds);
+  }
+
+  if (command == "delay-line-timing-feedback") {
+    double margin = 0.0;
+    double damping = 1.0;
+    int initial_step = 0;
+    int warmup = 0;
+    int interval = 0;
+    int freeze = 0;
+    int max_separation = 0;
+    if (arguments.size() != 8 || !ParseDouble(arguments[1], &margin) ||
+        !ParseInt(arguments[7], &max_separation) || max_separation < 0 ||
+        !ParseInt(arguments[2], &initial_step) ||
+        !ParseInt(arguments[3], &warmup) || !ParseInt(arguments[4], &interval) ||
+        !ParseInt(arguments[5], &freeze) ||
+        !ParseDouble(arguments[6], &damping) || initial_step < 1 ||
+        interval < 1 || damping <= 0.0) {
+      LOG(error) << "Usage: delay-line-timing-feedback <margin_ps> "
+                    "<initial_step> <warmup> <interval> <freeze> <damping> "
+                    "<max_separation>\n";
+      return false;
+    }
+    dali_->EnableDelayLineTimingFeedback(margin, initial_step, warmup, interval,
+                                         freeze, damping, max_separation);
+    return true;
+  }
+
+  if (command == "weight-critical-cycle") {
+    double multiplier = 0.0;
+    if (arguments.size() != 2 || !ParseDouble(arguments[1], &multiplier) ||
+        multiplier <= 0.0) {
+      LOG(error) << "Usage: weight-critical-cycle <positive_multiplier>\n";
+      return false;
+    }
+    return dali_->WeightCriticalCycleNets(multiplier);
   }
   if (command == "place-io") {
     std::vector<std::string> normalized_arguments = arguments;
@@ -344,7 +625,7 @@ bool DaliCommandProcessor::DispatchCommand(
 }
 
 bool DaliCommandProcessor::ExecuteCommand(
-    const std::vector<std::string>& arguments) {
+    const std::vector<std::string> &arguments) {
   const bool is_success = DispatchCommand(arguments);
   if (is_success && !arguments.empty() && ChangesPlacement(arguments)) {
     dali_->WriteInteractiveCommandSnapshot(arguments.front());
@@ -352,8 +633,8 @@ bool DaliCommandProcessor::ExecuteCommand(
   return is_success;
 }
 
-bool DaliCommandProcessor::ExecuteCommandLine(const std::string& command_line,
-                                              const std::string& source_name,
+bool DaliCommandProcessor::ExecuteCommandLine(const std::string &command_line,
+                                              const std::string &source_name,
                                               std::size_t line_number) {
   std::vector<std::string> arguments;
   std::string error_message;
@@ -372,7 +653,7 @@ bool DaliCommandProcessor::ExecuteCommandLine(const std::string& command_line,
   return true;
 }
 
-std::string DaliCommandProcessor::ResolvePath(const std::string& path) const {
+std::string DaliCommandProcessor::ResolvePath(const std::string &path) const {
   std::filesystem::path resolved(path);
   if (resolved.is_absolute()) {
     return resolved.lexically_normal().string();
@@ -391,7 +672,7 @@ std::string DaliCommandProcessor::ResolvePath(const std::string& path) const {
   return (current_directory / resolved).lexically_normal().string();
 }
 
-bool DaliCommandProcessor::RunCommandFile(const std::string& file_name) {
+bool DaliCommandProcessor::RunCommandFile(const std::string &file_name) {
   const std::string resolved_file_name = ResolvePath(file_name);
   std::ifstream input(resolved_file_name);
   if (!input) {
@@ -439,15 +720,15 @@ bool DaliCommandProcessor::RunCommandFile(const std::string& file_name) {
   return is_success;
 }
 
-void DaliCommandProcessor::ReportHistory(std::ostream& output) const {
+void DaliCommandProcessor::ReportHistory(std::ostream &output) const {
   for (std::size_t i = 0; i < command_history_.size(); ++i) {
     output << "  " << i + 1 << "  " << command_history_[i] << "\n";
   }
 }
 
 bool DaliCommandProcessor::RunInteractive(
-    std::istream& input, std::ostream& output, bool show_prompt,
-    const std::function<void()>& wait_for_input) {
+    std::istream &input, std::ostream &output, bool show_prompt,
+    const std::function<void()> &wait_for_input) {
   output << "Dali interactive mode. Type 'help' for commands and 'quit' to "
             "finish.\n";
 
@@ -525,19 +806,19 @@ bool DaliCommandProcessor::RunInteractive(
   return true;
 }
 
-bool Dali::ExecuteCommand(const std::vector<std::string>& arguments) {
+bool Dali::ExecuteCommand(const std::vector<std::string> &arguments) {
   return DaliCommandProcessor(this).ExecuteCommand(arguments);
 }
 
-bool Dali::ExecuteCommandLine(const std::string& command_line) {
+bool Dali::ExecuteCommandLine(const std::string &command_line) {
   return DaliCommandProcessor(this).ExecuteCommandLine(command_line);
 }
 
-bool Dali::RunCommandFile(const std::string& file_name) {
+bool Dali::RunCommandFile(const std::string &file_name) {
   return DaliCommandProcessor(this).RunCommandFile(file_name);
 }
 
-bool Dali::RunInteractiveSession(std::istream& input, std::ostream& output,
+bool Dali::RunInteractiveSession(std::istream &input, std::ostream &output,
                                  bool show_prompt) {
   interactive_session_expected_ = true;
   if (HasInputDesign()) {
@@ -565,4 +846,4 @@ bool Dali::RunInteractiveSession(std::istream& input, std::ostream& output,
   return is_success;
 }
 
-}  // namespace dali
+} // namespace dali

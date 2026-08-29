@@ -22,6 +22,7 @@
 #define DALI_PLACER_GLOBAL_PLACER_HPWL_OPTIMIZER_H_
 #include <Eigen/IterativeLinearSolvers>
 #include <Eigen/Sparse>
+#include <array>
 #include <cstddef>
 #include <utility>
 #include <vector>
@@ -35,6 +36,25 @@ struct RelativeYConstraint {
   int first_component_id = -1;
   int second_component_id = -1;
   double offset = 0.0;
+};
+
+/**
+ * A component pulled toward one absolute Y by a pseudo-net in the Y system.
+ *
+ * Used to express a stage band as part of the quadratic problem rather than by
+ * repositioning cells after the solve. A rule that moves cells states the
+ * answer and leaves the objective to disagree with it on the next iteration; a
+ * term in the matrix makes the band one more thing the solve balances, so the
+ * placement that comes out already accounts for it.
+ *
+ * The term is w*(y_i - target)^2, which contributes w to the diagonal and
+ * w*target to the right-hand side. Being diagonal it cannot break the
+ * positive-definiteness the conjugate-gradient solve depends on, which is why
+ * the band is expressed as an attracting target and never as a repulsion.
+ */
+struct StageBandAnchor {
+  int component_id = -1;
+  double target_y = 0.0;
 };
 
 /** Index type used by Eigen sparse matrices. */
@@ -52,6 +72,33 @@ class HpwlOptimizer {
   HpwlOptimizer(Circuit* ckt_ptr, int num_threads);
   virtual ~HpwlOptimizer() = default;
 
+  /**
+   * The anchor pseudo-net targets, one pair per component, and the
+   * accumulated strength applied to them.
+   *
+   * Anchors are what tie each solve to the previous upper bound, and they
+   * accumulate across iterations rather than being derived from the current
+   * placement. An optimizer rebuilt mid-run therefore starts with none, and the
+   * next solve is unconstrained -- measured on bd_pipeline as the lower bound
+   * dropping from 63465 to 56975 in one iteration. Carrying this across a
+   * rebuild is what makes an unchanged topology resume where it left off.
+   *
+   * Empty when the optimizer has not anchored yet.
+   */
+  struct AnchorState {
+    std::vector<double> x;
+    std::vector<double> y;
+    /**
+     * Accumulated anchor strength. It rises every iteration and is never
+     * recomputed from one, so a rebuilt optimizer restarts it near zero and
+     * anchors an order of magnitude weaker than the run had reached.
+     */
+    double alpha = 0.0;
+    bool is_set = false;
+  };
+  virtual AnchorState ExportAnchorState() const { return {}; }
+  virtual void ImportAnchorState(const AnchorState&) {}
+
   /** Prepare optimizer state before iterative optimization. */
   virtual void Initialize() = 0;
 
@@ -65,6 +112,11 @@ class HpwlOptimizer {
   void SetRelativeYConstraints(
       std::vector<RelativeYConstraint> relative_y_constraints) {
     relative_y_constraints_ = std::move(relative_y_constraints);
+  }
+
+  /** Replace the stage-band anchors consumed by the next optimization. */
+  void SetStageBandAnchors(std::vector<StageBandAnchor> stage_band_anchors) {
+    stage_band_anchors_ = std::move(stage_band_anchors);
   }
 
   /** Ignore nets at or above this pin count in the quadratic wire model. */
@@ -104,6 +156,7 @@ class HpwlOptimizer {
 
   size_t net_ignore_threshold_ = 100;
   std::vector<RelativeYConstraint> relative_y_constraints_;
+  std::vector<StageBandAnchor> stage_band_anchors_;
 };
 
 /** Bound-to-bound quadratic HPWL optimizer. */
@@ -139,11 +192,16 @@ class BoundToBoundHpwlOptimizer : public HpwlOptimizer {
   void PullComponentBackToRegion();
 
   void UpdateAnchorLocation();
+  AnchorState ExportAnchorState() const override;
+  void ImportAnchorState(const AnchorState& state) override;
+
   virtual void UpdateAnchorAlpha();
   virtual void BuildProblemWithAnchorX();
   virtual void BuildProblemWithAnchorY();
   /** Add translation-invariant physical row relationships to the Y problem. */
   void AddRelativeYConstraints();
+  /** Fold the requested stage-band targets into the Y system. */
+  void AddStageBandAnchors();
   void BackUpComponentLocation();
   /** Build and solve the X system with anchor pseudo-nets folded in. */
   void OptimizeHpwlXWithAnchor(int num_threads);
@@ -159,8 +217,15 @@ class BoundToBoundHpwlOptimizer : public HpwlOptimizer {
   struct CachedSolutionPin {
     int component_id;
     bool is_movable;
-    double offset_x;
-    double offset_y;
+    std::array<double, 8> offset_x;
+    std::array<double, 8> offset_y;
+
+    double OffsetX(ComponentOrient orient) const {
+      return offset_x[static_cast<size_t>(orient)];
+    }
+    double OffsetY(ComponentOrient orient) const {
+      return offset_y[static_cast<size_t>(orient)];
+    }
   };
 
   /**** parameters for CG solver optimization configuration ****/

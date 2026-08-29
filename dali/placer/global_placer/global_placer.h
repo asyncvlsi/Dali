@@ -31,7 +31,9 @@
 #include "dali/placer/global_placer/global_upper_bound_refiner.h"
 #include "dali/placer/global_placer/hpwl_optimizer.h"
 #include "dali/placer/global_placer/look_ahead_spreader.h"
+#include "dali/placer/global_placer/placement_checkpoint.h"
 #include "dali/placer/global_placer/placement_initializer.h"
+#include "dali/placer/global_placer/stage_band.h"
 #include "dali/placer/placer.h"
 
 namespace dali {
@@ -41,6 +43,32 @@ namespace dali {
 class GlobalPlacer : public Placer {
  public:
   GlobalPlacer() = default;
+
+  /** Timing of the mutually exclusive phases inside the iteration loop. */
+  struct RuntimeBreakdown {
+    double optimizer_wall_seconds = 0.0;
+    double spreader_wall_seconds = 0.0;
+    double shape_wall_seconds = 0.0;
+    double physical_refinement_wall_seconds = 0.0;
+    double timing_observer_wall_seconds = 0.0;
+    double anchor_feedback_wall_seconds = 0.0;
+    double other_wall_seconds = 0.0;
+    int iterations = 0;
+    int physical_refinements = 0;
+    int timing_observer_calls = 0;
+    int anchor_feedbacks = 0;
+
+    double AccountedWallSeconds() const {
+      return optimizer_wall_seconds + spreader_wall_seconds +
+             shape_wall_seconds + physical_refinement_wall_seconds +
+             timing_observer_wall_seconds + anchor_feedback_wall_seconds +
+             other_wall_seconds;
+    }
+  };
+
+  const RuntimeBreakdown& GetRuntimeBreakdown() const {
+    return runtime_breakdown_;
+  }
 
   /** Set maximum global placement iterations. */
   void SetMaxIteration(int max_iter);
@@ -84,10 +112,168 @@ class GlobalPlacer : public Placer {
   /** Set the regional capacity policy used by the global spreader. */
   void SetCapacityModel(std::shared_ptr<PlacementCapacityModel> capacity_model);
 
+  /**
+   * A delay line held in a fixed shape relative to its own first element.
+   *
+   * Offsets rather than absolute locations, because the shape has to ride along
+   * with wherever wirelength optimization decides the delay line belongs. Only
+   * the shape is imposed; the position is still the placer's to choose.
+   *
+   * Offsets are precomputed by the caller so no placement geometry lives here.
+   */
+  struct DelayLineShape {
+    std::vector<int> component_ids;
+    std::vector<double> offset_x;
+    std::vector<double> offset_y;
+  };
+
+  /**
+   * Hold delay lines in a spread shape across global placement iterations.
+   *
+   * Wirelength optimization abuts a chain of identical inverters, which is
+   * exactly the delay a bundled-data slow path needs. Re-imposing the shape on
+   * every upper bound makes it the target the anchor pseudo-nets pull toward,
+   * so the spread is carried through the iterations instead of being competed
+   * away by the objective that created the problem.
+   */
+  void SetDelayLineShapes(std::vector<DelayLineShape> shapes);
+
+  /** The cells of one pipeline stage, to be held in one horizontal band. */
+  struct StageBand {
+    std::vector<int> component_ids;
+  };
+
+  /**
+   * Hold each pipeline stage in a horizontal band across global placement.
+   *
+   * Bands are stacked in the order given, from the bottom of the placement
+   * region upward, with heights proportional to their cell area. Like the
+   * delay-line shapes, a band is re-imposed on every upper bound so that the
+   * anchor pseudo-nets carry it into the next analytical solve; unlike them, it
+   * constrains only the vertical axis, leaving the objective free to order
+   * cells within a stage along the bit axis.
+   *
+   * Passing an empty vector removes the constraint.
+   */
+  void SetStageBands(std::vector<StageBand> bands);
+
+  /** Choose equal-height bands over area-proportional ones. */
+  void SetStageBandSpacing(StageBandSpacing spacing) {
+    stage_band_spacing_ = spacing;
+  }
+
+  /**
+   * Additionally reshape the spread upper bound to the bands.
+   *
+   * Off by default: the bands are expressed as terms in the quadratic problem,
+   * and repositioning cells after the solve as well would be asserting the
+   * answer on top of asking for it. Available because the spreader is free to
+   * scatter a band that the solve had placed, and a design may need the
+   * stronger form.
+   */
+  void SetStageBandReshapeUpperBound(bool enable) {
+    stage_band_reshape_upper_bound_ = enable;
+  }
+
+  /** Re-evaluate timing mid-placement and return updated delay-line shapes. */
+  using DelayLineFeedbackCallback =
+      std::function<bool(int iteration, std::vector<DelayLineShape> *shapes)>;
+
+  /**
+   * Retune delay-line shapes from timing during the placement itself.
+   *
+   * Cheaper and better conditioned than re-placing per separation: the outer
+   * form pays a full placement for every value tried and each run lands
+   * somewhere slightly different, while retuning in place keeps one trajectory
+   * and changes only the shape being carried.
+   *
+   * Timing is not consulted before `warmup` iterations, because early placements
+   * have components still piled together and the resulting slack describes
+   * nothing. It is consulted every `interval` iterations after that, and not at
+   * all after `freeze` -- the remaining iterations then converge against a
+   * shape that stops moving, which the convergence test needs.
+   */
+  void SetDelayLineFeedback(DelayLineFeedbackCallback callback, int warmup,
+                            int interval, int freeze);
+
+  /** Notify the owner after feedback shapes have been applied to the circuit. */
+  using DelayLineFeedbackAppliedCallback = std::function<void(int iteration)>;
+  void SetDelayLineFeedbackAppliedCallback(
+      DelayLineFeedbackAppliedCallback callback);
+
+  /**
+   * Called with the accepted physical placement live, before anchor feedback.
+   *
+   * The accepted physical upper bound is the state checkpoint eligibility is
+   * decided on, and it exists only for the few statements between the refiner
+   * accepting it and ApplyRefinedAnchorFeedback restoring coordinates from the
+   * analytical solve. Anything wanting to observe that state has to be handed
+   * it here; by the time the iteration ends it is gone.
+   *
+   * Deliberately a bare iteration number. The placer does not know what the
+   * observer intends to measure, and must not: keeping this generic is what
+   * keeps delay-line policy out of GlobalPlacer.
+   */
+  using AcceptedPhysicalObserver = std::function<void(int iteration)>;
+  /**
+   * Observe the placement once the refined anchor feedback has been applied.
+   *
+   * A different state from the accepted physical one, not a later view of it:
+   * the feedback restores coordinates from the analytical solve, so the two
+   * disagree by construction. Amendment N found sizing reading this one while
+   * believing it read the accepted upper bound, so both are now nameable.
+   */
+  void SetPostFeedbackObserver(AcceptedPhysicalObserver observer) {
+    post_feedback_observer_ = std::move(observer);
+  }
+
+  void SetAcceptedPhysicalObserver(AcceptedPhysicalObserver observer) {
+    accepted_physical_observer_ = std::move(observer);
+  }
+
   /** Install an optional periodic physical upper-bound refiner. */
   void SetUpperBoundRefiner(
       std::unique_ptr<GlobalUpperBoundRefiner> upper_bound_refiner,
       int warmup_iteration, int interval);
+
+  /**
+   * Installs an observer consulted after every accepted physical upper bound.
+   * The observer does not own placement: it may ask for the iteration loop to
+   * pause so the caller can change topology, and the placer then rebuilds its
+   * engines and resumes from the coordinates already reached.
+   */
+  void SetCheckpointObserver(PlacementCheckpointObserver *observer) {
+    checkpoint_observer_ = observer;
+  }
+  int CheckpointRestarts() const { return checkpoint_restarts_; }
+
+  /** Accepted upper-bound HPWL per iteration, spanning the whole run. */
+  const std::vector<double> &AcceptedUpperBoundHpwls() const {
+    return accepted_upper_bound_hpwl_;
+  }
+
+  /**
+   * Whether any topology-sized placement engine is currently built.
+   *
+   * A host may only change the netlist while this is false. Exposed so that
+   * can be asserted at the boundary rather than taken on trust.
+   */
+  bool ArePlacementEnginesOpen() const {
+    return optimizer_ != nullptr || spreader_ != nullptr;
+  }
+
+  /**
+   * Drop the caches that describe a component count the circuit no longer has.
+   *
+   * The in-loop checkpoint does this on its own path. A topology change made
+   * after global placement has finished still leaves the same caches behind --
+   * the best upper-bound placement and the feedback checkpoint are sized by the
+   * netlist, and restoring either would abort on the size check. Exposed rather
+   * than left private because the stage boundary is outside this class.
+   */
+  void ForgetTopologySizedCaches(size_t components_before) {
+    InvalidateTopologySizedCaches(components_before);
+  }
 
   /** Select whether a refined physical upper bound becomes the next anchor. */
   void SetUseRefinedUpperBoundAsAnchor(bool enable) {
@@ -120,6 +306,18 @@ class GlobalPlacer : public Placer {
 
   // Iteration and convergence controls for look-ahead legalization.
   int cur_iter_ = 0;
+  PlacementCheckpointObserver *checkpoint_observer_ = nullptr;
+  int checkpoint_restarts_ = 0;
+  /** The checkpoint that asked placement to stop, pending its mutation. */
+  PlacementCheckpoint pending_checkpoint_;
+  /**
+   * Whether the checkpointed iteration had already satisfied convergence.
+   *
+   * Recorded rather than inferred, because a checkpoint must not decide the
+   * question by accident: the convergence test used to be skipped on a
+   * checkpointed iteration, which silently added one.
+   */
+  bool converged_at_checkpoint_ = false;
   int max_iter_ = 100;
   int min_iter_ = 10;
   double convergence_gap_threshold_ = 0.08;
@@ -149,7 +347,19 @@ class GlobalPlacer : public Placer {
   /** Return true when this iteration has a valid bound for convergence. */
   bool HasCurrentConvergenceUpperBound() const;
   void PreparePlacement();
-  void RunPlacementIterations();
+  /** Runs iterations until convergence, the iteration cap, or a checkpoint. */
+  bool RunPlacementIterations();
+  /**
+   * Hands the host its mutation window. Expects every topology-sized engine to
+   * be closed already, and applies any delta it returns transactionally.
+   */
+  TopologyMutationStatus InvokeTopologyMutation();
+
+  /** Clears state that belongs to the whole run, not to one topology. */
+  void InitializeRunState();
+
+  /** Drops caches whose size or ids the changed topology invalidated. */
+  void InvalidateTopologySizedCaches(size_t components_before);
   bool ShouldRefineUpperBound() const;
   /** Save the complete component state when the accepted upper bound improves.
    */
@@ -161,6 +371,16 @@ class GlobalPlacer : public Placer {
   /** Restore the checkpoint requested by a destabilized physical refiner. */
   bool RollbackRefinementFeedbackIfRequested(
       const GlobalUpperBoundRefinement& refinement);
+  /** Re-impose every registered delay-line shape on the current placement. */
+  void ApplyDelayLineShapes();
+  /** Map every registered stage's cells back into that stage's band. */
+  void ApplyStageBands();
+  /** Divide the region among the registered bands. */
+  std::vector<StageBandInterval> StageBandIntervals() const;
+  /** Aim each band's cells at that band for the next analytical solve. */
+  void PublishStageBandAnchors();
+  /** Ask for retuned delay-line shapes when this iteration is due. */
+  void RefreshDelayLineShapes(int iteration);
   /** Apply the configured refined coordinates to the next analytical anchor. */
   void ApplyRefinedAnchorFeedback(
       const std::vector<ComponentLocation>& placement_before_refinement,
@@ -217,10 +437,29 @@ class GlobalPlacer : public Placer {
   GlobalLalMacroBoundaryMode lal_macro_boundary_mode_ =
       GlobalLalMacroBoundaryMode::kOff;
   SnapshotCallback snapshot_callback_;
+  AcceptedPhysicalObserver accepted_physical_observer_;
+  AcceptedPhysicalObserver post_feedback_observer_;
   std::shared_ptr<PlacementCapacityModel> capacity_model_ =
       std::make_shared<AreaCapacityModel>();
   std::unique_ptr<HpwlOptimizer> optimizer_;
   std::unique_ptr<GlobalSpreader> spreader_;
+  std::vector<DelayLineShape> delay_line_shapes_;
+  std::vector<StageBand> stage_bands_;
+  StageBandSpacing stage_band_spacing_ = StageBandSpacing::kAreaProportional;
+  bool stage_band_reshape_upper_bound_ = false;
+  DelayLineFeedbackCallback delay_line_feedback_;
+  DelayLineFeedbackAppliedCallback delay_line_feedback_applied_callback_;
+  int delay_line_feedback_warmup_ = 0;
+  int delay_line_feedback_interval_ = 1;
+  int delay_line_feedback_freeze_ = 0;
+  /**
+   * Iteration at which a delay-line shape last changed, -1 if none has.
+   *
+   * Convergence is judged from a window of upper-bound HPWL, and a shape change
+   * invalidates every sample taken before it, so the placer has to know where
+   * that boundary is.
+   */
+  int last_delay_line_shape_change_iteration_ = -1;
   std::unique_ptr<GlobalUpperBoundRefiner> upper_bound_refiner_;
   std::vector<double> accepted_upper_bound_hpwl_;
   // Only the entries of accepted_upper_bound_hpwl_ that are rough-legalized.
@@ -243,6 +482,7 @@ class GlobalPlacer : public Placer {
   GlobalRefinementFeedbackMode refinement_feedback_mode_ =
       GlobalRefinementFeedbackMode::kYRowTransactionalConsistent;
   bool current_upper_bound_is_physical_ = false;
+  RuntimeBreakdown runtime_breakdown_;
 };
 
 }  // namespace dali

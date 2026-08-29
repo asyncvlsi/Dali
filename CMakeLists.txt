@@ -8,6 +8,12 @@ project(
     LANGUAGES CXX
 )
 
+option(
+    DALI_FORCE_NO_GALOIS
+    "Compile Dali's no-Galois fallback even when PhyDB has timing support"
+    OFF
+)
+
 if (POLICY CMP0167)
     cmake_policy(SET CMP0167 NEW)
 endif ()
@@ -44,7 +50,12 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 #Dependency Detection : ACT_HOME, Galois, OpenMP, Git Commit
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 include(cmake/FindACT.cmake)
-include(cmake/FindGaloisEDA.cmake)
+if (DALI_FORCE_NO_GALOIS)
+    set(Galois_LIBRARIES "")
+    message(STATUS "Forcing the no-Galois Dali build path")
+else ()
+    include(cmake/FindGaloisEDA.cmake)
+endif ()
 include(cmake/FindOpenMPPackage.cmake)
 include(cmake/FindGitCommitVersion.cmake)
 
@@ -76,8 +87,25 @@ include(cmake/ConfigureQtGui.cmake)
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 #Output Directories
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+# Build outputs stay in the build tree.
+#
+# These used to point into the source tree, so every configuration wrote the
+# same ${CMAKE_CURRENT_SOURCE_DIR}/bin and /lib -- and there are routinely three
+# at once: a developer's build/, update_toolchain.sh's build-install/, and any
+# scratch tree used to check that a no-Qt build still works. Each silently
+# replaced the others' binaries and static libraries, so a Qt-enabled dali could
+# be overwritten by a no-Qt one with nothing to show for it.
+#
+# Nothing consumes the source-tree copies: interact links
+# $(ACT_HOME)/lib/libdalilib.a and the flows call $(ACT_HOME)/bin, both of which
+# come from `cmake --install` rather than from here.
+#
+# They are still redirected, into the build tree's own bin/ and lib/, because
+# the `dali` executable target and the `dali/` object directory collide in the
+# build root: the linker is asked to write `dali` where a directory already
+# exists. That collision is why the source tree was used in the first place.
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 #Library Targets
@@ -105,6 +133,16 @@ add_library(
     ${SOURCES}
 )
 add_dependencies(dalilib dali_git_version)
+
+if (DALI_FORCE_NO_GALOIS)
+    # PhyDB's generated config header normally owns this value. Defining its
+    # include guard lets a Galois-enabled development install compile the same
+    # fallback branch used with a no-Galois PhyDB in CI.
+    target_compile_definitions(
+        dalilib
+        PUBLIC PHYDB_TIMING_CONFIG_H_ PHYDB_USE_GALOIS=0
+    )
+endif ()
 
 if (DEFINED NEED_LIBCXXFS)
     set(LIBCXXFS_LIB "stdc++fs")
@@ -170,6 +208,8 @@ add_subdirectory(tests/application)
 add_subdirectory(tests/common)
 add_subdirectory(tests/circuit)
 add_subdirectory(tests/placer)
+add_subdirectory(tests/timing)
+add_subdirectory(tests/gui)
 
 add_custom_target(
     test-unit
@@ -190,6 +230,41 @@ add_custom_target(
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
     USES_TERMINAL
     COMMENT "Run all configured tests"
+)
+
+add_custom_target(
+    check-no-galois-compile
+    COMMAND ${CMAKE_COMMAND}
+            -S ${CMAKE_SOURCE_DIR}
+            -B ${CMAKE_BINARY_DIR}/no-galois-compile
+            -DDALI_FORCE_NO_GALOIS=ON
+            -DDALI_OR_TOOLS=OFF
+            -DCMAKE_DISABLE_FIND_PACKAGE_Qt6=TRUE
+            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    # Everything, not just dalilib. The first CI failure was bin/dali; the
+    # second was a test binary calling two helpers that sat behind the
+    # timing-host guard, which libdalilib.a alone looked innocent of.
+    #
+    # Link errors are tolerated here on purpose: a Galois-enabled PhyDB cannot
+    # satisfy a forced no-Galois link, and that mixture never occurs on CI. The
+    # objects are what the check below needs, and they are produced regardless.
+    #
+    # Compiling is not linking. The script builds the tree and then checks the
+    # part that must hold in every configuration and can be checked without a
+    # matching PhyDB.
+    COMMAND bash
+            ${CMAKE_SOURCE_DIR}/scripts/check_dali_symbols_self_contained.sh
+            ${CMAKE_COMMAND}
+            ${CMAKE_BINARY_DIR}/no-galois-compile
+    #
+    # A source condition, not a symbol one: NAN and INFINITY are macros libc++
+    # exposes through other headers and libstdc++ does not, so building here can
+    # never find a file that relies on it. Text is the only local signal.
+    COMMAND bash
+            ${CMAKE_SOURCE_DIR}/scripts/check_math_macro_includes.sh
+            ${CMAKE_SOURCE_DIR}
+    USES_TERMINAL
+    COMMENT "Compile the no-Galois fallback used by the minimal CI toolchain"
 )
 
 #-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
@@ -213,4 +288,9 @@ install(TARGETS dali DESTINATION bin)
 install(TARGETS dalilib DESTINATION lib)
 if (DALI_HAS_QT_GUI)
     install(TARGETS daligui DESTINATION lib)
+else ()
+    # The installed library is how downstream tools learn whether Dali has a
+    # viewer, so one left behind by an earlier build with Qt would keep saying
+    # yes after Qt went away.
+    install(CODE "file(REMOVE \"\${CMAKE_INSTALL_PREFIX}/lib/libdaligui.a\")")
 endif ()

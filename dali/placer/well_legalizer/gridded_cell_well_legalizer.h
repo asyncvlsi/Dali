@@ -106,6 +106,10 @@ class GriddedCellWellLegalizer : public Placer {
   /** Set a callback invoked after legalization and gridded detailed stages. */
   void SetSnapshotCallback(SnapshotCallback snapshot_callback);
 
+  /** Report the movable-to-physical completion stage boundary. */
+  using PlacementStageCallback = std::function<void(const std::string&)>;
+  void SetPlacementStageCallback(PlacementStageCallback stage_callback);
+
   /** Load well legalizer configuration. */
   void LoadConf(std::string const& config_file) override;
 
@@ -542,6 +546,8 @@ class GriddedCellWellLegalizer : public Placer {
   /** Retry strict partitioning with last-column scavenging when needed. */
   bool RetryMovableCellLegalizationWithScavenging();
   /** Retry strict clustering after balancing measured stripe overflow. */
+  /** Retry with ownership decided by fragment capacity, after proximity failed. */
+  bool RetryMovableCellLegalizationWithCapacityOwnership();
   bool RetryMovableCellLegalizationWithBalancing();
   /** Log why a stripe could not be legalized inside its assigned whitespace. */
   void LogStripeLegalizationFailure(const StripeColumn& col,
@@ -556,6 +562,9 @@ class GriddedCellWellLegalizer : public Placer {
 
   /** Validate and record the final gridded placement's physical legality. */
   bool ValidateFinalPlacement() const;
+
+  /** Return the complete final-placement legality report by value. */
+  GriddedPlacementLegalityReport ValidateFinalPlacementReport() const;
 
   /** Return total gridded-row overflow area in grid units. */
   double ProvisionalOverflowArea() const;
@@ -643,6 +652,7 @@ class GriddedCellWellLegalizer : public Placer {
   WellSpacePartitioner space_partitioner_;
   GriddedDetailedPlacer gridded_detailed_placer_;
   SnapshotCallback snapshot_callback_;
+  PlacementStageCallback placement_stage_callback_;
   bool suppress_snapshots_ = false;
   int snapshot_attempt_ = 0;
   std::vector<ProvisionalGriddedPlacementViolation> last_clustering_violations_;

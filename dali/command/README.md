@@ -108,6 +108,15 @@ Flow control:
 - `set <option> <value>` configures a later placement run.
 - `show settings` reports the resolved runtime settings.
 - `run placement` runs the configured placement pipeline.
+- `timing-report` synchronizes Dali's current component locations with phyDB,
+  updates estimated wire parasitics, runs the attached timing engine, and
+  reports a structured timing snapshot. It returns an error without affecting
+  placement when Dali was built without timing support or no timing host is
+  attached.
+- `timing-check` performs the same synchronization and returns an error unless
+  the critical-cycle period meets `timing_period_target` and all relative
+  timing constraints pass. Use it as the final signoff command in an automated
+  flow. The target uses the attached timing host's period unit.
 - `source <file.dali>` executes another recipe.
 - `write-def [output]` exports the current placement.
 - `help` reports the command list.
@@ -131,8 +140,10 @@ available for existing integrations.
 Recipes should configure placement settings separately and invoke
 `run placement`. Supported `set` options include:
 
-- `output_name`, `target_density`, `num_threads`, `io_metal_layer`, and
-  `net_ignore_threshold`
+- `output_name`, `target_density`, `timing_period_target`, `num_threads`,
+  `io_metal_layer`, and `net_ignore_threshold`
+- `delay_line_fold_count` controls the geometry-only number of stacked delay-line
+  folds; `1` preserves the two-row shape
 - `global_min_iterations`, `global_max_iterations`, and `global_initializer`
 - `detailed_max_rounds` and `detailed_max_move_candidates`
 - `well_legalization_mode` and `standard_cell_legalizer_cost`
@@ -157,6 +168,31 @@ bool ExecuteCommand(const std::vector<std::string>& arguments);
 bool ExecuteCommandLine(const std::string& command_line);
 bool RunCommandFile(const std::string& file_name);
 ```
+
+### Timing repair plans
+
+When Dali is attached to a timing-enabled PhyDB, a recipe can write an
+advisory delay-repair plan after placement:
+
+```text
+write-timing-repair-plan "timing_repair_plan.json"
+```
+
+The command refreshes placement-derived timing before writing the file. Its
+top-level critical-cycle and relative-timing metrics let an external rebuild
+transaction compare a trial against the unchanged baseline without parsing
+logs. Each candidate is a physical net that appears only on the slow side of
+at least one violated relative-timing constraint. The plan also lists every
+constraint that would improve or degrade to first order if delay were added to
+that net, plus the driver and load pins observed on its timing-witness edges. Multiple drivers
+are retained so the timing host can reject an ambiguous topology instead of
+silently editing the wrong branch. When ACT mappings are available, the plan
+also includes logical net and endpoint names that an `interact` host can resolve
+without reversing phyDB's mangled physical names. The command does not edit the
+netlist; the host must still apply a tentative edit, reanalyze the complete
+design, and reject or roll back harmful changes. These names identify flattened
+ACT timing objects; they are not arguments for `cell-addbuf`, whose current API
+accepts only a simple instance and pin within a named process.
 
 `ExecuteCommand` accepts both `place-io ...` and namespaced
 `dali:place-io ...`. This lets a future `interact` adapter forward argv-style

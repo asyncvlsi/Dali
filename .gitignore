@@ -40,6 +40,8 @@ cmake-build-release/
 # Ignore the build and lib dirs
 build/
 build-asan/
+build-install/
+build-integration/
 test-results/
 dali_viz/
 __pycache__/

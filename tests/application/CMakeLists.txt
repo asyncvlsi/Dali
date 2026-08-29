@@ -29,3 +29,8 @@ add_dali_application_test(application_dali_command_processor_test
 add_dali_application_test(application_dali_config_test dali_config_test.cc)
 add_dali_application_test(application_dali_placement_flow_test
                           dali_placement_flow_test.cc)
+
+add_executable(application_rebind_phydb_test rebind_phydb_test.cc)
+target_link_libraries(application_rebind_phydb_test PRIVATE dalilib ${DALI_GTEST_MAIN})
+add_test(NAME application_rebind_phydb_test COMMAND application_rebind_phydb_test)
+set_tests_properties(application_rebind_phydb_test PROPERTIES LABELS "unit;application")

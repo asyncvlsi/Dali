@@ -93,6 +93,9 @@ class Design {
   std::vector<Component>& Components() {
     return component_collection_.Instances();
   }
+  const std::vector<Component>& Components() const {
+    return component_collection_.Instances();
+  }
 
   /** Return regular component name-to-id lookup. */
   std::unordered_map<std::string, size_t>& ComponentNameIdMap() {

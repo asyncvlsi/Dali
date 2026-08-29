@@ -207,13 +207,36 @@ GriddedPlacementLegalityReport GriddedPlacementValidator::Validate() const {
       }
     }
 
+    // Rows overlap only if they share area, so both axes have to be tested.
+    // `ordered_rows` holds every row in the column, and a column carries a
+    // stripe per band of x, so rows sitting side by side routinely share a y
+    // range while being nowhere near each other. Ordering by y and comparing
+    // neighbours reported those pairs as overlapping -- on the timing-driven
+    // pipeline flows rows spanning x [518,586] and x [397,490] were counted as
+    // overlapping because their y ranges met -- and legalization failed on
+    // placements that were legal.
+    //
+    // Comparing neighbours is unsound here in the other direction too. Rows do
+    // not all span their stripe: x ranges of [397,490], [518,586] and [397,586]
+    // coexist, so no single ordering puts every pair that shares x adjacent,
+    // and a genuine overlap could be hidden behind an intervening row. Each
+    // pair that shares x is therefore tested directly.
+    //
+    // Sorting by x keeps that from being quadratic in practice: once a row
+    // starts at or beyond the current row's right edge, no later row can reach
+    // back, so the inner scan stops.
     std::sort(ordered_rows.begin(), ordered_rows.end(),
               [](const GriddedRow* lhs, const GriddedRow* rhs) {
-                if (lhs->LLY() != rhs->LLY()) return lhs->LLY() < rhs->LLY();
-                return lhs->LLX() < rhs->LLX();
+                if (lhs->LLX() != rhs->LLX()) return lhs->LLX() < rhs->LLX();
+                return lhs->LLY() < rhs->LLY();
               });
-    for (size_t i = 1; i < ordered_rows.size(); ++i) {
-      if (ordered_rows[i]->LLY() < ordered_rows[i - 1]->URY()) {
+    for (size_t i = 0; i < ordered_rows.size(); ++i) {
+      const GriddedRow* lhs = ordered_rows[i];
+      for (size_t k = i + 1; k < ordered_rows.size(); ++k) {
+        const GriddedRow* rhs = ordered_rows[k];
+        if (rhs->LLX() >= lhs->URX()) break;
+        if (lhs->LLX() >= rhs->URX()) continue;
+        if (lhs->URY() <= rhs->LLY() || rhs->URY() <= lhs->LLY()) continue;
         ++report.row_overlap_count;
       }
     }

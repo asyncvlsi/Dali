@@ -155,7 +155,7 @@ void LookAheadSpreader::InitializeGridBinSize() {
   LOG(debug) << "  Global placement bin physical width, height: "
              << grid_bin_width * grid_value_x << "  "
              << grid_bin_height * grid_value_y << "um\n";
-  LOG(info) << "    LAL target components per bin: "
+  LOG(debug) << "    LAL target components per bin: "
             << target_component_count_per_bin_ << "\n";
 
   std::vector<GridBin> temp_grid_bin_column(grid_cnt_y);
@@ -1350,13 +1350,13 @@ double LookAheadSpreader::Spread() {
   LOG(debug) << "(RecursiveBisectionComponentSpreading time: "
              << recursive_bisection_component_spreading_time_ << "s)\n";
 
-  LOG(info) << "    LAL density before/after: " << overfilled_bin_count_before
+  LOG(debug) << "    LAL density before/after: " << overfilled_bin_count_before
             << "/" << last_overfilled_bin_count_ << " bins over target, peak "
             << peak_bin_density_before << "/" << last_peak_bin_density_
             << ", hotspots: " << last_hotspot_count_
             << ", max hotspot overflow: " << last_max_hotspot_overflow_
             << ", HPWL delta: " << last_hpwl_after_ - last_hpwl_before_ << "\n";
-  LOG(info) << "    LAL displacement avg/max: " << avg_displacement_grid << "/"
+  LOG(debug) << "    LAL displacement avg/max: " << avg_displacement_grid << "/"
             << max_displacement_grid << " grid units, " << avg_displacement_um
             << "/" << max_displacement_um << " um\n";
 

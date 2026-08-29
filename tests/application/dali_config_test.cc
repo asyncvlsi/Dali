@@ -29,6 +29,7 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_FALSE(options.disable_log_prefix);
   EXPECT_EQ(options.num_threads, 1);
   EXPECT_EQ(options.well_legalization_mode, dali::WellPartitionMode::kStrict);
+  EXPECT_EQ(options.well_emit_mode, 1);
   EXPECT_FALSE(options.disable_global_place);
   EXPECT_FALSE(options.disable_legalization);
   EXPECT_FALSE(options.disable_detailed_place);
@@ -111,6 +112,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_int("dali.disable_log_prefix", 1);
   config_set_int("dali.num_threads", 4);
   config_set_string("dali.well_legalization_mode", "scavenge");
+  config_set_int("dali.well_emit_mode", 0);
   config_set_int("dali.disable_global_place", 1);
   config_set_int("dali.disable_legalization", 1);
   config_set_int("dali.disable_detailed_place", 1);
@@ -198,6 +200,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   EXPECT_TRUE(options.disable_log_prefix);
   EXPECT_EQ(options.num_threads, 4);
   EXPECT_EQ(options.well_legalization_mode, dali::WellPartitionMode::kScavenge);
+  EXPECT_EQ(options.well_emit_mode, 0);
   EXPECT_TRUE(options.disable_global_place);
   EXPECT_TRUE(options.disable_legalization);
   EXPECT_TRUE(options.disable_detailed_place);

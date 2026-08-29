@@ -32,3 +32,10 @@ add_dali_circuit_test(circuit_programmatic_construction_test
                       programmatic_construction_test.cc)
 add_dali_circuit_test(circuit_statistics_test circuit_statistics_test.cc)
 add_dali_circuit_test(circuit_tech_test tech_test.cc)
+add_dali_circuit_test(circuit_post_load_insertion_test
+                      post_load_insertion_test.cc)
+
+add_executable(circuit_topology_delta_test topology_delta_test.cc)
+target_link_libraries(circuit_topology_delta_test PRIVATE dalilib ${DALI_GTEST_MAIN})
+add_test(NAME circuit_topology_delta_test COMMAND circuit_topology_delta_test)
+set_tests_properties(circuit_topology_delta_test PROPERTIES LABELS "unit;circuit")
