@@ -27,6 +27,30 @@ add_test(NAME well_geometry_test COMMAND well_geometry_test)
 set_tests_properties(well_geometry_test
                      PROPERTIES LABELS "unit;placer;well_legalizer")
 
+add_executable(delay_line_reservation_test delay_line_reservation_test.cc)
+target_link_libraries(delay_line_reservation_test
+                      PRIVATE dalilib ${DALI_GTEST_MAIN})
+add_test(NAME delay_line_reservation_test COMMAND delay_line_reservation_test)
+set_tests_properties(delay_line_reservation_test
+                     PROPERTIES LABELS "unit;placer;well_legalizer")
+
+add_executable(stripe_capacity_assignment_test stripe_capacity_assignment_test.cc)
+target_link_libraries(stripe_capacity_assignment_test
+                      PRIVATE dalilib ${DALI_GTEST_MAIN})
+add_test(NAME stripe_capacity_assignment_test
+         COMMAND stripe_capacity_assignment_test)
+set_tests_properties(stripe_capacity_assignment_test
+                     PROPERTIES LABELS "unit;placer;well_legalizer")
+
+add_executable(delay_line_reservation_application_test
+               delay_line_reservation_application_test.cc)
+target_link_libraries(delay_line_reservation_application_test
+                      PRIVATE dalilib ${DALI_GTEST_MAIN})
+add_test(NAME delay_line_reservation_application_test
+         COMMAND delay_line_reservation_application_test)
+set_tests_properties(delay_line_reservation_application_test
+                     PROPERTIES LABELS "unit;placer;well_legalizer")
+
 add_executable(gridded_row_test gridded_row_test.cc)
 target_link_libraries(gridded_row_test PRIVATE dalilib ${DALI_GTEST_MAIN})
 add_test(NAME gridded_row_test COMMAND gridded_row_test)

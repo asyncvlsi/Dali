@@ -49,6 +49,7 @@ class QtPlacementSnapshotSink : public PlacementSnapshotSink {
   std::unique_ptr<QApplication> owned_application_;
   std::unique_ptr<QtPlacementWindow> window_;
   bool enabled_ = false;
+  std::string capture_spec_;
 };
 
 }  // namespace dali

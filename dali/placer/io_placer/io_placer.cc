@@ -436,12 +436,16 @@ bool IoPlacer::ConfigSetMetalLayer(int boundary_index, int metal_layer_index) {
 }
 
 bool IoPlacer::SetGlobalMetalLayer(int metal_layer_index) {
+  if (global_metal_layer_index_ == metal_layer_index) {
+    return true;
+  }
   for (int i = 0; i < NUM_OF_PLACE_BOUNDARY; ++i) {
     bool is_successful = ConfigSetMetalLayer(i, metal_layer_index);
     if (!is_successful) {
       return false;
     }
   }
+  global_metal_layer_index_ = metal_layer_index;
   return true;
 }
 
@@ -751,7 +755,7 @@ int IoPlacer::ConstrainedEdge(IoPin const& iopin) const {
 }
 
 bool IoPlacer::ConstraintCmd(int argc, char** argv) {
-  // -constraint <pin_name | dir:input|output|inout> <left|right|bottom|top>
+  // -constraint <pin_name | dir:INPUT|OUTPUT|INOUT> <left|right|bottom|top>
   if (argc != 2) {
     LOG(error) << "place-io -constraint needs 2 arguments: <pin|dir:DIR> "
                   "<left|right|bottom|top>\n";
@@ -771,6 +775,77 @@ bool IoPlacer::ConstraintCmd(int argc, char** argv) {
     return ConstrainDirectionToEdge(dir, boundary);
   }
   return ConstrainPinToEdge(target, boundary);
+}
+
+bool IoPlacer::HasEdgeConstraints() const {
+  return !pin_edge_constraint_.empty() || !direction_edge_constraint_.empty();
+}
+
+bool IoPlacer::PlaceConstrainedPinsForGlobalPlacement() {
+  if (!HasEdgeConstraints()) {
+    return true;
+  }
+  if (global_metal_layer_index_ < 0) {
+    LOG(error) << "Cannot anchor constrained I/O pins without a metal layer\n";
+    return false;
+  }
+
+  std::array<std::vector<IoPin*>, NUM_OF_PLACE_BOUNDARY> pins_by_edge;
+  for (IoPin& iopin : circuit_->IoPins()) {
+    if (iopin.IsPrePlaced()) {
+      continue;
+    }
+    int edge = ConstrainedEdge(iopin);
+    if (edge >= LEFT && edge <= TOP) {
+      pins_by_edge[edge].push_back(&iopin);
+    }
+  }
+
+  for (int edge = LEFT; edge <= TOP; ++edge) {
+    auto& pins = pins_by_edge[edge];
+    if (pins.empty()) {
+      continue;
+    }
+    if (boundary_spaces_[edge].layer_spaces_.empty()) {
+      LOG(error) << "No metal layer configured for constrained I/O edge "
+                 << edge << "\n";
+      return false;
+    }
+    IoBoundaryLayerSpace& layer_space =
+        boundary_spaces_[edge].layer_spaces_.front();
+    // The normal post-placement path computes this shape while building its
+    // boundary resources.  Global anchoring runs earlier, so initialize the
+    // same technology-derived geometry before using it.
+    layer_space.ComputeDefaultShape(
+        phy_db_ptr_->tech().GetManufacturingGrid());
+    RectD const& shape = (edge == LEFT || edge == RIGHT)
+                             ? layer_space.default_vertical_shape
+                             : layer_space.default_horizontal_shape;
+    double low = (edge == LEFT || edge == RIGHT)
+                     ? circuit_->design().RegionBottom()
+                     : circuit_->design().RegionLeft();
+    double high = (edge == LEFT || edge == RIGHT)
+                      ? circuit_->design().RegionTop()
+                      : circuit_->design().RegionRight();
+    double boundary = (edge == LEFT)   ? circuit_->design().RegionLeft()
+                      : (edge == RIGHT) ? circuit_->design().RegionRight()
+                      : (edge == BOTTOM) ? circuit_->design().RegionBottom()
+                                         : circuit_->design().RegionTop();
+    ComponentOrient orient = (edge == LEFT)   ? E
+                             : (edge == RIGHT) ? W
+                             : (edge == BOTTOM) ? N
+                                                : S;
+    double step = (high - low) / (pins.size() + 1);
+    for (std::size_t index = 0; index < pins.size(); ++index) {
+      double coordinate = std::round(low + (index + 1) * step);
+      double x = (edge == LEFT || edge == RIGHT) ? boundary : coordinate;
+      double y = (edge == LEFT || edge == RIGHT) ? coordinate : boundary;
+      FixIoPin(pins[index], layer_space.metal_layer, shape.LLX(), shape.LLY(),
+               shape.URX(), shape.URY(), x, y, orient);
+    }
+  }
+  LOG(info) << "Anchored constrained I/O pins before global placement\n";
+  return true;
 }
 
 bool IoPlacer::AreaArrayPlace(MetalLayer* metal_layer, int rows, int cols) {
@@ -877,6 +952,10 @@ bool IoPlacer::AreaArrayPlaceCmd(int argc, char** argv) {
 void IoPlacer::FixIoPin(IoPin* pin, MetalLayer* layer, double lx, double ly,
                         double ux, double uy, double dali_x, double dali_y,
                         ComponentOrient orient) {
+  bool created_dummy_component = !circuit_->IsComponentExisting(pin->Name());
+  if (created_dummy_component) {
+    circuit_->EnsureIoPinDummyComponent(pin->Name(), dali_x, dali_y, orient);
+  }
   pin->SetLayerPtr(layer);
   pin->SetShape(lx, ly, ux, uy);
   pin->SetOrient(orient);
@@ -904,6 +983,9 @@ void IoPlacer::FixIoPin(IoPin* pin, MetalLayer* layer, double lx, double ly,
                       circuit_->Micron2DatabaseUnit(uy));
   phydb_pin->SetPlacement(phydb::PlaceStatus::FIXED, db_x, db_y,
                           OrientDali2PhyDB(orient));
+  if (created_dummy_component) {
+    circuit_->AttachIoPinDummyComponentToNet(pin->Name());
+  }
 }
 
 bool IoPlacer::GroupPlace(MetalLayer* metal_layer, int boundary_index,

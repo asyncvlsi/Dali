@@ -58,6 +58,7 @@ struct CircuitConstants {
 class Circuit {
   friend class Placer;
   friend class GlobalPlacer;
+  friend class IoPlacer;
 
  public:
   Circuit();
@@ -71,6 +72,15 @@ class Circuit {
 
   /** Initialize from PhyDB. The PhyDB object must outlive this Circuit. */
   void InitializeFromPhyDB(phydb::PhyDB* phy_db_ptr);
+
+  /**
+   * Repoint at a PhyDB rebuilt underneath this circuit, without reloading.
+   *
+   * Used when a host re-elaborates the design and rebuilds PhyDB while the
+   * placement continues. The circuit keeps its own components, nets and
+   * technology, so only the bare pointer needs updating.
+   */
+  void SetPhyDB(phydb::PhyDB* phy_db_ptr);
 
   /** Convert length from microns to LEF/DEF database units. */
   int Micron2DatabaseUnit(double x) const;
@@ -256,12 +266,15 @@ class Circuit {
 
   // set the capacity of COMPONENTs, PINs, and NETs, it is not allowed to add
   // more items than their corresponding capacity
+  /** Spare component/net capacity kept for post-load insertion. */
+  static size_t InsertionHeadroom(size_t components_count);
   void ReserveSpaceForDesignImp(size_t components_count, size_t pins_count,
                                 size_t nets_count);
 
   /**** APIs for Component (COMPONENTS in DEF) ****/
   // get all components
   std::vector<Component>& Components();
+  const std::vector<Component>& Components() const;
 
   // check if a component with the given name exists or not
   bool IsComponentExisting(std::string const& component_name);
@@ -454,6 +467,9 @@ class Circuit {
   // returns total HPWL, considering cell pin offsets, unit in micron
   double WeightedHPWL();
 
+  /** Return pin-to-pin HPWL in microns without applying net weights. */
+  double UnweightedHPWL();
+
   /** Return one net's weighted HPWL in physical micron units. */
   double NetWeightedHPWL(int net_id);
 
@@ -547,8 +563,6 @@ class Circuit {
 
   void LoadImaginaryCellFile();
 
-  void SetPhyDB(phydb::PhyDB* phy_db_ptr);
-
   // add a Macro with name, width, and height. The return value is a pointer
   // to this new Macro for adding pins. Unit in grid value. The pointer is
   // invalidated by adding another macro.
@@ -587,6 +601,20 @@ class Circuit {
   // add a placed IOPin. The returned pointer is invalidated by adding another
   // I/O pin.
   IoPin* AddPlacedIOPin(std::string const& iopin_name, double lx, double ly);
+
+  /**
+   * Ensure the fixed zero-area terminal used to anchor a placed I/O pin exists.
+   *
+   * This separate entry point is for placement-time pin anchoring after nets
+   * have been loaded. It uses the capacity reserved during DEF import and
+   * briefly reopens the component registry without weakening AddComponent's
+   * construction-time net assertion.
+   */
+  void EnsureIoPinDummyComponent(std::string const& iopin_name, double lx,
+                                 double ly, ComponentOrient orient);
+
+  /** Attach an existing placed I/O pin's dummy terminal to its net. */
+  void AttachIoPinDummyComponentToNet(std::string const& iopin_name);
 
   // shrink off grid die area
   RectI ShrinkOffGridDieArea(int lower_x, int lower_y, int upper_x,

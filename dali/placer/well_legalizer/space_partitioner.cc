@@ -109,8 +109,17 @@ void WellSpacePartitioner::DetectAvailSpace() {
   macro_segments.resize(tot_num_rows_);
   SegI tmp(0, 0);
   bool out_of_range;
+  // Ledger, read-only: how much of the region is blocked by non-movable cells
+  // and how much whitespace survives. The question this answers is whether the
+  // reserved delay-line cells are visible here at all -- they are set FIXED
+  // just before legalization runs, and everything downstream assumes their
+  // footprint has already been subtracted right here.
+  long long fixed_visited = 0;
+  long long fixed_in_region = 0;
+  long long fixed_blocked_area = 0;
   for (auto& component : circuit_->Components()) {
     if (component.IsMovable()) continue;
+    ++fixed_visited;
     int ly = int(std::floor(component.LLY()));
     int uy = int(std::ceil(component.URY()));
     int lx = int(std::floor(component.LLX()));
@@ -130,6 +139,9 @@ void WellSpacePartitioner::DetectAvailSpace() {
     tmp.lo = std::max(Left(), lx);
     tmp.hi = std::min(Right(), ux);
     if (tmp.hi > tmp.lo) {
+      ++fixed_in_region;
+      fixed_blocked_area +=
+          static_cast<long long>(tmp.hi - tmp.lo) * (end_row - start_row + 1);
       for (int i = start_row; i <= end_row; ++i) {
         macro_segments[i].push_back(tmp);
       }
@@ -171,17 +183,38 @@ void WellSpacePartitioner::DetectAvailSpace() {
 
   white_space_in_rows_.resize(tot_num_rows_);
   int min_component_width = int(circuit_->MinComponentWidth());
+  long long raw_white_area = 0;
+  long long kept_white_area = 0;
+  long long dropped_fragments = 0;
+  long long kept_fragments = 0;
   for (int i = 0; i < tot_num_rows_; ++i) {
     int len = int(intermediate_seg_rows[i].size());
     white_space_in_rows_[i].reserve(len / 2);
     for (int j = 0; j < len; j += 2) {
-      if (intermediate_seg_rows[i][j + 1] - intermediate_seg_rows[i][j] >=
-          min_component_width) {
+      const int span = intermediate_seg_rows[i][j + 1] - intermediate_seg_rows[i][j];
+      raw_white_area += span;
+      if (span >= min_component_width) {
+        kept_white_area += span;
+        ++kept_fragments;
         white_space_in_rows_[i].emplace_back(intermediate_seg_rows[i][j],
                                              intermediate_seg_rows[i][j + 1]);
+      } else if (span > 0) {
+        // Narrower than any movable cell, so unusable and discarded. Sparse
+        // fixed cells chop rows into exactly this kind of sliver, and the area
+        // lost that way is capacity the design never gets back.
+        ++dropped_fragments;
       }
     }
   }
+  LOG(info)
+      << "WELL_SPACE_LEDGER rows " << tot_num_rows_ << " row_height "
+      << row_height_ << " min_component_width " << min_component_width
+      << " fixed_visited " << fixed_visited << " fixed_in_region "
+      << fixed_in_region << " fixed_blocked_row_span " << fixed_blocked_area
+      << " raw_white_row_span " << raw_white_area << " kept_white_row_span "
+      << kept_white_area << " dropped_white_row_span "
+      << (raw_white_area - kept_white_area) << " kept_fragments "
+      << kept_fragments << " dropped_fragments " << dropped_fragments << "\n";
 }
 
 void WellSpacePartitioner::UpdateWhiteSpaceInCol(StripeColumn& col) {
@@ -328,12 +361,12 @@ bool WellSpacePartitioner::StartPartitioning() {
       max_component_width_ = std::max(max_component_width_, component.Width());
     }
   }
-  LOG(info) << "Max movable component width: " << max_component_width_ << "\n";
+  LOG(debug) << "Max movable component width: " << max_component_width_ << "\n";
 
   // determine the width of columns
   cluster_width_ = max_row_width_;
   if (cluster_width_ <= 0) {
-    LOG(info) << "Using default gridded row width: 2*max_unplug_length_\n";
+    LOG(debug) << "Using default gridded row width: 2*max_unplug_length_\n";
     stripe_width_ = (int)std::round(max_unplug_length_ * stripe_width_factor_);
   } else {
     // A row narrower than MaxPlugDist is fine -- even preferred -- for latch-up
@@ -351,11 +384,11 @@ bool WellSpacePartitioner::StartPartitioning() {
     stripe_width_ = region_width;
   }
   tot_col_num_ = std::ceil(region_width / (double)stripe_width_);
-  LOG(info) << "  Total number of columns: " << tot_col_num_ << "\n";
+  LOG(debug) << "  Total number of columns: " << tot_col_num_ << "\n";
   int max_clusters_per_col = region_height / circuit_->MinComponentHeight();
   col_list.resize(tot_col_num_);
   stripe_width_ = region_width / tot_col_num_;
-  LOG(info) << "  Gridded row width: " << stripe_width_ * circuit_->GridValueX()
+  LOG(debug) << "  Gridded row width: " << stripe_width_ * circuit_->GridValueX()
             << "um, " << stripe_width_ << "\n";
   DaliWarns(stripe_width_ < max_component_width_,
             "Maximum component width is longer than gridded row width?");
@@ -375,7 +408,7 @@ bool WellSpacePartitioner::StartPartitioning() {
   }
   DecomposeSpaceToSimpleStripes();
 
-  LOG(info) << "Maximum possible number of gridded rows in a column: "
+  LOG(debug) << "Maximum possible number of gridded rows in a column: "
             << max_clusters_per_col << "\n";
 
   AssignComponentToColBasedOnWhiteSpace();

@@ -84,9 +84,27 @@ void Net::AddIoPin(IoPin* io_pin) { iopin_ptrs_.push_back(io_pin); }
 
 std::vector<IoPin*>& Net::IoPinPtrs() { return iopin_ptrs_; }
 
-void Net::SetWeight(double weight) { weight_ = weight; }
+void Net::SetWeight(double weight) {
+  weight_ = weight;
+  const int pin_count_minus_one = static_cast<int>(component_pins_.size()) - 1;
+  inv_p_ = pin_count_minus_one > 0 ? weight_ / pin_count_minus_one : 0.0;
+}
 
 double Net::Weight() const { return weight_; }
+
+void Net::Retire() {
+  DaliExpects(iopin_ptrs_.empty(),
+              "Cannot retire a net with I/O pins attached: " + Name());
+  for (NetPin &net_pin : component_pins_) {
+    std::vector<int> &net_list = net_pin.ComponentPtr()->NetList();
+    net_list.erase(std::remove(net_list.begin(), net_list.end(), Id()),
+                   net_list.end());
+  }
+  component_pins_.clear();
+  driver_pin_index = -1;
+  cnt_fixed_ = 0;
+  inv_p_ = 0.0;
+}
 
 size_t Net::PinCnt() const { return component_pins_.size(); }
 
@@ -284,20 +302,24 @@ Component* Net::MinComponentPtrY() const {
   return component_pins_[min_y_pin_id_].ComponentPtr();
 }
 
-double Net::WeightedHPWLX() {
+double Net::WeightedHPWLX() { return HPWLX() * weight_; }
+
+double Net::HPWLX() {
   if (component_pins_.size() <= 1) return 0;
   UpdateMaxMinIdX();
   double max_x = component_pins_[max_x_pin_id_].AbsX();
   double min_x = component_pins_[min_x_pin_id_].AbsX();
-  return (max_x - min_x) * weight_;
+  return max_x - min_x;
 }
 
-double Net::WeightedHPWLY() {
+double Net::WeightedHPWLY() { return HPWLY() * weight_; }
+
+double Net::HPWLY() {
   if (component_pins_.size() <= 1) return 0;
   UpdateMaxMinIdY();
   double max_y = component_pins_[max_y_pin_id_].AbsY();
   double min_y = component_pins_[min_y_pin_id_].AbsY();
-  return (max_y - min_y) * weight_;
+  return max_y - min_y;
 }
 
 double Net::WeightedHPWL() { return WeightedHPWLX() + WeightedHPWLY(); }

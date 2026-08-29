@@ -285,7 +285,14 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
                      "-disable_io_place",
                      "-gui_debug",
                      "-gui_pause",
-                     "off"},
+                     "off",
+                     "-gui_capture",
+                     "frames;a@final:fit+window+select=dl2:#114",
+                     "-gui_capture_size",
+                     "1400x900",
+                     "-gui_show_delay_lines",
+                     "-gui_show_topology_added",
+                     "-timing_reconcile_diag"},
                     &options));
 
   EXPECT_EQ(options.output_name, "placed");
@@ -375,6 +382,12 @@ TEST_F(DaliCommandLineTest, ParsesRuntimeConfigOptions) {
   EXPECT_EQ(config_get_int("dali.disable_io_place"), 1);
   EXPECT_EQ(config_get_int("dali.gui_debug"), 1);
   EXPECT_STREQ(config_get_string("dali.gui_pause"), "off");
+  EXPECT_STREQ(config_get_string("dali.gui_capture"),
+               "frames;a@final:fit+window+select=dl2:#114");
+  EXPECT_STREQ(config_get_string("dali.gui_capture_size"), "1400x900");
+  EXPECT_EQ(config_get_int("dali.gui_show_delay_lines"), 1);
+  EXPECT_EQ(config_get_int("dali.gui_show_topology_added"), 1);
+  EXPECT_EQ(config_get_int("dali.timing_reconcile_diag"), 1);
 }
 
 TEST_F(DaliCommandLineTest, AdjacentRowAnalysisAlsoEnablesExactAnalysis) {
@@ -504,5 +517,14 @@ TEST_F(DaliCommandLineTest, RejectsOutOfRangeOptions) {
                      &options));
   EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
                       "-gui_pause", "sometimes"},
+                     &options));
+  EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                      "-gui_capture_size", "1400"},
+                     &options));
+  EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                      "-gui_capture_size", "1400x900px"},
+                     &options));
+  EXPECT_FALSE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                      "-gui_capture", ""},
                      &options));
 }

@@ -50,6 +50,28 @@ TEST(NetTest, ReportsPhysicalHpwlOnAnisotropicGrid) {
   circuit.AddComponentPinToNet("u1", "p", "n0");
 
   EXPECT_DOUBLE_EQ(circuit.NetWeightedHPWL(net->Id()), 12.0);
+  net->SetWeight(2.0);
+  EXPECT_DOUBLE_EQ(circuit.NetWeightedHPWL(net->Id()), 24.0);
+  EXPECT_DOUBLE_EQ(circuit.UnweightedHPWL(), 12.0);
+}
+
+TEST(NetTest, RefreshesQuadraticWeightWhenNetWeightChanges) {
+  Circuit circuit = MakeUnitGridCircuit();
+  circuit.AddMacro("cell", 1, 1);
+  Macro* macro = circuit.GetMacroPtr("cell");
+  circuit.AddMacroPin(macro, "p", true)->SetOffset(0, 0);
+  for (int index = 0; index < 3; ++index) {
+    circuit.AddComponent("u" + std::to_string(index), "cell", index, 0);
+  }
+  Net* net = circuit.AddNet("n0", 3, 1.0);
+  for (int index = 0; index < 3; ++index) {
+    circuit.AddComponentPinToNet("u" + std::to_string(index), "p", "n0");
+  }
+
+  EXPECT_DOUBLE_EQ(net->InvP(), 0.5);
+  net->SetWeight(4.0);
+  EXPECT_DOUBLE_EQ(net->Weight(), 4.0);
+  EXPECT_DOUBLE_EQ(net->InvP(), 2.0);
 }
 
 }  // namespace dali

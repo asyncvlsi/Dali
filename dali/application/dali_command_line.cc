@@ -82,6 +82,11 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -interactive                              enter the Dali command prompt; does not run placement implicitly\n"
       << "  -gui_debug                                 show live placement debug GUI when built with Qt\n"
       << "  -gui_pause <every_snapshot/off>            GUI pause policy, default every_snapshot\n"
+      << "  -gui_capture <spec>                        write PNGs of chosen snapshots (see dali/gui/README.md)\n"
+      << "  -gui_capture_size <width>x<height>         GUI window size, and so capture resolution\n"
+      << "  -gui_show_delay_lines                      start the GUI with the delay-line overlay on\n"
+      << "  -gui_show_topology_added                   start the GUI with the added-cells overlay on\n"
+      << "  -timing_reconcile_diag                     print witness-vs-slack reconciliation lines\n"
       << "  -g/-grid <grid_value_x> <grid_value_y>     (optional, default metal1 and metal2 pitch values)\n"
       << "  -enable_shrink_off_grid_die_area           shrink a die area whose edges are off the placement grid\n"
       << "  -d/-target_density <density>               (optional, value interval (0,1], default max(space_utility, 0.7))\n"
@@ -243,6 +248,27 @@ bool ParseDaliCommandLine(int argc, char* argv[],
         return false;
       }
       config_set_string("dali.gui_pause", value.c_str());
+    } else if (arg == "-gui_capture") {
+      if (!TryGetValue(argc, argv, &i, &value) || value.empty()) {
+        error_output << "Invalid GUI capture request!\n";
+        return false;
+      }
+      config_set_string("dali.gui_capture", value.c_str());
+    } else if (arg == "-gui_capture_size") {
+      int width = 0, height = 0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !ParseWidthByHeight(value, &width, &height)) {
+        error_output
+            << "Invalid GUI capture size, expected <width>x<height>!\n";
+        return false;
+      }
+      config_set_string("dali.gui_capture_size", value.c_str());
+    } else if (arg == "-gui_show_delay_lines") {
+      EnableConfigFlag("dali.gui_show_delay_lines");
+    } else if (arg == "-gui_show_topology_added") {
+      EnableConfigFlag("dali.gui_show_topology_added");
+    } else if (arg == "-timing_reconcile_diag") {
+      EnableConfigFlag("dali.timing_reconcile_diag");
     } else if (arg == "-v") {
       if (!TryGetValue(argc, argv, &i, &value)) {
         error_output << "Invalid verbosity level!\n";

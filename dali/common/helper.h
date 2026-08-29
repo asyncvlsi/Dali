@@ -59,6 +59,13 @@ void StrTokenize(std::string const& line, std::vector<std::string>& res);
 /** Return the index of the first digit in a string, or -1 if none exists. */
 int FindFirstNumber(std::string const& str);
 
+/**
+ * Parse `<width>x<height>` with both positive decimal integers and nothing
+ * else. The one parser for the GUI capture size, whether it comes from the
+ * command line, a recipe, or the run metadata.
+ */
+bool ParseWidthByHeight(std::string const& text, int* width, int* height);
+
 /** Return true when the executable can be found by the shell. */
 bool IsExecutableExisting(std::string const& executable_path);
 

@@ -25,6 +25,8 @@ endfunction()
 add_dali_circuit_test(circuit_die_area_test die_area_test.cc)
 add_dali_circuit_test(circuit_hpwl_lower_bound_test hpwl_lower_bound_test.cc)
 add_dali_circuit_test(circuit_component_test component_test.cc)
+add_dali_circuit_test(circuit_component_placement_state_test
+                      component_placement_state_test.cc)
 add_dali_circuit_test(circuit_io_pin_test io_pin_test.cc)
 add_dali_circuit_test(circuit_macro_test macro_test.cc)
 add_dali_circuit_test(circuit_net_test net_test.cc)
@@ -32,3 +34,10 @@ add_dali_circuit_test(circuit_programmatic_construction_test
                       programmatic_construction_test.cc)
 add_dali_circuit_test(circuit_statistics_test circuit_statistics_test.cc)
 add_dali_circuit_test(circuit_tech_test tech_test.cc)
+add_dali_circuit_test(circuit_post_load_insertion_test
+                      post_load_insertion_test.cc)
+
+add_executable(circuit_topology_delta_test topology_delta_test.cc)
+target_link_libraries(circuit_topology_delta_test PRIVATE dalilib ${DALI_GTEST_MAIN})
+add_test(NAME circuit_topology_delta_test COMMAND circuit_topology_delta_test)
+set_tests_properties(circuit_topology_delta_test PROPERTIES LABELS "unit;circuit")

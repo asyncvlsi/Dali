@@ -101,9 +101,9 @@ void BoundToBoundHpwlOptimizer::Initialize() {
   cached_component_x_.resize(sz);
   cached_component_y_.resize(sz);
 
-  // Global placement changes locations but not component orientations or net
-  // topology. Flatten the pin data used by every convergence check so those
-  // checks avoid repeatedly chasing Component and Pin pointers.
+  // Flatten immutable pin data used by every convergence check. Rough gridded
+  // refinement may change component orientations between solves, so retain all
+  // orientation-specific offsets and select the live one when building a model.
   cached_net_pin_begin_.clear();
   cached_solution_pins_.clear();
   cached_net_weights_.clear();
@@ -116,9 +116,15 @@ void BoundToBoundHpwlOptimizer::Initialize() {
     cached_net_weights_.push_back(net.Weight());
     cached_net_inv_p_.push_back(net.InvP());
     for (NetPin& pin : net.ComponentPins()) {
-      cached_solution_pins_.push_back({pin.ComponentId(),
-                                       pin.ComponentPtr()->IsMovable(),
-                                       pin.OffsetX(), pin.OffsetY()});
+      CachedSolutionPin cached_pin = {
+          pin.ComponentId(), pin.ComponentPtr()->IsMovable(), {}, {}};
+      for (int orient = N; orient <= FE; ++orient) {
+        const ComponentOrient component_orient =
+            static_cast<ComponentOrient>(orient);
+        cached_pin.offset_x[orient] = pin.PinPtr()->OffsetX(component_orient);
+        cached_pin.offset_y[orient] = pin.PinPtr()->OffsetY(component_orient);
+      }
+      cached_solution_pins_.push_back(std::move(cached_pin));
     }
     cached_net_pin_begin_.push_back(cached_solution_pins_.size());
   }
@@ -176,7 +182,8 @@ void BoundToBoundHpwlOptimizer::BuildProblemX() {
 #pragma omp parallel for num_threads(num_threads_) schedule(static)
   for (int i = 0; i < static_cast<int>(cached_solution_pins_.size()); ++i) {
     const CachedSolutionPin& pin = cached_solution_pins_[i];
-    cached_pin_x_[i] = cached_component_x_[pin.component_id] + pin.offset_x;
+    cached_pin_x_[i] = cached_component_x_[pin.component_id] +
+                       pin.OffsetX(components[pin.component_id].Orient());
   }
 
   double center_weight = 0.03 / std::sqrt(sz);
@@ -215,19 +222,19 @@ void BoundToBoundHpwlOptimizer::BuildProblemX() {
     const CachedSolutionPin& max_pin = cached_solution_pins_[max_pin_index];
     int max_component_id = max_pin.component_id;
     bool is_movable_max = max_pin.is_movable;
-    double offset_max = max_pin.offset_x;
+    double offset_max = max_pin.OffsetX(components[max_component_id].Orient());
 
     const CachedSolutionPin& min_pin = cached_solution_pins_[min_pin_index];
     int min_component_id = min_pin.component_id;
     bool is_movable_min = min_pin.is_movable;
-    double offset_min = min_pin.offset_x;
+    double offset_min = min_pin.OffsetX(components[min_component_id].Orient());
 
     for (size_t pin_index = pin_begin; pin_index < pin_end; ++pin_index) {
       const CachedSolutionPin& pin = cached_solution_pins_[pin_index];
       int component_id = pin.component_id;
       double pin_loc = cached_pin_x_[pin_index];
       bool is_movable = pin.is_movable;
-      double offset = pin.offset_x;
+      double offset = pin.OffsetX(components[component_id].Orient());
 
       if (component_id != max_component_id) {
         double distance = std::fabs(pin_loc - pin_loc_max);
@@ -322,7 +329,8 @@ void BoundToBoundHpwlOptimizer::BuildProblemY() {
 #pragma omp parallel for num_threads(num_threads_) schedule(static)
   for (int i = 0; i < static_cast<int>(cached_solution_pins_.size()); ++i) {
     const CachedSolutionPin& pin = cached_solution_pins_[i];
-    cached_pin_y_[i] = cached_component_y_[pin.component_id] + pin.offset_y;
+    cached_pin_y_[i] = cached_component_y_[pin.component_id] +
+                       pin.OffsetY(components[pin.component_id].Orient());
   }
 
   double center_weight = 0.03 / std::sqrt(sz);
@@ -361,19 +369,19 @@ void BoundToBoundHpwlOptimizer::BuildProblemY() {
     const CachedSolutionPin& max_pin = cached_solution_pins_[max_pin_index];
     int max_component_id = max_pin.component_id;
     bool is_movable_max = max_pin.is_movable;
-    double offset_max = max_pin.offset_y;
+    double offset_max = max_pin.OffsetY(components[max_component_id].Orient());
 
     const CachedSolutionPin& min_pin = cached_solution_pins_[min_pin_index];
     int min_component_id = min_pin.component_id;
     bool is_movable_min = min_pin.is_movable;
-    double offset_min = min_pin.offset_y;
+    double offset_min = min_pin.OffsetY(components[min_component_id].Orient());
 
     for (size_t pin_index = pin_begin; pin_index < pin_end; ++pin_index) {
       const CachedSolutionPin& pin = cached_solution_pins_[pin_index];
       int component_id = pin.component_id;
       double pin_loc = cached_pin_y_[pin_index];
       bool is_movable = pin.is_movable;
-      double offset = pin.offset_y;
+      double offset = pin.OffsetY(components[component_id].Orient());
 
       if (component_id != max_component_id) {
         double distance = std::fabs(pin_loc - pin_loc_max);
@@ -658,6 +666,7 @@ double BoundToBoundHpwlOptimizer::OptimizeQuadraticMetricY(
 
 double BoundToBoundHpwlOptimizer::EvaluateWeightedHpwlX(int num_threads) {
   int net_count = static_cast<int>(cached_net_weights_.size());
+  const std::vector<Component>& components = ckt_ptr_->Components();
 
 #pragma omp parallel for num_threads(num_threads) schedule(static)
   for (int i = 0; i < net_count; ++i) {
@@ -672,7 +681,8 @@ double BoundToBoundHpwlOptimizer::EvaluateWeightedHpwlX(int num_threads) {
     double max_x = -DBL_MAX;
     for (size_t pin_index = pin_begin; pin_index < pin_end; ++pin_index) {
       const CachedSolutionPin& pin = cached_solution_pins_[pin_index];
-      double pin_x = vx[pin.component_id] + pin.offset_x;
+      double pin_x = vx[pin.component_id] +
+                     pin.OffsetX(components[pin.component_id].Orient());
       min_x = std::min(min_x, pin_x);
       max_x = std::max(max_x, pin_x);
     }
@@ -688,6 +698,7 @@ double BoundToBoundHpwlOptimizer::EvaluateWeightedHpwlX(int num_threads) {
 
 double BoundToBoundHpwlOptimizer::EvaluateWeightedHpwlY(int num_threads) {
   int net_count = static_cast<int>(cached_net_weights_.size());
+  const std::vector<Component>& components = ckt_ptr_->Components();
 
 #pragma omp parallel for num_threads(num_threads) schedule(static)
   for (int i = 0; i < net_count; ++i) {
@@ -702,7 +713,8 @@ double BoundToBoundHpwlOptimizer::EvaluateWeightedHpwlY(int num_threads) {
     double max_y = -DBL_MAX;
     for (size_t pin_index = pin_begin; pin_index < pin_end; ++pin_index) {
       const CachedSolutionPin& pin = cached_solution_pins_[pin_index];
-      double pin_y = vy[pin.component_id] + pin.offset_y;
+      double pin_y = vy[pin.component_id] +
+                     pin.OffsetY(components[pin.component_id].Orient());
       min_y = std::min(min_y, pin_y);
       max_y = std::max(max_y, pin_y);
     }
@@ -755,10 +767,51 @@ void BoundToBoundHpwlOptimizer::PullComponentBackToRegion() {
   }
 }
 
+HpwlOptimizer::AnchorState BoundToBoundHpwlOptimizer::ExportAnchorState()
+    const {
+  AnchorState state;
+  if (!x_anchor_set || !y_anchor_set) return state;
+  state.x.assign(x_anchor.data(), x_anchor.data() + x_anchor.size());
+  state.y.assign(y_anchor.data(), y_anchor.data() + y_anchor.size());
+  state.alpha = alpha;
+  state.is_set = true;
+  return state;
+}
+
+void BoundToBoundHpwlOptimizer::ImportAnchorState(const AnchorState& state) {
+  if (!state.is_set) return;
+  // Expects the sizes the rebuilt optimizer was constructed with; a caller that
+  // carries anchors across a component-count change would be describing a
+  // different netlist.
+  DaliExpects(static_cast<int>(state.x.size()) == x_anchor.size() &&
+                  static_cast<int>(state.y.size()) == y_anchor.size(),
+              "Anchor state does not match the rebuilt optimizer's size");
+  for (size_t i = 0; i < state.x.size(); ++i) {
+    x_anchor[static_cast<int>(i)] = state.x[i];
+    y_anchor[static_cast<int>(i)] = state.y[i];
+  }
+  alpha = state.alpha;
+  x_anchor_set = true;
+  y_anchor_set = true;
+}
+
+/**
+ * Exchange the previous lower bound with the accepted placement used as the
+ * next anchor. A rebuilt optimizer can resume at a nonzero absolute iteration
+ * without imported anchors after a topology change; in that case the accepted
+ * placement establishes both sides of the first solve on the new topology.
+ */
 void BoundToBoundHpwlOptimizer::UpdateAnchorLocation() {
   if (cur_iter_ == 0) return;
   std::vector<Component>& component_list = ckt_ptr_->Components();
   int sz = static_cast<int>(component_list.size());
+
+  if (!x_anchor_set || !y_anchor_set) {
+    BackUpComponentLocation();
+    x_anchor_set = true;
+    y_anchor_set = true;
+    return;
+  }
 
   for (int i = 0; i < sz; ++i) {
     double tmp_loc_x = x_anchor[i];
@@ -787,8 +840,8 @@ void BoundToBoundHpwlOptimizer::UpdateAnchorAlpha() {
     alpha_step = 0.04;
   }
   alpha += alpha_step;
-  LOG(info) << "    anchor alpha: " << alpha << " (step " << alpha_step
-            << ")\n";
+  LOG(debug) << "    anchor alpha: " << alpha << " (step " << alpha_step
+             << ")\n";
 }
 
 void BoundToBoundHpwlOptimizer::BuildProblemWithAnchorX() {
@@ -837,6 +890,8 @@ void BoundToBoundHpwlOptimizer::BuildProblemWithAnchorY() {
   }
   /** Fold the requested relative-Y offsets into the Y system. */
   AddRelativeYConstraints();
+  /** Fold the requested stage-band targets into the Y system. */
+  AddStageBandAnchors();
   elapsed_time.RecordEndTime();
   tot_triplets_time_y += elapsed_time.GetWallTime();
 }
@@ -869,6 +924,36 @@ void BoundToBoundHpwlOptimizer::AddRelativeYConstraints() {
   }
 }
 
+/**
+ * Fold the requested stage-band targets into the Y system.
+ *
+ * Shares the reciprocal-distance weighting the convergence anchors use, so a
+ * cell already sitting in its band is pulled gently and one far outside it is
+ * pulled hard, and the strength rides the same alpha ramp rather than
+ * overwhelming wirelength in the early iterations when the placement has not
+ * yet organized itself.
+ *
+ * Fixed components are skipped: their rows are not solved for, so a term on
+ * one would be discarded, and a band that contains one is expected to form
+ * around it.
+ */
+void BoundToBoundHpwlOptimizer::AddStageBandAnchors() {
+  std::vector<Component>& components = ckt_ptr_->Components();
+  for (const StageBandAnchor& anchor : stage_band_anchors_) {
+    DaliExpects(anchor.component_id >= 0 &&
+                    anchor.component_id < static_cast<int>(components.size()),
+                "Stage band anchor contains an invalid component id");
+    Component& component = components[anchor.component_id];
+    if (!component.IsMovable()) continue;
+    const double weight =
+        alpha /
+        (std::fabs(component.LLY() - anchor.target_y) + height_epsilon_);
+    by[anchor.component_id] += anchor.target_y * weight;
+    coefficients_y_.emplace_back(anchor.component_id, anchor.component_id,
+                                 weight);
+  }
+}
+
 void BoundToBoundHpwlOptimizer::BackUpComponentLocation() {
   std::vector<Component>& component_list = ckt_ptr_->Components();
   int sz = static_cast<int>(component_list.size());
@@ -877,6 +962,8 @@ void BoundToBoundHpwlOptimizer::BackUpComponentLocation() {
     x_anchor[i] = component_list[i].LLX();
     y_anchor[i] = component_list[i].LLY();
   }
+  x_anchor_set = true;
+  y_anchor_set = true;
 }
 
 /**

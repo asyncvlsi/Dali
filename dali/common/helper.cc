@@ -248,6 +248,27 @@ void StrTokenize(std::string const& line, std::vector<std::string>& res) {
   }
 }
 
+bool ParseWidthByHeight(std::string const& text, int* width, int* height) {
+  const size_t x = text.find('x');
+  if (x == std::string::npos || x == 0 || x + 1 == text.size()) return false;
+  auto parse = [](std::string const& digits, int* value) {
+    if (digits.empty() || digits.size() > 6) return false;
+    for (char c : digits) {
+      if (c < '0' || c > '9') return false;
+    }
+    *value = std::stoi(digits);
+    return *value > 0;
+  };
+  int w = 0;
+  int h = 0;
+  if (!parse(text.substr(0, x), &w) || !parse(text.substr(x + 1), &h)) {
+    return false;
+  }
+  *width = w;
+  *height = h;
+  return true;
+}
+
 int FindFirstNumber(std::string const& str) {
   int res = -1;
   size_t sz = str.size();

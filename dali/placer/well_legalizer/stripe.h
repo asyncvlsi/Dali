@@ -22,6 +22,7 @@
 #define DALI_PLACER_WELL_LEGALIZER_STRIPE_H_
 
 #include "dali/circuit/circuit.h"
+#include "dali/placer/well_legalizer/gridded_capacity_estimator.h"
 #include "dali/circuit/component.h"
 #include "dali/common/misc.h"
 #include "dali/placer/well_legalizer/gridded_row.h"
@@ -222,6 +223,17 @@ struct StripeColumn {
   Stripe* GetStripeClosestToComponent(Component* component_ptr,
                                       double& distance);
   void AssignComponentToSimpleStripe();
+  /**
+   * Re-own this column's components by fragment capacity instead of proximity.
+   *
+   * Only for use after proximity ownership has produced a placement that failed
+   * to cluster: it keeps every component whose fragment still has room exactly
+   * where it was and moves only the overflow. Returns false, changing nothing,
+   * when some component has no fragment with room anywhere.
+   */
+  bool AssignComponentToSimpleStripeByCapacity(
+      const GriddedCapacityConfig& config, int* moved_component_count,
+      int* overloaded_before, int* overloaded_after, std::string* refusal);
 };
 
 }  // namespace dali

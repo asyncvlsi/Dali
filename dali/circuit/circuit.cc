@@ -459,12 +459,34 @@ int Circuit::DieAreaOffsetY() const {
 
 void Circuit::ReserveSpaceForDesignImp(size_t components_count,
                                        size_t pins_count, size_t nets_count) {
-  design_.Components().reserve(components_count + pins_count);
+  design_.Components().reserve(components_count + pins_count +
+                               InsertionHeadroom(components_count));
   design_.iopins_.reserve(pins_count);
-  design_.nets_.reserve(nets_count);
+  design_.nets_.reserve(nets_count + InsertionHeadroom(components_count));
+}
+
+/**
+ * Spare capacity kept for components added after the design is loaded.
+ *
+ * Capacity, not a growth policy: nets hold pointers into the component vector
+ * and the placer holds component ids, so the vector must never reallocate once
+ * nets exist. Reserving up front is what makes a later append safe, and is why
+ * AddComponent can admit one while the net list is populated.
+ *
+ * Sized as a fraction of the design because the caller that needs it -- delay
+ * line extension between placement rounds -- adds cells in proportion to how
+ * many delay elements the design already has, not a fixed count.
+ */
+size_t Circuit::InsertionHeadroom(size_t components_count) {
+  constexpr size_t kMinimumHeadroom = 1024;
+  return std::max(kMinimumHeadroom, components_count / 4);
 }
 
 std::vector<Component>& Circuit::Components() { return design_.Components(); }
+
+const std::vector<Component>& Circuit::Components() const {
+  return design_.Components();
+}
 
 bool Circuit::IsComponentExisting(std::string const& component_name) {
   return design_.component_collection_.NameExists(component_name);
@@ -1202,6 +1224,14 @@ double Circuit::WeightedHPWL() {
     hpwl_y += net.WeightedHPWLY();
   }
   return hpwl_x * GridValueX() + hpwl_y * GridValueY();
+}
+
+double Circuit::UnweightedHPWL() {
+  double hpwl = 0.0;
+  for (Net& net : design_.nets_) {
+    hpwl += net.HPWLX() * GridValueX() + net.HPWLY() * GridValueY();
+  }
+  return hpwl;
 }
 
 double Circuit::NetWeightedHPWL(int net_id) {
@@ -2183,8 +2213,12 @@ void Circuit::MacroSizeMicrometerToGridValue(std::string const& macro_name,
 void Circuit::AddComponent(std::string const& component_name, Macro* macro_ptr,
                            double llx, double lly, PlaceStatus place_status,
                            ComponentOrient orient, bool is_real_cel) {
-  DaliExpects(design_.nets_.empty(),
-              "Cannot add new Component, because net_list now is not empty");
+  // Capacity is the invariant, not an empty net list. Nets hold pointers into
+  // the component vector, so what must never happen is a reallocation; an
+  // append inside reserved capacity moves nothing and leaves every existing
+  // pointer and component id valid. Refusing whenever nets exist was a proxy
+  // for that, and it also ruled out the case this now supports: adding cells to
+  // a design that is already loaded and placed.
   DaliExpects(Components().size() < Components().capacity(),
               "Cannot add new Component, because component list is full");
   DaliExpects(!IsComponentExisting(component_name),
@@ -2231,6 +2265,60 @@ void Circuit::AddComponent(std::string const& component_name, Macro* macro_ptr,
   }
   if (component.Width() > design_.max_component_width_) {
     design_.max_component_width_ = component.Width();
+  }
+}
+
+void Circuit::EnsureIoPinDummyComponent(std::string const& iopin_name,
+                                         double llx, double lly,
+                                         ComponentOrient orient) {
+  if (IsComponentExisting(iopin_name)) {
+    Component* component = GetComponentPtr(iopin_name);
+    component->SetLLX(llx);
+    component->SetLLY(lly);
+    component->SetPlacementStatus(FIXED);
+    component->SetOrient(orient);
+    return;
+  }
+
+  DaliExpects(Components().size() < Components().capacity(),
+              "Cannot add I/O pin dummy component because component list is "
+              "full");
+  auto& component_collection = design_.ComponentCollection();
+  bool was_frozen = component_collection.IsFrozen();
+  if (was_frozen) {
+    component_collection.Unfreeze();
+  }
+  auto creation = component_collection.CreateWithId(iopin_name);
+  Component& component = creation.object;
+  component.SetMacro(tech_.io_dummy_macro_ptr_);
+  component.SetId(static_cast<int>(creation.id));
+  component.SetLLX(llx);
+  component.SetLLY(lly);
+  component.SetPlacementStatus(FIXED);
+  component.SetOrient(orient);
+  if (was_frozen) {
+    component_collection.Freeze();
+  }
+}
+
+void Circuit::AttachIoPinDummyComponentToNet(
+    std::string const& iopin_name) {
+  IoPin* iopin = GetIoPinPtr(iopin_name);
+  DaliExpects(iopin->IsPrePlaced(),
+              "Cannot attach an unplaced I/O pin dummy component");
+  DaliExpects(iopin->NetPtr() != nullptr,
+              "Cannot attach an I/O pin dummy without a net");
+  Component* component = GetComponentPtr(iopin_name);
+  Pin* pin = &(component->MacroPtr()->PinList()[0]);
+  Net* net = iopin->NetPtr();
+  auto& component_pins = net->ComponentPins();
+  auto already_attached = std::find_if(
+      component_pins.begin(), component_pins.end(),
+      [component](NetPin const& component_pin) {
+        return component_pin.ComponentPtr() == component;
+      });
+  if (already_attached == component_pins.end()) {
+    net->AddComponentPinPair(component, pin);
   }
 }
 
@@ -2283,8 +2371,7 @@ IoPin* Circuit::AddPlacedIOPin(std::string const& iopin_name, double lx,
   design_.iopins_.emplace_back(name_id_pair_ptr, lx, ly);
   design_.pre_placed_io_count_ += 1;
 
-  // add a dummy cell corresponding to this IOPIN to component_list.
-  AddComponent(iopin_name, tech_.io_dummy_macro_ptr_, lx, ly, FIXED, N, false);
+  EnsureIoPinDummyComponent(iopin_name, lx, ly, N);
 
   return &(design_.iopins_.back());
 }

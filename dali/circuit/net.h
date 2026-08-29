@@ -59,7 +59,23 @@ class Net {
   /** Return connected I/O pins. */
   std::vector<IoPin*>& IoPinPtrs();
 
-  /** Set net weight used by wirelength metrics. */
+  /**
+   * Disconnect every pin, leaving the net in place but electrically inert.
+   *
+   * Nets are addressed by index throughout the placer, so erasing one would
+   * renumber the rest and invalidate every id held elsewhere. Retiring instead
+   * keeps the slot and empties it, which is what a netlist edit needs: splicing
+   * a cell into a chain interrupts an existing connection, and the interrupted
+   * net has to stop connecting what it used to.
+   *
+   * A retired net leaves the placement problem on its own -- the quadratic
+   * builder skips anything with one pin or fewer -- so no caller needs to learn
+   * about a new state. Connected components are updated to drop it from their
+   * net lists, so the disconnection is symmetric.
+   */
+  void Retire();
+
+  /** Set net weight and refresh the cached quadratic-placement coefficient. */
   void SetWeight(double weight);
 
   /** Return net weight used by wirelength metrics. */
@@ -123,6 +139,12 @@ class Net {
 
   /** Return weighted x-direction HPWL for component pins. */
   double WeightedHPWLX();
+
+  /** Return unweighted x-direction HPWL for component pins. */
+  double HPWLX();
+
+  /** Return unweighted y-direction HPWL for component pins. */
+  double HPWLY();
 
   /** Return weighted y-direction HPWL for component pins. */
   double WeightedHPWLY();

@@ -82,6 +82,46 @@ TEST_F(GriddedPlacementValidatorTest, RejectsOverlapAndMissingOwnership) {
   EXPECT_EQ(overlap.component_overlap_count, 1U);
 }
 
+// Rows in different stripes of the same column sit side by side, so they share
+// a y range as a matter of course. Only rows that also share x can collide.
+TEST_F(GriddedPlacementValidatorTest, AcceptsSideBySideRowsSharingAYRange) {
+  columns.front().stripe_list_.resize(2);
+  Stripe& right_stripe = columns.front().stripe_list_.back();
+  right_stripe.lx_ = 120;
+  right_stripe.ly_ = 0;
+  right_stripe.width_ = 100;
+  right_stripe.height_ = 100;
+  right_stripe.gridded_rows_.resize(1);
+  GriddedRow& right_row = right_stripe.gridded_rows_.front();
+  right_row.SetLLX(120);
+  right_row.SetWidth(100);
+  // deliberately offset by one, so the two rows overlap in y but not in x,
+  // which is the arrangement the timing-driven flows produce
+  right_row.SetLLY(21);
+  right_row.UpdateWellHeightUpward(4, 6);
+  right_row.SetOrient(true);
+
+  const GriddedPlacementLegalityReport report =
+      GriddedPlacementValidator(&circuit, &columns).Validate();
+  EXPECT_EQ(report.row_overlap_count, 0u);
+}
+
+// The same y overlap between rows that do share x is a real collision.
+TEST_F(GriddedPlacementValidatorTest, RejectsStackedRowsSharingAnXRange) {
+  Stripe& stripe = columns.front().stripe_list_.front();
+  stripe.gridded_rows_.resize(2);
+  GriddedRow& upper = stripe.gridded_rows_.back();
+  upper.SetLLX(0);
+  upper.SetWidth(100);
+  upper.SetLLY(21);
+  upper.UpdateWellHeightUpward(4, 6);
+  upper.SetOrient(true);
+
+  const GriddedPlacementLegalityReport report =
+      GriddedPlacementValidator(&circuit, &columns).Validate();
+  EXPECT_EQ(report.row_overlap_count, 1u);
+}
+
 TEST_F(GriddedPlacementValidatorTest, RejectsWrongRowOrientation) {
   circuit.GetComponentPtr("left")->SetOrient(FS);
 

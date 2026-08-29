@@ -22,15 +22,15 @@ shift
 mkdir -p "$out_dir"
 
 export QT_QPA_PLATFORM=offscreen
-export DALI_GUI_CAPTURE_SIZE="1100x820"
-export DALI_GUI_CAPTURE="$out_dir\
+capture="$out_dir\
 ;01_global_placement@global_placement.final:fit\
 ;02_legalized@final:fit\
 ;03_stripe_columns@final:0.05,0.35,0.45,0.72+cells\
 ;04_cells_and_taps@final:0.10,0.45,0.20,0.55+cells\
 ;05_end_caps@final:0.09,0.46,0.13,0.51+cells"
 
-"$@" -gui_debug -gui_pause off &
+"$@" -gui_debug -gui_pause off \
+  -gui_capture "$capture" -gui_capture_size 1100x820 &
 dali_pid=$!
 
 # The GUI window stays open after placement finishes, so wait for the last

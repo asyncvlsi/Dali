@@ -45,12 +45,12 @@ One can use the following command to specify the installation destination and in
 
     $ cmake .. -DCMAKE_INSTALL_PREFIX=path/to/installation
 
-Qt GUI detection defaults to `AUTO`, so the normal `cmake ..` command enables
-the GUI automatically when Qt 6 Widgets is installed. Use `-DDALI_GUI=ON` only
-when configuration should fail if Qt is unavailable, or `-DDALI_GUI=OFF` to
-force a non-GUI build:
-
-    $ cmake .. -DDALI_GUI=ON
+The Qt GUI needs no option. If Qt 6 Widgets is installed, Dali is built with
+GUI support and installs `libdaligui`; if it is not, Dali is built without.
+Tools that embed Dali read that same installed library to learn whether a
+viewer is available, so there is one answer rather than two that can disagree.
+Point CMake at a Qt in an unusual location with `Qt6_ROOT` or
+`CMAKE_PREFIX_PATH`.
 
 ### Running Dali
 

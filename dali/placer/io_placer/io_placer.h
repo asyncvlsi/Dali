@@ -64,6 +64,14 @@ class IoPlacer {
   /** Attach the PhyDB instance receiving final I/O pin locations. */
   void SetPhyDB(phydb::PhyDB* phy_db_ptr);
 
+  /**
+   * The database this placer will use.
+   *
+   * Exposed so a rebind can be proven to have reached it, rather than assumed
+   * from the fact that SetPhyDB was called somewhere.
+   */
+  const phydb::PhyDB* PhyDBPtr() const { return phy_db_ptr_; }
+
   /** Place configured subset of I/O pins. */
   bool PartialPlaceIoPin();
 
@@ -139,6 +147,15 @@ class IoPlacer {
   int ConstrainedEdge(IoPin const& iopin) const;
   /** Parse and apply a `place-io -constraint ...` command. */
   bool ConstraintCmd(int argc, char** argv);
+
+  /** Return true when at least one pin or direction has an edge constraint. */
+  bool HasEdgeConstraints() const;
+
+  /**
+   * Spread constrained unplaced pins on their requested edges before global
+   * placement so their existing nets provide directional anchors.
+   */
+  bool PlaceConstrainedPinsForGlobalPlacement();
 
   /**
    * Place every movable I/O pin on an interior area-array grid.
@@ -245,6 +262,7 @@ class IoPlacer {
   // the automatically chosen closest one.
   std::unordered_map<std::string, int> pin_edge_constraint_;
   std::unordered_map<int, int> direction_edge_constraint_;
+  int global_metal_layer_index_ = -1;
 };
 
 }  // namespace dali

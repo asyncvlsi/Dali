@@ -69,6 +69,11 @@ void GriddedCellWellLegalizer::SetSnapshotCallback(
   snapshot_callback_ = std::move(snapshot_callback);
 }
 
+void GriddedCellWellLegalizer::SetPlacementStageCallback(
+    PlacementStageCallback stage_callback) {
+  placement_stage_callback_ = std::move(stage_callback);
+}
+
 void GriddedCellWellLegalizer::LoadConf(std::string const& config_file) {
   config_read(config_file.c_str());
   DaliExpects(false, "Not implemented");
@@ -112,12 +117,16 @@ void GriddedCellWellLegalizer::FetchNpWellParams() {
   well_tap_macro_ = &(ckt_ptr_->tech().Macros()[well_tap_macro_id]);
   well_tap_width_ = well_tap_macro_->Width();
 
-  LOG(info) << "  Well max plug distance: " << n_well_layer.MaxPlugDist()
-            << "um, " << max_unplug_length_ << " \n";
-  LOG(info) << "  GridValueX: " << ckt_ptr_->GridValueX() << " um\n";
-  LOG(info) << "  Well spacing: " << n_well_layer.Spacing() << "um, "
-            << well_spacing_ << "\n";
-  LOG(info) << "  Well tap cell width: " << well_tap_width_ << "\n";
+  // Reported by the well-legalization stage rather than here. This runs
+  // wherever the parameters are first needed -- the gridded capacity model
+  // pulls them during global placement -- so logging from here files
+  // technology facts under whatever stage happened to ask first.
+  LOG(debug) << "  Well max plug distance: " << n_well_layer.MaxPlugDist()
+             << "um, " << max_unplug_length_ << " \n";
+  LOG(debug) << "  GridValueX: " << ckt_ptr_->GridValueX() << " um\n";
+  LOG(debug) << "  Well spacing: " << n_well_layer.Spacing() << "um, "
+             << well_spacing_ << "\n";
+  LOG(debug) << "  Well tap cell width: " << well_tap_width_ << "\n";
 
   if (enable_end_cap_cell_) {
     pre_end_cap_min_width_ = ckt_ptr_->tech().PreEndCapMinWidth();
@@ -1139,6 +1148,20 @@ void GriddedCellWellLegalizer::LogStripeLegalizationFailure(
   int height_overflow = std::max(0, stripe.used_height_ - stripe.Height());
   double grid_y = ckt_ptr_->GridValueY();
 
+  // What the capacity estimator would have said about this exact set. The
+  // ownership repair trusts that number, so any gap between it and the height
+  // the packer actually needed is the repair's blind spot, measured here rather
+  // than inferred from the fact that clustering failed.
+  std::vector<Component*> occupants(stripe.component_ptrs_vec_.begin(),
+                                    stripe.component_ptrs_vec_.end());
+  const GriddedCapacityEstimate predicted =
+      GriddedCapacityEstimator(
+          const_cast<GriddedCellWellLegalizer*>(this)->BuildGriddedCapacityConfig(
+              1.0))
+          .Estimate(occupants, stripe.Width(), stripe.Height(),
+                    static_cast<unsigned long long>(stripe.Width()) *
+                        stripe.Height());
+
   LOG(warning) << "  stripe legalization failed:"
                << " col=" << column_index << " stripe=" << stripe_index
                << " col_x=[" << col.LLX() << ", " << col.URX() << ")"
@@ -1148,6 +1171,8 @@ void GriddedCellWellLegalizer::LogStripeLegalizationFailure(
                << " rows=" << stripe.gridded_rows_.size()
                << " used_height=" << stripe.used_height_
                << " capacity_height=" << stripe.Height()
+               << " predicted_row_height=" << predicted.required_row_height
+               << " predicted_rows=" << predicted.estimated_row_count
                << " overflow_height=" << height_overflow << " row_y=["
                << lowest_row_y << ", " << highest_row_y << ")"
                << " lower_overflow=" << lower_overflow
@@ -1159,7 +1184,7 @@ void GriddedCellWellLegalizer::LogComponentClusteringSummary(
     int failed_stripe_count) const {
   size_t overlap_count = CountComponentOverlapsInRows();
   if (failed_stripe_count == 0) {
-    LOG(info) << "  component clustering: all stripes legalized\n";
+    LOG(debug) << "  component clustering: all stripes legalized\n";
     if (overlap_count > 0) {
       LOG(warning) << "  component clustering produced " << overlap_count
                    << " overlapping component pair(s)\n";
@@ -1195,6 +1220,12 @@ size_t GriddedCellWellLegalizer::CountComponentOverlapsInRows() const {
  * than aborting, so the caller can report them.
  */
 bool GriddedCellWellLegalizer::ValidateFinalPlacement() const {
+  const GriddedPlacementLegalityReport report = ValidateFinalPlacementReport();
+  return report.IsLegal();
+}
+
+GriddedPlacementLegalityReport
+GriddedCellWellLegalizer::ValidateFinalPlacementReport() const {
   GriddedPlacementValidationConfig config;
   config.check_component_orientation = !disable_cell_flip_;
   config.expect_well_taps = !disable_welltap_;
@@ -1262,7 +1293,7 @@ bool GriddedCellWellLegalizer::ValidateFinalPlacement() const {
   RecordPlacementMetric(
       "well_legalization.legality.physical_completion_violations",
       report.physical_completion_violation_count);
-  return report.IsLegal();
+  return report;
 }
 
 /** Cluster components with tight packing, used when normal clustering overflows. */
@@ -1865,6 +1896,9 @@ void GriddedCellWellLegalizer::RunGriddedDetailedPlacementStage() {
       });
   EmitSnapshot("gridded.start", "Before Gridded Detailed Placement",
                "detailed_placement", "start");
+  if (placement_stage_callback_) {
+    placement_stage_callback_("before_detailed_placement");
+  }
   if (enable_detailed_placement_) {
     gridded_detailed_placer_.StartPlacement();
     RecordPlacementHpwlMetrics("well_legalization.gridded_detailed", *ckt_ptr_);
@@ -1874,6 +1908,9 @@ void GriddedCellWellLegalizer::RunGriddedDetailedPlacementStage() {
   }
   EmitSnapshot("gridded.final", "After Gridded Detailed Placement",
                "detailed_placement", "final");
+  if (placement_stage_callback_) {
+    placement_stage_callback_("after_detailed_placement");
+  }
 }
 
 /** Optimize row-group Y locations after clustering. */
@@ -2646,6 +2683,65 @@ bool GriddedCellWellLegalizer::RetryMovableCellLegalizationWithScavenging() {
 
 /** Retry legalization with stripe rebalancing after a first pass failed.
  * @return true if the retry fits. */
+/**
+ * Retry legalization with ownership decided by fragment capacity.
+ *
+ * Proximity ownership sends every component to its nearest whitespace fragment
+ * with no capacity term. That is right until fixed obstacles cut rows inside a
+ * column: the nearest fragment is then often a sliver beside an obstacle while
+ * the spare capacity sits a few fragments away, and clustering fails with the
+ * design as a whole several times under-utilised.
+ *
+ * This runs only after the ordinary path has already failed, so a placement
+ * that legalized proximity-owned is never touched by it. It restarts from the
+ * recorded pre-legalization placement rather than from the failed clustered
+ * coordinates, keeps every component whose fragment still has room exactly
+ * where proximity put it, and moves only the overflow.
+ *
+ * One attempt, no loop. Either the re-owned placement clusters or this reports
+ * what stopped it and the next fallback gets its turn.
+ */
+bool GriddedCellWellLegalizer::RetryMovableCellLegalizationWithCapacityOwnership() {
+  LOG(warning) << "Strict well legalization failed; re-own components by "
+                  "whitespace-fragment capacity\n";
+  RestoreInitialComponentLocation();
+  InitializeWellLegalizer();
+
+  const GriddedCapacityConfig capacity_config = BuildGriddedCapacityConfig(1.0);
+  int total_moved = 0;
+  int total_overloaded_before = 0;
+  int total_overloaded_after = 0;
+  for (StripeColumn& column : col_list_) {
+    int moved = 0;
+    int before = 0;
+    int after = 0;
+    std::string refusal;
+    if (!column.AssignComponentToSimpleStripeByCapacity(
+            capacity_config, &moved, &before, &after, &refusal)) {
+      LOG(warning) << "  capacity-aware ownership refused: " << refusal << "\n";
+      return false;
+    }
+    total_moved += moved;
+    total_overloaded_before += before;
+    total_overloaded_after += after;
+  }
+  LOG(info) << "  Capacity-aware stripe ownership:\n"
+            << "    moved components            : " << total_moved << "\n"
+            << "    overloaded fragments before : " << total_overloaded_before
+            << "\n"
+            << "    overloaded fragments after  : " << total_overloaded_after
+            << "\n";
+  if (total_overloaded_after > total_overloaded_before) {
+    LOG(warning) << "  capacity-aware ownership did not reduce overflow; "
+                    "leaving it to the next fallback\n";
+    return false;
+  }
+  ++snapshot_attempt_;
+  EmitSnapshot("capacity_ownership", "After Capacity-Aware Ownership",
+               "legalization", "capacity_ownership");
+  return RunMovableCellLegalizationStages();
+}
+
 bool GriddedCellWellLegalizer::RetryMovableCellLegalizationWithBalancing() {
   if (!enable_stripe_balancing_) return false;
 
@@ -2735,6 +2831,21 @@ void GriddedCellWellLegalizer::EmitSnapshot(const std::string& id,
 bool GriddedCellWellLegalizer::StartPlacement() {
   PrintStartStatement("standard cluster well legalization");
 
+  // The technology parameters this stage is built around, stated once where
+  // they apply. FetchNpWellParams caches them the first time any stage needs
+  // them, which is why they are reported here rather than where they are read.
+  FetchNpWellParams();
+  LOG(info) << "  Well parameters:\n"
+            << "    max plug distance  : "
+            << ckt_ptr_->tech().NwellLayer().MaxPlugDist() << " um, "
+            << max_unplug_length_ << " grid\n"
+            << "    well spacing       : "
+            << ckt_ptr_->tech().NwellLayer().Spacing() << " um, "
+            << well_spacing_ << " grid\n"
+            << "    grid value X       : " << ckt_ptr_->GridValueX()
+            << " um\n"
+            << "    well tap cell width: " << well_tap_width_ << " grid\n";
+
   // Backstop for callers that bypass CLI/config validation: some patterns place
   // and legalize but are not yet handled by later stages (e.g. every-other-row
   // and the well-implant geometry builder). Fail fast with an actionable message
@@ -2765,6 +2876,9 @@ bool GriddedCellWellLegalizer::StartPlacement() {
     is_success = RunMovableCellLegalizationStages();
   }
   if (!is_success) {
+    is_success = RetryMovableCellLegalizationWithCapacityOwnership();
+  }
+  if (!is_success) {
     is_success = RetryMovableCellLegalizationWithBalancing();
   }
   if (!is_success) {
@@ -2778,7 +2892,13 @@ bool GriddedCellWellLegalizer::StartPlacement() {
   }
   /** Log the achieved per-stripe utilization after legalization. */
   LogActualGriddedUtilization();
+  if (placement_stage_callback_) {
+    placement_stage_callback_("after_legalization");
+  }
   RunPhysicalCompletionStages();
+  if (placement_stage_callback_) {
+    placement_stage_callback_("after_physical_completion");
+  }
   is_success = ValidateFinalPlacement();
 
   PrintEndStatement("Standard Cluster Well Legalization", is_success);

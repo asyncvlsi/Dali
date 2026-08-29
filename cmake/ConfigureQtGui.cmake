@@ -1,22 +1,15 @@
-# Configure Dali's optional Qt 6 live placement GUI.
+# Configure Dali's Qt 6 live placement GUI.
+#
+# There is no switch. Qt 6 Widgets present means Dali supports the GUI, absent
+# means it does not. A build option would be a second answer to a question the
+# toolchain can already answer, and downstream tools read the answer from
+# whether libdaligui was installed -- so an off switch would let them meet a
+# machine that has Qt and a Dali that deliberately has no viewer.
 #
 # Standard CMake package discovery covers system installations on Ubuntu.
 # Additional Homebrew hints support common Apple Silicon and Intel prefixes.
 
-set(DALI_GUI "AUTO" CACHE STRING "Qt live placement GUI mode: AUTO, ON, or OFF")
-set_property(CACHE DALI_GUI PROPERTY STRINGS AUTO ON OFF)
-string(TOUPPER "${DALI_GUI}" DALI_GUI_MODE)
-
-if (NOT DALI_GUI_MODE MATCHES "^(AUTO|ON|OFF)$")
-    message(FATAL_ERROR
-            "DALI_GUI must be AUTO, ON, or OFF; got '${DALI_GUI}'")
-endif ()
-
 set(DALI_HAS_QT_GUI FALSE)
-if (DALI_GUI_MODE STREQUAL "OFF")
-    message(STATUS "Qt GUI support disabled by DALI_GUI=OFF")
-    return()
-endif ()
 
 if (APPLE)
     foreach(dali_qt_prefix
@@ -50,11 +43,7 @@ endif ()
 find_package(Qt6 COMPONENTS Widgets QUIET)
 if (TARGET Qt6::Widgets)
     set(DALI_HAS_QT_GUI TRUE)
-    message(STATUS "Qt6 Widgets found: enabling Dali GUI debug support")
-elseif (DALI_GUI_MODE STREQUAL "ON")
-    message(FATAL_ERROR
-            "DALI_GUI=ON requires Qt6 Widgets; set Qt6_ROOT or CMAKE_PREFIX_PATH for a custom installation")
+    message(STATUS "Qt6 Widgets found: enabling Dali GUI support")
 else ()
-    message(STATUS
-            "Qt6 Widgets not found: building Dali without GUI debug support")
+    message(STATUS "Qt6 Widgets not found: building Dali without GUI support")
 endif ()

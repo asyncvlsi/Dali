@@ -34,6 +34,10 @@
  */
 #include "stripe.h"
 
+#include <cmath>
+
+#include "dali/placer/well_legalizer/stripe_capacity_assignment.h"
+
 #include <omp.h>
 
 #include <algorithm>
@@ -934,6 +938,127 @@ void StripeColumn::AssignComponentToSimpleStripe() {
     auto Stripe = GetStripeClosestToComponent(component_ptr, tmp_dist);
     Stripe->component_ptrs_vec_.push_back(component_ptr);
   }
+}
+
+/**
+ * Re-own this column's components by fragment capacity instead of proximity.
+ *
+ * Capacity and demand both come from the existing GriddedCapacityEstimator, so
+ * this introduces no second notion of how much a component costs or how much a
+ * fragment holds. The decision itself is in PlanCapacityAwareStripeAssignment,
+ * which is pure and tested separately; everything here is translation.
+ *
+ * Transactional: the plan is computed and validated in full before any
+ * component vector is touched, so a refusal leaves ownership exactly as it was.
+ */
+bool StripeColumn::AssignComponentToSimpleStripeByCapacity(
+    const GriddedCapacityConfig& config, int* moved_component_count,
+    int* overloaded_before, int* overloaded_after, std::string* refusal) {
+  if (stripe_list_.empty()) {
+    if (refusal != nullptr) *refusal = "column has no whitespace fragment";
+    return false;
+  }
+
+  std::vector<StripeSlot> slots;
+  slots.reserve(stripe_list_.size());
+  for (std::size_t index = 0; index < stripe_list_.size(); ++index) {
+    const Stripe& stripe = stripe_list_[index];
+    StripeSlot slot;
+    slot.index = static_cast<int>(index);
+    slot.llx = stripe.LLX();
+    slot.lly = stripe.LLY();
+    slot.urx = stripe.URX();
+    slot.ury = stripe.URY();
+    slots.push_back(slot);
+  }
+
+  std::vector<StripeDemandItem> items;
+  items.reserve(component_list_.size());
+  for (Component* component_ptr : component_list_) {
+    StripeDemandItem item;
+    item.index = component_ptr->Id();
+    item.x = static_cast<int>(std::round(component_ptr->X()));
+    item.y = static_cast<int>(std::round(component_ptr->Y()));
+    double distance = 0;
+    const Stripe* preferred = GetStripeClosestToComponent(component_ptr, distance);
+    item.preferred_slot = -1;
+    for (std::size_t index = 0; index < stripe_list_.size(); ++index) {
+      if (&stripe_list_[index] == preferred) {
+        item.preferred_slot = static_cast<int>(index);
+        break;
+      }
+    }
+    items.push_back(item);
+  }
+
+  // The single capacity authority: the same gridded estimator the legalizer
+  // already uses to predict overflow. Asking it whether a candidate set fits a
+  // fragment keeps row height, well heights and tap reservation out of the
+  // assignment logic entirely -- an area budget was tried here first and was
+  // wrong, because a fragment can have area for cells it has no shelf for.
+  const GriddedCapacityEstimator estimator(config);
+  std::vector<Component*> scratch;
+  const auto fits = [&](int slot_index, const std::vector<int>& item_indices) {
+    const Stripe& stripe = stripe_list_[slot_index];
+    scratch.clear();
+    scratch.reserve(item_indices.size());
+    for (int item_index : item_indices) {
+      scratch.push_back(component_list_[item_index]);
+    }
+    const GriddedCapacityEstimate estimate = estimator.Estimate(
+        scratch, stripe.Width(), stripe.Height(),
+        static_cast<unsigned long long>(stripe.Width()) * stripe.Height());
+    // Height, not area. The clusterer fails a fragment when the shelves it
+    // packs are taller than the fragment -- `used_height` against
+    // `capacity_height` -- and `required_row_height` is the estimator's name
+    // for the same quantity. Comparing areas instead lets a fragment with
+    // plenty of area but only one shelf's worth of height read as feasible.
+    return estimate.required_row_height <= stripe.Height() &&
+           estimate.unplaceable_component_count == 0;
+  };
+
+  const StripeAssignmentPlan plan =
+      PlanCapacityAwareStripeAssignment(slots, items, fits);
+  if (moved_component_count != nullptr) {
+    *moved_component_count = plan.moved_count;
+  }
+  if (overloaded_before != nullptr) {
+    *overloaded_before = plan.overloaded_slots_before;
+  }
+  if (overloaded_after != nullptr) *overloaded_after = plan.overloaded_slots_after;
+  if (!plan.feasible) {
+    if (refusal != nullptr) *refusal = plan.refusal;
+    return false;
+  }
+
+  // Applied only after the whole plan validated, so a refusal above leaves
+  // ownership exactly as proximity left it.
+  for (auto& stripe : stripe_list_) {
+    stripe.component_count_ = 0;
+    stripe.component_ptrs_vec_.clear();
+  }
+  for (std::size_t item_index = 0; item_index < items.size(); ++item_index) {
+    const int slot = plan.slot_of_item[item_index];
+    if (slot < 0 || slot >= static_cast<int>(stripe_list_.size())) continue;
+    ++stripe_list_[slot].component_count_;
+  }
+  for (auto& stripe : stripe_list_) {
+    stripe.component_ptrs_vec_.reserve(stripe.component_count_);
+  }
+  for (std::size_t item_index = 0; item_index < items.size(); ++item_index) {
+    const int slot = plan.slot_of_item[item_index];
+    if (slot < 0 || slot >= static_cast<int>(stripe_list_.size())) continue;
+    Component* component = component_list_[item_index];
+    if (slot != items[item_index].preferred_slot) {
+      const StripeAssignmentSeed seed = SeedReassignedComponent(
+          slots[slot], static_cast<int>(std::round(component->LLX())),
+          component->Width(), component->Height());
+      component->SetLLX(seed.llx);
+      component->SetLLY(seed.lly);
+    }
+    stripe_list_[slot].component_ptrs_vec_.push_back(component);
+  }
+  return true;
 }
 
 }  // namespace dali
