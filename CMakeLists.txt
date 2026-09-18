@@ -285,6 +285,7 @@ install(
 
 # Install binaries and libraries
 install(TARGETS dali DESTINATION bin)
+install(TARGETS hpwl DESTINATION bin)
 install(TARGETS dalilib DESTINATION lib)
 if (DALI_HAS_QT_GUI)
     install(TARGETS daligui DESTINATION lib)

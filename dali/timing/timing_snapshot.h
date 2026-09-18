@@ -200,6 +200,14 @@ struct TimingSnapshot {
   int worst_relative_constraint_id = -1;
   double worst_relative_slack = 0.0;
   double relative_total_negative_slack = 0.0;
+  /**
+   * Constraints whose slack could not be measured at all -- an end of the fork
+   * has no path, so the timer reports a non-finite slack rather than inventing
+   * one. They are violations for reporting purposes (an unmeasured constraint
+   * is not a satisfied one) but are kept out of the slack sums, which would
+   * otherwise be -inf and useless as an optimisation target.
+   */
+  int relative_unmeasured_count = 0;
   std::vector<RelativeTimingViolationSnapshot> relative_violations;
   /**
    * Every relative constraint, violating or not.

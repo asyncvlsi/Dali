@@ -494,7 +494,46 @@ public:
   void InitializeTimingDrivenPlacement();
   void UpdateRCs();
   void PerformTimingAnalysis();
+  /**
+   * Set every net's weight from the relative-timing slack measured last.
+   *
+   * The placer minimizes a weighted HPWL sum, so this is the only channel
+   * through which relative-timing slack can reach placement at all. A
+   * constraint's slack is `slow_witness_total - fast_witness_total`, so one
+   * picosecond of wire removed from a net that lies only on the fast witness
+   * returns exactly one picosecond of slack, and one picosecond removed from a
+   * net that lies only on the slow witness costs exactly one. A net on both
+   * witnesses cancels and is left alone.
+   *
+   * That makes the per-net demand a signed count of violated constraints, not
+   * a sum of slacks: a fork missing its deadline by 8000 ps and one missing by
+   * 10 ps both gain the same picosecond from the same shortened net, so
+   * weighting by slack magnitude would spend the objective on forks whose
+   * deficit is intrinsic cell delay that placement cannot touch.
+   *
+   * Only the sign of the demand is used. Scaling the weight with the magnitude
+   * was tried first and measured worse: one root net lies on the fast side of
+   * 53 of the 63 violated forks, so normalizing by the maximum left every other
+   * fast net within four percent of its base weight, and the placer answered by
+   * collapsing that one net and inflating HPWL from 3663 um to 5537 um. The
+   * fast side needs all of its nets short, not one of them very short.
+   *
+   * Weights are applied to a remembered base rather than multiplied in place,
+   * so calling this once per feedback iteration replaces the previous
+   * iteration's weights instead of compounding them.
+   */
   void UpdateNetWeights();
+  /**
+   * Measure timing for the feedback loop without emitting a `Timing report`.
+   *
+   * Synchronizes placement into phyDB, re-estimates interconnect RC, runs
+   * incremental analysis and captures witnesses -- the same sequence
+   * `RefreshTiming` performs -- but summarizes the result in one
+   * `TIMING_FEEDBACK` line. The full report block is what the flow's signoff is
+   * read from, and a loop that emitted one per iteration would leave a log in
+   * which "the timing report" no longer names a single thing.
+   */
+  bool RefreshTimingForNetWeights(int iteration, double *total_negative_slack);
   void ReportPerformance();
   /** Run placement with net weights driven by timing.
    * @return true on success. */
@@ -818,6 +857,32 @@ private:
   double target_density_ = -1;
   double timing_period_target_ = -1;
   /**
+   * Extra global-place/legalize passes run only to produce timing net weights.
+   *
+   * Zero reproduces the untimed flow exactly, stage for stage. Each additional
+   * pass places, legalizes, measures relative-timing slack on that legal
+   * placement and rewrites the net weights from it; the final pass is the
+   * ordinary one and carries the topology-sizing boundary and the promotions.
+   * The weights survive between passes because the circuit is built once.
+   */
+  int timing_driven_iterations_ = 0;
+  /**
+   * Ratio between the most-helped and the most-harmed net's timing weight.
+   *
+   * 1 means no timing weighting at all. See `UpdateNetWeights` for why the
+   * mapping is logarithmic and why demand is counted rather than summed.
+   */
+  double timing_net_weight_strength_ = 1.0;
+  /**
+   * Net weights as they stood before any timing feedback rewrote them.
+   *
+   * Captured on the first `UpdateNetWeights` call, so recipe-level weighting
+   * (`weight-critical-cycle`, `weight-fast-paths`) composes with the loop
+   * instead of being overwritten by it, and so repeated iterations replace
+   * rather than compound.
+   */
+  std::vector<double> base_net_weights_;
+  /**
    * Cells an applied topology delta added, awaiting a real legal position.
    *
    * They are created UNPLACED and stay that way until legalization has given
@@ -1110,6 +1175,14 @@ private:
   bool RunGlobalPlacementStage();
   /** Run the configured legalization path and optional legalization export. */
   bool RunLegalizationStage();
+  /**
+   * Run throwaway place/legalize/measure passes that only set net weights.
+   *
+   * A no-op unless `timing_driven_iterations` is positive. See the definition
+   * for why the measurement is taken after legalization and why every
+   * irreversible stage is kept out of these passes.
+   */
+  bool RunTimingFeedbackPasses();
   /** Run global placement and legalization before post-placement completion. */
   bool RunCorePlacementStages();
   bool RunStandardCellLegalization();

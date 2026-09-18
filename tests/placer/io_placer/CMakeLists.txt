@@ -145,6 +145,7 @@ set(io_placer_tests
     group_io_pins
     mirror_io_pin
     io_command_file_flow
+    script_owned_design_flow
     io_signoff_commands
 )
 set_tests_properties(${io_placer_tests}

@@ -24,6 +24,7 @@
 #include <numeric>
 #include <unordered_map>
 #include <unordered_set>
+#include <cstdlib>
 #include <utility>
 
 #include "dali/common/misc.h"
@@ -962,8 +963,13 @@ TimingSnapshot TimingSnapshotBuilder::Capture() const {
     for (int constraint_id = 0;
          constraint_id < snapshot.relative_constraint_count; ++constraint_id) {
       const double slack = timing_api.GetSlack(constraint_id);
-      if (snapshot.worst_relative_constraint_id < 0 ||
-          slack < snapshot.worst_relative_slack) {
+      // Only measured constraints compete for "worst". An unmeasured one has
+      // non-finite slack and would win every comparison, hiding the worst real
+      // violation behind a constraint whose delay is simply unknown.
+      if (std::isfinite(slack) &&
+          (snapshot.worst_relative_constraint_id < 0 ||
+           !std::isfinite(snapshot.worst_relative_slack) ||
+           slack < snapshot.worst_relative_slack)) {
         snapshot.worst_relative_constraint_id = constraint_id;
         snapshot.worst_relative_slack = slack;
       }
@@ -993,9 +999,51 @@ TimingSnapshot TimingSnapshotBuilder::Capture() const {
           constraint.fast_path, constraint.slow_path);
       constraint.delay_repair_candidate_sites = FindDelayRepairCandidateSites(
           constraint.fast_path, constraint.slow_path, declared_delay_sites);
+      /*
+       * Why does a constraint yield no repair site?
+       *
+       * FindDelayRepairCandidateSites is (sites named on the slow witness)
+       * minus (sites named on the fast witness). A zero result has two very
+       * different causes and the counts tell them apart: the slow witness may
+       * name no declared site at all, or it may name sites that the fast
+       * witness also names, in which case the set difference discards them.
+       * The first points at the witness being the wrong object to match over;
+       * the second points at the subtraction itself. Gated, off by default.
+       */
+      if (nullptr != std::getenv("DALI_SLACK_RECONCILE_DIAG")) {
+        std::unordered_set<std::string> f_names, s_names;
+        std::vector<std::string> f_ord, s_ord;
+        AppendDeclaredDelaySiteNames(constraint.fast_path, declared_delay_sites,
+                                     &f_names, &f_ord);
+        AppendDeclaredDelaySiteNames(constraint.slow_path, declared_delay_sites,
+                                     &s_names, &s_ord);
+        LOG(info) << "  [sites] declared " << declared_delay_sites.size()
+                  << " c" << constraint_id << " slack " << slack
+                  << " fastsites " << f_names.size() << " slowsites "
+                  << s_names.size() << " candidates "
+                  << constraint.delay_repair_candidate_sites.size()
+                  << " faststeps " << constraint.fast_path.steps.size()
+                  << " slowsteps " << constraint.slow_path.steps.size() << "\n";
+        /*
+         * Do the witness paths contain delay-line pins at all? If they do not,
+         * no `logical_path_prefix` can ever match them and fixing the producer
+         * would not be sufficient -- the witness would also be the wrong
+         * object. Printing the logical pin names settles that directly.
+         */
+        if (!constraint.slow_path.steps.empty()) {
+          LOG(info) << "  [sitepin] c" << constraint_id << " slow0 "
+                    << constraint.slow_path.steps.front().logical_source_pin
+                    << " slowN "
+                    << constraint.slow_path.steps.back().logical_target_pin
+                    << "\n";
+        }
+      }
       constraints.push_back(std::move(constraint));
-      if (slack < 0.0)
+      if (!std::isfinite(slack)) {
+        snapshot.relative_unmeasured_count += 1;
+      } else if (slack < 0.0) {
         snapshot.relative_total_negative_slack += slack;
+      }
     }
     // Every declared site, not only the violating ones. A site whose
     // constraints all pass still carries information the sizing loop needs:

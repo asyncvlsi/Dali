@@ -55,6 +55,7 @@
 #include <limits>
 #include <map>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 
@@ -514,6 +515,9 @@ void Dali::ShowParamsList() {
       << "  disable_io_place: " << disable_io_place_ << "\n"
       << "  target_density: " << target_density_ << "\n"
       << "  timing_period_target: " << timing_period_target_ << "\n"
+      << "  timing_driven_iterations: " << timing_driven_iterations_ << "\n"
+      << "  timing_net_weight_strength: " << timing_net_weight_strength_
+      << "\n"
       << "  timing_use_rc: " << timing_use_rc_ << "\n"
       << "  rc_min_routing_layer: " << rc_min_routing_layer_ << "\n"
       << "  net_ignore_threshold: " << net_ignore_threshold_ << "\n"
@@ -1005,6 +1009,18 @@ bool Dali::SetRuntimeOption(const std::string &name, const std::string &value) {
       return false;
     }
     timing_period_target_ = double_value;
+  } else if (name == "timing_driven_iterations") {
+    if (!ParseCommandInt(value, &int_value) || int_value < 0) {
+      LOG(error) << "timing_driven_iterations must be non-negative\n";
+      return false;
+    }
+    timing_driven_iterations_ = int_value;
+  } else if (name == "timing_net_weight_strength") {
+    if (!ParseCommandDouble(value, &double_value) || double_value < 1.0) {
+      LOG(error) << "timing_net_weight_strength must be at least 1\n";
+      return false;
+    }
+    timing_net_weight_strength_ = double_value;
   } else if (name == "rc_min_routing_layer") {
     if (!ParseCommandInt(value, &int_value) || int_value < 0) {
       LOG(error) << "rc_min_routing_layer must be a non-negative index\n";
@@ -1584,9 +1600,13 @@ void Dali::FetchSlacks() {
 void Dali::InitializeTimingDrivenPlacement() {
   if (timing_analysis_initialized_)
     return;
+  LOG(info) << "    [bridge] CreatePhydbActAdaptor\n";
   phy_db_ptr_->CreatePhydbActAdaptor(false);
+  LOG(info) << "    [bridge] AddNetsAndCompPinsToSpefManager\n";
   phy_db_ptr_->AddNetsAndCompPinsToSpefManager();
+  LOG(info) << "    [bridge] InitializeRCEstimator\n";
   InitializeRCEstimator();
+  LOG(info) << "    [bridge] done\n";
   timing_analysis_initialized_ = true;
 }
 
@@ -1597,7 +1617,135 @@ void Dali::PerformTimingAnalysis() {
   timing_api.UpdateTimingIncremental();
 }
 
-void Dali::UpdateNetWeights() { FetchSlacks(); }
+/**
+ * Signed count, per net, of violated constraints a shorter net would help.
+ *
+ * A net is counted `+1` for each measured violated constraint whose fast
+ * witness carries it and whose slow witness does not, and `-1` for the mirror
+ * case. Nets on both witnesses of the same constraint contribute nothing to
+ * that constraint, because the delay they add cancels in `slow - fast`.
+ *
+ * Unmeasured constraints (slack `-inf`: an end of the fork has no path) are
+ * skipped. They are real violations and are reported as such, but their
+ * witnesses are not a description of any path whose length placement could
+ * change, and admitting them here would let a net inherit an unbounded demand.
+ */
+static std::unordered_map<std::string, int>
+CollectTimingNetDemand(const TimingSnapshot &snapshot) {
+  std::unordered_map<std::string, int> demand;
+  for (const RelativeTimingConstraintSnapshot &constraint :
+       snapshot.relative_constraints) {
+    if (!std::isfinite(constraint.slack) || constraint.slack >= 0.0) continue;
+    std::unordered_set<std::string> fast_nets;
+    std::unordered_set<std::string> slow_nets;
+    for (const TimingPathStep &step : constraint.fast_path.steps) {
+      if (!step.net_name.empty()) fast_nets.insert(step.net_name);
+    }
+    for (const TimingPathStep &step : constraint.slow_path.steps) {
+      if (!step.net_name.empty()) slow_nets.insert(step.net_name);
+    }
+    for (const std::string &net_name : fast_nets) {
+      if (slow_nets.count(net_name) == 0) demand[net_name] += 1;
+    }
+    for (const std::string &net_name : slow_nets) {
+      if (fast_nets.count(net_name) == 0) demand[net_name] -= 1;
+    }
+  }
+  return demand;
+}
+
+void Dali::UpdateNetWeights() {
+  std::vector<Net> &nets = circuit_.Nets();
+  if (base_net_weights_.size() != nets.size()) {
+    base_net_weights_.clear();
+    base_net_weights_.reserve(nets.size());
+    for (Net &net : nets) base_net_weights_.push_back(net.Weight());
+  }
+  if (timing_net_weight_strength_ <= 1.0) {
+    LOG(info) << "TIMING_FEEDBACK_WEIGHTS skipped, strength "
+              << timing_net_weight_strength_ << " is not above 1\n";
+    return;
+  }
+
+  const std::unordered_map<std::string, int> demand =
+      CollectTimingNetDemand(last_timing_snapshot_);
+  int max_abs_demand = 0;
+  for (const auto &entry : demand) {
+    max_abs_demand = std::max(max_abs_demand, std::abs(entry.second));
+  }
+  if (max_abs_demand == 0) {
+    LOG(warning) << "TIMING_FEEDBACK_WEIGHTS no violated constraint names a "
+                    "net that placement can move; weights unchanged\n";
+    return;
+  }
+
+  int promoted = 0;
+  int relieved = 0;
+  for (std::size_t index = 0; index < nets.size(); ++index) {
+    Net &net = nets[index];
+    auto found = demand.find(net.Name());
+    const int net_demand = found == demand.end() ? 0 : found->second;
+    double multiplier = 1.0;
+    if (net_demand > 0) {
+      multiplier = timing_net_weight_strength_;
+      ++promoted;
+    } else if (net_demand < 0) {
+      multiplier = 1.0 / timing_net_weight_strength_;
+      ++relieved;
+    }
+    net.SetWeight(base_net_weights_[index] * multiplier);
+  }
+  LOG(info) << "TIMING_FEEDBACK_WEIGHTS strength "
+            << timing_net_weight_strength_ << " max_demand " << max_abs_demand
+            << " promoted " << promoted << " relieved " << relieved << " of "
+            << nets.size() << " nets\n";
+}
+
+bool Dali::RefreshTimingForNetWeights(int iteration,
+                                       double *total_negative_slack) {
+  if (phy_db_ptr_ == nullptr ||
+      !phy_db_ptr_->GetTimingApi().ReadyForTimingDriven()) {
+    LOG(error) << "TIMING_FEEDBACK iteration " << iteration
+               << " has no linked timing host\n";
+    return false;
+  }
+  InitializeTimingDrivenPlacement();
+  if (!VerifyRcConfigurationIsEffective("timing-feedback")) return false;
+  ExportOrdinaryComponentsToPhyDB();
+  if (timing_use_rc_) UpdateRCs();
+  PerformTimingAnalysis();
+  const std::vector<DelayRepairSite> effective_delay_sites =
+      EffectiveDelayRepairSites();
+  last_timing_snapshot_ =
+      TimingSnapshotBuilder(phy_db_ptr_, &effective_delay_sites).Capture();
+  ++runtime_breakdown_.timing_refreshes;
+
+  double wire_term = 0.0;
+  double negative_slack = 0.0;
+  int measured_violations = 0;
+  for (const RelativeTimingConstraintSnapshot &constraint :
+       last_timing_snapshot_.relative_constraints) {
+    if (!std::isfinite(constraint.slack) || constraint.slack >= 0.0) continue;
+    TimingPathDecomposition fast;
+    TimingPathDecomposition slow;
+    std::string error;
+    if (!DecomposeTimingPath(constraint.fast_path, &fast, &error) ||
+        !DecomposeTimingPath(constraint.slow_path, &slow, &error)) {
+      continue;
+    }
+    wire_term += slow.wire_delay - fast.wire_delay;
+    negative_slack += constraint.slack;
+    ++measured_violations;
+  }
+  LOG(info) << "TIMING_FEEDBACK iteration " << iteration << " violations "
+            << last_timing_snapshot_.relative_violations.size()
+            << " measured_violations " << measured_violations
+            << " total_negative_slack " << negative_slack
+            << " interconnect_term " << wire_term << " unweighted_hpwl "
+            << circuit_.UnweightedHPWL() << "\n";
+  if (total_negative_slack != nullptr) *total_negative_slack = negative_slack;
+  return true;
+}
 
 /**
  * Log enough of a timing witness to locate its endpoints and branch points
@@ -1695,6 +1843,195 @@ static bool AttributeDelayLineRequests(
     LOG(debug) << constraint_ids.str();
   }
   return true;
+}
+
+/**
+ * Report how much of the negative relative slack placement can actually reach.
+ *
+ * A relative constraint's slack is `slow_total - fast_total` over its two
+ * witnesses (the decomposition writer validates that identity to 1e-3 ps), and
+ * each witness splits into cell arcs and net legs by whether the timing graph
+ * gave the step a net name. Only the net legs move when cells move, so the
+ * interconnect term `slow_wire - fast_wire` is the whole of what any
+ * wirelength-shaped objective -- net weights included -- can change, and
+ * `slow_cell - fast_cell` is what it cannot.
+ *
+ * This exists because the two are not the same order of magnitude on every
+ * design and the difference decides whether a timing-driven weighting loop is
+ * worth running at all. Printing the split next to the totals means a run that
+ * fails to improve says why in its own log instead of inviting a guess.
+ *
+ * Unmeasured constraints (no path at one end of the fork, slack -inf) are
+ * excluded exactly as they are from the slack sums; the count is printed so the
+ * two populations can be told apart.
+ */
+static void
+LogInterconnectShareOfNegativeSlack(const TimingSnapshot &snapshot) {
+  double fast_wire = 0.0;
+  double slow_wire = 0.0;
+  double cell_term = 0.0;
+  double negative_slack = 0.0;
+  int measured_violations = 0;
+  double residual_sum = 0.0;
+  double worst_residual = 0.0;
+  int worst_residual_id = -1;
+  int empty_slow_paths = 0;
+  int empty_fast_paths = 0;
+  double worst_detail_slack = 0.0;
+  double worst_detail_fast = 0.0;
+  double worst_detail_slow = 0.0;
+  int worst_detail_fast_steps = 0;
+  int worst_detail_slow_steps = 0;
+  long slow_step_total = 0;
+  long fast_step_total = 0;
+  std::unordered_map<std::string, double> net_fast_wire;
+  for (const RelativeTimingConstraintSnapshot &constraint :
+       snapshot.relative_constraints) {
+    if (!std::isfinite(constraint.slack) || constraint.slack >= 0.0) continue;
+    TimingPathDecomposition fast;
+    TimingPathDecomposition slow;
+    std::string error;
+    if (!DecomposeTimingPath(constraint.fast_path, &fast, &error) ||
+        !DecomposeTimingPath(constraint.slow_path, &slow, &error)) {
+      continue;
+    }
+    fast_wire += fast.wire_delay;
+    slow_wire += slow.wire_delay;
+    cell_term += slow.cell_delay - fast.cell_delay;
+    negative_slack += constraint.slack;
+    ++measured_violations;
+    {
+      const double residual =
+          (slow.total_delay - fast.total_delay) - constraint.slack;
+      residual_sum += residual;
+      if (std::abs(residual) > std::abs(worst_residual)) {
+        worst_residual = residual;
+        worst_residual_id = constraint.constraint_id;
+      }
+      if (slow.total_steps == 0) ++empty_slow_paths;
+      if (fast.total_steps == 0) ++empty_fast_paths;
+      slow_step_total += slow.total_steps;
+      fast_step_total += fast.total_steps;
+      if (nullptr != std::getenv("DALI_SLACK_RECONCILE_DIAG")) {
+        LOG(info) << "  [reconcile]   c" << constraint.constraint_id
+                  << " residual " << residual << " slack " << constraint.slack
+                  << " slow-fast " << (slow.total_delay - fast.total_delay)
+                  << " steps " << slow.total_steps << "/" << fast.total_steps
+                  << " slowps " << slow.total_delay
+                  << " fastps " << fast.total_delay
+                  << " slowwire " << slow.wire_delay
+                  << " fastwire " << fast.wire_delay << "\n";
+      }
+      if (worst_residual_id == constraint.constraint_id) {
+        worst_detail_slack = constraint.slack;
+        worst_detail_fast = fast.total_delay;
+        worst_detail_slow = slow.total_delay;
+        worst_detail_fast_steps = fast.total_steps;
+        worst_detail_slow_steps = slow.total_steps;
+      }
+    }
+    for (const TimingPathStep &step : constraint.fast_path.steps) {
+      if (!step.net_name.empty()) net_fast_wire[step.net_name] += step.delay;
+    }
+  }
+  if (measured_violations == 0) return;
+  LOG(info) << "  measured violations   : " << measured_violations << "\n";
+  LOG(info) << "  interconnect term     : " << slow_wire - fast_wire << " ps of "
+            << negative_slack << " ps negative slack\n";
+  LOG(info) << "  fast/slow wire        : " << fast_wire << " / " << slow_wire
+            << " ps\n";
+  LOG(info) << "  cell-arc term         : " << cell_term << " ps\n";
+  /*
+   * Does the printed split actually account for the printed slack?
+   *
+   * The two terms are disjoint by construction -- a step lands in exactly one
+   * of them, by whether the timing graph gave it a net name -- so their sum is
+   * `sum(slow_total - fast_total)`, which the accepted convention says is the
+   * slack. WriteTimingDecompositionJson enforces that identity per constraint
+   * at 1e-3 ps, but it aborts on the first constraint whose slack is not
+   * finite, so on any design with an unmeasured fork it returns before
+   * checking a single measured constraint. On asymmetric_fork_join that is
+   * constraint 0, which means the check has never run here and the `7%
+   * interconnect` ratio has never been reconciled against anything.
+   *
+   * Gated off by default: this prints the residual the writer would have
+   * tested, over exactly the constraints the split was computed from, so the
+   * ratio can be trusted or discarded on evidence rather than on the comment
+   * above it.
+   */
+  if (nullptr != std::getenv("DALI_SLACK_RECONCILE_DIAG")) {
+    LOG(info) << "  [reconcile] sum((slow-fast) - slack) : " << residual_sum
+              << " ps over " << measured_violations << " constraints\n";
+    LOG(info) << "  [reconcile] worst residual          : " << worst_residual
+              << " ps (constraint " << worst_residual_id << "), tolerance "
+              << kTimingDecompositionTolerancePs << " ps\n";
+    LOG(info) << "  [reconcile] split sum vs slack      : "
+              << (slow_wire - fast_wire) + cell_term << " vs " << negative_slack
+              << " ps\n";
+    LOG(info) << "  [reconcile] empty slow / fast paths : " << empty_slow_paths
+              << " / " << empty_fast_paths << " of " << measured_violations
+              << "\n";
+    LOG(info) << "  [reconcile] total slow / fast steps : " << slow_step_total
+              << " / " << fast_step_total << "\n";
+    LOG(info) << "  [reconcile] worst-residual detail   : slack "
+              << worst_detail_slack << ", slow " << worst_detail_slow << " ("
+              << worst_detail_slow_steps << " steps), fast "
+              << worst_detail_fast << " (" << worst_detail_fast_steps
+              << " steps), slow-fast "
+              << worst_detail_slow - worst_detail_fast << "\n";
+  }
+  std::vector<std::pair<double, std::string>> ranked;
+  ranked.reserve(net_fast_wire.size());
+  for (const auto &entry : net_fast_wire) {
+    ranked.emplace_back(entry.second, entry.first);
+  }
+  std::sort(ranked.begin(), ranked.end(),
+            [](const std::pair<double, std::string> &left,
+               const std::pair<double, std::string> &right) {
+              return left.first > right.first;
+            });
+  double top_five = 0.0;
+  for (std::size_t index = 0; index < ranked.size() && index < 5; ++index) {
+    top_five += ranked[index].first;
+  }
+  LOG(info) << "  fast-wire nets        : " << ranked.size() << ", top 5 carry "
+            << top_five << " ps\n";
+}
+
+/**
+ * Report the area the placement actually occupies against the area it needs.
+ *
+ * Exists to keep one question answerable from the log alone: whether a timing
+ * sample was taken on a placement that could physically exist. A pre-placement
+ * sample is read from the input coordinates, and if those overlap -- occupancy
+ * above 1 -- its wire delays are shorter than any legal placement could ever
+ * achieve, so treating it as a baseline sets a target no placer can reach.
+ * Occupancy is cell area over the bounding box of the cells themselves, not
+ * over the die, because a placer that packs into a corner of a large die is
+ * doing well and the die-relative number would call that sparse.
+ */
+static void LogPlacementOccupancy(Circuit &circuit) {
+  double left = std::numeric_limits<double>::max();
+  double right = std::numeric_limits<double>::lowest();
+  double bottom = std::numeric_limits<double>::max();
+  double top = std::numeric_limits<double>::lowest();
+  double cell_area = 0.0;
+  int counted = 0;
+  for (Component &component : circuit.Components()) {
+    if (!component.IsMovable()) continue;
+    left = std::min(left, component.LLX());
+    right = std::max(right, component.URX());
+    bottom = std::min(bottom, component.LLY());
+    top = std::max(top, component.URY());
+    cell_area += static_cast<double>(component.Width()) *
+                 static_cast<double>(component.Height());
+    ++counted;
+  }
+  if (counted == 0) return;
+  const double bounding_area = (right - left) * (top - bottom);
+  LOG(info) << "  cell bounding box     : " << (right - left) << " x "
+            << (top - bottom) << " grid, occupancy "
+            << (bounding_area > 0.0 ? cell_area / bounding_area : -1.0) << "\n";
 }
 
 bool Dali::ReportTiming() { return RefreshTiming(true); }
@@ -1802,16 +2139,43 @@ bool Dali::RefreshTiming(bool capture_witnesses) {
   if (last_timing_snapshot_.worst_relative_constraint_id >= 0) {
     LOG(info) << "  worst relative ID     : "
               << last_timing_snapshot_.worst_relative_constraint_id << "\n";
-    LOG(info) << "  worst relative slack  : "
-              << last_timing_snapshot_.worst_relative_slack << "\n";
+    if (std::isfinite(last_timing_snapshot_.worst_relative_slack)) {
+      LOG(info) << "  worst relative slack  : "
+                << last_timing_snapshot_.worst_relative_slack << "\n";
+    } else {
+      LOG(info) << "  worst relative slack  : unmeasured\n";
+    }
     LOG(info) << "  total negative slack  : "
               << last_timing_snapshot_.relative_total_negative_slack << "\n";
   }
   LOG(info) << "  relative violations   : "
             << last_timing_snapshot_.relative_violations.size() << "\n";
+  if (last_timing_snapshot_.relative_unmeasured_count > 0) {
+    LOG(warning) << "  unmeasured constraints: "
+                 << last_timing_snapshot_.relative_unmeasured_count
+                 << " (an end of the fork has no path; counted as violating, "
+                 << "excluded from the slack sums)\n";
+  }
   if (!last_timing_snapshot_.relative_violations.empty()) {
     const RelativeTimingViolationSnapshot &worst =
         last_timing_snapshot_.relative_violations.front();
+    /*
+     * Which constraint do the witnesses below actually belong to?
+     *
+     * `relative_violations` is every constraint with `slack < 0.0`, sorted
+     * ascending. An unmeasured constraint carries slack -inf, which satisfies
+     * that test and sorts ahead of every finite slack, so front() is an
+     * unmeasured constraint whenever one exists -- not the constraint named by
+     * `worst relative ID`, whose slack is the worst *finite* one. The witnesses
+     * printed under "worst" can therefore describe a different constraint than
+     * the two lines above them. Gated print so the mismatch is checkable.
+     */
+    if (nullptr != std::getenv("DALI_SLACK_RECONCILE_DIAG")) {
+      LOG(info) << "  [reconcile] witness source          : constraint "
+                << worst.constraint_id << ", slack " << worst.slack
+                << " (worst relative ID is "
+                << last_timing_snapshot_.worst_relative_constraint_id << ")\n";
+    }
     LOG(info) << "  worst fast witness    : " << worst.fast_path.TotalDelay()
               << " (" << worst.fast_path.steps.size() << " steps)\n";
     LogTimingPathSteps(worst.fast_path);
@@ -1820,6 +2184,8 @@ bool Dali::RefreshTiming(bool capture_witnesses) {
     LogTimingPathSteps(worst.slow_path);
     LogDelayRepairCandidates(worst);
   }
+  LogInterconnectShareOfNegativeSlack(last_timing_snapshot_);
+  LogPlacementOccupancy(circuit_);
   LOG(info) << "  unweighted HPWL       : " << circuit_.UnweightedHPWL()
             << " um\n";
   return true;
@@ -4389,7 +4755,62 @@ bool Dali::PromoteLegalizedTopologyComponents() {
   return true;
 }
 
+/**
+ * Place, legalize and measure, using the result only to rewrite net weights.
+ *
+ * This is the closed half of the timing loop. Before it existed, relative
+ * slack reached placement through nothing at all: `UpdateNetWeights` only
+ * printed, and the one caller that did loop -- `TimingDrivenPlacement` -- was
+ * not the entry point `run placement` dispatches to. The recipe's one live
+ * coupling weighted the critical cycle, which on this benchmark already meets
+ * its target with 21538 ps to spare, so the violated forks were unrepresented
+ * in the objective and legalization was free to stretch them: on
+ * asymmetric_fork_join the interconnect term of the violated constraints went
+ * from -4898 ps before placement to -29340 ps after it, which is the whole of
+ * the 17271 ps the total negative slack lost.
+ *
+ * The passes here are deliberately throwaway. Each one runs global placement
+ * and legalization on the current weights, measures the legal result, and
+ * feeds it back; the coordinates it produced are then discarded by the next
+ * pass's own initialization. Only the weights carry forward. That is why the
+ * topology-sizing boundary, the promotions, the domain observations and every
+ * irreversible physical stage stay in the single ordinary pass that follows --
+ * and why `timing_driven_iterations 0`, the default, leaves the flow byte for
+ * byte what it was.
+ *
+ * Measurement happens after legalization, not after global placement, because
+ * legalization is where the damage is: global placement reaches 2820 um of
+ * weighted HPWL on this design and legalization inflates it to 4787 um.
+ * Weights fitted to the pre-legalization placement would be fitted to a
+ * picture of the wires that the flow does not ship.
+ */
+bool Dali::RunTimingFeedbackPasses() {
+#if PHYDB_USE_GALOIS
+  if (timing_driven_iterations_ <= 0) return true;
+  if (!ShouldPerformTimingDrivenPlacement()) {
+    LOG(error) << "TIMING_FEEDBACK requires a linked timing host; set "
+                  "timing_driven_iterations 0 to run without one\n";
+    return false;
+  }
+  for (int iteration = 0; iteration < timing_driven_iterations_; ++iteration) {
+    if (!RunGlobalPlacementStage()) return false;
+    if (!RunLegalizationStage()) return false;
+    if (!RefreshTimingForNetWeights(iteration, nullptr)) return false;
+    UpdateNetWeights();
+  }
+  return true;
+#else
+  if (timing_driven_iterations_ > 0) {
+    LOG(error) << "TIMING_FEEDBACK is unavailable because Dali was built "
+                  "without GaloisEDA support.\n";
+    return false;
+  }
+  return true;
+#endif
+}
+
 bool Dali::RunCorePlacementStages() {
+  if (!RunTimingFeedbackPasses()) return false;
   if (!RunGlobalPlacementStage()) return false;
   if (!topology_adaptive_sizing_ && !RunStageBoundaryTopologySizing())
     return false;
