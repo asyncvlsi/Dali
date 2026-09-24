@@ -2150,6 +2150,11 @@ bool Dali::RefreshTiming(bool capture_witnesses) {
   }
   LOG(info) << "  relative violations   : "
             << last_timing_snapshot_.relative_violations.size() << "\n";
+  if (last_timing_snapshot_.relative_vacuous_count > 0) {
+    LOG(info) << "  vacuous constraints   : "
+              << last_timing_snapshot_.relative_vacuous_count
+              << " (fast end is a constant; cannot be violated)\n";
+  }
   if (last_timing_snapshot_.relative_unmeasured_count > 0) {
     LOG(warning) << "  unmeasured constraints: "
                  << last_timing_snapshot_.relative_unmeasured_count

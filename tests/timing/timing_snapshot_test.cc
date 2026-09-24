@@ -4,6 +4,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <memory>
 #include <sstream>
 
@@ -55,6 +56,25 @@ std::unique_ptr<phydb::PhyDB> MakeEndpointCapturePhyDB() {
   phy_db->SetGetConstraintEndpointsCB(ConstraintEndpoints);
   return phy_db;
 }
+
+int ThreeConstraints() { return 3; }
+
+// 0 measured and met, 1 unmeasured (-inf), 2 vacuous (+inf, constant fast end)
+std::vector<double> MixedSlacks(const std::vector<int> &ids) {
+  std::vector<double> slacks;
+  for (int id : ids) {
+    if (id == 0) {
+      slacks.push_back(5.0);
+    } else if (id == 1) {
+      slacks.push_back(-std::numeric_limits<double>::infinity());
+    } else {
+      slacks.push_back(std::numeric_limits<double>::infinity());
+    }
+  }
+  return slacks;
+}
+
+bool ThirdIsVacuous(int id) { return id == 2; }
 
 }  // namespace
 
@@ -490,6 +510,44 @@ TEST(TimingSnapshotTest, CanonicalizesOnlyRegisteredReplaceableSiteEndpoints) {
             after.relative_constraints[0].SemanticIdentity());
   EXPECT_EQ(before.relative_constraints[1].SemanticIdentity(),
             "logic:Y|sink:D|other_dl0_cell:Y");
+}
+
+TEST(TimingSnapshotBuilderTest, VacuousForksAreNeitherViolationsNorUnmeasured) {
+  std::unique_ptr<phydb::PhyDB> phy_db = MakeEndpointCapturePhyDB();
+  // ConstraintEndpoints maps constraint id to components 1+2*id and 2+2*id;
+  // the helper builds five, enough for two constraints. Add the third's.
+  phydb::Macro *macro = phy_db->GetMacroPtr("CELL");
+  for (int id = 5; id < 7; ++id) {
+    phy_db->AddComponent("u" + std::to_string(id), macro,
+                         phydb::PlaceStatus::PLACED, 0, 0,
+                         phydb::CompOrient::N);
+  }
+  phy_db->SetGetNumConstraintsCB(ThreeConstraints);
+  phy_db->SetGetSlackCB(MixedSlacks);
+
+  // Without the timer's callback a +inf slack is still unknown: counted
+  // unmeasured, exactly as before.
+  const TimingSnapshot before = TimingSnapshotBuilder(phy_db.get()).Capture();
+  ASSERT_EQ(before.relative_constraints.size(), 3U);
+  EXPECT_EQ(before.relative_vacuous_count, 0);
+  EXPECT_EQ(before.relative_unmeasured_count, 2);
+
+  phy_db->SetIsForkVacuousCB(ThirdIsVacuous);
+  const TimingSnapshot after = TimingSnapshotBuilder(phy_db.get()).Capture();
+  ASSERT_EQ(after.relative_constraints.size(), 3U);
+  EXPECT_EQ(after.relative_vacuous_count, 1);
+  EXPECT_EQ(after.relative_unmeasured_count, 1);
+  EXPECT_TRUE(after.relative_constraints[2].vacuous);
+  ASSERT_EQ(after.relative_violations.size(), 1U);
+  EXPECT_EQ(after.relative_violations[0].constraint_id, 1);
+  EXPECT_EQ(after.worst_relative_constraint_id, 0);
+
+  const TimingSnapshot identities =
+      TimingSnapshotBuilder(phy_db.get()).CaptureConstraintIdentities();
+  EXPECT_EQ(identities.relative_vacuous_count, 1);
+  for (const auto &violation : identities.relative_violations) {
+    EXPECT_NE(violation.constraint_id, 2);
+  }
 }
 
 TEST(TimingSnapshotBuilderTest, EndpointIdentitiesDoNotReadSlack) {

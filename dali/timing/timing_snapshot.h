@@ -63,6 +63,12 @@ struct TimingPathSnapshot {
 struct RelativeTimingConstraintSnapshot {
   int constraint_id = -1;
   double slack = 0.0;
+  /**
+   * The fast end is a constant (driven by a cell with no inputs), so the
+   * constraint can never be violated. Reported by the timer; its slack is
+   * +inf and it is neither a violation nor unmeasured.
+   */
+  bool vacuous = false;
   TimingPathSnapshot fast_path;
   TimingPathSnapshot slow_path;
   std::vector<std::string> delay_repair_candidate_nets;
@@ -208,6 +214,12 @@ struct TimingSnapshot {
    * otherwise be -inf and useless as an optimisation target.
    */
   int relative_unmeasured_count = 0;
+  /**
+   * Constraints the timer proved vacuous: the fast end never transitions, so
+   * "fast before slow" holds on every circuit. Counted and reported on their
+   * own, never as violations and never as unmeasured.
+   */
+  int relative_vacuous_count = 0;
   std::vector<RelativeTimingViolationSnapshot> relative_violations;
   /**
    * Every relative constraint, violating or not.

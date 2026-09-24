@@ -1038,8 +1038,12 @@ TimingSnapshot TimingSnapshotBuilder::Capture() const {
                     << "\n";
         }
       }
+      constraint.vacuous = timing_api.IsForkVacuous(constraint_id);
+      const bool vacuous = constraint.vacuous;
       constraints.push_back(std::move(constraint));
-      if (!std::isfinite(slack)) {
+      if (vacuous) {
+        snapshot.relative_vacuous_count += 1;
+      } else if (!std::isfinite(slack)) {
         snapshot.relative_unmeasured_count += 1;
       } else if (slack < 0.0) {
         snapshot.relative_total_negative_slack += slack;
@@ -1068,7 +1072,7 @@ TimingSnapshot TimingSnapshotBuilder::Capture() const {
     }
 
     for (const RelativeTimingConstraintSnapshot &constraint : constraints) {
-      if (constraint.slack < 0.0) {
+      if (!constraint.vacuous && constraint.slack < 0.0) {
         snapshot.relative_violations.push_back(constraint);
       }
     }
@@ -1100,6 +1104,10 @@ TimingSnapshot TimingSnapshotBuilder::CaptureConstraintIdentities() const {
     RelativeTimingConstraintSnapshot constraint;
     constraint.constraint_id = constraint_id;
     constraint.slack = timing_api.GetSlack(constraint_id);
+    constraint.vacuous = timing_api.IsForkVacuous(constraint_id);
+    if (constraint.vacuous) {
+      snapshot.relative_vacuous_count += 1;
+    }
     if (snapshot.worst_relative_constraint_id < 0 ||
         constraint.slack < snapshot.worst_relative_slack) {
       snapshot.worst_relative_constraint_id = constraint_id;
@@ -1125,7 +1133,7 @@ TimingSnapshot TimingSnapshotBuilder::CaptureConstraintIdentities() const {
   }
   for (const RelativeTimingConstraintSnapshot &constraint :
        snapshot.relative_constraints) {
-    if (constraint.slack < 0.0) {
+    if (!constraint.vacuous && constraint.slack < 0.0) {
       snapshot.relative_violations.push_back(constraint);
     }
   }
