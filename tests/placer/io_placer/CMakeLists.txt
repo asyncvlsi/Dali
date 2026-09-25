@@ -135,6 +135,17 @@ add_test(
 set_tests_properties(io_signoff_commands
                      PROPERTIES LABELS "integration;io_placer")
 
+# Fix off-chip environment cells outside an edge of the placement region.
+add_executable(place_environment_cells place_environment_cells.cc)
+target_link_libraries(place_environment_cells PRIVATE dalilib)
+add_test(
+    NAME place_environment_cells
+    COMMAND place_environment_cells
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+set_tests_properties(place_environment_cells
+                     PROPERTIES LABELS "integration;io_placer")
+
 set(io_placer_tests
     all_iopin_use_same_metal_layer
     add_and_place_io_pins
@@ -147,6 +158,7 @@ set(io_placer_tests
     io_command_file_flow
     script_owned_design_flow
     io_signoff_commands
+    place_environment_cells
 )
 set_tests_properties(${io_placer_tests}
                      PROPERTIES FIXTURES_REQUIRED io_placer_benchmark)

@@ -73,7 +73,8 @@ static bool ChangesPlacement(const std::vector<std::string> &arguments) {
   }
   if (command == "run" || command == "place-design" ||
       command == "global-place" || command == "add-welltap" ||
-      command == "move-io" || command == "unfix-io") {
+      command == "move-io" || command == "unfix-io" ||
+      command == "place-environment") {
     return true;
   }
   if (command != "place-io" || arguments.size() < 2) {
@@ -227,6 +228,9 @@ void DaliCommandProcessor::ReportUsage() const {
       << "  run placement            execute the configured placement flow\n"
       << "  read-delay-sites <file> load declared timing-delay metadata\n"
       << "  timing-report            synchronize placement and report timing\n"
+      << "  place-environment <edge>[,<edge>...] <component>...\n"
+      << "                           fix off-chip environment cells outside\n"
+      << "                           an edge\n"
       << "  runtime-report           report accumulated wall time by flow phase\n"
       << "  timing-check             fail if timing constraints are violated\n"
       << "  write-timing-repair-plan <file.json>\n"
@@ -417,6 +421,17 @@ bool DaliCommandProcessor::DispatchCommand(
     }
     return dali_->SpreadDelayLineAcrossRows(arguments[1], separation,
                                             column_stride);
+  }
+
+  if (command == "place-environment") {
+    if (arguments.size() < 3) {
+      LOG(error) << "Usage: place-environment <edge>[,<edge>...] "
+                    "<component> [<component> ...]\n";
+      return false;
+    }
+    return dali_->PlaceEnvironmentCells(
+        arguments[1],
+        std::vector<std::string>(arguments.begin() + 2, arguments.end()));
   }
 
   if (command == "register-delay-line") {

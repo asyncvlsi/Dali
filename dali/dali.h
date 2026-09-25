@@ -27,6 +27,7 @@
 #include <iosfwd>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -332,6 +333,33 @@ public:
    * when latency is to come from inserted elements rather than from wire.
    */
   bool RegisterDelayLine(const std::string &name_prefix);
+
+  /**
+   * Fix environment cells just outside one edge of the placement region.
+   *
+   * An environment cell stands in for an off-chip sender or receiver at a
+   * top-level I/O pin (TimingDrivenPlacementBenchmarks tech/env). Physically
+   * it is beyond the pad, so it is fixed outside the region rather than in a
+   * row: the legalizers never see it and no movable cell can land on it. Its
+   * pin then marks where the signal enters the die, and the wire from it to
+   * the design is the on-chip I/O wire the placer has to pay for.
+   *
+   * `edges` is one edge or a comma-separated list of them (west, east,
+   * south, north), filled in order. The named components are stacked
+   * contiguously along the first edge in the order given, flush against it,
+   * orientation N, and marked FIXED; the cells that no longer fit continue on
+   * the next edge. Each edge's group is centred on its midpoint. Keeping a
+   * channel's cells together keeps the nets between them -- which are off
+   * chip -- a few microns long instead of charging them as on-chip wire.
+   *
+   * Each edge may be used once, so one call places every cell for its edges.
+   * Fails, changing nothing, on an unknown or reused edge, an unknown or
+   * repeated component, a component that is already fixed, or cells that do
+   * not fit along all the edges given -- a wide bus on a small die must fail
+   * loudly rather than overhang the edge.
+   */
+  bool PlaceEnvironmentCells(const std::string &edges,
+                             const std::vector<std::string> &component_names);
 
   /**
    * A delay line asked to stay spread, by name prefix and row separation.
@@ -1163,6 +1191,8 @@ private:
   DelayLineFeedbackState delay_line_feedback_;
   std::vector<DelayLineFeedbackEvent> pending_delay_line_feedback_events_;
   bool timing_analysis_initialized_ = false;
+  /** Edges already used by PlaceEnvironmentCells. */
+  std::set<std::string> environment_edges_;
 
   static void ReportIoPlacementUsage();
 

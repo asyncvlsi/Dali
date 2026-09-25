@@ -6364,6 +6364,122 @@ void Dali::InitializeCircuitFromPhyDBIfNeeded() {
 }
 
 /**
+ * See the declaration for the model. Coordinates are Dali grid units, the
+ * same units as RegionLLX() and Component::LLX(); each edge's group is centred
+ * with integer division so that repeated runs give identical coordinates.
+ */
+bool Dali::PlaceEnvironmentCells(
+    const std::string &edges, const std::vector<std::string> &component_names) {
+  std::vector<std::string> edge_list;
+  std::stringstream stream(edges);
+  for (std::string edge; std::getline(stream, edge, ',');) {
+    if (edge != "west" && edge != "east" && edge != "south" &&
+        edge != "north") {
+      LOG(error) << "place-environment: edge must be west, east, south or "
+                    "north, not '" << edge << "'\n";
+      return false;
+    }
+    if (environment_edges_.count(edge) != 0 ||
+        std::count(edge_list.begin(), edge_list.end(), edge) != 0) {
+      LOG(error) << "place-environment: edge " << edge
+                 << " already holds environment cells\n";
+      return false;
+    }
+    edge_list.push_back(edge);
+  }
+  if (edge_list.empty() || component_names.empty()) {
+    LOG(error) << "place-environment: no edges or no components given\n";
+    return false;
+  }
+  InitializeCircuitFromPhyDBIfNeeded();
+
+  std::vector<Component *> cells;
+  std::set<std::string> seen;
+  for (const std::string &name : component_names) {
+    if (!circuit_.IsComponentExisting(name)) {
+      LOG(error) << "place-environment: no component named " << name << "\n";
+      return false;
+    }
+    Component *cell = circuit_.GetComponentPtr(name);
+    if (!seen.insert(name).second || cell->IsFixed()) {
+      LOG(error) << "place-environment: " << name
+                 << " is repeated or already fixed\n";
+      return false;
+    }
+    cells.push_back(cell);
+  }
+
+  const int llx = circuit_.RegionLLX();
+  const int urx = circuit_.RegionURX();
+  const int lly = circuit_.RegionLLY();
+  const int ury = circuit_.RegionURY();
+  auto is_vertical = [](const std::string &edge) {
+    return edge == "west" || edge == "east";
+  };
+  auto along = [&](const Component *cell, const std::string &edge) {
+    return static_cast<long long>(is_vertical(edge) ? cell->Height()
+                                                    : cell->Width());
+  };
+
+  // Fill the edges in order; a cell that does not fit moves to the next one.
+  std::vector<std::size_t> group_end;
+  std::size_t next = 0;
+  for (const std::string &edge : edge_list) {
+    const long long capacity = is_vertical(edge) ? ury - lly : urx - llx;
+    long long used = 0;
+    while (next < cells.size() && used + along(cells[next], edge) <= capacity) {
+      used += along(cells[next], edge);
+      ++next;
+    }
+    group_end.push_back(next);
+  }
+  if (next < cells.size()) {
+    long long needed = 0;
+    for (const Component *cell : cells) needed += along(cell, edge_list[0]);
+    LOG(error) << "place-environment: " << cells.size() - next << " of "
+               << cells.size() << " cells do not fit along " << edges
+               << " (the stack needs " << needed << " grid units along the "
+               << "first edge, which is "
+               << (is_vertical(edge_list[0]) ? ury - lly : urx - llx)
+               << " long); nothing was placed\n";
+    return false;
+  }
+
+  std::size_t begin = 0;
+  for (std::size_t e = 0; e < edge_list.size(); ++e) {
+    const std::string &edge = edge_list[e];
+    long long extent = 0;
+    for (std::size_t k = begin; k < group_end[e]; ++k) {
+      extent += along(cells[k], edge);
+    }
+    long long cursor = is_vertical(edge) ? (lly + ury) / 2 - extent / 2
+                                         : (llx + urx) / 2 - extent / 2;
+    for (std::size_t k = begin; k < group_end[e]; ++k) {
+      Component *cell = cells[k];
+      cell->SetOrient(N);
+      if (edge == "west") {
+        cell->SetLoc(llx - cell->Width(), cursor);
+      } else if (edge == "east") {
+        cell->SetLoc(urx, cursor);
+      } else if (edge == "south") {
+        cell->SetLoc(cursor, lly - cell->Height());
+      } else {
+        cell->SetLoc(cursor, ury);
+      }
+      cell->SetPlacementStatus(FIXED);
+      cursor += along(cell, edge);
+    }
+    if (group_end[e] > begin) {
+      LOG(info) << "Fixed " << group_end[e] - begin
+                << " environment cells outside the " << edge << " edge\n";
+    }
+    environment_edges_.insert(edge);
+    begin = group_end[e];
+  }
+  return true;
+}
+
+/**
  * Create a script for detailed placement and legalization.
  *
  * @param engine, the full path or name of an external placer. If name is given,
