@@ -2130,7 +2130,7 @@ void Dali::ExportWellTapCellsToPhyDB() {
     DaliExpects(phydb_macro_ptr != nullptr,
                 "Cannot find " << macro_name << " in PhyDB?!");
     phy_db_ptr_->AddComponent(comp_name, phydb_macro_ptr, place_status, lx, ly,
-                              orient, phydb::CompSource::USER);
+                              orient, phydb::CompSource::DIST);
   }
 }
 
