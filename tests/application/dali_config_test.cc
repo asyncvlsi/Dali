@@ -45,6 +45,10 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_FALSE(options.enable_end_cap_cell);
   EXPECT_FALSE(options.enable_gridded_local_reorder);
   EXPECT_FALSE(options.enable_gridded_detailed_placement);
+  EXPECT_FALSE(options.enable_gridded_consensus);
+  EXPECT_DOUBLE_EQ(options.gridded_consensus_time, 1.0);
+  EXPECT_EQ(options.gridded_consensus_iterations, 128);
+  EXPECT_EQ(options.gridded_consensus_stagnation, 4);
   EXPECT_FALSE(options.enable_gridded_detailed_relocation);
   EXPECT_FALSE(options.enable_gridded_assignment_batch);
   EXPECT_FALSE(options.enable_gridded_exhaustive_insertion);
@@ -103,6 +107,20 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
   EXPECT_FALSE(options.gui_debug);
   EXPECT_EQ(options.gui_pause, "every_snapshot");
 
+  placer.Close();
+}
+
+TEST_F(DaliConfigTest, LoadsOptionalConsensusControls) {
+  config_set_int("dali.enable_gridded_consensus", 1);
+  config_set_real("dali.gridded_consensus_time", .25);
+  config_set_int("dali.gridded_consensus_iterations", 32);
+  config_set_int("dali.gridded_consensus_stagnation", 2);
+  dali::Dali placer(nullptr, dali::severity::info);
+  const auto options = placer.GetRuntimeOptions();
+  EXPECT_TRUE(options.enable_gridded_consensus);
+  EXPECT_DOUBLE_EQ(options.gridded_consensus_time, .25);
+  EXPECT_EQ(options.gridded_consensus_iterations, 32);
+  EXPECT_EQ(options.gridded_consensus_stagnation, 2);
   placer.Close();
 }
 

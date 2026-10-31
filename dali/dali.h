@@ -148,6 +148,10 @@ class Dali {
     bool gui_debug = false;
     std::string gui_pause = "every_snapshot";
     double debug_placement_region_scale = 1.0;
+    bool enable_gridded_consensus = false;
+    double gridded_consensus_time = 1.0;
+    int gridded_consensus_iterations = 128;
+    int gridded_consensus_stagnation = 4;
   };
 
   Dali(phydb::PhyDB* phy_db_ptr, const std::string& severity_level,
@@ -333,6 +337,10 @@ class Dali {
   double banded_stripe_assignment_min_hpwl_gain_ = 0.0;
   bool enable_gridded_local_reorder_ = false;
   bool enable_gridded_detailed_placement_ = false;
+  bool enable_gridded_consensus_ = false;
+  double gridded_consensus_time_ = 1.0;
+  int gridded_consensus_iterations_ = 128;
+  int gridded_consensus_stagnation_ = 4;
   bool enable_gridded_detailed_relocation_ = false;
   bool enable_gridded_assignment_batch_ = false;
   bool enable_gridded_exhaustive_insertion_ = false;

@@ -57,6 +57,13 @@ against something close to legal. The refiner enables the other two.
   * `-enable_gridded_detailed_relocation` — move cells into row whitespace.
   * `-enable_gridded_detailed_placement` — global swap, vertical swap, and
     local reorder. Normally enabled together with relocation.
+  * `-enable_gridded_consensus` — run the separate `ConsensusPlacer` after
+    legal placement and physical completion. It refines X with shared row/net
+    coordinates while preserving row assignment, order, Y and orientation.
+    Disabled by default; `-gridded_consensus_time 0.25` bounds cooperative
+    numerical work, with iteration/stagnation controls for earlier stopping.
+    Zero seconds retains the input. See `consensus_placer/README.md` for the
+    C++ multi-region interface, validation contract and objective scope.
 
 ### Physical completion
 

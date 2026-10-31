@@ -122,6 +122,10 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -banded_stripe_assignment_min_hpwl_gain <um>  minimum projected gain per ownership move\n"
       << "  -enable_gridded_local_reorder              reorder cells within finalized gridded rows\n"
       << "  -enable_gridded_detailed_placement         run gridded global swap, vertical swap, and local reorder\n"
+      << "  -enable_gridded_consensus                 refine legal gridded X positions with ConsensusPlacer\n"
+      << "  -gridded_consensus_time <seconds>          cooperative optimizer limit, default 1; zero keeps source\n"
+      << "  -gridded_consensus_iterations <n>          iteration cap, default 128\n"
+      << "  -gridded_consensus_stagnation <n>          no-gain checkpoints before stop, default 4; zero disables\n"
       << "  -enable_gridded_detailed_relocation        move cells into legal row whitespace before swaps\n"
       << "  -enable_gridded_assignment_batch           rank and refine gridded row moves by exact HPWL gain\n"
       << "  -enable_gridded_exhaustive_insertion       sweep every insertion slot instead of the bounded set\n"
@@ -505,6 +509,27 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.enable_gridded_local_reorder");
     } else if (arg == "-enable_gridded_detailed_placement") {
       EnableConfigFlag("dali.enable_gridded_detailed_placement");
+    } else if (arg == "-enable_gridded_consensus") {
+      EnableConfigFlag("dali.enable_gridded_consensus");
+    } else if (arg == "-gridded_consensus_time") {
+      double seconds = 0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseDouble(value, &seconds) || !std::isfinite(seconds) || seconds < 0) {
+        error_output << "Invalid gridded consensus time limit!\n";
+        return false;
+      }
+      config_set_real("dali.gridded_consensus_time", seconds);
+    } else if (arg == "-gridded_consensus_iterations" ||
+               arg == "-gridded_consensus_stagnation") {
+      int count = 0;
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          !TryParseInt(value, &count) || count < 0) {
+        error_output << "Invalid gridded consensus stopping count!\n";
+        return false;
+      }
+      config_set_int(arg == "-gridded_consensus_iterations"
+                         ? "dali.gridded_consensus_iterations"
+                         : "dali.gridded_consensus_stagnation", count);
     } else if (arg == "-enable_gridded_detailed_relocation") {
       EnableConfigFlag("dali.enable_gridded_detailed_relocation");
     } else if (arg == "-enable_gridded_assignment_batch") {

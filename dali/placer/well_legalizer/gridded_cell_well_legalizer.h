@@ -556,6 +556,7 @@ class GriddedCellWellLegalizer : public Placer {
   size_t CountComponentOverlapsInRows() const;
 
   /** Validate and record the final gridded placement's physical legality. */
+  GriddedPlacementValidationConfig FinalPlacementValidationConfig() const;
   bool ValidateFinalPlacement() const;
 
   /** Return total gridded-row overflow area in grid units. */

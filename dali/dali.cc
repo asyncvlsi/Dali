@@ -62,6 +62,7 @@
 #include "dali/common/phydb_helper.h"
 #include "dali/common/placement_metrics.h"
 #include "dali/placer/well_legalizer/rough_gridded_upper_bound_refiner.h"
+#include "dali/placer/consensus_placer/consensus_placer.h"
 
 namespace dali {
 
@@ -466,6 +467,10 @@ void Dali::ShowParamsList() {
       << "\n"
       << "  enable_gridded_detailed_placement: "
       << enable_gridded_detailed_placement_ << "\n"
+      << "  enable_gridded_consensus: " << enable_gridded_consensus_ << "\n"
+      << "  gridded_consensus_time: " << gridded_consensus_time_ << "\n"
+      << "  gridded_consensus_iterations: " << gridded_consensus_iterations_ << "\n"
+      << "  gridded_consensus_stagnation: " << gridded_consensus_stagnation_ << "\n"
       << "  enable_gridded_detailed_relocation: "
       << enable_gridded_detailed_relocation_ << "\n"
       << "  enable_gridded_assignment_batch: "
@@ -675,6 +680,19 @@ void Dali::LoadParamsFromConfig() {
                  &enable_gridded_local_reorder_);
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_detailed_placement"),
                  &enable_gridded_detailed_placement_);
+  LoadBoolConfig(ConfigName(prefix_, "enable_gridded_consensus"),
+                 &enable_gridded_consensus_);
+  LoadRealConfig(ConfigName(prefix_, "gridded_consensus_time"),
+                 &gridded_consensus_time_);
+  LoadIntConfig(ConfigName(prefix_, "gridded_consensus_iterations"),
+                &gridded_consensus_iterations_);
+  LoadIntConfig(ConfigName(prefix_, "gridded_consensus_stagnation"),
+                &gridded_consensus_stagnation_);
+  DaliExpects(std::isfinite(gridded_consensus_time_) &&
+                  gridded_consensus_time_ >= 0 &&
+                  gridded_consensus_iterations_ >= 0 &&
+                  gridded_consensus_stagnation_ >= 0,
+              "Invalid gridded consensus stopping controls");
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_detailed_relocation"),
                  &enable_gridded_detailed_relocation_);
   LoadBoolConfig(ConfigName(prefix_, "enable_gridded_assignment_batch"),
@@ -946,6 +964,21 @@ bool Dali::SetRuntimeOption(const std::string& name, const std::string& value) {
       return false;
     }
     detailed_max_move_candidates_ = int_value;
+  } else if (name == "enable_gridded_consensus") {
+    if (!ParseCommandBool(value, &bool_value)) return false;
+    enable_gridded_consensus_ = bool_value;
+  } else if (name == "gridded_consensus_time") {
+    if (!ParseCommandDouble(value, &double_value) ||
+        !std::isfinite(double_value) || double_value < 0) return false;
+    gridded_consensus_time_ = double_value;
+  } else if (name == "gridded_consensus_iterations" ||
+             name == "gridded_consensus_stagnation") {
+    if (!ParseCommandInt(value, &int_value) || int_value < 0) return false;
+    if (name == "gridded_consensus_iterations") {
+      gridded_consensus_iterations_ = int_value;
+    } else {
+      gridded_consensus_stagnation_ = int_value;
+    }
   } else if (name == "global_initializer") {
     if (value != "keep" && value != "uniform" && value != "gaussian" &&
         value != "monte_carlo" && value != "density_aware") {
@@ -1113,6 +1146,10 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       gui_debug_,
       gui_pause_,
       debug_placement_region_scale_,
+      enable_gridded_consensus_,
+      gridded_consensus_time_,
+      gridded_consensus_iterations_,
+      gridded_consensus_stagnation_,
   };
 }
 
@@ -1648,6 +1685,39 @@ bool Dali::RunWellLegalization() {
     }
   } else {
     RunFixedOnlyWellCompletion();
+  }
+  if (has_movable_components && enable_gridded_consensus_) {
+    ConsensusPlacer consensus;
+    consensus.SetCircuit(&circuit_);
+    consensus.SetRows(&well_legalizer_.col_list_, ConsensusRowModel::kGridded);
+    ConsensusPlacerOptions options;
+    options.time_limit_seconds = gridded_consensus_time_;
+    options.max_iterations = gridded_consensus_iterations_;
+    options.stagnant_checkpoints = gridded_consensus_stagnation_;
+    options.validation = well_legalizer_.FinalPlacementValidationConfig();
+    consensus.SetOptions(options);
+    if (!consensus.StartPlacement()) {
+      LOG(error) << "Consensus refinement failed: "
+                 << consensus.Report().error << "\n";
+      return false;
+    }
+    const auto& report = consensus.Report();
+    RecordPlacementHpwlMetrics("consensus", circuit_);
+    RecordPlacementMetric("time.consensus.wall_s", report.total_seconds);
+    RecordPlacementMetric("time.consensus.preparation_s", report.preparation_seconds);
+    RecordPlacementMetric("time.consensus.optimizer_s", report.optimizer_seconds);
+    RecordPlacementMetric("time.consensus.validation_s", report.validation_seconds);
+    RecordPlacementMetric("consensus.owners_considered", report.owners_considered);
+    RecordPlacementMetric("consensus.owners_updated", report.owners_updated);
+    RecordPlacementMetric("consensus.owners_changed", report.owners_changed);
+    RecordPlacementMetric("consensus.source_legal", report.source_legal);
+    RecordPlacementMetric("consensus.iterations", report.iterations);
+    RecordPlacementMetric("consensus.committed", report.committed);
+    LOG(info) << "Consensus refinement: " << report.stop_reason
+              << ", owners considered/changed " << report.owners_considered
+              << "/" << report.owners_changed
+              << ", HPWL X " << report.source_hpwl_x_um << " -> "
+              << report.hpwl_x_um << " um\n";
   }
   well_legalizer_.EmitDEFWellFile(output_name_, 1);
   return true;

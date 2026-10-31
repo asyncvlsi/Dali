@@ -1194,7 +1194,8 @@ size_t GriddedCellWellLegalizer::CountComponentOverlapsInRows() const {
  * when the pattern has a fixed one. Returns false and logs the violations rather
  * than aborting, so the caller can report them.
  */
-bool GriddedCellWellLegalizer::ValidateFinalPlacement() const {
+GriddedPlacementValidationConfig
+GriddedCellWellLegalizer::FinalPlacementValidationConfig() const {
   GriddedPlacementValidationConfig config;
   config.check_component_orientation = !disable_cell_flip_;
   config.expect_well_taps = !disable_welltap_;
@@ -1209,8 +1210,13 @@ bool GriddedCellWellLegalizer::ValidateFinalPlacement() const {
     config.pre_end_cap_width = pre_end_cap_min_width_;
     config.post_end_cap_width = post_end_cap_min_width_;
   }
+  return config;
+}
+
+bool GriddedCellWellLegalizer::ValidateFinalPlacement() const {
   const GriddedPlacementLegalityReport report =
-      GriddedPlacementValidator(ckt_ptr_, &col_list_, config).Validate();
+      GriddedPlacementValidator(ckt_ptr_, &col_list_,
+                                FinalPlacementValidationConfig()).Validate();
 
   LOG(info)
       << "Final gridded placement legality:\n"

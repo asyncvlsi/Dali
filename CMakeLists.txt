@@ -105,6 +105,10 @@ add_library(
     ${SOURCES}
 )
 add_dependencies(dalilib dali_git_version)
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    set_property(SOURCE dali/placer/consensus_placer/consensus_placer.cc
+                 APPEND PROPERTY COMPILE_OPTIONS -ffp-contract=off)
+endif()
 
 if (DEFINED NEED_LIBCXXFS)
     set(LIBCXXFS_LIB "stdc++fs")

@@ -54,6 +54,29 @@ TEST_F(DaliCommandLineTest, ParsesRequiredInputsAndKeepsDefaults) {
   EXPECT_EQ(options.verbose_level, dali::severity::info);
 }
 
+TEST_F(DaliCommandLineTest, ParsesOptionalConsensusStoppingControls) {
+  dali::DaliCommandLineOptions options;
+  ASSERT_TRUE(Parse({"dali","-lef","in.lef","-def","in.def",
+                     "-enable_gridded_consensus","-gridded_consensus_time","0.25",
+                     "-gridded_consensus_iterations","32",
+                     "-gridded_consensus_stagnation","2"},&options));
+  EXPECT_EQ(config_get_int("dali.enable_gridded_consensus"),1);
+  EXPECT_DOUBLE_EQ(config_get_real("dali.gridded_consensus_time"),.25);
+  EXPECT_EQ(config_get_int("dali.gridded_consensus_iterations"),32);
+  EXPECT_EQ(config_get_int("dali.gridded_consensus_stagnation"),2);
+}
+
+TEST_F(DaliCommandLineTest, RejectsInvalidConsensusLimits) {
+  for(const std::string& value:{"-1","nan","inf","1junk"}) {
+    dali::DaliCommandLineOptions options;
+    EXPECT_FALSE(Parse({"dali","-lef","in.lef","-def","in.def","-gridded_consensus_time",value},&options));
+  }
+  for(const std::string& flag:{"-gridded_consensus_iterations","-gridded_consensus_stagnation"}) {
+    dali::DaliCommandLineOptions options;
+    EXPECT_FALSE(Parse({"dali","-lef","in.lef","-def","in.def",flag,"-1"},&options));
+  }
+}
+
 TEST_F(DaliCommandLineTest, ParsesDaliCommandFileAliases) {
   dali::DaliCommandLineOptions options;
   EXPECT_TRUE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
