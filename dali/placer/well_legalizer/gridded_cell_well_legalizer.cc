@@ -2829,10 +2829,13 @@ bool GriddedCellWellLegalizer::StartMultiRegionPlacement() {
   GriddedRowLegalizer initializer;
   initializer.SetCircuit(ckt_ptr_);
   const auto capacity = BuildGriddedCapacityConfig(1.0);
-  if (!initializer.InitializeAssignedRows(
+  std::size_t reassigned=0;
+  const bool initialized=initializer.InitializeAssignedRows(
           col_list_, capacity.minimum_p_well_height,
           capacity.minimum_n_well_height, PhysicalCompletionLeftMargin(),
-          PhysicalCompletionRightMargin())) {
+          PhysicalCompletionRightMargin(), &reassigned);
+  RecordPlacementMetric("multi_region.assignment.reassigned_owners",reassigned);
+  if (!initialized) {
     LOG(error)
         << "Multi-region initialization cannot fit the assigned stripes\n";
     return false;
@@ -2840,7 +2843,10 @@ bool GriddedCellWellLegalizer::StartMultiRegionPlacement() {
   auto initial = ValidateMultiRegionPlacement(*ckt_ptr_, col_list_);
   if (initial.violations()) {
     LOG(error) << "Multi-region initial legality violations: "
-               << initial.violations() << "\n";
+               << initial.violations() << " inventory="<<initial.inventory
+               <<" regions="<<initial.regions<<" geometry="<<initial.geometry
+               <<" alignment="<<initial.alignment<<" stretch="<<initial.stretch
+               <<" physical="<<initial.physical.TotalViolationCount()<<"\n";
     return false;
   }
   RecordPlacementHpwlMetrics("multi_region.initialization", *ckt_ptr_);

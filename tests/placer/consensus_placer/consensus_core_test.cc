@@ -1,3 +1,4 @@
+#include "dali/placer/consensus_placer/detail/objective_agreement.h"
 #include "dali/placer/consensus_placer/detail/solver.h"
 #include <iomanip>
 #include <iostream>
@@ -24,6 +25,23 @@ static double exact(const Model &m) {
 }
 int main(int argc, char **argv) {
   try {
+    // Large designs exposed an absolute 1e-7 adapter gate even when the two
+    // equivalent accumulation paths differ only by floating-point roundoff.
+    double grid_sum = 0, model_sum = 0;
+    constexpr std::size_t terms = 133223;
+    for (std::size_t i = 0; i < terms; ++i) {
+      grid_sum += 197.;
+      model_sum += .2 * 197.;
+    }
+    const double native = grid_sum * .2;
+    check(std::abs(native - model_sum) > 1e-7,
+          "roundoff regression must exercise the old failing gate");
+    check(hpwl_agrees(native, model_sum, terms), "large sum agreement");
+    check(!hpwl_agrees(native, model_sum + .01, terms),
+          "real model mismatch must be rejected");
+    check(!hpwl_agrees(INFINITY, INFINITY, terms) &&
+              !hpwl_agrees(NAN, native, terms) && !hpwl_agrees(-1, -1, terms),
+          "invalid objective agreement");
     Options o;
     o.max_iterations = 1024;
     o.recover_every = 4;

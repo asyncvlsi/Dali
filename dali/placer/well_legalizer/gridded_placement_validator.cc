@@ -231,10 +231,16 @@ GriddedPlacementLegalityReport GriddedPlacementValidator::Validate() const {
                 if (lhs->LLY() != rhs->LLY()) return lhs->LLY() < rhs->LLY();
                 return lhs->LLX() < rhs->LLX();
               });
-    for (size_t i = 1; i < ordered_rows.size(); ++i) {
-      if (ordered_rows[i]->LLY() < ordered_rows[i - 1]->URY()) {
-        ++report.row_overlap_count;
-      }
+    // Stripes on either side of a fixed macro can share Y bands within one
+    // column. Check complete rectangles, retaining every still-active row so
+    // nonadjacent overlaps are not hidden by a shorter intervening row.
+    std::vector<const GriddedRow*> active_rows;
+    for(const auto* row:ordered_rows) {
+      active_rows.erase(std::remove_if(active_rows.begin(),active_rows.end(),
+          [&](const GriddedRow* old){return old->URY()<=row->LLY();}),active_rows.end());
+      for(const auto* old:active_rows)
+        if(old->LLX()<row->URX() && row->LLX()<old->URX()) ++report.row_overlap_count;
+      active_rows.push_back(row);
     }
   }
 

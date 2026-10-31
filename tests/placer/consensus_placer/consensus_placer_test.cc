@@ -106,6 +106,143 @@ TEST_F(ConsensusPlacerTest,
   EXPECT_TRUE(s.gridded_rows_.empty());
 }
 
+TEST(GriddedAssignmentRepairTest, CompleteRowBudgetMovesOwnersOutOfSlivers) {
+  Circuit c;
+  c.SetManufacturingGrid(1);
+  c.SetUnitsDistanceMicrons(1);
+  c.SetGridValue(1, 1);
+  c.SetDieArea(0, 0, 20, 100);
+  c.ReserveSpaceForDesignImp(5, 0, 0);
+  auto *m = c.AddMacro("cell", 4, 10);
+  m->AddWellRect(false, 0, 0, 4, 4);
+  m->AddWellRect(true, 0, 4, 4, 10);
+  for (int i = 0; i < 5; ++i)
+    c.AddComponent("c" + std::to_string(i), "cell", 0, 0, PLACED);
+  std::vector<StripeColumn> columns(1);
+  columns[0].lx_ = 0;
+  columns[0].width_ = 20;
+  columns[0].stripe_list_.resize(2);
+  auto &a = columns[0].stripe_list_[0];
+  a.lx_ = 0;
+  a.ly_ = 0;
+  a.width_ = 10;
+  a.height_ = 30;
+  auto &b = columns[0].stripe_list_[1];
+  b.lx_ = 0;
+  b.ly_ = 40;
+  b.width_ = 20;
+  b.height_ = 60;
+  for (auto &cell : c.Components())
+    a.component_ptrs_vec_.push_back(&cell);
+  GriddedRowLegalizer init;
+  init.SetCircuit(&c);
+  std::size_t moved = 0;
+  ASSERT_TRUE(init.InitializeAssignedRows(columns, 5, 7, 1, 1, &moved));
+  EXPECT_EQ(moved, 1u);
+  EXPECT_EQ(a.component_ptrs_vec_.size(), 4u);
+  EXPECT_EQ(b.component_ptrs_vec_.size(), 1u);
+  EXPECT_EQ(a.gridded_rows_.size(), 2u);
+  EXPECT_EQ(ValidateMultiRegionPlacement(c, columns).violations(), 0u);
+}
+
+TEST(GriddedAssignmentRepairTest,
+     FailedAssignmentTransactionPreservesOwnersAndPoses) {
+  Circuit c;
+  c.SetManufacturingGrid(1);
+  c.SetUnitsDistanceMicrons(1);
+  c.SetGridValue(1, 1);
+  c.SetDieArea(0, 0, 20, 100);
+  c.ReserveSpaceForDesignImp(2, 0, 0);
+  auto *m = c.AddMacro("tall", 4, 40);
+  for (int r = 0; r < 4; ++r) {
+    if (r % 2 == 0) {
+      m->AddWellRect(false, 0, r * 10, 4, r * 10 + 4);
+      m->AddWellRect(true, 0, r * 10 + 4, 4, r * 10 + 10);
+    } else {
+      m->AddWellRect(true, 0, r * 10, 4, r * 10 + 6);
+      m->AddWellRect(false, 0, r * 10 + 6, 4, r * 10 + 10);
+    }
+  }
+  c.AddComponent("a", "tall", 1, 2, PLACED);
+  c.AddComponent("b", "tall", 5, 3, PLACED);
+  std::vector<StripeColumn> columns(1);
+  columns[0].lx_ = 0;
+  columns[0].width_ = 20;
+  columns[0].stripe_list_.resize(2);
+  auto &a = columns[0].stripe_list_[0];
+  a.lx_ = 0;
+  a.ly_ = 0;
+  a.width_ = 10;
+  a.height_ = 19;
+  auto &b = columns[0].stripe_list_[1];
+  b.lx_ = 0;
+  b.ly_ = 40;
+  b.width_ = 6;
+  b.height_ = 48;
+  for (auto &cell : c.Components())
+    a.component_ptrs_vec_.push_back(&cell);
+  auto owners = a.component_ptrs_vec_;
+  GriddedRowLegalizer init;
+  init.SetCircuit(&c);
+  std::size_t moved = 99;
+  EXPECT_FALSE(init.InitializeAssignedRows(columns, 5, 7, 1, 1, &moved));
+  EXPECT_EQ(moved, 0u);
+  EXPECT_EQ(a.component_ptrs_vec_, owners);
+  EXPECT_TRUE(b.component_ptrs_vec_.empty());
+  EXPECT_DOUBLE_EQ(c.Components()[0].LLX(), 1);
+  EXPECT_DOUBLE_EQ(c.Components()[0].LLY(), 2);
+  EXPECT_DOUBLE_EQ(c.Components()[1].LLX(), 5);
+  EXPECT_DOUBLE_EQ(c.Components()[1].LLY(), 3);
+}
+
+TEST(GriddedAssignmentRepairTest, SpillsAnOwnerBlockedByFragmentedTallCopies) {
+  Circuit c;
+  c.SetManufacturingGrid(1);
+  c.SetUnitsDistanceMicrons(1);
+  c.SetGridValue(1, 1);
+  c.SetDieArea(0, 0, 16, 60);
+  c.ReserveSpaceForDesignImp(5, 0, 0);
+  auto *tall = c.AddMacro("tall", 2, 20);
+  tall->AddWellRect(false, 0, 0, 2, 4);
+  tall->AddWellRect(true, 0, 4, 2, 10);
+  tall->AddWellRect(true, 0, 10, 2, 16);
+  tall->AddWellRect(false, 0, 16, 2, 20);
+  for (int w : {4, 6, 8}) {
+    auto *m = c.AddMacro("s" + std::to_string(w), w, 10);
+    m->AddWellRect(false, 0, 0, w, 4);
+    m->AddWellRect(true, 0, 4, w, 10);
+  }
+  c.AddComponent("t", "tall", 7, 0, PLACED);
+  c.AddComponent("a", "s6", 1, 0, PLACED);
+  c.AddComponent("b", "s6", 9, 0, PLACED);
+  c.AddComponent("c", "s8", 0, 10, PLACED);
+  c.AddComponent("d", "s4", 0, 10, PLACED);
+  std::vector<StripeColumn> columns(1);
+  columns[0].lx_ = 0;
+  columns[0].width_ = 16;
+  columns[0].stripe_list_.resize(2);
+  auto &a = columns[0].stripe_list_[0];
+  a.lx_ = 0;
+  a.ly_ = 0;
+  a.width_ = 16;
+  a.height_ = 24;
+  auto &b = columns[0].stripe_list_[1];
+  b.lx_ = 0;
+  b.ly_ = 30;
+  b.width_ = 16;
+  b.height_ = 24;
+  for (auto &cell : c.Components())
+    a.component_ptrs_vec_.push_back(&cell);
+  GriddedRowLegalizer init;
+  init.SetCircuit(&c);
+  std::size_t moved = 0;
+  ASSERT_TRUE(init.InitializeAssignedRows(columns, 5, 7, 1, 1, &moved));
+  EXPECT_EQ(moved, 1u);
+  ASSERT_EQ(b.component_ptrs_vec_.size(), 1u);
+  EXPECT_EQ(b.component_ptrs_vec_[0]->Name(), "c");
+  EXPECT_EQ(ValidateMultiRegionPlacement(c, columns).violations(), 0u);
+}
+
 TEST_F(ConsensusPlacerTest, ImprovesNonunitGridAndPreservesFixedPose) {
   const double before = circuit.WeightedHPWLX();
   ASSERT_TRUE(placer.StartPlacement()) << placer.Report().error;
@@ -205,7 +342,8 @@ TEST_F(ConsensusPlacerTest,
     out << "MACRO cell\n LAYER pwell ;\n RECT 0 0.3 1.8 1.5 ;\n"
            " LAYER nwell ;\n RECT 0 1.5 1.8 3 ;\nEND cell\n";
   }
-  EXPECT_FALSE(LoadConsensusCellRegions(circuit, path.string(), nullptr, &error));
+  EXPECT_FALSE(
+      LoadConsensusCellRegions(circuit, path.string(), nullptr, &error));
   EXPECT_EQ(macro->PwellRect(0).URY(), 4);
   {
     std::ofstream out(path);

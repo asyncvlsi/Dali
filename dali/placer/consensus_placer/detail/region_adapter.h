@@ -1,6 +1,7 @@
 #pragma once
 #include "dali/placer/well_legalizer/multi_region_placement_validator.h"
 #include "dali/placer/well_legalizer/stripe.h"
+#include "objective_agreement.h"
 #include "solver.h"
 #include <map>
 #include <unordered_map>
@@ -18,6 +19,8 @@ struct Result {
   Report source, trial;
   bool committed = false;
   double preparation_seconds = 0, validation_seconds = 0, total_seconds = 0;
+  double source_model_error_um = 0, source_model_bound_um = 0;
+  double trial_model_error_um = 0, trial_model_bound_um = 0;
 };
 inline Result refine(dali::Circuit &c, std::vector<dali::StripeColumn> &columns,
                      const Options &options = {},
@@ -119,8 +122,14 @@ inline Result refine(dali::Circuit &c, std::vector<dali::StripeColumn> &columns,
     m.nets.push_back(std::move(f));
   }
   result.preparation_seconds = now() - result.validation_seconds;
+  const double native_source_hpwl = c.WeightedHPWLX();
   result.solver = ::dali::consensus_internal::refine(m, options);
-  require(std::abs(result.solver.source_hpwl - c.WeightedHPWLX()) < 1e-7,
+  result.source_model_error_um =
+      std::abs(result.solver.source_hpwl - native_source_hpwl);
+  result.source_model_bound_um = hpwl_agreement_bound(
+      native_source_hpwl, result.solver.source_hpwl, c.Nets().size());
+  require(hpwl_agrees(native_source_hpwl, result.solver.source_hpwl,
+                      c.Nets().size()),
           "region HPWL model mismatch");
   result.trial = result.source;
   if (result.solver.owners_changed) {
@@ -141,10 +150,13 @@ inline Result refine(dali::Circuit &c, std::vector<dali::StripeColumn> &columns,
     bool extra = !additional_check || additional_check();
     result.validation_seconds += now() - began;
     double wire = c.WeightedHPWLX();
+    result.trial_model_error_um = std::abs(wire - result.solver.hpwl);
+    result.trial_model_bound_um =
+        hpwl_agreement_bound(wire, result.solver.hpwl, c.Nets().size());
     if (result.trial.violations() == 0 && extra &&
-        std::abs(wire - result.solver.hpwl) < 1e-7 &&
+        hpwl_agrees(wire, result.solver.hpwl, c.Nets().size()) &&
         wire + result.solver.displacement <
-            result.solver.source_objective - options.minimum_improvement) {
+            native_source_hpwl - options.minimum_improvement) {
       rollback.keep = true;
       result.committed = true;
     } else {

@@ -1695,9 +1695,11 @@ void Circuit::SaveIoPin(std::ofstream& ost, IoPin& iopin,
         << shape.LLY() * design_.distance_microns_ << " ) "
         << " ( " << shape.URX() * design_.distance_microns_ << " "
         << shape.URY() * design_.distance_microns_ << " ) ";
-    ost << "\n  + PLACED ( " << LocDali2PhydbX(iopin.X()) << " "
+    ost << "\n  + " << PlaceStatusStr(iopin.Status()) << " ( " << LocDali2PhydbX(iopin.X()) << " "
         << LocDali2PhydbY(iopin.Y()) << " ) ";
-    if (iopin.X() == design_.die_area_.region_left_) {
+    if (iopin.Status() == FIXED || iopin.Status() == COVER) {
+      ost << OrientStr(iopin.Orient());
+    } else if (iopin.X() == design_.die_area_.region_left_) {
       ost << "E";
     } else if (iopin.X() == design_.die_area_.region_right_) {
       ost << "W";

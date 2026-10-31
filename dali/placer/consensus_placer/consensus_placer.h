@@ -56,6 +56,10 @@ struct ConsensusPlacerReport {
   double hpwl_y_um = 0;
   double objective = 0;
   double weighted_displacement = 0;
+  double source_model_error_um = 0;
+  double source_model_bound_um = 0;
+  double trial_model_error_um = 0;
+  double trial_model_bound_um = 0;
   double primal_residual = 0;
   double dual_residual = 0;
   double preparation_seconds = 0;

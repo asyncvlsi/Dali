@@ -1,5 +1,6 @@
 #pragma once
 #include "dali/placer/well_legalizer/gridded_placement_validator.h"
+#include "objective_agreement.h"
 #include "solver.h"
 #include <unordered_map>
 
@@ -23,6 +24,8 @@ struct DaliResult {
   std::size_t initial_violations = 0, trial_violations = 0;
   double hpwl_before_um = 0, hpwl_after_um = 0;
   double validation_seconds = 0, total_seconds = 0;
+  double source_model_error_um = 0, source_model_bound_um = 0;
+  double trial_model_error_um = 0, trial_model_bound_um = 0;
 };
 
 // Opt-in call AFTER row assignment/X legalization. Columns and circuit must
@@ -136,8 +139,13 @@ inline DaliResult refine_gridded(dali::Circuit &circuit,
   result.hpwl_before_um = circuit.WeightedHPWLX();
   result.hpwl_after_um = result.hpwl_before_um;
   result.proposal = refine(model, options.solver);
-  require(std::abs(result.proposal.source_hpwl - result.hpwl_before_um) <=
-              1e-8 * std::max(1., result.hpwl_before_um),
+  result.source_model_error_um =
+      std::abs(result.proposal.source_hpwl - result.hpwl_before_um);
+  result.source_model_bound_um =
+      hpwl_agreement_bound(result.hpwl_before_um, result.proposal.source_hpwl,
+                           circuit.Nets().size());
+  require(hpwl_agrees(result.hpwl_before_um, result.proposal.source_hpwl,
+                      circuit.Nets().size()),
           "Dali/model HPWL mismatch");
   if (result.proposal.owners_changed == 0) {
     result.status = "retained_source";
@@ -163,12 +171,15 @@ inline DaliResult refine_gridded(dali::Circuit &circuit,
                        options.additional_placement_check();
   result.validation_seconds += elapsed() - before_validate;
   double native_hpwl = circuit.WeightedHPWLX();
-  bool agreement = std::abs(native_hpwl - result.proposal.hpwl) <=
-                   1e-8 * std::max(1., result.hpwl_before_um);
+  result.trial_model_error_um = std::abs(native_hpwl - result.proposal.hpwl);
+  result.trial_model_bound_um = hpwl_agreement_bound(
+      native_hpwl, result.proposal.hpwl, circuit.Nets().size());
+  bool agreement =
+      hpwl_agrees(native_hpwl, result.proposal.hpwl, circuit.Nets().size());
   double native_cost = native_hpwl + result.proposal.displacement;
   if (trial.IsLegal() && additional_ok && agreement &&
-      native_cost < result.proposal.source_objective -
-                        options.solver.minimum_improvement) {
+      native_cost <
+          result.hpwl_before_um - options.solver.minimum_improvement) {
     rollback.keep = true;
     result.committed = true;
     result.hpwl_after_um = native_hpwl;

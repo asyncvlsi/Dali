@@ -124,6 +124,10 @@ bool ConsensusPlacer::StartPlacement() {
       result = std::move(refined.proposal);
       report_.committed = refined.committed;
       report_.validation_seconds = refined.validation_seconds;
+      report_.source_model_error_um = refined.source_model_error_um;
+      report_.source_model_bound_um = refined.source_model_bound_um;
+      report_.trial_model_error_um = refined.trial_model_error_um;
+      report_.trial_model_bound_um = refined.trial_model_bound_um;
       adapter_preparation =
           refined.total_seconds - result.seconds - refined.validation_seconds;
       report_.stop_reason = refined.status.rfind("rejected_", 0) == 0
@@ -138,6 +142,10 @@ bool ConsensusPlacer::StartPlacement() {
       result = std::move(refined.solver);
       report_.committed = refined.committed;
       report_.validation_seconds = refined.validation_seconds;
+      report_.source_model_error_um = refined.source_model_error_um;
+      report_.source_model_bound_um = refined.source_model_bound_um;
+      report_.trial_model_error_um = refined.trial_model_error_um;
+      report_.trial_model_bound_um = refined.trial_model_bound_um;
       adapter_preparation = refined.preparation_seconds;
       report_.stop_reason = result.owners_changed && !refined.committed
                                 ? "rejected_trial"

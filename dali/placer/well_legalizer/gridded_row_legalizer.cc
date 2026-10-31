@@ -31,6 +31,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
+#include <unordered_set>
+#include <unordered_map>
 
 #include "dali/common/elapsed_time.h"
 #include "dali/common/helper.h"
@@ -202,21 +205,146 @@ void GriddedRowLegalizer::SetLegalizationMaxIteration(int max_iteration) {
 
 bool GriddedRowLegalizer::InitializeAssignedRows(
     std::vector<StripeColumn> &columns, int p_height, int n_height,
-    int left_margin, int right_margin) {
+    int left_margin, int right_margin, std::size_t *reassigned) {
+  if (reassigned)
+    *reassigned = 0;
+  if (p_height < 0 || n_height < 0 || left_margin < 0 || right_margin < 0)
+    return false;
   well_tap_p_height_ = p_height;
   well_tap_n_height_ = n_height;
-  for (auto &column : columns)
-    for (auto &stripe : column.stripe_list_) {
+  // Nearest-stripe partitioning can select a sliver around fixed macros that
+  // cannot contain every occupied region. Repair only incompatible owners,
+  // reserving complete-region demand before invoking the legacy row builder.
+  // Coordinates/poses remain unchanged during this assignment transaction.
+  struct Available {
+    Stripe *stripe;
+    long long spare;
+    std::vector<Component *> assigned;
+  };
+  struct Pending {
+    Component *cell;
+    Stripe *source;
+    long long height, demand;
+  };
+  std::vector<Available> available;
+  std::vector<Pending> pending;
+  std::unordered_set<Component *> seen;
+  auto height_for = [&](Component *cell) -> long long {
+    long long total = 0;
+    for (int r = 0; r < cell->MacroPtr()->RegionCount(); ++r)
+      total += std::max(p_height,
+                        cell->MacroPtr()->PwellHeight(r, cell->IsFlipped())) +
+               std::max(n_height,
+                        cell->MacroPtr()->NwellHeight(r, cell->IsFlipped()));
+    return total;
+  };
+  const int minimum_row_height = std::max(1, p_height + n_height);
+  for (auto &col : columns)
+    for (auto &stripe : col.stripe_list_) {
+      const long long row_height_budget = std::max(0, stripe.Height()) /
+                                          minimum_row_height *
+                                          minimum_row_height;
+      Available entry{&stripe,
+                      static_cast<long long>(std::max(
+                          0, stripe.Width() - left_margin - right_margin)) *
+                          row_height_budget,
+                      {}};
+      for (auto *cell : stripe.component_ptrs_vec_) {
+        if (!cell || !seen.insert(cell).second || !cell->IsMovable() ||
+            !cell->MacroPtr()->HasCompleteWellRegions())
+          return false;
+        const auto needed = height_for(cell), demand = needed * cell->Width();
+        if (cell->Width() <= stripe.Width() - left_margin - right_margin &&
+            needed <= stripe.Height()) {
+          entry.assigned.push_back(cell);
+          entry.spare -= demand;
+        } else
+          pending.push_back({cell, &stripe, needed, demand});
+      }
+      // Fractional leftover row height cannot accommodate a well band. If the
+      // compatible owners already exceed the complete-row area lower bound,
+      // reassign the largest region demands before considering any proposals.
+      if (entry.spare < 0) {
+        std::sort(entry.assigned.begin(), entry.assigned.end(),
+                  [&](Component *a, Component *b) {
+                    auto ah = height_for(a), bh = height_for(b);
+                    if (ah != bh)
+                      return ah > bh;
+                    if (a->Width() != b->Width())
+                      return a->Width() > b->Width();
+                    return a->Id() < b->Id();
+                  });
+        std::size_t remove = 0;
+        while (entry.spare < 0 && remove < entry.assigned.size()) {
+          auto *cell = entry.assigned[remove++];
+          const auto h = height_for(cell), demand = h * cell->Width();
+          pending.push_back({cell, &stripe, h, demand});
+          entry.spare += demand;
+        }
+        entry.assigned.erase(entry.assigned.begin(),
+                             entry.assigned.begin() + remove);
+      }
+      available.push_back(std::move(entry));
+    }
+  std::sort(pending.begin(), pending.end(),
+            [](const Pending &a, const Pending &b) {
+              if (a.height != b.height)
+                return a.height > b.height;
+              if (a.demand != b.demand)
+                return a.demand > b.demand;
+              return a.cell->Id() < b.cell->Id();
+            });
+  for (auto move : pending) {
+    Available *target = nullptr;
+    double best = std::numeric_limits<double>::infinity();
+    for (auto &candidate : available) {
+      auto &s = *candidate.stripe;
+      if (candidate.spare < move.demand || move.height > s.Height() ||
+          move.cell->Width() > s.Width() - left_margin - right_margin)
+        continue;
+      const double x =
+          std::clamp(move.cell->LLX(), double(s.LLX() + left_margin),
+                     double(s.URX() - right_margin - move.cell->Width()));
+      const double y = std::clamp(move.cell->LLY(), double(s.LLY()),
+                                  double(s.URY() - move.height));
+      const double distance =
+          std::abs(x - move.cell->LLX()) + std::abs(y - move.cell->LLY());
+      if (distance < best) {
+        best = distance;
+        target = &candidate;
+      }
+    }
+    if (!target)
+      return false;
+    target->assigned.push_back(move.cell);
+    target->spare -= move.demand;
+  }
+  for (auto &entry : available) {
+    entry.stripe->component_ptrs_vec_ = std::move(entry.assigned);
+    entry.stripe->component_count_ = entry.stripe->component_ptrs_vec_.size();
+  }
+  if (reassigned)
+    *reassigned = pending.size();
+  if (!pending.empty())
+    LOG(info) << "Multi-region incompatible-stripe assignments repaired: "
+              << pending.size() << "\n";
+  std::unordered_map<Component *, std::unordered_set<Stripe *>> rejected;
+  std::unordered_set<Component *> changed;
+  for (auto move : pending)
+    changed.insert(move.cell);
+  // Actual multi-deck fragmentation can still defeat an area lower bound.
+  // Spill only owners the row builder could not place, then rebuild all
+  // affected rows. Every rejected owner/stripe pair is excluded from subsequent
+  // targets. A fixed geometry-derived pass bound prevents an infeasible input
+  // spinning.
+  for (std::size_t pass = 0; pass <= 2 * available.size(); ++pass) {
+    bool complete = true;
+    for (auto &entry : available) {
+      auto &stripe = *entry.stripe;
       if (stripe.component_ptrs_vec_.empty()) {
         stripe.gridded_rows_.clear();
         continue;
       }
-      if (stripe.Width() <= left_margin + right_margin)
-        return false;
-      for (auto *cell : stripe.component_ptrs_vec_)
-        if (!cell || !cell->MacroPtr()->HasCompleteWellRegions() ||
-            cell->Width() > stripe.Width() - left_margin - right_margin)
-          return false;
       stripe.well_tap_cell_location_even_.clear();
       if (left_margin)
         stripe.well_tap_cell_location_even_.emplace_back(
@@ -225,24 +353,69 @@ bool GriddedRowLegalizer::InitializeAssignedRows(
         stripe.well_tap_cell_location_even_.emplace_back(
             stripe.URX() - right_margin, stripe.URX());
       stripe.well_tap_cell_location_odd_ = stripe.well_tap_cell_location_even_;
-      if (!StripeLegalizationUpward(stripe, false, true)) {
-        LOG(error) << "Multi-region stripe capacity failure: width="
-                   << stripe.Width() << ", height=" << stripe.Height()
-                   << ", owners=" << stripe.component_ptrs_vec_.size()
-                   << ", rows=" << stripe.gridded_rows_.size() << "\n";
-        return false;
+      std::vector<Component *> spill;
+      if (!StripeLegalizationUpward(stripe, false, true, &spill)) {
+        if (spill.empty())
+          return false;
+        complete = false;
+        for (auto *cell : spill) {
+          if (!rejected[cell].insert(&stripe).second)
+            return false;
+          const auto h = height_for(cell), demand = h * cell->Width();
+          Available *target = nullptr;
+          double best = std::numeric_limits<double>::infinity();
+          for (auto &candidate : available) {
+            auto &s = *candidate.stripe;
+            if (&s == &stripe || rejected[cell].count(&s) ||
+                candidate.spare < demand || h > s.Height() ||
+                cell->Width() > s.Width() - left_margin - right_margin)
+              continue;
+            const double x =
+                std::clamp(cell->LLX(), double(s.LLX() + left_margin),
+                           double(s.URX() - right_margin - cell->Width()));
+            const double y =
+                std::clamp(cell->LLY(), double(s.LLY()), double(s.URY() - h));
+            const double distance =
+                std::abs(x - cell->LLX()) + std::abs(y - cell->LLY());
+            if (distance < best) {
+              best = distance;
+              target = &candidate;
+            }
+          }
+          if (!target)
+            return false;
+          auto &owners = stripe.component_ptrs_vec_;
+          owners.erase(std::find(owners.begin(), owners.end(), cell));
+          target->stripe->component_ptrs_vec_.push_back(cell);
+          entry.spare += demand;
+          target->spare -= demand;
+          changed.insert(cell);
+          stripe.component_count_ = owners.size();
+          target->stripe->component_count_ =
+              target->stripe->component_ptrs_vec_.size();
+        }
+        if (reassigned)
+          *reassigned = changed.size();
+        break;
       }
       stripe.CleanUpTemporaryRowSegments();
-      for (auto &row : stripe.gridded_rows_) {
+      for (auto &row : stripe.gridded_rows_)
         row.SetBoundaryMargins(left_margin, right_margin);
-      }
     }
-  return true;
+    if (complete) {
+      if (reassigned)
+        *reassigned = changed.size();
+      return true;
+    }
+  }
+  return false;
 }
 
-bool GriddedRowLegalizer::StripeLegalizationUpward(Stripe &stripe,
-                                                   bool use_init_loc,
-                                                   bool fit_all) {
+bool GriddedRowLegalizer::StripeLegalizationUpward(
+    Stripe &stripe, bool use_init_loc, bool fit_all,
+    std::vector<Component *> *spill) {
+  if (spill)
+    spill->clear();
   stripe.gridded_rows_.clear();
   stripe.front_id_ = -1;
   stripe.is_bottom_up_ = true;
@@ -267,9 +440,25 @@ bool GriddedRowLegalizer::StripeLegalizationUpward(Stripe &stripe,
   size_t processed_component_count = 0;
   while (processed_component_count < stripe.component_ptrs_vec_.size()) {
     if (fit_all && stripe.front_id_ + 1 >=
-                       stripe.Height() /
-                           std::max(1, well_tap_p_height_ + well_tap_n_height_))
+                       stripe.Height() / std::max(1, well_tap_p_height_ +
+                                                         well_tap_n_height_)) {
+      if (spill)
+        spill->assign(stripe.component_ptrs_vec_.begin() +
+                          processed_component_count,
+                      stripe.component_ptrs_vec_.end());
+      LOG(warning) << "Multi-region row capacity exhausted: remaining owners="
+                   << stripe.component_ptrs_vec_.size() -
+                          processed_component_count
+                   << "\n";
+      for (auto &row : stripe.gridded_rows_) {
+        long long occupied = 0;
+        for (auto cr : row.ComponentRegions())
+          occupied += cr.component->Width();
+        LOG(warning) << "  row y=" << row.LLY() << " height=" << row.Height()
+                     << " occupied width=" << occupied << "\n";
+      }
       return false;
+    }
     stripe.UpdateFrontClusterUpward(well_tap_p_height_, well_tap_n_height_);
     processed_component_count = stripe.FitComponentsToFrontSpaceUpward(
         processed_component_count, greedy_cur_iter_, fit_all);
@@ -279,10 +468,21 @@ bool GriddedRowLegalizer::StripeLegalizationUpward(Stripe &stripe,
   stripe.UpdateComponentYLocation();
   stripe.UpdateComponentStretchLength();
 
-  return stripe.HasNoRowsSpillingOut();
+  const bool fits = stripe.HasNoRowsSpillingOut();
+  if (!fits && spill) {
+    std::unordered_set<Component *> overflow;
+    for (auto &row : stripe.gridded_rows_)
+      if (row.LLY() < stripe.LLY() || row.URY() > stripe.URY())
+        for (auto cr : row.ComponentRegions())
+          overflow.insert(cr.component);
+    for (auto *cell : stripe.component_ptrs_vec_)
+      if (overflow.count(cell))
+        spill->push_back(cell);
+  }
+  return fits;
 }
 
-bool GriddedRowLegalizer::StripeLegalizationDownward(Stripe& stripe,
+bool GriddedRowLegalizer::StripeLegalizationDownward(Stripe &stripe,
                                                      bool use_init_loc) {
   stripe.gridded_rows_.clear();
   stripe.front_id_ = -1;

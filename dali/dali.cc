@@ -1709,6 +1709,7 @@ bool Dali::RunWellLegalization() {
               ? well_legalizer_.StartMultiRegionPlacement()
               : well_legalizer_.StartPlacement())) {
       LOG(error) << "Well legalization failed\n";
+      if(enable_multi_region_legalization_) well_legalizer_.WriteMultiRegionState(output_name_+".multi_region.failed");
       return false;
     }
     if (enable_multi_region_legalization_) {
@@ -1758,6 +1759,10 @@ bool Dali::RunWellLegalization() {
     RecordPlacementMetric("consensus.recoveries", report.recoveries);
     RecordPlacementMetric("consensus.primal_residual", report.primal_residual);
     RecordPlacementMetric("consensus.dual_residual", report.dual_residual);
+    RecordPlacementMetric("consensus.source_model_error_um", report.source_model_error_um);
+    RecordPlacementMetric("consensus.source_model_bound_um", report.source_model_bound_um);
+    RecordPlacementMetric("consensus.trial_model_error_um", report.trial_model_error_um);
+    RecordPlacementMetric("consensus.trial_model_bound_um", report.trial_model_bound_um);
     LOG(info) << "Consensus refinement: " << report.stop_reason
               << ", owners considered/changed " << report.owners_considered
               << "/" << report.owners_changed
