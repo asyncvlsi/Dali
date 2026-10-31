@@ -427,6 +427,9 @@ class GriddedCellWellLegalizer : public Placer {
   bool WellLegalize();
 
   bool StartPlacement() override;
+  bool StartMultiRegionPlacement();
+  bool ValidateMultiRegionFinalPlacement() const;
+  bool WriteMultiRegionState(const std::string &path) const;
 
   /** Write the P+/N+ implant rectangles to a text file for inspection. */
   void GenPPNP(std::string const& name_of_file);

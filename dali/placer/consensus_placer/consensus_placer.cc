@@ -132,7 +132,8 @@ bool ConsensusPlacer::StartPlacement() {
     } else {
       auto refined = consensus_internal::regions::refine(
           *ckt_ptr_, *columns_, solver, additional_check_,
-          options_.max_move_sites, options_.displacement_weight);
+          options_.max_move_sites, options_.displacement_weight,
+          options_.validation);
       report_.source_legal = refined.source.violations() == 0;
       result = std::move(refined.solver);
       report_.committed = refined.committed;

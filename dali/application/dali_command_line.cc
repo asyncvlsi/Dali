@@ -122,6 +122,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -banded_stripe_assignment_min_hpwl_gain <um>  minimum projected gain per ownership move\n"
       << "  -enable_gridded_local_reorder              reorder cells within finalized gridded rows\n"
       << "  -enable_gridded_detailed_placement         run gridded global swap, vertical swap, and local reorder\n"
+      << "  -enable_multi_region_legalization         use complete CELL regions and legacy row assignment/stretching\n"
       << "  -enable_gridded_consensus                 refine legal gridded X positions with ConsensusPlacer\n"
       << "  -gridded_consensus_time <seconds>          cooperative optimizer limit, default 1; zero keeps source\n"
       << "  -gridded_consensus_iterations <n>          iteration cap, default 128\n"
@@ -509,6 +510,8 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.enable_gridded_local_reorder");
     } else if (arg == "-enable_gridded_detailed_placement") {
       EnableConfigFlag("dali.enable_gridded_detailed_placement");
+    } else if (arg == "-enable_multi_region_legalization") {
+      EnableConfigFlag("dali.enable_multi_region_legalization");
     } else if (arg == "-enable_gridded_consensus") {
       EnableConfigFlag("dali.enable_gridded_consensus");
     } else if (arg == "-gridded_consensus_time") {

@@ -41,6 +41,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <fstream>
+#include <iomanip>
 #include <limits>
 #include <sstream>
 #include <utility>
@@ -56,6 +58,9 @@
 #include "dali/placer/well_legalizer/stripe_helper.h"
 #include "dali/placer/well_legalizer/well_geometry.h"
 #include "dali/placer/well_legalizer/well_geometry_exporter.h"
+
+#include "gridded_row_legalizer.h"
+#include "multi_region_placement_validator.h"
 
 namespace dali {
 
@@ -2738,6 +2743,111 @@ void GriddedCellWellLegalizer::EmitSnapshot(const std::string& id,
  * @return true if the placement is legal; false if one or more stripes could
  *         not hold their components within the available height.
  */
+bool GriddedCellWellLegalizer::WriteMultiRegionState(
+    const std::string &path) const {
+  std::ofstream out(path);
+  if (!out)
+    return false;
+  out << std::setprecision(17) << "DALI_MULTI_REGION_STATE 1\nGRID "
+      << ckt_ptr_->GridValueX() << " " << ckt_ptr_->GridValueY() << "\nBOUNDS "
+      << RegionLeft() << " " << RegionBottom() << " " << RegionRight() << " "
+      << RegionTop() << "\n";
+  auto emit = [&](const Component &cell, const char *kind) {
+    auto *m = cell.MacroPtr();
+    out << "CELL " << std::quoted(cell.Name()) << " " << std::quoted(m->Name())
+        << " " << kind << " " << cell.IsMovable() << " " << int(cell.Orient())
+        << " " << cell.LLX() << " " << cell.LLY() << " " << cell.Width() << " "
+        << m->Height() << " " << cell.URY() - cell.LLY() << " "
+        << m->RegionCount() << " " << cell.StretchLengths().size();
+    for (int v : cell.StretchLengths())
+      out << " " << v;
+    out << "\n";
+    if (cell.IsMovable() && std::string(kind) == "component")
+      for (int k = 0; k < m->RegionCount(); ++k) {
+        const auto &p = m->PwellRect(k), &n = m->NwellRect(k);
+        out << "WELL " << std::quoted(cell.Name()) << " " << k << " " << p.LLX()
+            << " " << p.LLY() << " " << p.URX() << " " << p.URY() << " "
+            << n.LLX() << " " << n.LLY() << " " << n.URX() << " " << n.URY()
+            << "\n";
+      }
+  };
+  for (const auto &cell : ckt_ptr_->Components())
+    emit(cell, "component");
+  for (const auto &cell : ckt_ptr_->design().WellTaps())
+    emit(cell, "tap");
+  for (const auto &cell :
+       ckt_ptr_->design().EndCapComponentCollection().Instances())
+    emit(cell, "cap");
+  for (std::size_t ci = 0; ci < col_list_.size(); ++ci)
+    for (std::size_t si = 0; si < col_list_[ci].stripe_list_.size(); ++si) {
+      auto &stripe = col_list_[ci].stripe_list_[si];
+      for (std::size_t ri = 0; ri < stripe.gridded_rows_.size(); ++ri) {
+        auto &row = stripe.gridded_rows_[ri];
+        out << "ROW " << ci << " " << si << " " << ri << " " << row.LLX() << " "
+            << row.LLY() << " " << row.Width() << " " << row.Height() << " "
+            << row.PHeight() << " " << row.NHeight() << " " << row.IsOrientN()
+            << " " << row.LeftBoundaryMargin() << " "
+            << row.RightBoundaryMargin() << "\n";
+        for (auto cr : row.ComponentRegions())
+          out << "REGION " << ci << " " << si << " " << ri << " "
+              << std::quoted(cr.component->Name()) << " " << cr.region_id
+              << "\n";
+      }
+    }
+  for (auto &net : ckt_ptr_->Nets()) {
+    out << "NET " << std::quoted(net.Name()) << " " << net.Weight() << "\n";
+    for (auto &pin : net.ComponentPins())
+      out << "PIN " << std::quoted(net.Name()) << " "
+          << std::quoted(pin.ComponentPtr()->Name()) << " " << pin.OffsetX()
+          << " " << pin.OffsetY() << " " << pin.AbsX() << " " << pin.AbsY()
+          << "\n";
+  }
+  out.flush();
+  return bool(out);
+}
+
+bool GriddedCellWellLegalizer::ValidateMultiRegionFinalPlacement() const {
+  const auto report = ValidateMultiRegionPlacement(
+      *ckt_ptr_, const_cast<std::vector<StripeColumn> &>(col_list_),
+      FinalPlacementValidationConfig());
+  RecordPlacementMetric("multi_region.legality.total_violations",
+                        report.violations());
+  RecordPlacementMetric("multi_region.legality.inventory", report.inventory);
+  RecordPlacementMetric("multi_region.legality.regions", report.regions);
+  RecordPlacementMetric("multi_region.legality.geometry", report.geometry);
+  RecordPlacementMetric("multi_region.legality.alignment", report.alignment);
+  RecordPlacementMetric("multi_region.legality.stretch", report.stretch);
+  RecordPlacementMetric("multi_region.legality.physical",
+                        report.physical.TotalViolationCount());
+  return report.violations() == 0;
+}
+
+bool GriddedCellWellLegalizer::StartMultiRegionPlacement() {
+  // Use the existing partitioner, legacy region assignment and stretching.
+  // This baseline has no iterative consensus step.
+  InitializeWellLegalizer();
+  GriddedRowLegalizer initializer;
+  initializer.SetCircuit(ckt_ptr_);
+  const auto capacity = BuildGriddedCapacityConfig(1.0);
+  if (!initializer.InitializeAssignedRows(
+          col_list_, capacity.minimum_p_well_height,
+          capacity.minimum_n_well_height, PhysicalCompletionLeftMargin(),
+          PhysicalCompletionRightMargin())) {
+    LOG(error)
+        << "Multi-region initialization cannot fit the assigned stripes\n";
+    return false;
+  }
+  auto initial = ValidateMultiRegionPlacement(*ckt_ptr_, col_list_);
+  if (initial.violations()) {
+    LOG(error) << "Multi-region initial legality violations: "
+               << initial.violations() << "\n";
+    return false;
+  }
+  RecordPlacementHpwlMetrics("multi_region.initialization", *ckt_ptr_);
+  RunPhysicalCompletionStages();
+  return ValidateMultiRegionFinalPlacement();
+}
+
 bool GriddedCellWellLegalizer::StartPlacement() {
   PrintStartStatement("standard cluster well legalization");
 

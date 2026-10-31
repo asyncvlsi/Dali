@@ -306,15 +306,16 @@ bool Stripe::AddComponentToFrontClusterWithDispCheck(
 
 /** Pack as many pending components as fit into the frontier row, growing upward. */
 size_t Stripe::FitComponentsToFrontSpaceUpward(size_t start_id,
-                                               int current_iteration) {
+                                               int current_iteration,
+                                               bool fit_all) {
   std::vector<Component*> legalized_components;
   std::vector<Component*> skipped_components;
 
   size_t components_sz = component_ptrs_vec_.size();
   for (size_t i = start_id; i < components_sz; ++i) {
     Component* component = component_ptrs_vec_[i];
-    if (!gridded_rows_[front_id_].IsOverlap(component, current_iteration,
-                                            true)) {
+    if (!fit_all && !gridded_rows_[front_id_].IsOverlap(
+                        component, current_iteration, true)) {
       break;
     }
     if (gridded_rows_[front_id_].IsOrientMatching(component, 0)) {

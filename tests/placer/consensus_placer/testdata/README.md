@@ -21,3 +21,9 @@ records, then checks an enabled legal improvement and unchanged Y HPWL.
 
 The exact-reference core test uses separate exhaustively enumerated models.
 No fixture result establishes a global integer optimum or publication claim.
+
+`multiflow` uses nominal 1/2/3-region masters (30/12/7 owners), unlike the
+already materialized `mixed` fixture. A 5/7-grid-unit tap master forces the
+existing stretcher to generate nonzero inter-region lengths for all 19 tall
+owners. The test runs the CLI both with and without a global-placement stage,
+checks physical completion and compares complete zero-budget state output.

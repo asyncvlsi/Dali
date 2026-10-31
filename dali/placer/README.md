@@ -30,6 +30,14 @@ selects the standard-cell flow, which skips well legalization entirely.
         -enable_end_cap_cell \
         -metrics_file dali_metrics.json
 
+The optional mixed-height flow adds `-enable_multi_region_legalization`.
+It restores complete CELL regions, reuses the legacy row assignment/stretching
+routines with taller owners packed first, completes rows physically, then runs
+`ConsensusPlacer` only when `-enable_gridded_consensus` is also supplied. Keep
+the emitted `.multi_region.source`/`.multi_region.final` companions: DEF alone
+does not encode stretching. See `consensus_placer/README.md` for the supported
+flow and geometry contract.
+
 ### Region and well structure
 
   * `-well_legalization_mode <strict/scavenge>` — `scavenge` packs better,

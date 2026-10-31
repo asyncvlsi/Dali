@@ -125,8 +125,8 @@ class Stripe {
   bool AddComponentToFrontClusterWithDispCheck(Component* component,
                                                double displacement_upper_limit,
                                                bool is_upward);
-  size_t FitComponentsToFrontSpaceUpward(size_t start_id,
-                                         int current_iteration);
+  size_t FitComponentsToFrontSpaceUpward(size_t start_id, int current_iteration,
+                                         bool fit_all = false);
   size_t FitComponentsToFrontSpaceUpwardWithDispCheck(
       size_t start_id, double displacement_upper_limit);
   /** Legalize the frontier row's cells once it is full. */

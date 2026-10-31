@@ -200,19 +200,79 @@ void GriddedRowLegalizer::SetLegalizationMaxIteration(int max_iteration) {
   greedy_max_iter_ = max_iteration;
 }
 
-bool GriddedRowLegalizer::StripeLegalizationUpward(Stripe& stripe,
-                                                   bool use_init_loc) {
+bool GriddedRowLegalizer::InitializeAssignedRows(
+    std::vector<StripeColumn> &columns, int p_height, int n_height,
+    int left_margin, int right_margin) {
+  well_tap_p_height_ = p_height;
+  well_tap_n_height_ = n_height;
+  for (auto &column : columns)
+    for (auto &stripe : column.stripe_list_) {
+      if (stripe.component_ptrs_vec_.empty()) {
+        stripe.gridded_rows_.clear();
+        continue;
+      }
+      if (stripe.Width() <= left_margin + right_margin)
+        return false;
+      for (auto *cell : stripe.component_ptrs_vec_)
+        if (!cell || !cell->MacroPtr()->HasCompleteWellRegions() ||
+            cell->Width() > stripe.Width() - left_margin - right_margin)
+          return false;
+      stripe.well_tap_cell_location_even_.clear();
+      if (left_margin)
+        stripe.well_tap_cell_location_even_.emplace_back(
+            stripe.LLX(), stripe.LLX() + left_margin);
+      if (right_margin)
+        stripe.well_tap_cell_location_even_.emplace_back(
+            stripe.URX() - right_margin, stripe.URX());
+      stripe.well_tap_cell_location_odd_ = stripe.well_tap_cell_location_even_;
+      if (!StripeLegalizationUpward(stripe, false, true)) {
+        LOG(error) << "Multi-region stripe capacity failure: width="
+                   << stripe.Width() << ", height=" << stripe.Height()
+                   << ", owners=" << stripe.component_ptrs_vec_.size()
+                   << ", rows=" << stripe.gridded_rows_.size() << "\n";
+        return false;
+      }
+      stripe.CleanUpTemporaryRowSegments();
+      for (auto &row : stripe.gridded_rows_) {
+        row.SetBoundaryMargins(left_margin, right_margin);
+      }
+    }
+  return true;
+}
+
+bool GriddedRowLegalizer::StripeLegalizationUpward(Stripe &stripe,
+                                                   bool use_init_loc,
+                                                   bool fit_all) {
   stripe.gridded_rows_.clear();
   stripe.front_id_ = -1;
   stripe.is_bottom_up_ = true;
 
-  stripe.SortComponentsBasedOnYLocation(0);
+  if (fit_all) {
+    std::sort(stripe.component_ptrs_vec_.begin(),
+              stripe.component_ptrs_vec_.end(), [](Component *a, Component *b) {
+                int ah = a->MacroPtr()->RegionCount(),
+                    bh = b->MacroPtr()->RegionCount();
+                if (ah != bh)
+                  return ah > bh;
+                if (a->LLY() != b->LLY())
+                  return a->LLY() < b->LLY();
+                if (a->LLX() != b->LLX())
+                  return a->LLX() < b->LLX();
+                return a->Id() < b->Id();
+              });
+  } else {
+    stripe.SortComponentsBasedOnYLocation(0);
+  }
 
   size_t processed_component_count = 0;
   while (processed_component_count < stripe.component_ptrs_vec_.size()) {
+    if (fit_all && stripe.front_id_ + 1 >=
+                       stripe.Height() /
+                           std::max(1, well_tap_p_height_ + well_tap_n_height_))
+      return false;
     stripe.UpdateFrontClusterUpward(well_tap_p_height_, well_tap_n_height_);
     processed_component_count = stripe.FitComponentsToFrontSpaceUpward(
-        processed_component_count, greedy_cur_iter_);
+        processed_component_count, greedy_cur_iter_, fit_all);
     stripe.LegalizeFrontCluster(use_init_loc);
   }
   stripe.UpdateRemainingClusters(well_tap_p_height_, well_tap_n_height_, true);

@@ -29,9 +29,23 @@ It is disabled by default. The application passes the legalizer's actual
 orientation, tap, coverage, spacing and end-cap validation settings to the
 separate placer. The optimizer is not embedded in the legalizer. Its placement
 metrics use the `consensus` stage; setup/validation and optimizer time are
-separate. The command's current row model is the ordinary one-row-per-owner
-gridded flow. Multi-region ownership uses the C++ interface below after the
-older multi-region assignment/stretching path.
+separate. The ordinary row model is one row per owner. Add
+`-enable_multi_region_legalization` to restore complete CELL pairs and use the
+older multi-region assignment/stretching path through the same command. This
+initializer packs taller owners first, then uses input Y/X/ID for ties; it
+runs no displacement-consensus iterations. Consensus remains a separate opt-in
+stage. Ordinary row-specific refinement switches are rejected in that mode.
+
+The mixed-height flow writes `.multi_region.source` and `.multi_region.final`
+state files alongside the DEF, containing actual dimensions, canonical wells,
+stretch lengths, row ownership, physical cells and the component-pin metric.
+DEF alone does not represent stretching: keep these companions with it. This
+is a Dali internal placement/state output, not a generic stretched library
+export for downstream tools. Pins use the existing Circuit geometry model;
+general pin deformation across stretched regions is outside this component.
+Capacity failures return false before consensus and produce no legal result.
+Changing `-target_density` alone does not change a skipped-global-placement
+input box; density experiments must construct actual placement boundaries.
 
 Zero seconds/iterations retains the validated input. Stagnation 0 disables
 that stopping condition. Time limits are cooperative, not OS deadlines, and

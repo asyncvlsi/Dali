@@ -4,6 +4,8 @@
  ******************************************************************************/
 #include "dali/placer/consensus_placer/consensus_cell_regions.h"
 #include "dali/placer/consensus_placer/consensus_placer.h"
+#include "dali/placer/well_legalizer/gridded_row_legalizer.h"
+#include "dali/placer/well_legalizer/multi_region_placement_validator.h"
 
 #include <chrono>
 #include <filesystem>
@@ -66,6 +68,43 @@ protected:
   ConsensusPlacer placer;
   ConsensusPlacerOptions options;
 };
+
+TEST_F(ConsensusPlacerTest, RegionPhysicalChecksUseRegionMembership) {
+  auto &row = columns[0].stripe_list_[0].gridded_rows_[0];
+  for (auto *cell : row.Components())
+    row.AddComponentRegion(cell, 0, true);
+  row.Components().clear();
+  ASSERT_EQ(ValidateMultiRegionPlacement(circuit, columns).violations(), 0u);
+  GriddedPlacementValidationConfig physical;
+  physical.expect_well_taps = true;
+  EXPECT_GT(ValidateMultiRegionPlacement(circuit, columns, physical)
+                .physical.missing_well_tap_count,
+            0u);
+  // A foreign/null entry is rejected without reaching physical dereferences.
+  row.ComponentRegions().push_back({nullptr, 0});
+  EXPECT_GT(
+      ValidateMultiRegionPlacement(circuit, columns, physical).violations(),
+      0u);
+}
+
+TEST_F(ConsensusPlacerTest,
+       BoundedInitializerRejectsCapacityWithoutAuxMutation) {
+  auto &s = columns[0].stripe_list_[0];
+  s.component_ptrs_vec_ = {circuit.GetComponentPtr("a"),
+                           circuit.GetComponentPtr("b")};
+  auto *aux = circuit.GetComponentPtr("a")->AuxPtr();
+  s.height_ = 5;
+  GriddedRowLegalizer initializer;
+  initializer.SetCircuit(&circuit);
+  EXPECT_FALSE(initializer.InitializeAssignedRows(columns, 4, 6, 3, 3));
+  EXPECT_EQ(circuit.GetComponentPtr("a")->AuxPtr(), aux);
+  s.height_ = 100;
+  s.component_ptrs_vec_
+      .clear(); // empty narrow stripes are legal, no rows needed.
+  s.width_ = 2;
+  EXPECT_TRUE(initializer.InitializeAssignedRows(columns, 4, 6, 3, 3));
+  EXPECT_TRUE(s.gridded_rows_.empty());
+}
 
 TEST_F(ConsensusPlacerTest, ImprovesNonunitGridAndPreservesFixedPose) {
   const double before = circuit.WeightedHPWLX();

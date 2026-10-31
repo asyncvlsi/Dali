@@ -31,3 +31,11 @@ target_compile_definitions(consensus_placer_test PRIVATE
   CONSENSUS_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/testdata")
 add_test(NAME consensus_placer_test COMMAND consensus_placer_test)
 set_tests_properties(consensus_placer_test PROPERTIES LABELS "unit;placer;consensus")
+
+add_test(NAME consensus_multi_region_cli_test COMMAND ${CMAKE_COMMAND}
+  -DDALI=$<TARGET_FILE:dali>
+  -DDATA=${CMAKE_CURRENT_SOURCE_DIR}/testdata/multiflow
+  -DOUTPUT=${CMAKE_CURRENT_BINARY_DIR}/multi-cli-output
+  -P ${CMAKE_CURRENT_SOURCE_DIR}/multi_region_cli_test.cmake)
+set_tests_properties(consensus_multi_region_cli_test PROPERTIES
+  LABELS "integration;placer;consensus" TIMEOUT 60)

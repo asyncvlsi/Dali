@@ -206,6 +206,7 @@ class GriddedRow {
   /** Record which of the component's well regions this row holds. */
   void AddComponentRegion(Component* component, int region_id, bool is_upward);
   std::vector<ComponentRegion>& ComponentRegions();
+  const std::vector<ComponentRegion> &ComponentRegions() const;
   /** Try to add a component, growing the row if it still fits.
    * @return true if it was added. */
   bool AttemptToAdd(Component* component, bool is_upward = true);

@@ -529,3 +529,11 @@ TEST_F(DaliCommandLineTest, RejectsOutOfRangeOptions) {
                       "-gui_pause", "sometimes"},
                      &options));
 }
+
+TEST_F(DaliCommandLineTest, EnablesSeparateMultiRegionFlow) {
+  dali::DaliCommandLineOptions options;
+  EXPECT_TRUE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                     "-enable_multi_region_legalization"},
+                    &options));
+  EXPECT_EQ(config_get_int("dali.enable_multi_region_legalization"), 1);
+}

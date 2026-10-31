@@ -152,6 +152,7 @@ class Dali {
     double gridded_consensus_time = 1.0;
     int gridded_consensus_iterations = 128;
     int gridded_consensus_stagnation = 4;
+    bool enable_multi_region_legalization = false;
   };
 
   Dali(phydb::PhyDB* phy_db_ptr, const std::string& severity_level,
@@ -341,6 +342,7 @@ class Dali {
   double gridded_consensus_time_ = 1.0;
   int gridded_consensus_iterations_ = 128;
   int gridded_consensus_stagnation_ = 4;
+  bool enable_multi_region_legalization_ = false;
   bool enable_gridded_detailed_relocation_ = false;
   bool enable_gridded_assignment_batch_ = false;
   bool enable_gridded_exhaustive_insertion_ = false;
@@ -443,7 +445,7 @@ class Dali {
   /** Set one command-language runtime option after validating its value. */
   bool SetRuntimeOption(const std::string& name, const std::string& value);
   /** Initialize the circuit model and reset metrics for a standalone run. */
-  void InitializeMainPlacementCircuit();
+  bool InitializeMainPlacementCircuit();
   /** Compute and record certified HPWL lower bounds for this circuit. */
   void RecordPlacementLowerBounds();
   /** Enlarge the circuit placement boundary for controlled debug experiments.
