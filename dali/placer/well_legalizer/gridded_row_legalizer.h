@@ -74,13 +74,7 @@ class GriddedRowLegalizer : public Placer {
   void SetLegalizationMaxIteration(int max_iteration);
   /** Legalize a stripe growing rows upward; the downward and disp-check
    * variants differ in direction and whether a displacement limit applies. */
-  bool StripeLegalizationUpward(Stripe &stripe, bool use_init_loc,
-                                bool fit_all = false, std::vector<Component*>* spill = nullptr);
-  // Bounded initialization only: reuse the legacy row assignment/stretching,
-  // with no displacement-consensus optimization or component AuxPtr changes.
-  bool InitializeAssignedRows(std::vector<StripeColumn> &columns, int p_height,
-                              int n_height, int left_margin, int right_margin,
-                              std::size_t* reassigned = nullptr);
+  bool StripeLegalizationUpward(Stripe& stripe, bool use_init_loc);
   /** Legalize a stripe growing rows downward. */
   bool StripeLegalizationDownward(Stripe& stripe, bool use_init_loc);
   void CleanUpTemporaryRowSegments();

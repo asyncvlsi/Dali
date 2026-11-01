@@ -38,8 +38,6 @@ struct GriddedPlacementValidationConfig {
   // Latch-up budget in microns; when <= 0, derived from the tech N-well layer's
   // MaxPlugDist.
   double max_plug_dist = 0.0;
-  // Structural ownership/stretch is checked by ValidateMultiRegionPlacement.
-  bool use_component_regions = false;
 };
 
 /** Categorized violations found in a finalized gridded placement. */

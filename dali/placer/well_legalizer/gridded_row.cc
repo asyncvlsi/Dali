@@ -469,10 +469,6 @@ void GriddedRow::AssignComponentsToSegments() {
   }
 }
 
-const std::vector<ComponentRegion> &GriddedRow::ComponentRegions() const {
-  return component_regions_;
-}
-
 bool GriddedRow::IsBelowMiddleLine(Component* component) const {
   return component->LLY() < CenterY();
 }

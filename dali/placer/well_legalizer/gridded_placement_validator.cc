@@ -27,18 +27,6 @@
 #include "dali/common/logging.h"
 
 namespace dali {
-namespace {
-std::vector<Component *> ValidationMembers(const GriddedRow &row,
-                                           bool regions) {
-  if (!regions)
-    return row.Components();
-  std::vector<Component *> members;
-  for (auto cr : row.ComponentRegions())
-    if (cr.component)
-      members.push_back(cr.component);
-  return members;
-}
-} // namespace
 
 size_t GriddedPlacementLegalityReport::TotalViolationCount() const {
   return unassigned_component_count + duplicate_assignment_count +
@@ -93,57 +81,51 @@ GriddedPlacementLegalityReport GriddedPlacementValidator::Validate() const {
             row.URY() > circuit_->RegionURY()) {
           ++report.row_boundary_violation_count;
         }
-        if (!config_.use_component_regions) {
-          if (!row.HasLegalComponentPlacement()) {
-            ++report.component_boundary_violation_count;
+        if (!row.HasLegalComponentPlacement()) {
+          ++report.component_boundary_violation_count;
+        }
+        report.component_overlap_count += row.CountComponentOverlaps();
+
+        for (const Component* component : row.Components()) {
+          if (component == nullptr || component->Id() < 0 ||
+              component->Id() >= static_cast<int>(components.size()) ||
+              component != &components[component->Id()] ||
+              !component->IsMovable()) {
+            ++report.invalid_component_reference_count;
+            continue;
           }
-          report.component_overlap_count += row.CountComponentOverlaps();
+          ++report.assigned_component_count;
+          ++assignment_counts[component->Id()];
 
-          for (const Component *component :
-               ValidationMembers(row, config_.use_component_regions)) {
-            if (component == nullptr || component->Id() < 0 ||
-                component->Id() >= static_cast<int>(components.size()) ||
-                component != &components[component->Id()] ||
-                !component->IsMovable()) {
-              ++report.invalid_component_reference_count;
-              continue;
+          const Macro* macro = component->MacroPtr();
+          const double expected_y =
+              row.IsOrientN()
+                  ? row.LLY() + row.PHeight() - macro->FirstPwellHeight()
+                  : row.LLY() + row.NHeight() - macro->FirstNwellHeight();
+          if (std::fabs(component->LLY() - expected_y) > kCoordinateTolerance ||
+              component->LLY() < row.LLY() - kCoordinateTolerance ||
+              component->URY() > row.URY() + kCoordinateTolerance) {
+            ++report.component_y_violation_count;
+            if (logged_coordinate_violations < kMaxLoggedCoordinateViolations) {
+              LOG(warning) << "Gridded-row Y violation: component="
+                           << component->Name() << ", row=[" << row.LLY()
+                           << ", " << row.URY()
+                           << "], actual_y=" << component->LLY()
+                           << ", expected_y=" << expected_y
+                           << ", row_pn_height=" << row.PHeight() << "/"
+                           << row.NHeight() << ", row_orientation="
+                           << (row.IsOrientN() ? "N" : "FS") << ", orientation="
+                           << (component->Orient() == N ? "N" : "FS") << "\n";
+              ++logged_coordinate_violations;
             }
-            ++report.assigned_component_count;
-            ++assignment_counts[component->Id()];
-
-            const Macro *macro = component->MacroPtr();
-            const double expected_y =
-                row.IsOrientN()
-                    ? row.LLY() + row.PHeight() - macro->FirstPwellHeight()
-                    : row.LLY() + row.NHeight() - macro->FirstNwellHeight();
-            if (std::fabs(component->LLY() - expected_y) >
-                    kCoordinateTolerance ||
-                component->LLY() < row.LLY() - kCoordinateTolerance ||
-                component->URY() > row.URY() + kCoordinateTolerance) {
-              ++report.component_y_violation_count;
-              if (logged_coordinate_violations <
-                  kMaxLoggedCoordinateViolations) {
-                LOG(warning)
-                    << "Gridded-row Y violation: component="
-                    << component->Name() << ", row=[" << row.LLY() << ", "
-                    << row.URY() << "], actual_y=" << component->LLY()
-                    << ", expected_y=" << expected_y
-                    << ", row_pn_height=" << row.PHeight() << "/"
-                    << row.NHeight()
-                    << ", row_orientation=" << (row.IsOrientN() ? "N" : "FS")
-                    << ", orientation="
-                    << (component->Orient() == N ? "N" : "FS") << "\n";
-                ++logged_coordinate_violations;
-              }
-            }
-            const ComponentOrient expected_orientation =
-                row.IsOrientN() ? N : FS;
-            if (config_.check_component_orientation &&
-                component->Orient() != expected_orientation) {
-              ++report.component_orientation_violation_count;
-            }
+          }
+          const ComponentOrient expected_orientation = row.IsOrientN() ? N : FS;
+          if (config_.check_component_orientation &&
+              component->Orient() != expected_orientation) {
+            ++report.component_orientation_violation_count;
           }
         }
+
         if (config_.expect_well_taps) {
           const Component* left_tap = row.LeftWellTapCell();
           const Component* right_tap = row.RightWellTapCell();
@@ -172,8 +154,7 @@ GriddedPlacementLegalityReport GriddedPlacementValidator::Validate() const {
               ++report.physical_completion_violation_count;
               ++report.well_tap_geometry_violation_count;
             }
-            for (const Component *component :
-                 ValidationMembers(row, config_.use_component_regions)) {
+            for (const Component* component : row.Components()) {
               if (component->LLX() <
                       left_tap->URX() + config_.space_to_well_tap ||
                   component->URX() >
@@ -231,25 +212,19 @@ GriddedPlacementLegalityReport GriddedPlacementValidator::Validate() const {
                 if (lhs->LLY() != rhs->LLY()) return lhs->LLY() < rhs->LLY();
                 return lhs->LLX() < rhs->LLX();
               });
-    // Stripes on either side of a fixed macro can share Y bands within one
-    // column. Check complete rectangles, retaining every still-active row so
-    // nonadjacent overlaps are not hidden by a shorter intervening row.
-    std::vector<const GriddedRow*> active_rows;
-    for(const auto* row:ordered_rows) {
-      active_rows.erase(std::remove_if(active_rows.begin(),active_rows.end(),
-          [&](const GriddedRow* old){return old->URY()<=row->LLY();}),active_rows.end());
-      for(const auto* old:active_rows)
-        if(old->LLX()<row->URX() && row->LLX()<old->URX()) ++report.row_overlap_count;
-      active_rows.push_back(row);
+    for (size_t i = 1; i < ordered_rows.size(); ++i) {
+      if (ordered_rows[i]->LLY() < ordered_rows[i - 1]->URY()) {
+        ++report.row_overlap_count;
+      }
     }
   }
 
   for (const Component& component : components) {
     if (!component.IsMovable()) continue;
     const int count = assignment_counts[component.Id()];
-    if (!config_.use_component_regions && count == 0) {
+    if (count == 0) {
       ++report.unassigned_component_count;
-    } else if (!config_.use_component_regions && count > 1) {
+    } else if (count > 1) {
       report.duplicate_assignment_count += count - 1;
     }
     if (component.LLX() < circuit_->RegionLLX() ||
@@ -321,16 +296,12 @@ void GriddedPlacementValidator::ValidateWellTapCoverage(
       if (tap_centers.empty()) continue;  // missing taps flagged elsewhere
 
       for (const GriddedRow& row : stripe.gridded_rows_) {
-        for (const Component *component :
-             ValidationMembers(row, config_.use_component_regions)) {
+        for (const Component* component : row.Components()) {
           if (component == nullptr || !component->IsMovable()) continue;
           const double cx =
               0.5 * (component->LLX() + component->URX()) * grid_value_x;
           const double cy =
-              (config_.use_component_regions
-                   ? row.CenterY()
-                   : 0.5 * (component->LLY() + component->URY())) *
-              grid_value_y;
+              0.5 * (component->LLY() + component->URY()) * grid_value_y;
           double nearest = std::numeric_limits<double>::max();
           for (const auto& tap : tap_centers) {
             const double dx = cx - tap.first;

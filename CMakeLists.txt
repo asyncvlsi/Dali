@@ -105,10 +105,6 @@ add_library(
     ${SOURCES}
 )
 add_dependencies(dalilib dali_git_version)
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    set_property(SOURCE dali/placer/consensus_placer/consensus_placer.cc
-                 APPEND PROPERTY COMPILE_OPTIONS -ffp-contract=off)
-endif()
 
 if (DEFINED NEED_LIBCXXFS)
     set(LIBCXXFS_LIB "stdc++fs")
@@ -218,6 +214,3 @@ install(TARGETS dalilib DESTINATION lib)
 if (DALI_HAS_QT_GUI)
     install(TARGETS daligui DESTINATION lib)
 endif ()
-
-# Explicitly built development tools; excluded from ordinary builds/install.
-add_subdirectory(benchmarks/consensus)

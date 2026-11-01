@@ -56,30 +56,6 @@ class GriddedPlacementValidatorTest : public testing::Test {
   std::vector<StripeColumn> columns;
 };
 
-TEST_F(GriddedPlacementValidatorTest, AllowsDisjointRowsAtTheSameHeight) {
-  Row().SetWidth(40);
-  auto& stripe=columns[0].stripe_list_[0];
-  stripe.gridded_rows_.emplace_back();
-  auto& other=stripe.gridded_rows_.back();
-  other.SetLLX(60);other.SetWidth(40);other.SetLLY(20);other.UpdateWellHeightUpward(4,6);
-  const auto report=GriddedPlacementValidator(&circuit,&columns).Validate();
-  EXPECT_EQ(report.row_overlap_count,0u);
-  EXPECT_TRUE(report.IsLegal());
-}
-
-TEST_F(GriddedPlacementValidatorTest, FindsNonadjacentActiveRowOverlap) {
-  Row().SetWidth(40);
-  auto& stripe=columns[0].stripe_list_[0];
-  stripe.gridded_rows_.resize(3);
-  auto& middle=stripe.gridded_rows_[1];
-  middle.SetLLX(60);middle.SetWidth(40);middle.SetLLY(21);middle.UpdateWellHeightUpward(1,1);
-  auto& last=stripe.gridded_rows_[2];
-  last.SetLLX(0);last.SetWidth(40);last.SetLLY(24);last.UpdateWellHeightUpward(1,1);
-  const auto report=GriddedPlacementValidator(&circuit,&columns).Validate();
-  EXPECT_EQ(report.row_overlap_count,1u);
-  EXPECT_FALSE(report.IsLegal());
-}
-
 TEST_F(GriddedPlacementValidatorTest, AcceptsLegalSingleRegionPlacement) {
   const GriddedPlacementLegalityReport report =
       GriddedPlacementValidator(&circuit, &columns).Validate();
