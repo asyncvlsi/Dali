@@ -166,98 +166,82 @@ void Net::SortComponentPinList() {
   std::sort(component_pins_.begin(), component_pins_.end());
 }
 
-/****
- * @brief find the index of the component pin with maximum/minimum x location.
- *
- * When the number of component pins in this net is >= 2, it is possible that
- * all pins have exactly the same location. In this case, we need to choose
- * different indices for max pin and min pin. Otherwise, this special case
- * may potentially lead to some issues although the program may still work.
- *
- * For example, pin0 and pin1 are the only two pins in a net, and they have
- * the same location, we know that when we decompose this net, it only has
- * one edge. However, if pin0 is viewed as both the max_pin and min_pin, then
- * two edges will be created between pin0 and pin1, which is not desired.
- *
- * To prevent this from happening, we will first find the max_x and min_x in
- * this net. If these two locations are different, it is safe. If these two
- * locations are the same, it means all pins in this net have the same location,
- * we can just pick the first two pins as max_pin and min_pin.
- *
- * TODO: or the driver pin as one of the extreme pin.
+namespace {
+
+/**
+ * Keep the first pin at each strict extreme. When all pins share the same
+ * coordinate, use distinct endpoints so bound-to-bound decomposition sees
+ * one edge between two coincident pins.
  */
-void Net::UpdateMaxMinIdX() {
-  // no pin
-  if (component_pins_.empty()) return;
-  // only one pin
-  if (component_pins_.size() == 1) {
-    max_x_pin_id_ = 0;
-    min_x_pin_id_ = 0;
+struct PinExtrema {
+  void Add(double position, int index) {
+    if (max_position < position) {
+      max_position = position;
+      max_index = index;
+    }
+    if (min_position > position) {
+      min_position = position;
+      min_index = index;
+    }
+  }
+
+  void StoreIndices(int& max_id, int& min_id) const {
+    const bool coincident = max_position == min_position;
+    max_id = coincident ? 0 : max_index;
+    min_id = coincident ? 1 : min_index;
+  }
+
+  double max_position = -DBL_MAX;
+  double min_position = DBL_MAX;
+  int max_index = 0;
+  int min_index = 0;
+};
+
+template <double (NetPin::*Coordinate)() const>
+void UpdateAxisExtrema(const std::vector<NetPin>& pins, int& max_id,
+                       int& min_id) {
+  if (pins.empty()) return;
+  if (pins.size() == 1) {
+    max_id = 0;
+    min_id = 0;
     return;
   }
-  // more than one pin
-  max_x_pin_id_ = 0;
-  min_x_pin_id_ = 0;
-  double max_x = -DBL_MAX;
-  double min_x = DBL_MAX;
-  int sz = static_cast<int>(component_pins_.size());
-  for (int i = 0; i < sz; ++i) {
-    double tmp_pin_loc = component_pins_[i].AbsX();
-    if (max_x < tmp_pin_loc) {
-      max_x = tmp_pin_loc;
-      max_x_pin_id_ = i;
-    }
-    if (min_x > tmp_pin_loc) {
-      min_x = tmp_pin_loc;
-      min_x_pin_id_ = i;
-    }
+  PinExtrema extrema;
+  const int pin_count = static_cast<int>(pins.size());
+  for (int i = 0; i < pin_count; ++i) {
+    extrema.Add((pins[i].*Coordinate)(), i);
   }
-  // if maximum x is the same as minimum x, make sure max id is different from
-  // min id
-  if (max_x == min_x) {
-    max_x_pin_id_ = 0;
-    min_x_pin_id_ = 1;
-  }
+  extrema.StoreIndices(max_id, min_id);
 }
 
-/** Cache the pins at the net's Y extremes. */
+}  // namespace
+
+void Net::UpdateMaxMinIdX() {
+  UpdateAxisExtrema<&NetPin::AbsX>(component_pins_, max_x_pin_id_,
+                                 min_x_pin_id_);
+}
+
 void Net::UpdateMaxMinIdY() {
-  // no pin
-  if (component_pins_.empty()) return;
-  // only one pin
-  if (component_pins_.size() == 1) {
-    max_y_pin_id_ = 0;
-    min_y_pin_id_ = 0;
-    return;
-  }
-  // more than one pin
-  max_y_pin_id_ = 0;
-  min_y_pin_id_ = 0;
-  double max_y = -DBL_MAX;
-  double min_y = DBL_MAX;
-  int sz = static_cast<int>(component_pins_.size());
-  for (int i = 0; i < sz; ++i) {
-    double tmp_pin_loc = component_pins_[i].AbsY();
-    if (max_y < tmp_pin_loc) {
-      max_y = tmp_pin_loc;
-      max_y_pin_id_ = i;
-    }
-    if (min_y > tmp_pin_loc) {
-      min_y = tmp_pin_loc;
-      min_y_pin_id_ = i;
-    }
-  }
-  // if maximum y is the same as minimum y, make sure max id is different from
-  // min id
-  if (max_y == min_y) {
-    max_y_pin_id_ = 0;
-    min_y_pin_id_ = 1;
-  }
+  UpdateAxisExtrema<&NetPin::AbsY>(component_pins_, max_y_pin_id_,
+                                 min_y_pin_id_);
 }
 
 void Net::UpdateMaxMinIndex() {
-  UpdateMaxMinIdX();
-  UpdateMaxMinIdY();
+  if (component_pins_.size() <= 1) {
+    UpdateMaxMinIdX();
+    UpdateMaxMinIdY();
+    return;
+  }
+  PinExtrema x;
+  PinExtrema y;
+  const int pin_count = static_cast<int>(component_pins_.size());
+  for (int i = 0; i < pin_count; ++i) {
+    const double2d location = component_pins_[i].Location();
+    x.Add(location.x, i);
+    y.Add(location.y, i);
+  }
+  x.StoreIndices(max_x_pin_id_, min_x_pin_id_);
+  y.StoreIndices(max_y_pin_id_, min_y_pin_id_);
 }
 
 int Net::MaxComponentPinIdX() const { return max_x_pin_id_; }
@@ -300,7 +284,16 @@ double Net::WeightedHPWLY() {
   return (max_y - min_y) * weight_;
 }
 
-double Net::WeightedHPWL() { return WeightedHPWLX() + WeightedHPWLY(); }
+double2d Net::WeightedHPWLAxes() {
+  if (component_pins_.size() <= 1) return double2d{};
+  UpdateMaxMinIndex();
+  return double2d{(MaxX() - MinX()) * weight_, (MaxY() - MinY()) * weight_};
+}
+
+double Net::WeightedHPWL() {
+  const double2d hpwl = WeightedHPWLAxes();
+  return hpwl.x + hpwl.y;
+}
 
 double Net::WeightedBboxX() {
   if (component_pins_.size() <= 1) return 0;

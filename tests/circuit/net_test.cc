@@ -50,6 +50,13 @@ TEST(NetTest, ReportsPhysicalHpwlOnAnisotropicGrid) {
   circuit.AddComponentPinToNet("u1", "p", "n0");
 
   EXPECT_DOUBLE_EQ(circuit.NetWeightedHPWL(net->Id()), 12.0);
+
+  circuit.GetComponentPtr("u1")->SetLLX(0);
+  EXPECT_DOUBLE_EQ(circuit.NetWeightedHPWL(net->Id()), 6.0);
+  EXPECT_EQ(net->MaxComponentPinIdX(), 0);
+  EXPECT_EQ(net->MinComponentPinIdX(), 1);
+  EXPECT_EQ(net->MaxComponentPinIdY(), 1);
+  EXPECT_EQ(net->MinComponentPinIdY(), 0);
 }
 
 }  // namespace dali

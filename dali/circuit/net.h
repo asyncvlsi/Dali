@@ -127,6 +127,9 @@ class Net {
   /** Return weighted y-direction HPWL for component pins. */
   double WeightedHPWLY();
 
+  /** Compute weighted HPWL for both axes in one pass over the pins. */
+  double2d WeightedHPWLAxes();
+
   /** Return weighted HPWL for component pins. */
   double WeightedHPWL();
 

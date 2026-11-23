@@ -1198,8 +1198,9 @@ double Circuit::WeightedHPWL() {
   double hpwl_x = 0;
   double hpwl_y = 0;
   for (auto& net : design_.nets_) {
-    hpwl_x += net.WeightedHPWLX();
-    hpwl_y += net.WeightedHPWLY();
+    const double2d hpwl = net.WeightedHPWLAxes();
+    hpwl_x += hpwl.x;
+    hpwl_y += hpwl.y;
   }
   return hpwl_x * GridValueX() + hpwl_y * GridValueY();
 }
@@ -1207,9 +1208,8 @@ double Circuit::WeightedHPWL() {
 double Circuit::NetWeightedHPWL(int net_id) {
   DaliExpects(net_id >= 0 && net_id < static_cast<int>(design_.nets_.size()),
               "Net id is outside the circuit net list");
-  Net& net = design_.nets_[net_id];
-  return net.WeightedHPWLX() * GridValueX() +
-         net.WeightedHPWLY() * GridValueY();
+  const double2d hpwl = design_.nets_[net_id].WeightedHPWLAxes();
+  return hpwl.x * GridValueX() + hpwl.y * GridValueY();
 }
 
 void Circuit::ReportHPWL() {
