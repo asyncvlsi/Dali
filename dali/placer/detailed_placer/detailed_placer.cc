@@ -317,10 +317,26 @@ std::vector<int> DetailedPlacer::FindClosestRows(
   return result;
 }
 
-double DetailedPlacer::AffectedWireLength(const std::set<int>& net_ids) const {
+/**
+ * Cache costs only when the cells are at the committed placement. Trial
+ * positions always use fresh costs. Committing a swap invalidates all nets
+ * of the cells it moved, including cells displaced by segment repacking.
+ */
+double DetailedPlacer::AffectedWireLength(
+    const std::set<int>& net_ids, NetWireLengths* current_costs) const {
   double cost = 0.0;
-  for (int net_id : net_ids) {
-    cost += BookshelfStyleWireLength(net_id);
+  if (current_costs == nullptr) {
+    for (int net_id : net_ids) {
+      cost += BookshelfStyleWireLength(net_id);
+    }
+  } else {
+    for (int net_id : net_ids) {
+      auto& net_cost = (*current_costs)[net_id];
+      if (!net_cost.has_value()) {
+        net_cost = BookshelfStyleWireLength(net_id);
+      }
+      cost += *net_cost;
+    }
   }
   return cost;
 }
@@ -513,10 +529,10 @@ bool DetailedPlacer::TryMove(Component* component, GeneralRow* target_row,
 
 bool DetailedPlacer::SwapLowersHpwlBeforeLegalization(
     Component* first, Component* second, GeneralRow* first_row,
-    GeneralRow* second_row) const {
+    GeneralRow* second_row, NetWireLengths& current_costs) const {
   std::set<int> net_ids(first->NetList().begin(), first->NetList().end());
   net_ids.insert(second->NetList().begin(), second->NetList().end());
-  double cost_before = AffectedWireLength(net_ids);
+  double cost_before = AffectedWireLength(net_ids, &current_costs);
 
   double first_lx = first->LLX();
   double first_ly = first->LLY();
@@ -543,7 +559,8 @@ bool DetailedPlacer::SwapLowersHpwlBeforeLegalization(
  * @return true if the swap was applied; false if it does not fit or does not
  *         help, in which case nothing changed.
  */
-bool DetailedPlacer::TrySwap(Component* first, Component* second) {
+bool DetailedPlacer::TrySwap(Component* first, Component* second,
+                             NetWireLengths& current_costs) {
   if (first == second) {
     return false;
   }
@@ -555,7 +572,8 @@ bool DetailedPlacer::TrySwap(Component* first, Component* second) {
       first_segment == nullptr || second_segment == nullptr) {
     return false;
   }
-  if (!SwapLowersHpwlBeforeLegalization(first, second, first_row, second_row)) {
+  if (!SwapLowersHpwlBeforeLegalization(first, second, first_row, second_row,
+                                      current_costs)) {
     return false;
   }
 
@@ -647,7 +665,8 @@ bool DetailedPlacer::TrySwap(Component* first, Component* second) {
     second_segment->Components() = second_components;
   }
   restore_placements(original_placements);
-  double cost_before = legal ? AffectedWireLength(affected_net_ids) : DBL_MAX;
+  double cost_before =
+      legal ? AffectedWireLength(affected_net_ids, &current_costs) : DBL_MAX;
 
   if (cost_after + 1e-9 < cost_before) {
     first_segment->Components() = candidate_first_components;
@@ -655,6 +674,9 @@ bool DetailedPlacer::TrySwap(Component* first, Component* second) {
       second_segment->Components() = candidate_second_components;
     }
     restore_placements(candidate_placements);
+    for (int net_id : affected_net_ids) {
+      current_costs[net_id].reset();
+    }
     if (first_segment != second_segment) {
       auto row_index = [this](GeneralRow* row) {
         return static_cast<size_t>(row - &ckt_ptr_->design().Rows().front());
@@ -764,6 +786,7 @@ int DetailedPlacer::RunOptimalRegionMoves() {
  */
 int DetailedPlacer::RunOptimalRegionSwaps() {
   BuildSwapIndex();
+  NetWireLengths current_costs(ckt_ptr_->Nets().size());
   int accepted = 0;
   for (Component& component : ckt_ptr_->Components()) {
     if (!component.IsMovable() || component.NetList().empty()) {
@@ -803,7 +826,7 @@ int DetailedPlacer::RunOptimalRegionSwaps() {
                              region) >= current_distance) {
           continue;
         }
-        if (TrySwap(&component, candidates[index])) {
+        if (TrySwap(&component, candidates[index], current_costs)) {
           ++accepted;
           swapped = true;
         }

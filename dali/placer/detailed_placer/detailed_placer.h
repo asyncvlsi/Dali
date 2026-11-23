@@ -13,6 +13,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <optional>
 #include <set>
 #include <string>
 #include <vector>
@@ -101,8 +102,11 @@ class DetailedPlacer : public Placer {
   /** Return the row indices nearest to an optimal region's Y interval. */
   std::vector<int> FindClosestRows(const OptimalRegion& region) const;
 
+  using NetWireLengths = std::vector<std::optional<double>>;
+
   /** Return physical HPWL for a deduplicated set of affected nets. */
-  double AffectedWireLength(const std::set<int>& net_ids) const;
+  double AffectedWireLength(const std::set<int>& net_ids,
+                            NetWireLengths* current_costs = nullptr) const;
 
   /** Repack one segment with Abacus while preserving its legal boundaries. */
   bool LegalizeSegment(GeneralRowSegment* segment, GeneralRow* row);
@@ -137,7 +141,7 @@ class DetailedPlacer : public Placer {
    */
   bool SwapLowersHpwlBeforeLegalization(
       Component* first, Component* second, GeneralRow* first_row,
-      GeneralRow* second_row) const;
+      GeneralRow* second_row, NetWireLengths& current_costs) const;
 
   /**
    * Trial-swap two components and commit only an HPWL-improving legal result.
@@ -146,7 +150,8 @@ class DetailedPlacer : public Placer {
    * repacked. The cost transaction includes every net of every cell whose
    * location changes during that repacking.
    */
-  bool TrySwap(Component* first, Component* second);
+  bool TrySwap(Component* first, Component* second,
+               NetWireLengths& current_costs);
 
   /** Visit cells and try nearby candidates in their optimal regions. */
   int RunOptimalRegionSwaps();
