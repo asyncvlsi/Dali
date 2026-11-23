@@ -85,6 +85,14 @@ class DetailedPlacer : public Placer {
   /** Compute the HPWL-optimal rectangle induced by a component's other pins. */
   OptimalRegion ComputeOptimalRegion(Component* component) const;
 
+  struct BookshelfPin {
+    const Component* component;
+    double offset_x;
+    double offset_y;
+  };
+
+  void BuildBookshelfPinIndex();
+
   /**
    * Return physical HPWL for one net using unflipped macro pin offsets.
    *
@@ -175,6 +183,11 @@ class DetailedPlacer : public Placer {
   std::vector<std::vector<GeneralRowSegment*>> row_segments_;
   std::vector<GeneralRow*> component_rows_;
   std::vector<GeneralRowSegment*> component_segments_;
+  std::vector<BookshelfPin> bookshelf_pins_;
+  std::vector<std::size_t> bookshelf_net_starts_;
+  const Net* bookshelf_nets_ = nullptr;
+  double bookshelf_grid_x_ = 0.0;
+  double bookshelf_grid_y_ = 0.0;
   SnapshotCallback snapshot_callback_;
   int max_move_candidates_per_round_ = kDefaultMaxMoveCandidatesPerRound;
   int max_optimization_rounds_ = kDefaultMaxOptimizationRounds;

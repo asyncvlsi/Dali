@@ -254,9 +254,38 @@ DetailedPlacer::OptimalRegion DetailedPlacer::ComputeOptimalRegion(
           y_bounds[upper]};
 }
 
+/**
+ * Pack the fixed N-orientation offsets in net pin order. Wirelength scoring
+ * still reads live cell coordinates and net weights during move and swap trials.
+ */
+void DetailedPlacer::BuildBookshelfPinIndex() {
+  auto& nets = ckt_ptr_->Nets();
+  bookshelf_nets_ = nets.data();
+  bookshelf_grid_x_ = ckt_ptr_->GridValueX();
+  bookshelf_grid_y_ = ckt_ptr_->GridValueY();
+
+  std::size_t pin_count = 0;
+  for (Net& net : nets) {
+    pin_count += net.ComponentPins().size();
+  }
+  bookshelf_pins_.clear();
+  bookshelf_pins_.reserve(pin_count);
+  bookshelf_net_starts_.clear();
+  bookshelf_net_starts_.reserve(nets.size() + 1);
+  for (Net& net : nets) {
+    bookshelf_net_starts_.push_back(bookshelf_pins_.size());
+    for (const NetPin& pin : net.ComponentPins()) {
+      bookshelf_pins_.push_back({pin.ComponentPtr(), pin.PinPtr()->OffsetX(N),
+                                 pin.PinPtr()->OffsetY(N)});
+    }
+  }
+  bookshelf_net_starts_.push_back(bookshelf_pins_.size());
+}
+
 double DetailedPlacer::BookshelfStyleWireLength(int net_id) const {
-  Net& net = ckt_ptr_->Nets()[net_id];
-  if (net.ComponentPins().size() <= 1) {
+  const std::size_t begin = bookshelf_net_starts_[net_id];
+  const std::size_t end = bookshelf_net_starts_[net_id + 1];
+  if (end - begin <= 1) {
     return 0;
   }
 
@@ -264,17 +293,18 @@ double DetailedPlacer::BookshelfStyleWireLength(int net_id) const {
   double max_x = -DBL_MAX;
   double min_y = DBL_MAX;
   double max_y = -DBL_MAX;
-  for (NetPin& pin : net.ComponentPins()) {
-    double pin_x = pin.ComponentPtr()->LLX() + pin.PinPtr()->OffsetX(N);
-    double pin_y = pin.ComponentPtr()->LLY() + pin.PinPtr()->OffsetY(N);
+  for (std::size_t index = begin; index < end; ++index) {
+    const auto& pin = bookshelf_pins_[index];
+    double pin_x = pin.component->LLX() + pin.offset_x;
+    double pin_y = pin.component->LLY() + pin.offset_y;
     min_x = std::min(min_x, pin_x);
     max_x = std::max(max_x, pin_x);
     min_y = std::min(min_y, pin_y);
     max_y = std::max(max_y, pin_y);
   }
-  return ((max_x - min_x) * ckt_ptr_->GridValueX() +
-          (max_y - min_y) * ckt_ptr_->GridValueY()) *
-         net.Weight();
+  return ((max_x - min_x) * bookshelf_grid_x_ +
+          (max_y - min_y) * bookshelf_grid_y_) *
+         bookshelf_nets_[net_id].Weight();
 }
 
 double DetailedPlacer::DistanceToRegion(double x, double y,
@@ -922,6 +952,9 @@ bool DetailedPlacer::StartPlacement() {
 
   double hpwl_before = WeightedHPWL();
   double previous_hpwl = hpwl_before;
+  if (max_optimization_rounds_ > 0) {
+    BuildBookshelfPinIndex();
+  }
   for (int round = 0; round < max_optimization_rounds_; ++round) {
     int accepted_clusters_before = RunSingleSegmentClustering();
     EmitSnapshot("round_" + std::to_string(round) + ".after_initial_clusters",
@@ -972,6 +1005,9 @@ bool DetailedPlacer::StartPlacement() {
     previous_hpwl = current_hpwl;
   }
 
+  std::vector<BookshelfPin>().swap(bookshelf_pins_);
+  std::vector<std::size_t>().swap(bookshelf_net_starts_);
+  bookshelf_nets_ = nullptr;
   double hpwl_after = WeightedHPWL();
   LOG(info) << "Detailed placement summary:\n"
             << "  HPWL before: " << hpwl_before << "um\n"
