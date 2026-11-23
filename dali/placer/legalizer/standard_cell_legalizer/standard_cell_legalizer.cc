@@ -239,20 +239,38 @@ int StandardCellLegalizer::FindBestSegment(
   return best_assignment;
 }
 
+/**
+ * Visit rows in increasing Y displacement. The Y cost is a lower bound for
+ * every segment in a row, so once it exceeds the worst retained cost, no
+ * remaining row can contribute a candidate. Equal costs still prefer the
+ * later segment in the original bottom-to-top traversal.
+ */
 std::vector<StandardCellLegalizer::AssignmentCandidate>
 StandardCellLegalizer::FindCandidateSegments(Component& component) const {
   std::vector<AssignmentCandidate> candidates;
   candidates.reserve(kCandidateSegmentCount);
 
   const auto& rows = placement_model_.Rows();
-  int target_ly = static_cast<int>(std::llround(component.LLY()));
-  for (int row_index = 0; row_index < static_cast<int>(rows.size());
-       ++row_index) {
-    double row_displacement =
-        std::abs(rows[row_index].ly - target_ly) * ckt_ptr_->GridValueY();
+  const int target_ly = static_cast<int>(std::llround(component.LLY()));
+  const int row_count = static_cast<int>(rows.size());
+  const auto first_above = std::lower_bound(
+      rows.begin(), rows.end(), target_ly,
+      [](const StandardCellRow& row, int y) { return row.ly < y; });
+  int above = static_cast<int>(first_above - rows.begin());
+  int below = above - 1;
+  const double grid_y = ckt_ptr_->GridValueY();
+  auto displacement = [&rows, target_ly](int row_index) {
+    return std::abs(rows[row_index].ly - target_ly);
+  };
+  while (below >= 0 || above < row_count) {
+    const bool visit_below =
+        above == row_count ||
+        (below >= 0 && displacement(below) <= displacement(above));
+    const int row_index = visit_below ? below-- : above++;
+    const double row_displacement = displacement(row_index) * grid_y;
     if (candidates.size() == kCandidateSegmentCount &&
         row_displacement > candidates.back().estimated_cost) {
-      continue;
+      break;
     }
 
     for (int assignment_index : assignment_indices_by_row_[row_index]) {
@@ -266,6 +284,9 @@ StandardCellLegalizer::FindCandidateSegments(Component& component) const {
       auto insertion_point = std::lower_bound(
           candidates.begin(), candidates.end(), candidate,
           [](const AssignmentCandidate& lhs, const AssignmentCandidate& rhs) {
+            if (lhs.estimated_cost == rhs.estimated_cost) {
+              return lhs.assignment_index > rhs.assignment_index;
+            }
             return lhs.estimated_cost < rhs.estimated_cost;
           });
       candidates.insert(insertion_point, candidate);
