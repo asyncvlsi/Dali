@@ -51,17 +51,17 @@ class StandardCellRowLegalizer {
 
  private:
   struct Cluster {
-    std::vector<int> cell_indices;
+    int begin = 0;
+    int end = 0;
     int total_width = 0;
     int lx = 0;
+    double shifted_target_sum = 0.0;
   };
 
   static int AlignToNearestSite(int x, StandardCellFreeSegment segment,
                                 int site_width);
-  static int ComputeClusterX(
-      const Cluster& cluster,
-      const std::vector<StandardCellRowLegalizationCell>& cells,
-      StandardCellFreeSegment segment, int site_width);
+  static int ComputeClusterX(const Cluster& cluster,
+                             StandardCellFreeSegment segment, int site_width);
 };
 
 }  // namespace dali

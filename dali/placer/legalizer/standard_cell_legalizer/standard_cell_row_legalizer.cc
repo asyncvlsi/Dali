@@ -34,6 +34,11 @@ namespace dali {
 
 /**
  * Place the cells assigned to one row's free segment along X.
+ *
+ * Clusters span contiguous ranges of the sorted cells. On a merge, the
+ * left cluster's sum is the unchanged prefix of the merged sum. Append
+ * right-hand terms in cell order to preserve the rounding of a full scan.
+ *
  * @param site_width the row's placement site pitch.
  * @return true if all cells fit legally in the segment.
  */
@@ -62,13 +67,16 @@ bool StandardCellRowLegalizer::Legalize(
             });
 
   std::vector<Cluster> clusters;
+  clusters.reserve(cells->size());
   for (int cell_index = 0; cell_index < static_cast<int>(cells->size());
        ++cell_index) {
-    Cluster cluster;
-    cluster.cell_indices.push_back(cell_index);
-    cluster.total_width = (*cells)[cell_index].width;
-    cluster.lx = ComputeClusterX(cluster, *cells, segment, site_width);
-    clusters.push_back(cluster);
+    const auto& cell = (*cells)[cell_index];
+    auto& cluster = clusters.emplace_back();
+    cluster.begin = cell_index;
+    cluster.end = cell_index + 1;
+    cluster.total_width = cell.width;
+    cluster.shifted_target_sum += cell.target_lx;
+    cluster.lx = ComputeClusterX(cluster, segment, site_width);
 
     while (clusters.size() >= 2) {
       auto& right_cluster = clusters.back();
@@ -77,19 +85,22 @@ bool StandardCellRowLegalizer::Legalize(
         break;
       }
 
-      left_cluster.cell_indices.insert(left_cluster.cell_indices.end(),
-                                       right_cluster.cell_indices.begin(),
-                                       right_cluster.cell_indices.end());
+      int offset = left_cluster.total_width;
+      for (int index = right_cluster.begin; index < right_cluster.end; ++index) {
+        const auto& right_cell = (*cells)[index];
+        left_cluster.shifted_target_sum += right_cell.target_lx - offset;
+        offset += right_cell.width;
+      }
+      left_cluster.end = right_cluster.end;
       left_cluster.total_width += right_cluster.total_width;
-      left_cluster.lx =
-          ComputeClusterX(left_cluster, *cells, segment, site_width);
+      left_cluster.lx = ComputeClusterX(left_cluster, segment, site_width);
       clusters.pop_back();
     }
   }
 
   for (const auto& cluster : clusters) {
     int x = cluster.lx;
-    for (int cell_index : cluster.cell_indices) {
+    for (int cell_index = cluster.begin; cell_index < cluster.end; ++cell_index) {
       (*cells)[cell_index].legal_lx = x;
       x += (*cells)[cell_index].width;
     }
@@ -108,16 +119,10 @@ int StandardCellRowLegalizer::AlignToNearestSite(
 }
 
 int StandardCellRowLegalizer::ComputeClusterX(
-    const Cluster& cluster,
-    const std::vector<StandardCellRowLegalizationCell>& cells,
-    StandardCellFreeSegment segment, int site_width) {
-  double optimal_cluster_lx = 0.0;
-  int offset = 0;
-  for (int cell_index : cluster.cell_indices) {
-    optimal_cluster_lx += cells[cell_index].target_lx - offset;
-    offset += cells[cell_index].width;
-  }
-  optimal_cluster_lx /= static_cast<double>(cluster.cell_indices.size());
+    const Cluster& cluster, StandardCellFreeSegment segment, int site_width) {
+  double optimal_cluster_lx =
+      cluster.shifted_target_sum /
+      static_cast<double>(cluster.end - cluster.begin);
 
   int cluster_lx = AlignToNearestSite(
       static_cast<int>(std::llround(optimal_cluster_lx)), segment, site_width);
