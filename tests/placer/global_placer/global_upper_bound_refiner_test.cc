@@ -81,19 +81,14 @@ class TestableHpwlOptimizer : public BoundToBoundHpwlOptimizer {
     relative_y_constraints_ = std::move(constraints);
     alpha = anchor_alpha;
     height_epsilon_ = height_epsilon;
-    coefficients_y_.clear();
+    coefficients_y_.Reset(static_cast<std::size_t>(by.size()));
     by.setZero();
     AddRelativeYConstraints();
+    coefficients_y_.SetMatrix(&Ay);
   }
 
   double Coefficient(int row, int column) const {
-    double value = 0.0;
-    for (const SparseTriplet& coefficient : coefficients_y_) {
-      if (coefficient.row() == row && coefficient.col() == column) {
-        value += coefficient.value();
-      }
-    }
-    return value;
+    return Ay.coeff(row, column);
   }
 
   double RightHandSide(int row) const { return by[row]; }

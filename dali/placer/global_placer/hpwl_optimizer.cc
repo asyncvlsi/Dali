@@ -67,6 +67,41 @@ void HpwlOptimizer::SetNetIgnoreThreshold(int net_ignore_threshold) {
  * In our implementation, this small number is around the average movable
  * component width for x and height for y.
  */
+void BoundToBoundHpwlOptimizer::QuadraticCoefficients::Reset(
+    std::size_t size) {
+  triplets.clear();
+  diagonal.resize(size);
+  has_diagonal.assign(size, 0);
+}
+
+/** Accumulate diagonal weights in the original triplet insertion order. */
+void BoundToBoundHpwlOptimizer::QuadraticCoefficients::AddDiagonal(
+    int component, double value) {
+  if (has_diagonal[component]) {
+    diagonal[component] += value;
+  } else {
+    diagonal[component] = value;
+    has_diagonal[component] = 1;
+  }
+}
+
+/**
+ * Emit one triplet per populated diagonal entry. Eigen would sum the
+ * duplicate entries in insertion order, so accumulating them during model
+ * construction preserves the matrix and avoids moving those duplicates
+ * through the sparse assembler.
+ */
+void BoundToBoundHpwlOptimizer::QuadraticCoefficients::SetMatrix(
+    RowMajorSparseMatrix* matrix) {
+  for (std::size_t i = 0; i < diagonal.size(); ++i) {
+    if (has_diagonal[i]) {
+      const int component = static_cast<int>(i);
+      triplets.emplace_back(component, component, diagonal[i]);
+    }
+  }
+  matrix->setFromTriplets(triplets.begin(), triplets.end());
+}
+
 void BoundToBoundHpwlOptimizer::UpdateEpsilon() {
   width_epsilon_ = ckt_ptr_->AverageMovableComponentWidth() * epsilon_factor_;
   height_epsilon_ = ckt_ptr_->AverageMovableComponentHeight() * epsilon_factor_;
@@ -145,9 +180,9 @@ void BoundToBoundHpwlOptimizer::Initialize() {
   coefficient_size += sz;
   // this is to reserve space for anchor in the center of the placement region
   coefficient_size += sz;
-  coefficients_x_.reserve(coefficient_size);
+  coefficients_x_.triplets.reserve(coefficient_size);
   Ax.reserve(static_cast<SparseIndex>(coefficient_size));
-  coefficients_y_.reserve(coefficient_size);
+  coefficients_y_.triplets.reserve(coefficient_size);
   Ay.reserve(static_cast<SparseIndex>(coefficient_size));
 }
 
@@ -165,9 +200,9 @@ void BoundToBoundHpwlOptimizer::BuildProblemX() {
   elapsed_time.RecordStartTime();
 
   std::vector<Component>& components = ckt_ptr_->Components();
-  size_t coefficients_capacity = coefficients_x_.capacity();
-  coefficients_x_.resize(0);
+  size_t coefficients_capacity = coefficients_x_.triplets.capacity();
   int sz = static_cast<int>(bx.size());
+  coefficients_x_.Reset(sz);
 #pragma omp parallel for num_threads(num_threads_) schedule(static)
   for (int i = 0; i < sz; ++i) {
     bx[i] = 0;
@@ -235,17 +270,15 @@ void BoundToBoundHpwlOptimizer::BuildProblemX() {
         // decay_length)); weight *= weight_adjust;
         if (!is_movable && is_movable_max) {
           bx[max_component_id] += (pin_loc - offset_max) * weight;
-          coefficients_x_.emplace_back(max_component_id, max_component_id,
-                                       weight);
+          coefficients_x_.AddDiagonal(max_component_id, weight);
         } else if (is_movable && !is_movable_max) {
           bx[component_id] += (pin_loc_max - offset) * weight;
-          coefficients_x_.emplace_back(component_id, component_id, weight);
+          coefficients_x_.AddDiagonal(component_id, weight);
         } else if (is_movable && is_movable_max) {
-          coefficients_x_.emplace_back(component_id, component_id, weight);
-          coefficients_x_.emplace_back(max_component_id, max_component_id,
-                                       weight);
-          coefficients_x_.emplace_back(component_id, max_component_id, -weight);
-          coefficients_x_.emplace_back(max_component_id, component_id, -weight);
+          coefficients_x_.AddDiagonal(component_id, weight);
+          coefficients_x_.AddDiagonal(max_component_id, weight);
+          coefficients_x_.triplets.emplace_back(component_id, max_component_id, -weight);
+          coefficients_x_.triplets.emplace_back(max_component_id, component_id, -weight);
           double offset_diff = (offset_max - offset) * weight;
           bx[component_id] += offset_diff;
           bx[max_component_id] -= offset_diff;
@@ -259,17 +292,15 @@ void BoundToBoundHpwlOptimizer::BuildProblemX() {
         // weight *= weight_adjust;
         if (!is_movable && is_movable_min) {
           bx[min_component_id] += (pin_loc - offset_min) * weight;
-          coefficients_x_.emplace_back(min_component_id, min_component_id,
-                                       weight);
+          coefficients_x_.AddDiagonal(min_component_id, weight);
         } else if (is_movable && !is_movable_min) {
           bx[component_id] += (pin_loc_min - offset) * weight;
-          coefficients_x_.emplace_back(component_id, component_id, weight);
+          coefficients_x_.AddDiagonal(component_id, weight);
         } else if (is_movable && is_movable_min) {
-          coefficients_x_.emplace_back(component_id, component_id, weight);
-          coefficients_x_.emplace_back(min_component_id, min_component_id,
-                                       weight);
-          coefficients_x_.emplace_back(component_id, min_component_id, -weight);
-          coefficients_x_.emplace_back(min_component_id, component_id, -weight);
+          coefficients_x_.AddDiagonal(component_id, weight);
+          coefficients_x_.AddDiagonal(min_component_id, weight);
+          coefficients_x_.triplets.emplace_back(component_id, min_component_id, -weight);
+          coefficients_x_.triplets.emplace_back(min_component_id, component_id, -weight);
           double offset_diff = (offset_min - offset) * weight;
           bx[component_id] += offset_diff;
           bx[min_component_id] -= offset_diff;
@@ -280,21 +311,21 @@ void BoundToBoundHpwlOptimizer::BuildProblemX() {
 
   for (int i = 0; i < sz; ++i) {
     if (components[i].IsFixed()) {
-      coefficients_x_.emplace_back(i, i, 1);
+      coefficients_x_.AddDiagonal(i, 1);
       bx[i] = components[i].LLX();
     } else {
       if (components[i].LLX() < ckt_ptr_->RegionLLX() ||
           components[i].URX() > ckt_ptr_->RegionURX()) {
-        coefficients_x_.emplace_back(i, i, center_weight);
+        coefficients_x_.AddDiagonal(i, center_weight);
         bx[i] += weight_center_x;
       }
     }
   }
 
-  DaliWarns(coefficients_capacity != coefficients_x_.capacity(),
+  DaliWarns(coefficients_capacity != coefficients_x_.triplets.capacity(),
             "WARNING: x coefficients capacity changed!\n"
                 << "\told capacity: " << coefficients_capacity << "\n"
-                << "\tnew capacity: " << coefficients_x_.size());
+                << "\tnew capacity: " << coefficients_x_.triplets.size());
 
   elapsed_time.RecordEndTime();
   tot_triplets_time_x += elapsed_time.GetWallTime();
@@ -311,9 +342,9 @@ void BoundToBoundHpwlOptimizer::BuildProblemY() {
   elapsed_time.RecordStartTime();
 
   std::vector<Component>& components = ckt_ptr_->Components();
-  size_t coefficients_capacity = coefficients_y_.capacity();
-  coefficients_y_.resize(0);
+  size_t coefficients_capacity = coefficients_y_.triplets.capacity();
   int sz = static_cast<int>(by.size());
+  coefficients_y_.Reset(sz);
 #pragma omp parallel for num_threads(num_threads_) schedule(static)
   for (int i = 0; i < sz; ++i) {
     by[i] = 0;
@@ -381,17 +412,15 @@ void BoundToBoundHpwlOptimizer::BuildProblemY() {
         // decay_length)); weight *= weight_adjust;
         if (!is_movable && is_movable_max) {
           by[max_component_id] += (pin_loc - offset_max) * weight;
-          coefficients_y_.emplace_back(max_component_id, max_component_id,
-                                       weight);
+          coefficients_y_.AddDiagonal(max_component_id, weight);
         } else if (is_movable && !is_movable_max) {
           by[component_id] += (pin_loc_max - offset) * weight;
-          coefficients_y_.emplace_back(component_id, component_id, weight);
+          coefficients_y_.AddDiagonal(component_id, weight);
         } else if (is_movable && is_movable_max) {
-          coefficients_y_.emplace_back(component_id, component_id, weight);
-          coefficients_y_.emplace_back(max_component_id, max_component_id,
-                                       weight);
-          coefficients_y_.emplace_back(component_id, max_component_id, -weight);
-          coefficients_y_.emplace_back(max_component_id, component_id, -weight);
+          coefficients_y_.AddDiagonal(component_id, weight);
+          coefficients_y_.AddDiagonal(max_component_id, weight);
+          coefficients_y_.triplets.emplace_back(component_id, max_component_id, -weight);
+          coefficients_y_.triplets.emplace_back(max_component_id, component_id, -weight);
           double offset_diff = (offset_max - offset) * weight;
           by[component_id] += offset_diff;
           by[max_component_id] -= offset_diff;
@@ -405,17 +434,15 @@ void BoundToBoundHpwlOptimizer::BuildProblemY() {
         // weight *= weight_adjust;
         if (!is_movable && is_movable_min) {
           by[min_component_id] += (pin_loc - offset_min) * weight;
-          coefficients_y_.emplace_back(min_component_id, min_component_id,
-                                       weight);
+          coefficients_y_.AddDiagonal(min_component_id, weight);
         } else if (is_movable && !is_movable_min) {
           by[component_id] += (pin_loc_min - offset) * weight;
-          coefficients_y_.emplace_back(component_id, component_id, weight);
+          coefficients_y_.AddDiagonal(component_id, weight);
         } else if (is_movable && is_movable_min) {
-          coefficients_y_.emplace_back(component_id, component_id, weight);
-          coefficients_y_.emplace_back(min_component_id, min_component_id,
-                                       weight);
-          coefficients_y_.emplace_back(component_id, min_component_id, -weight);
-          coefficients_y_.emplace_back(min_component_id, component_id, -weight);
+          coefficients_y_.AddDiagonal(component_id, weight);
+          coefficients_y_.AddDiagonal(min_component_id, weight);
+          coefficients_y_.triplets.emplace_back(component_id, min_component_id, -weight);
+          coefficients_y_.triplets.emplace_back(min_component_id, component_id, -weight);
           double offset_diff = (offset_min - offset) * weight;
           by[component_id] += offset_diff;
           by[min_component_id] -= offset_diff;
@@ -426,21 +453,21 @@ void BoundToBoundHpwlOptimizer::BuildProblemY() {
   // add the diagonal non-zero element for fixed components
   for (int i = 0; i < sz; ++i) {
     if (components[i].IsFixed()) {
-      coefficients_y_.emplace_back(i, i, 1);
+      coefficients_y_.AddDiagonal(i, 1);
       by[i] = components[i].LLY();
     } else {
       if (components[i].LLY() < ckt_ptr_->RegionLLY() ||
           components[i].URY() > ckt_ptr_->RegionURY()) {
-        coefficients_y_.emplace_back(i, i, center_weight);
+        coefficients_y_.AddDiagonal(i, center_weight);
         by[i] += weight_center_y;
       }
     }
   }
 
-  DaliWarns(coefficients_capacity != coefficients_y_.capacity(),
+  DaliWarns(coefficients_capacity != coefficients_y_.triplets.capacity(),
             "WARNING: y coefficients capacity changed!\n"
                 << "\told capacity: " << coefficients_capacity << "\n"
-                << "\tnew capacity: " << coefficients_y_.size());
+                << "\tnew capacity: " << coefficients_y_.triplets.size());
 
   elapsed_time.RecordEndTime();
   tot_triplets_time_y += elapsed_time.GetWallTime();
@@ -516,7 +543,7 @@ double BoundToBoundHpwlOptimizer::OptimizeQuadraticMetricX(
     double cg_stop_criterion) {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
-  Ax.setFromTriplets(coefficients_x_.begin(), coefficients_x_.end());
+  coefficients_x_.SetMatrix(&Ax);
   elapsed_time.RecordEndTime();
   tot_matrix_from_triplets_x += elapsed_time.GetWallTime();
 
@@ -590,7 +617,7 @@ double BoundToBoundHpwlOptimizer::OptimizeQuadraticMetricY(
     double cg_stop_criterion) {
   ElapsedTime elapsed_time;
   elapsed_time.RecordStartTime();
-  Ay.setFromTriplets(coefficients_y_.begin(), coefficients_y_.end());
+  coefficients_y_.SetMatrix(&Ay);
   elapsed_time.RecordEndTime();
   tot_matrix_from_triplets_y += elapsed_time.GetWallTime();
 
@@ -809,7 +836,7 @@ void BoundToBoundHpwlOptimizer::BuildProblemWithAnchorX() {
     pin_loc1 = x_anchor[i];
     weight = alpha / (std::fabs(pin_loc0 - pin_loc1) + width_epsilon_);
     bx[i] += pin_loc1 * weight;
-    coefficients_x_.emplace_back(SparseTriplet(i, i, weight));
+    coefficients_x_.AddDiagonal(i, weight);
   }
   elapsed_time.RecordEndTime();
   tot_triplets_time_x += elapsed_time.GetWallTime();
@@ -833,7 +860,7 @@ void BoundToBoundHpwlOptimizer::BuildProblemWithAnchorY() {
     pin_loc1 = y_anchor[i];
     weight = alpha / (std::fabs(pin_loc0 - pin_loc1) + height_epsilon_);
     by[i] += pin_loc1 * weight;
-    coefficients_y_.emplace_back(SparseTriplet(i, i, weight));
+    coefficients_y_.AddDiagonal(i, weight);
   }
   /** Fold the requested relative-Y offsets into the Y system. */
   AddRelativeYConstraints();
@@ -860,10 +887,10 @@ void BoundToBoundHpwlOptimizer::AddRelativeYConstraints() {
     const double weight =
         alpha /
         (std::fabs(current_offset - constraint.offset) + height_epsilon_);
-    coefficients_y_.emplace_back(first, first, weight);
-    coefficients_y_.emplace_back(second, second, weight);
-    coefficients_y_.emplace_back(first, second, -weight);
-    coefficients_y_.emplace_back(second, first, -weight);
+    coefficients_y_.AddDiagonal(first, weight);
+    coefficients_y_.AddDiagonal(second, weight);
+    coefficients_y_.triplets.emplace_back(first, second, -weight);
+    coefficients_y_.triplets.emplace_back(second, first, -weight);
     by[first] += constraint.offset * weight;
     by[second] -= constraint.offset * weight;
   }

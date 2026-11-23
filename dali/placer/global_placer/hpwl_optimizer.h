@@ -198,8 +198,17 @@ class BoundToBoundHpwlOptimizer : public HpwlOptimizer {
   Eigen::VectorXd x_anchor_weight, y_anchor_weight;
   bool x_anchor_set = false;
   bool y_anchor_set = false;
-  std::vector<SparseTriplet> coefficients_x_;
-  std::vector<SparseTriplet> coefficients_y_;
+  struct QuadraticCoefficients {
+    void Reset(std::size_t size);
+    void AddDiagonal(int component, double value);
+    void SetMatrix(RowMajorSparseMatrix* matrix);
+
+    std::vector<SparseTriplet> triplets;
+    std::vector<double> diagonal;
+    std::vector<unsigned char> has_diagonal;
+  };
+  QuadraticCoefficients coefficients_x_;
+  QuadraticCoefficients coefficients_y_;
   std::vector<size_t> cached_net_pin_begin_;
   std::vector<CachedSolutionPin> cached_solution_pins_;
   std::vector<double> cached_net_weights_;
