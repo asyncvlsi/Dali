@@ -63,14 +63,6 @@ void Pin::SetBoundingBoxSize(double width, double height) {
   half_bbox_height_ = height / 2.0;
 }
 
-double Pin::OffsetX(ComponentOrient orient) const {
-  return x_offset_[orient - N];
-}
-
-double Pin::OffsetY(ComponentOrient orient) const {
-  return y_offset_[orient - N];
-}
-
 void Pin::SetIoType(bool is_input) { is_input_ = is_input; }
 
 bool Pin::IsInput() const { return is_input_; }

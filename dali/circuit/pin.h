@@ -51,10 +51,14 @@ class Pin {
   void SetBoundingBoxSize(double width, double height);
 
   /** Return x offset for a given component orientation. */
-  double OffsetX(ComponentOrient orient = N) const;
+  double OffsetX(ComponentOrient orient = N) const {
+    return x_offset_[orient - N];
+  }
 
   /** Return y offset for a given component orientation. */
-  double OffsetY(ComponentOrient orient = N) const;
+  double OffsetY(ComponentOrient orient = N) const {
+    return y_offset_[orient - N];
+  }
 
   /** Mark this pin as input or output. */
   void SetIoType(bool is_input);
