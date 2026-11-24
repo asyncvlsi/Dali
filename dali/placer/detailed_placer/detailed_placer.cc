@@ -584,157 +584,90 @@ bool DetailedPlacer::SwapLowersHpwlBeforeLegalization(
 }
 
 /**
- * Exchange two components if it lowers cost, leaving the placement legal.
+ * Exchange cells only when both fit in the current legal locations.
  *
- * @return true if the swap was applied; false if it does not fit or does not
- *         help, in which case nothing changed.
+ * A slot ends at its next cell or segment boundary. Occupying the same
+ * starts keeps those bounds valid throughout the pass. Since an accepted
+ * exchange fits before the next start, it preserves both segment and row
+ * ordering without repacking neighboring cells.
  */
 bool DetailedPlacer::TrySwap(Component* first, Component* second,
+                             std::vector<SwapSlot>& slots,
                              NetWireLengths& current_costs) {
   if (first == second) {
     return false;
   }
+  SwapSlot& first_slot = slots[first->Id()];
+  SwapSlot& second_slot = slots[second->Id()];
+  if (first_slot.segment_entry == nullptr ||
+      second_slot.segment_entry == nullptr ||
+      first_slot.row_entry == nullptr || second_slot.row_entry == nullptr ||
+      first_slot.width < second->Width() ||
+      second_slot.width < first->Width()) {
+    return false;
+  }
+
   GeneralRow* first_row = component_rows_[first->Id()];
   GeneralRow* second_row = component_rows_[second->Id()];
-  GeneralRowSegment* first_segment = component_segments_[first->Id()];
-  GeneralRowSegment* second_segment = component_segments_[second->Id()];
-  if (first_row == nullptr || second_row == nullptr ||
-      first_segment == nullptr || second_segment == nullptr) {
+  if (first->Height() > second_row->Height() ||
+      second->Height() > first_row->Height() ||
+      !SwapLowersHpwlBeforeLegalization(first, second, first_row, second_row,
+                                       current_costs)) {
     return false;
   }
-  if (!SwapLowersHpwlBeforeLegalization(first, second, first_row, second_row,
-                                      current_costs)) {
-    return false;
-  }
-
-  struct ComponentPlacement {
-    Component* component = nullptr;
-    double lx = 0;
-    double ly = 0;
-    ComponentOrient orientation = N;
-  };
-  auto capture_placements = [](const std::vector<Component*>& components) {
-    std::vector<ComponentPlacement> placements;
-    placements.reserve(components.size());
-    for (Component* component : components) {
-      placements.push_back(
-          {component, component->LLX(), component->LLY(), component->Orient()});
-    }
-    return placements;
-  };
-  auto restore_placements =
-      [](const std::vector<ComponentPlacement>& placements) {
-        for (const auto& placement : placements) {
-          placement.component->SetLowerLeft(placement.lx, placement.ly);
-          placement.component->SetOrient(placement.orientation);
-        }
-      };
 
   double first_lx = first->LLX();
-  double second_lx = second->LLX();
-  auto first_components = first_segment->Components();
-  auto second_components = first_segment == second_segment
-                               ? first_components
-                               : second_segment->Components();
-  auto original_placements = capture_placements(first_components);
-  if (first_segment != second_segment) {
-    auto placements = capture_placements(second_components);
-    original_placements.insert(original_placements.end(), placements.begin(),
-                               placements.end());
-  }
+  first->SetLowerLeft(second->LLX(), second_row->LY());
+  first->SetOrient(second_row->IsOrientN() ? N : FS);
+  second->SetLowerLeft(first_lx, first_row->LY());
+  second->SetOrient(first_row->IsOrientN() ? N : FS);
 
-  auto replace_component = [](std::vector<Component*>* components,
-                              Component* removed, Component* added) {
-    auto it = std::find(components->begin(), components->end(), removed);
-    DaliExpects(it != components->end(),
-                "Swap component is not in its segment");
-    *it = added;
-  };
-  if (first_segment == second_segment) {
-    first->SetLLX(second_lx);
-    second->SetLLX(first_lx);
-  } else {
-    replace_component(&first_segment->Components(), first, second);
-    replace_component(&second_segment->Components(), second, first);
-    first->SetLLX(second_lx);
-    second->SetLLX(first_lx);
+  std::swap(*first_slot.segment_entry, *second_slot.segment_entry);
+  std::swap(*first_slot.row_entry, *second_slot.row_entry);
+  std::swap(first_slot, second_slot);
+  std::swap(component_rows_[first->Id()], component_rows_[second->Id()]);
+  std::swap(component_segments_[first->Id()], component_segments_[second->Id()]);
+  for (int net_id : first->NetList()) {
+    current_costs[net_id].reset();
   }
-
-  bool legal = LegalizeSegment(first_segment, first_row);
-  if (legal && first_segment != second_segment) {
-    legal = LegalizeSegment(second_segment, second_row);
+  for (int net_id : second->NetList()) {
+    current_costs[net_id].reset();
   }
+  return true;
+}
 
-  std::set<int> affected_net_ids;
-  if (legal) {
-    for (const auto& placement : original_placements) {
-      if (placement.component->LLX() != placement.lx ||
-          placement.component->LLY() != placement.ly ||
-          placement.component->Orient() != placement.orientation) {
-        affected_net_ids.insert(placement.component->NetList().begin(),
-                                placement.component->NetList().end());
+/**
+ * Index the occupied positions in the sorted row and segment lists.
+ *
+ * Neither list changes size during the swap pass, so pointers to its
+ * entries stay valid. Each cell's slot record follows the cell on a swap.
+ */
+std::vector<DetailedPlacer::SwapSlot> DetailedPlacer::BuildSwapSlots() {
+  std::vector<SwapSlot> slots(ckt_ptr_->Components().size());
+  for (auto& row : row_components_) {
+    for (Component*& component : row) {
+      slots[component->Id()].row_entry = &component;
+    }
+  }
+  for (const auto& row : row_segments_) {
+    for (GeneralRowSegment* segment : row) {
+      double right = segment->UX();
+      auto& components = segment->Components();
+      for (auto it = components.rbegin(); it != components.rend(); ++it) {
+        Component* component = *it;
+        GeneralRow* component_row = component_rows_[component->Id()];
+        double x = component->LLX();
+        if (component->IsMovable() && component->LLY() == component_row->LY() &&
+            x >= segment->LX() && x + component->Width() <= right) {
+          auto& slot = slots[component->Id()];
+          slot.segment_entry = &*it;
+          slot.width = right - x;
+        }
+        right = std::min(right, x);
       }
     }
   }
-  auto candidate_first_components = first_segment->Components();
-  auto candidate_second_components = first_segment == second_segment
-                                         ? candidate_first_components
-                                         : second_segment->Components();
-  auto candidate_placements =
-      legal ? capture_placements(candidate_first_components)
-            : std::vector<ComponentPlacement>();
-  if (legal && first_segment != second_segment) {
-    auto placements = capture_placements(candidate_second_components);
-    candidate_placements.insert(candidate_placements.end(), placements.begin(),
-                                placements.end());
-  }
-  double cost_after = legal ? AffectedWireLength(affected_net_ids) : DBL_MAX;
-
-  first_segment->Components() = first_components;
-  if (first_segment != second_segment) {
-    second_segment->Components() = second_components;
-  }
-  restore_placements(original_placements);
-  double cost_before =
-      legal ? AffectedWireLength(affected_net_ids, &current_costs) : DBL_MAX;
-
-  if (cost_after + 1e-9 < cost_before) {
-    first_segment->Components() = candidate_first_components;
-    if (first_segment != second_segment) {
-      second_segment->Components() = candidate_second_components;
-    }
-    restore_placements(candidate_placements);
-    for (int net_id : affected_net_ids) {
-      current_costs[net_id].reset();
-    }
-    if (first_segment != second_segment) {
-      auto row_index = [this](GeneralRow* row) {
-        return static_cast<size_t>(row - &ckt_ptr_->design().Rows().front());
-      };
-      auto replace_row_component = [](std::vector<Component*>* components,
-                                      Component* removed, Component* added) {
-        auto it = std::find(components->begin(), components->end(), removed);
-        DaliExpects(it != components->end(),
-                    "Swap component is not in its indexed row");
-        *it = added;
-        std::sort(components->begin(), components->end(),
-                  [](const Component* lhs, const Component* rhs) {
-                    return lhs->CenterX() < rhs->CenterX();
-                  });
-      };
-      replace_row_component(&row_components_[row_index(first_row)], first,
-                            second);
-      replace_row_component(&row_components_[row_index(second_row)], second,
-                            first);
-      component_rows_[first->Id()] = second_row;
-      component_rows_[second->Id()] = first_row;
-      component_segments_[first->Id()] = second_segment;
-      component_segments_[second->Id()] = first_segment;
-    }
-    return true;
-  }
-
-  return false;
+  return slots;
 }
 
 /**
@@ -816,6 +749,7 @@ int DetailedPlacer::RunOptimalRegionMoves() {
  */
 int DetailedPlacer::RunOptimalRegionSwaps() {
   BuildSwapIndex();
+  auto slots = BuildSwapSlots();
   NetWireLengths current_costs(ckt_ptr_->Nets().size());
   int accepted = 0;
   for (Component& component : ckt_ptr_->Components()) {
@@ -856,7 +790,7 @@ int DetailedPlacer::RunOptimalRegionSwaps() {
                              region) >= current_distance) {
           continue;
         }
-        if (TrySwap(&component, candidates[index], current_costs)) {
+        if (TrySwap(&component, candidates[index], slots, current_costs)) {
           ++accepted;
           swapped = true;
         }

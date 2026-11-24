@@ -151,15 +151,15 @@ class DetailedPlacer : public Placer {
       Component* first, Component* second, GeneralRow* first_row,
       GeneralRow* second_row, NetWireLengths& current_costs) const;
 
-  /**
-   * Trial-swap two components and commit only an HPWL-improving legal result.
-   *
-   * Unequal-width cells are supported because both affected segments are
-   * repacked. The cost transaction includes every net of every cell whose
-   * location changes during that repacking.
-   */
+  struct SwapSlot {
+    Component** segment_entry = nullptr;
+    Component** row_entry = nullptr;
+    double width = 0.0;
+  };
+
+  std::vector<SwapSlot> BuildSwapSlots();
   bool TrySwap(Component* first, Component* second,
-               NetWireLengths& current_costs);
+               std::vector<SwapSlot>& slots, NetWireLengths& current_costs);
 
   /** Visit cells and try nearby candidates in their optimal regions. */
   int RunOptimalRegionSwaps();
