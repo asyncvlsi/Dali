@@ -584,6 +584,41 @@ bool DetailedPlacer::SwapLowersHpwlBeforeLegalization(
   return cost_after + 1e-9 < cost_before;
 }
 
+/** Capture each segment once, reusing storage across swap trials. */
+void DetailedPlacer::RepackedSwapSnapshot::Capture(
+    GeneralRowSegment* first, GeneralRowSegment* second) {
+  first_components = first->Components();
+  if (first == second) {
+    second_components.clear();
+  } else {
+    second_components = second->Components();
+  }
+
+  placements.clear();
+  placements.reserve(first_components.size() + second_components.size());
+  auto append_placements = [this](const std::vector<Component*>& components) {
+    for (Component* component : components) {
+      placements.push_back(
+          {component, component->LLX(), component->LLY(), component->Orient()});
+    }
+  };
+  append_placements(first_components);
+  append_placements(second_components);
+}
+
+/** Restore both the component order and the positions after repacking. */
+void DetailedPlacer::RepackedSwapSnapshot::Restore(
+    GeneralRowSegment* first, GeneralRowSegment* second) const {
+  first->Components() = first_components;
+  if (first != second) {
+    second->Components() = second_components;
+  }
+  for (const auto& placement : placements) {
+    placement.component->SetLowerLeft(placement.lx, placement.ly);
+    placement.component->SetOrient(placement.orientation);
+  }
+}
+
 /**
  * Exchange two components if it lowers cost, leaving the placement legal.
  *
@@ -612,41 +647,9 @@ bool DetailedPlacer::TryRepackedSwap(Component* first, Component* second,
     return false;
   }
 
-  struct ComponentPlacement {
-    Component* component = nullptr;
-    double lx = 0;
-    double ly = 0;
-    ComponentOrient orientation = N;
-  };
-  auto capture_placements = [](const std::vector<Component*>& components) {
-    std::vector<ComponentPlacement> placements;
-    placements.reserve(components.size());
-    for (Component* component : components) {
-      placements.push_back(
-          {component, component->LLX(), component->LLY(), component->Orient()});
-    }
-    return placements;
-  };
-  auto restore_placements =
-      [](const std::vector<ComponentPlacement>& placements) {
-        for (const auto& placement : placements) {
-          placement.component->SetLowerLeft(placement.lx, placement.ly);
-          placement.component->SetOrient(placement.orientation);
-        }
-      };
-
   double first_lx = first->LLX();
   double second_lx = second->LLX();
-  auto first_components = first_segment->Components();
-  auto second_components = first_segment == second_segment
-                               ? first_components
-                               : second_segment->Components();
-  auto original_placements = capture_placements(first_components);
-  if (first_segment != second_segment) {
-    auto placements = capture_placements(second_components);
-    original_placements.insert(original_placements.end(), placements.begin(),
-                               placements.end());
-  }
+  scratch.original.Capture(first_segment, second_segment);
 
   auto replace_component = [](std::vector<Component*>* components,
                               Component* removed, Component* added) {
@@ -673,7 +676,7 @@ bool DetailedPlacer::TryRepackedSwap(Component* first, Component* second,
   auto& affected_net_ids = scratch.affected_nets;
   affected_net_ids.clear();
   if (legal) {
-    for (const auto& placement : original_placements) {
+    for (const auto& placement : scratch.original.placements) {
       if (placement.component->LLX() != placement.lx ||
           placement.component->LLY() != placement.ly ||
           placement.component->Orient() != placement.orientation) {
@@ -689,35 +692,16 @@ bool DetailedPlacer::TryRepackedSwap(Component* first, Component* second,
     for (int net_id : affected_net_ids) {
       scratch.seen_nets[net_id] = 0;
     }
-  }
-  auto candidate_first_components = first_segment->Components();
-  auto candidate_second_components = first_segment == second_segment
-                                         ? candidate_first_components
-                                         : second_segment->Components();
-  auto candidate_placements =
-      legal ? capture_placements(candidate_first_components)
-            : std::vector<ComponentPlacement>();
-  if (legal && first_segment != second_segment) {
-    auto placements = capture_placements(candidate_second_components);
-    candidate_placements.insert(candidate_placements.end(), placements.begin(),
-                                placements.end());
+    scratch.candidate.Capture(first_segment, second_segment);
   }
   double cost_after = legal ? AffectedWireLength(affected_net_ids) : DBL_MAX;
 
-  first_segment->Components() = first_components;
-  if (first_segment != second_segment) {
-    second_segment->Components() = second_components;
-  }
-  restore_placements(original_placements);
+  scratch.original.Restore(first_segment, second_segment);
   double cost_before =
       legal ? AffectedWireLength(affected_net_ids, &current_costs) : DBL_MAX;
 
-  if (cost_after + 1e-9 < cost_before) {
-    first_segment->Components() = candidate_first_components;
-    if (first_segment != second_segment) {
-      second_segment->Components() = candidate_second_components;
-    }
-    restore_placements(candidate_placements);
+  if (legal && cost_after + 1e-9 < cost_before) {
+    scratch.candidate.Restore(first_segment, second_segment);
     for (int net_id : affected_net_ids) {
       current_costs[net_id].reset();
     }

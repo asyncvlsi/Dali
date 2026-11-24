@@ -162,9 +162,27 @@ class DetailedPlacer : public Placer {
     double width = 0.0;
   };
 
+  struct RepackedSwapSnapshot {
+    struct Placement {
+      Component* component;
+      double lx;
+      double ly;
+      ComponentOrient orientation;
+    };
+
+    std::vector<Component*> first_components;
+    std::vector<Component*> second_components;
+    std::vector<Placement> placements;
+
+    void Capture(GeneralRowSegment* first, GeneralRowSegment* second);
+    void Restore(GeneralRowSegment* first, GeneralRowSegment* second) const;
+  };
+
   struct RepackedSwapScratch {
     std::vector<int> affected_nets;
     std::vector<unsigned char> seen_nets;
+    RepackedSwapSnapshot original;
+    RepackedSwapSnapshot candidate;
   };
 
   std::vector<SwapSlot> BuildSwapSlots();
