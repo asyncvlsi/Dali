@@ -14,7 +14,6 @@
 #include <cstddef>
 #include <functional>
 #include <optional>
-#include <set>
 #include <string>
 #include <vector>
 
@@ -117,8 +116,9 @@ class DetailedPlacer : public Placer {
 
   using NetWireLengths = std::vector<std::optional<double>>;
 
-  /** Return physical HPWL for a deduplicated set of affected nets. */
-  double AffectedWireLength(const std::set<int>& net_ids,
+  /** Return physical HPWL for affected net IDs in ascending order. */
+  template <typename NetIds>
+  double AffectedWireLength(const NetIds& net_ids,
                             NetWireLengths* current_costs = nullptr) const;
 
   /** Repack one segment with Abacus while preserving its legal boundaries. */
@@ -162,11 +162,17 @@ class DetailedPlacer : public Placer {
     double width = 0.0;
   };
 
+  struct RepackedSwapScratch {
+    std::vector<int> affected_nets;
+    std::vector<unsigned char> seen_nets;
+  };
+
   std::vector<SwapSlot> BuildSwapSlots();
   bool TrySlotSwap(Component* first, Component* second,
                    std::vector<SwapSlot>& slots, NetWireLengths& current_costs);
   bool TryRepackedSwap(Component* first, Component* second,
-                       NetWireLengths& current_costs);
+                       NetWireLengths& current_costs,
+                       RepackedSwapScratch& scratch);
 
   /** Visit cells and try nearby candidates in their optimal regions. */
   int RunOptimalRegionSwaps();

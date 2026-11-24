@@ -352,8 +352,9 @@ std::vector<int> DetailedPlacer::FindClosestRows(
  * positions always use fresh costs. Committing a swap invalidates all nets
  * of the cells it moved, including cells displaced by segment repacking.
  */
+template <typename NetIds>
 double DetailedPlacer::AffectedWireLength(
-    const std::set<int>& net_ids, NetWireLengths* current_costs) const {
+    const NetIds& net_ids, NetWireLengths* current_costs) const {
   double cost = 0.0;
   if (current_costs == nullptr) {
     for (int net_id : net_ids) {
@@ -586,11 +587,15 @@ bool DetailedPlacer::SwapLowersHpwlBeforeLegalization(
 /**
  * Exchange two components if it lowers cost, leaving the placement legal.
  *
+ * Mark affected net IDs as they are collected from moved cells. Sorting
+ * the reused buffer preserves the original HPWL summation order.
+ *
  * @return true if the swap was applied; false if it does not fit or does not
  *         help, in which case nothing changed.
  */
 bool DetailedPlacer::TryRepackedSwap(Component* first, Component* second,
-                                     NetWireLengths& current_costs) {
+                                     NetWireLengths& current_costs,
+                                     RepackedSwapScratch& scratch) {
   if (first == second) {
     return false;
   }
@@ -665,15 +670,24 @@ bool DetailedPlacer::TryRepackedSwap(Component* first, Component* second,
     legal = LegalizeSegment(second_segment, second_row);
   }
 
-  std::set<int> affected_net_ids;
+  auto& affected_net_ids = scratch.affected_nets;
+  affected_net_ids.clear();
   if (legal) {
     for (const auto& placement : original_placements) {
       if (placement.component->LLX() != placement.lx ||
           placement.component->LLY() != placement.ly ||
           placement.component->Orient() != placement.orientation) {
-        affected_net_ids.insert(placement.component->NetList().begin(),
-                                placement.component->NetList().end());
+        for (int net_id : placement.component->NetList()) {
+          if (!scratch.seen_nets[net_id]) {
+            affected_net_ids.push_back(net_id);
+            scratch.seen_nets[net_id] = 1;
+          }
+        }
       }
+    }
+    std::sort(affected_net_ids.begin(), affected_net_ids.end());
+    for (int net_id : affected_net_ids) {
+      scratch.seen_nets[net_id] = 0;
     }
   }
   auto candidate_first_components = first_segment->Components();
@@ -904,10 +918,14 @@ int DetailedPlacer::RunOptimalRegionMoves() {
 int DetailedPlacer::RunOptimalRegionSwaps() {
   BuildSwapIndex();
   std::vector<SwapSlot> slots;
+  RepackedSwapScratch scratch;
+  const auto net_count = ckt_ptr_->Nets().size();
   if (use_standard_cell_slot_swaps_) {
     slots = BuildSwapSlots();
+  } else {
+    scratch.seen_nets.resize(net_count);
   }
-  NetWireLengths current_costs(ckt_ptr_->Nets().size());
+  NetWireLengths current_costs(net_count);
   int accepted = 0;
   for (Component& component : ckt_ptr_->Components()) {
     if (!component.IsMovable() || component.NetList().empty()) {
@@ -951,7 +969,8 @@ int DetailedPlacer::RunOptimalRegionSwaps() {
         const bool accepted_swap =
             use_standard_cell_slot_swaps_
                 ? TrySlotSwap(&component, candidate, slots, current_costs)
-                : TryRepackedSwap(&component, candidate, current_costs);
+                : TryRepackedSwap(&component, candidate, current_costs,
+                                  scratch);
         if (accepted_swap) {
           ++accepted;
           swapped = true;
