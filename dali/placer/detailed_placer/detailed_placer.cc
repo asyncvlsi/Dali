@@ -584,6 +584,160 @@ bool DetailedPlacer::SwapLowersHpwlBeforeLegalization(
 }
 
 /**
+ * Exchange two components if it lowers cost, leaving the placement legal.
+ *
+ * @return true if the swap was applied; false if it does not fit or does not
+ *         help, in which case nothing changed.
+ */
+bool DetailedPlacer::TryRepackedSwap(Component* first, Component* second,
+                                     NetWireLengths& current_costs) {
+  if (first == second) {
+    return false;
+  }
+  GeneralRow* first_row = component_rows_[first->Id()];
+  GeneralRow* second_row = component_rows_[second->Id()];
+  GeneralRowSegment* first_segment = component_segments_[first->Id()];
+  GeneralRowSegment* second_segment = component_segments_[second->Id()];
+  if (first_row == nullptr || second_row == nullptr ||
+      first_segment == nullptr || second_segment == nullptr) {
+    return false;
+  }
+  if (!SwapLowersHpwlBeforeLegalization(first, second, first_row, second_row,
+                                       current_costs)) {
+    return false;
+  }
+
+  struct ComponentPlacement {
+    Component* component = nullptr;
+    double lx = 0;
+    double ly = 0;
+    ComponentOrient orientation = N;
+  };
+  auto capture_placements = [](const std::vector<Component*>& components) {
+    std::vector<ComponentPlacement> placements;
+    placements.reserve(components.size());
+    for (Component* component : components) {
+      placements.push_back(
+          {component, component->LLX(), component->LLY(), component->Orient()});
+    }
+    return placements;
+  };
+  auto restore_placements =
+      [](const std::vector<ComponentPlacement>& placements) {
+        for (const auto& placement : placements) {
+          placement.component->SetLowerLeft(placement.lx, placement.ly);
+          placement.component->SetOrient(placement.orientation);
+        }
+      };
+
+  double first_lx = first->LLX();
+  double second_lx = second->LLX();
+  auto first_components = first_segment->Components();
+  auto second_components = first_segment == second_segment
+                               ? first_components
+                               : second_segment->Components();
+  auto original_placements = capture_placements(first_components);
+  if (first_segment != second_segment) {
+    auto placements = capture_placements(second_components);
+    original_placements.insert(original_placements.end(), placements.begin(),
+                               placements.end());
+  }
+
+  auto replace_component = [](std::vector<Component*>* components,
+                              Component* removed, Component* added) {
+    auto it = std::find(components->begin(), components->end(), removed);
+    DaliExpects(it != components->end(),
+                "Swap component is not in its segment");
+    *it = added;
+  };
+  if (first_segment == second_segment) {
+    first->SetLLX(second_lx);
+    second->SetLLX(first_lx);
+  } else {
+    replace_component(&first_segment->Components(), first, second);
+    replace_component(&second_segment->Components(), second, first);
+    first->SetLLX(second_lx);
+    second->SetLLX(first_lx);
+  }
+
+  bool legal = LegalizeSegment(first_segment, first_row);
+  if (legal && first_segment != second_segment) {
+    legal = LegalizeSegment(second_segment, second_row);
+  }
+
+  std::set<int> affected_net_ids;
+  if (legal) {
+    for (const auto& placement : original_placements) {
+      if (placement.component->LLX() != placement.lx ||
+          placement.component->LLY() != placement.ly ||
+          placement.component->Orient() != placement.orientation) {
+        affected_net_ids.insert(placement.component->NetList().begin(),
+                                placement.component->NetList().end());
+      }
+    }
+  }
+  auto candidate_first_components = first_segment->Components();
+  auto candidate_second_components = first_segment == second_segment
+                                         ? candidate_first_components
+                                         : second_segment->Components();
+  auto candidate_placements =
+      legal ? capture_placements(candidate_first_components)
+            : std::vector<ComponentPlacement>();
+  if (legal && first_segment != second_segment) {
+    auto placements = capture_placements(candidate_second_components);
+    candidate_placements.insert(candidate_placements.end(), placements.begin(),
+                                placements.end());
+  }
+  double cost_after = legal ? AffectedWireLength(affected_net_ids) : DBL_MAX;
+
+  first_segment->Components() = first_components;
+  if (first_segment != second_segment) {
+    second_segment->Components() = second_components;
+  }
+  restore_placements(original_placements);
+  double cost_before =
+      legal ? AffectedWireLength(affected_net_ids, &current_costs) : DBL_MAX;
+
+  if (cost_after + 1e-9 < cost_before) {
+    first_segment->Components() = candidate_first_components;
+    if (first_segment != second_segment) {
+      second_segment->Components() = candidate_second_components;
+    }
+    restore_placements(candidate_placements);
+    for (int net_id : affected_net_ids) {
+      current_costs[net_id].reset();
+    }
+    if (first_segment != second_segment) {
+      auto row_index = [this](GeneralRow* row) {
+        return static_cast<size_t>(row - &ckt_ptr_->design().Rows().front());
+      };
+      auto replace_row_component = [](std::vector<Component*>* components,
+                                      Component* removed, Component* added) {
+        auto it = std::find(components->begin(), components->end(), removed);
+        DaliExpects(it != components->end(),
+                    "Swap component is not in its indexed row");
+        *it = added;
+        std::sort(components->begin(), components->end(),
+                  [](const Component* lhs, const Component* rhs) {
+                    return lhs->CenterX() < rhs->CenterX();
+                  });
+      };
+      replace_row_component(&row_components_[row_index(first_row)], first,
+                            second);
+      replace_row_component(&row_components_[row_index(second_row)], second,
+                            first);
+      component_rows_[first->Id()] = second_row;
+      component_rows_[second->Id()] = first_row;
+      component_segments_[first->Id()] = second_segment;
+      component_segments_[second->Id()] = first_segment;
+    }
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Exchange cells only when both fit in the current legal locations.
  *
  * A slot ends at its next cell or segment boundary. Occupying the same
@@ -591,9 +745,9 @@ bool DetailedPlacer::SwapLowersHpwlBeforeLegalization(
  * exchange fits before the next start, it preserves both segment and row
  * ordering without repacking neighboring cells.
  */
-bool DetailedPlacer::TrySwap(Component* first, Component* second,
-                             std::vector<SwapSlot>& slots,
-                             NetWireLengths& current_costs) {
+bool DetailedPlacer::TrySlotSwap(Component* first, Component* second,
+                                 std::vector<SwapSlot>& slots,
+                                 NetWireLengths& current_costs) {
   if (first == second) {
     return false;
   }
@@ -749,7 +903,10 @@ int DetailedPlacer::RunOptimalRegionMoves() {
  */
 int DetailedPlacer::RunOptimalRegionSwaps() {
   BuildSwapIndex();
-  auto slots = BuildSwapSlots();
+  std::vector<SwapSlot> slots;
+  if (use_standard_cell_slot_swaps_) {
+    slots = BuildSwapSlots();
+  }
   NetWireLengths current_costs(ckt_ptr_->Nets().size());
   int accepted = 0;
   for (Component& component : ckt_ptr_->Components()) {
@@ -790,7 +947,12 @@ int DetailedPlacer::RunOptimalRegionSwaps() {
                              region) >= current_distance) {
           continue;
         }
-        if (TrySwap(&component, candidates[index], slots, current_costs)) {
+        Component* candidate = candidates[index];
+        const bool accepted_swap =
+            use_standard_cell_slot_swaps_
+                ? TrySlotSwap(&component, candidate, slots, current_costs)
+                : TryRepackedSwap(&component, candidate, current_costs);
+        if (accepted_swap) {
           ++accepted;
           swapped = true;
         }

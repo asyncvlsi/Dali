@@ -66,6 +66,8 @@ TEST_F(DaliCommandProcessorTest, AppliesTypedRuntimeSettings) {
   EXPECT_TRUE(placer.ExecuteCommand({"dali:set", "num_threads", "6"}));
   EXPECT_TRUE(placer.ExecuteCommand({"set", "disable_io_place", "true"}));
   EXPECT_TRUE(
+      placer.ExecuteCommand({"set", "enable_standard_cell_slot_swaps", "true"}));
+  EXPECT_TRUE(
       placer.ExecuteCommand({"set", "global_initializer", "density_aware"}));
   EXPECT_TRUE(placer.ExecuteCommand({"set", "output_name", "placed.def"}));
 
@@ -73,6 +75,7 @@ TEST_F(DaliCommandProcessorTest, AppliesTypedRuntimeSettings) {
   EXPECT_DOUBLE_EQ(options.target_density, 0.73);
   EXPECT_EQ(options.num_threads, 6);
   EXPECT_TRUE(options.disable_io_place);
+  EXPECT_TRUE(options.enable_standard_cell_slot_swaps);
   EXPECT_EQ(options.global_initializer,
             dali::PlacementInitializerType::kDensityAware);
   EXPECT_EQ(std::filesystem::path(options.output_name).filename(), "placed");

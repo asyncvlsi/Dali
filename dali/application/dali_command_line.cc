@@ -168,6 +168,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -standard_cell_legalizer_cost <displacement/hpwl>  default displacement\n"
       << "  -detailed_max_rounds <n>                   detailed-placement optimization rounds, default 1\n"
       << "  -detailed_max_move_candidates <n>          optimal-region move candidates per round, default 1000\n"
+      << "  -enable_standard_cell_slot_swaps           only try swaps that fit existing slots, default off\n"
       << "  -num_threads <n>                           number of OpenMP threads to use\n"
       << "  -v                                         verbosity_level (optional, 0-5, default 1)\n"
       << "  -disable_log_prefix                        optional, if this flag is present, then only messages will be saved to the log file\n"
@@ -293,6 +294,8 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.disable_legalization");
     } else if (arg == "-disable_detailed_place") {
       EnableConfigFlag("dali.disable_detailed_place");
+    } else if (arg == "-enable_standard_cell_slot_swaps") {
+      EnableConfigFlag("dali.enable_standard_cell_slot_swaps");
     } else if (arg == "-disable_global_place") {
       EnableConfigFlag("dali.disable_global_place");
     } else if (arg == "-global_initializer") {

@@ -144,6 +144,7 @@ class Dali {
         StandardCellLegalizerCostMode::kDisplacement;
     int detailed_max_rounds = 1;
     int detailed_max_move_candidates = 1000;
+    bool enable_standard_cell_slot_swaps = false;
     std::string output_name = "dali_out";
     bool gui_debug = false;
     std::string gui_pause = "every_snapshot";
@@ -391,6 +392,7 @@ class Dali {
       StandardCellLegalizerCostMode::kDisplacement;
   int detailed_max_rounds_ = 1;
   int detailed_max_move_candidates_ = 1000;
+  bool enable_standard_cell_slot_swaps_ = false;
   std::string output_name_ = "dali_out";
   std::string input_lef_file_name_;
   std::string input_def_file_name_;

@@ -135,6 +135,10 @@ Recipes should configure placement settings separately and invoke
   `net_ignore_threshold`
 - `global_min_iterations`, `global_max_iterations`, and `global_initializer`
 - `detailed_max_rounds` and `detailed_max_move_candidates`
+- `enable_standard_cell_slot_swaps` defaults to `false` for swaps with row
+  repacking. Set it to `true` to restrict standard-cell swaps to exchanges
+  that fit the existing slots. The same option is available on the command line
+  as `-enable_standard_cell_slot_swaps`.
 - `well_legalization_mode` and `standard_cell_legalizer_cost`
 - `disable_global_place`, `disable_legalization`, `disable_detailed_place`,
   and `disable_io_place`

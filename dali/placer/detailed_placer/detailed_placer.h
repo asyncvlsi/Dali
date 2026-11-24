@@ -48,6 +48,11 @@ class DetailedPlacer : public Placer {
   /** Set how many optimal-region move candidates are evaluated per round. */
   void SetMaxMoveCandidatesPerRound(int max_move_candidates_per_round);
 
+  /** Restrict standard-cell swaps to exchanges that fit the existing slots. */
+  void SetUseStandardCellSlotSwaps(bool enabled) {
+    use_standard_cell_slot_swaps_ = enabled;
+  }
+
   /** Set the pin-count cutoff for nets omitted from move proposals and costs.
    */
   void SetNetIgnoreThreshold(int net_ignore_threshold);
@@ -158,8 +163,10 @@ class DetailedPlacer : public Placer {
   };
 
   std::vector<SwapSlot> BuildSwapSlots();
-  bool TrySwap(Component* first, Component* second,
-               std::vector<SwapSlot>& slots, NetWireLengths& current_costs);
+  bool TrySlotSwap(Component* first, Component* second,
+                   std::vector<SwapSlot>& slots, NetWireLengths& current_costs);
+  bool TryRepackedSwap(Component* first, Component* second,
+                       NetWireLengths& current_costs);
 
   /** Visit cells and try nearby candidates in their optimal regions. */
   int RunOptimalRegionSwaps();
@@ -191,6 +198,7 @@ class DetailedPlacer : public Placer {
   SnapshotCallback snapshot_callback_;
   int max_move_candidates_per_round_ = kDefaultMaxMoveCandidatesPerRound;
   int max_optimization_rounds_ = kDefaultMaxOptimizationRounds;
+  bool use_standard_cell_slot_swaps_ = false;
   size_t net_ignore_threshold_ = 100;
 };
 

@@ -99,6 +99,7 @@ TEST_F(DaliConfigTest, KeepsDefaultRuntimeOptionsWhenConfigIsEmpty) {
             dali::StandardCellLegalizerCostMode::kDisplacement);
   EXPECT_EQ(options.detailed_max_rounds, 1);
   EXPECT_EQ(options.detailed_max_move_candidates, 1000);
+  EXPECT_FALSE(options.enable_standard_cell_slot_swaps);
   EXPECT_EQ(options.output_name, "dali_out");
   EXPECT_FALSE(options.gui_debug);
   EXPECT_EQ(options.gui_pause, "every_snapshot");
@@ -186,6 +187,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
   config_set_string("dali.standard_cell_legalizer_cost", "hpwl");
   config_set_int("dali.detailed_max_rounds", 2);
   config_set_int("dali.detailed_max_move_candidates", 500);
+  config_set_int("dali.enable_standard_cell_slot_swaps", 1);
   config_set_string("dali.output_name", "placed.def");
   config_set_int("dali.gui_debug", 1);
   config_set_string("dali.gui_pause", "off");
@@ -277,6 +279,7 @@ TEST_F(DaliConfigTest, LoadsRuntimeOptionsFromActConfig) {
             dali::StandardCellLegalizerCostMode::kHpwl);
   EXPECT_EQ(options.detailed_max_rounds, 2);
   EXPECT_EQ(options.detailed_max_move_candidates, 500);
+  EXPECT_TRUE(options.enable_standard_cell_slot_swaps);
   EXPECT_EQ(options.output_name, "placed");
   EXPECT_TRUE(options.gui_debug);
   EXPECT_EQ(options.gui_pause, "off");
