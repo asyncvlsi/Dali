@@ -49,9 +49,21 @@ TEST(StandardCellRowLegalizerTest, SnapsToSites) {
 
   ASSERT_TRUE(legalizer.Legalize({0, 30}, 2, &cells));
 
-  EXPECT_EQ(cells[0].legal_lx % 2, 0);
-  EXPECT_EQ(cells[1].legal_lx % 2, 0);
-  EXPECT_GE(cells[1].legal_lx, cells[0].legal_lx + cells[0].width);
+  EXPECT_EQ(cells[0].legal_lx, 4);
+  EXPECT_EQ(cells[1].legal_lx, 12);
+}
+
+TEST(StandardCellRowLegalizerTest, SnapsToOddPitchFromSegmentOrigin) {
+  StandardCellRowLegalizer legalizer;
+  std::vector<StandardCellRowLegalizationCell> cells = {
+      MakeCell(0, 1, 11.0),
+      MakeCell(1, 1, 21.0),
+  };
+
+  ASSERT_TRUE(legalizer.Legalize({10, 30}, 3, &cells));
+
+  EXPECT_EQ(cells[0].legal_lx, 10);
+  EXPECT_EQ(cells[1].legal_lx, 22);
 }
 
 TEST(StandardCellRowLegalizerTest, RejectsOverflowingSegment) {

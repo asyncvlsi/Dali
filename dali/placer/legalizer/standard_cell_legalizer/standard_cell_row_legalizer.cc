@@ -109,13 +109,24 @@ bool StandardCellRowLegalizer::Legalize(
   return true;
 }
 
+/**
+ * Round the integer grid offset to the nearest site, with ties away from the
+ * segment origin.
+ */
 int StandardCellRowLegalizer::AlignToNearestSite(
     int x, StandardCellFreeSegment segment, int site_width) {
-  int offset = x - segment.lx;
-  int snapped_offset =
-      static_cast<int>(std::llround(static_cast<double>(offset) / site_width)) *
-      site_width;
-  return segment.lx + snapped_offset;
+  if (site_width == 1) {
+    return x;
+  }
+  const int remainder = (x - segment.lx) % site_width;
+  const int halfway = site_width - site_width / 2;
+  int aligned = x - remainder;
+  if (remainder >= halfway) {
+    aligned += site_width;
+  } else if (remainder <= -halfway) {
+    aligned -= site_width;
+  }
+  return aligned;
 }
 
 int StandardCellRowLegalizer::ComputeClusterX(
