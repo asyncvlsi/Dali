@@ -56,9 +56,14 @@ class DetailedPlacer : public Placer {
    */
   void SetNetIgnoreThreshold(int net_ignore_threshold);
 
+  /** Use a fixed DEF site pitch and score orientation-aware pin HPWL. */
+  void SetFixedRowSiteWidth(int width) { fixed_row_site_width_ = width; }
+
   bool StartPlacement() override;
 
  private:
+  int fixed_row_site_width_ = 0;
+
   static constexpr int kLocalReorderWindowSize = 3;
   static constexpr int kMaxOptimalRegionRows = 4;
   static constexpr int kMaxCandidatesPerRow = 3;
@@ -95,7 +100,9 @@ class DetailedPlacer : public Placer {
     double offset_y;
   };
 
+  int SegmentSiteWidth() const;
   void BuildBookshelfPinIndex();
+  double NetWireLength(int net_id) const;
 
   /**
    * Return physical HPWL for one net using unflipped macro pin offsets.

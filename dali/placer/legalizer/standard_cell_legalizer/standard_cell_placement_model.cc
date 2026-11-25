@@ -85,6 +85,28 @@ void StandardCellPlacementModel::BuildFreeSegments() {
   }
 }
 
+void StandardCellPlacementModel::ReserveInterval(int row_index, int lx,
+                                                 int ux) {
+  auto& segments = rows_[row_index].free_segments;
+  auto it = std::find_if(segments.begin(), segments.end(), [=](const auto& s) {
+    return s.lx <= lx && ux <= s.ux;
+  });
+  DaliExpects(it != segments.end(), "Reservation must fit in a free segment");
+  const int end = it->ux;
+  if (it->lx == lx) {
+    if (ux == end) {
+      segments.erase(it);
+    } else {
+      it->lx = ux;
+    }
+  } else {
+    it->ux = lx;
+    if (ux < end) {
+      segments.insert(it + 1, {ux, end});
+    }
+  }
+}
+
 std::optional<int> StandardCellPlacementModel::RowIndexAtY(int y) const {
   for (int row_index = 0; row_index < static_cast<int>(rows_.size());
        ++row_index) {

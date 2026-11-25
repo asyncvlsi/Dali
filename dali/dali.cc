@@ -562,6 +562,8 @@ void Dali::ShowParamsList() {
       << "  detailed_max_rounds: " << detailed_max_rounds_ << "\n"
       << "  detailed_max_move_candidates: " << detailed_max_move_candidates_
       << "\n"
+      << "  enable_mixed_height_standard_cells: "
+      << enable_mixed_height_standard_cells_ << "\n"
       << "  enable_standard_cell_slot_swaps: "
       << enable_standard_cell_slot_swaps_ << "\n"
       << "  output_name: " << output_name_ << "\n"
@@ -865,6 +867,8 @@ void Dali::LoadParamsFromConfig() {
                 &detailed_max_move_candidates_);
   DaliExpects(detailed_max_move_candidates_ >= 0,
               "detailed_max_move_candidates must be non-negative");
+  LoadBoolConfig(ConfigName(prefix_, "enable_mixed_height_standard_cells"),
+                 &enable_mixed_height_standard_cells_);
   LoadBoolConfig(ConfigName(prefix_, "enable_standard_cell_slot_swaps"),
                  &enable_standard_cell_slot_swaps_);
   LoadStringConfig(ConfigName(prefix_, "output_name"), &output_name_);
@@ -995,6 +999,8 @@ bool Dali::SetRuntimeOption(const std::string& name, const std::string& value) {
         {"disable_welltap", &Dali::disable_welltap_},
         {"enable_end_cap_cell", &Dali::enable_end_cap_cell_},
         {"enable_filler_cell", &Dali::enable_filler_cell_},
+        {"enable_mixed_height_standard_cells",
+         &Dali::enable_mixed_height_standard_cells_},
         {"enable_standard_cell_slot_swaps",
          &Dali::enable_standard_cell_slot_swaps_},
         {"is_standard_cell", &Dali::is_standard_cell_},
@@ -1120,6 +1126,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       gui_debug_,
       gui_pause_,
       debug_placement_region_scale_,
+      enable_mixed_height_standard_cells_,
   };
 }
 
@@ -1485,9 +1492,15 @@ bool Dali::RunStandardCellLegalization() {
   standard_cell_legalizer_.CopyPlacementContextFrom(&gb_placer_);
   standard_cell_legalizer_.SetDisableCellFlip(disable_cell_flip_);
   standard_cell_legalizer_.SetCostMode(standard_cell_legalizer_cost_mode_);
+  standard_cell_legalizer_.SetMixedHeightRows(
+      enable_mixed_height_standard_cells_ ? phy_db_ptr_ : nullptr);
   ElapsedTime legalization_timer;
   legalization_timer.RecordStartTime();
   if (!standard_cell_legalizer_.StartPlacement()) {
+    if (enable_mixed_height_standard_cells_ &&
+        standard_cell_legalizer_.UsesMixedHeightRows()) {
+      return false;
+    }
     LOG(warning) << "Standard-cell legalizer failed; trying "
                     "ExtendedTetrisLegalizer baseline\n";
     legalizer_for_detailed_placement = &legalizer_;
@@ -1530,12 +1543,15 @@ bool Dali::RunDetailedPlacement() {
   detailed_placer_.SetUseStandardCellSlotSwaps(
       enable_standard_cell_slot_swaps_);
   detailed_placer_.SetNetIgnoreThreshold(net_ignore_threshold_);
+  detailed_placer_.SetFixedRowSiteWidth(
+      standard_cell_legalizer_.MixedHeightSiteWidth());
   WriteVisualizationSnapshot("detailed_placement.start",
                              "Before Detailed Placement", "detailed_placement");
   FlushVisualizationEvents();
   ElapsedTime stage_timer;
   stage_timer.RecordStartTime();
-  if (!detailed_placer_.StartPlacement()) {
+  if (!detailed_placer_.StartPlacement() ||
+      !standard_cell_legalizer_.ValidateMixedHeightPlacement()) {
     LOG(error) << "Detailed placement failed\n";
     return false;
   }

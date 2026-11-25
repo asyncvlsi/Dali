@@ -58,8 +58,10 @@ void StandardCellLegalizer::SetCostMode(
 bool StandardCellLegalizer::StartPlacement() {
   PrintStartStatement("standard-cell legalization");
 
-  /** Build the row/segment model cells are assigned into. */
-  BuildPlacementModel();
+  uses_mixed_height_rows_ = false;
+  mixed_height_site_width_ = 0;
+  fixed_row_model_ = StandardCellPlacementModel();
+  placement_model_ = StandardCellPlacementModel();
   auto components = CollectMovableComponents();
   if (components.empty()) {
     LOG(info) << "Skip standard-cell legalization: no movable components\n";
@@ -73,10 +75,38 @@ bool StandardCellLegalizer::StartPlacement() {
     original_locations.emplace_back(component->LLX(), component->LLY());
   }
 
-  /** Assign each component to a row segment by cost. */
-  bool is_success = AssignComponentsToSegments(components);
+  std::vector<Component*> single_height = components;
+  std::vector<TallPlacement> tall_placements;
+  if (const int row_height = MixedHeightRowHeight(components); row_height > 0) {
+    uses_mixed_height_rows_ = true;
+    if (!ImportFixedRows(row_height)) {
+      PrintEndStatement("standard-cell legalization", false);
+      return false;
+    }
+    AddBlockagesFromCircuit();
+    placement_model_.BuildFreeSegments();
+    fixed_row_model_ = placement_model_;
+    if (!ReserveTallCells(&single_height, row_height, &tall_placements)) {
+      PrintEndStatement("standard-cell legalization", false);
+      return false;
+    }
+  } else {
+    AddRowsFromPlacementBoundary();
+    AddBlockagesFromCircuit();
+    placement_model_.BuildFreeSegments();
+  }
+  BuildSegmentAssignments();
+  bool is_success = AssignComponentsToSegments(std::move(single_height));
   if (is_success) {
+    for (const auto& placement : tall_placements) {
+      const auto& row = placement_model_.Rows()[placement.row_index];
+      placement.component->SetLowerLeft(placement.x, row.ly);
+      placement.component->SetOrient(OrientForRow(placement.row_index));
+    }
     LegalizeAssignedSegments();
+    is_success = ValidateMixedHeightPlacement();
+  }
+  if (is_success) {
     ReportDisplacement(components, original_locations);
     /** Write the legalized locations back to the circuit. */
     ExportRowsToCircuit();
@@ -89,15 +119,9 @@ bool StandardCellLegalizer::StartPlacement() {
   return is_success;
 }
 
-/** Build the row/segment model cells are assigned into. */
-void StandardCellLegalizer::BuildPlacementModel() {
-  placement_model_ = StandardCellPlacementModel();
+void StandardCellLegalizer::BuildSegmentAssignments() {
   segment_assignments_.clear();
   assignment_indices_by_row_.clear();
-
-  AddRowsFromPlacementBoundary();
-  AddBlockagesFromCircuit();
-  placement_model_.BuildFreeSegments();
 
   const auto& rows = placement_model_.Rows();
   assignment_indices_by_row_.resize(rows.size());
@@ -150,10 +174,20 @@ void StandardCellLegalizer::AddBlockagesFromCircuit() {
     if (component.IsMovable()) {
       continue;
     }
+    double ux = component.URX();
+    double uy = component.URY();
+    if (mixed_height_site_width_ > 0 &&
+        (component.Orient() == W || component.Orient() == E ||
+         component.Orient() == FW || component.Orient() == FE)) {
+      ux = component.LLX() + component.Height() * ckt_ptr_->GridValueY() /
+                                ckt_ptr_->GridValueX();
+      uy = component.LLY() + component.Width() * ckt_ptr_->GridValueX() /
+                                ckt_ptr_->GridValueY();
+    }
     placement_model_.AddBlockage(static_cast<int>(std::floor(component.LLX())),
                                  static_cast<int>(std::floor(component.LLY())),
-                                 static_cast<int>(std::ceil(component.URX())),
-                                 static_cast<int>(std::ceil(component.URY())));
+                                 static_cast<int>(std::ceil(ux)),
+                                 static_cast<int>(std::ceil(uy)));
   }
 }
 
@@ -492,6 +526,9 @@ void StandardCellLegalizer::ExportRowsToCircuit() {
 ComponentOrient StandardCellLegalizer::OrientForRow(int row_index) const {
   if (disable_cell_flip_) {
     return N;
+  }
+  if (mixed_height_site_width_ > 0) {
+    return placement_model_.Rows()[row_index].orient_n ? N : FS;
   }
   return (row_index % 2 == 0) ? N : FS;
 }

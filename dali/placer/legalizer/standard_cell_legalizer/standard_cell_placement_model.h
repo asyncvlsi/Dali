@@ -46,6 +46,8 @@ struct StandardCellRow {
   int site_count = 0;
   std::vector<StandardCellFreeSegment> free_segments;
 
+  bool orient_n = true;
+
   int Ux() const { return lx + site_width * site_count; }
   int Uy() const { return ly + height; }
 };
@@ -75,6 +77,9 @@ class StandardCellPlacementModel {
 
   /** Rebuild free row segments after rows or blockages change. */
   void BuildFreeSegments();
+
+  /** Remove a site-aligned interval contained in one free segment. */
+  void ReserveInterval(int row_index, int lx, int ux);
 
   /** Return all rows. */
   const std::vector<StandardCellRow>& Rows() const { return rows_; }

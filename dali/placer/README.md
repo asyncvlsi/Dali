@@ -13,6 +13,18 @@ together, see [architecture notes](ARCHITECTURE.md).
 A `-cell` file selects the gridded well-placement flow. `-is_standard_cell`
 selects the standard-cell flow, which skips well legalization entirely.
 
+## Mixed-height standard cells
+
+Add `-enable_mixed_height_standard_cells` to `-is_standard_cell` to legalize
+mixed-height cells on the DEF rows. The rows must use a common site size and
+horizontal N/FS orientations. Row fragments may have gaps and different X
+origins. The flow subtracts fixed obstacles, reserves each tall cell in every
+row it spans, and packs the single-height cells into the remaining segments.
+Detailed placement keeps the tall reservations fixed and optimizes the
+single-height cells. The flow validates the full footprints after each stage
+and stops on a geometry or capacity failure. Single-height designs use the
+existing standard-cell path.
+
 ## Gridded well placement
 
     $ dali \

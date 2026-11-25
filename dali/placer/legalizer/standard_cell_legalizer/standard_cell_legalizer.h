@@ -56,6 +56,16 @@ class StandardCellLegalizer : public Placer {
   /** Select the candidate row-segment cost model. */
   void SetCostMode(StandardCellLegalizerCostMode cost_mode);
 
+  /** Enable fixed DEF rows when the circuit has mixed-height cells. */
+  void SetMixedHeightRows(phydb::PhyDB* phy_db) { mixed_height_rows_ = phy_db; }
+
+  /** Return the DEF site pitch for an active mixed-height run, or zero. */
+  bool UsesMixedHeightRows() const { return uses_mixed_height_rows_; }
+  int MixedHeightSiteWidth() const { return mixed_height_site_width_; }
+
+  /** Check each movable footprint against fixed geometry and its neighbors. */
+  bool ValidateMixedHeightPlacement();
+
   /** Run standard-cell legalization. */
   bool StartPlacement() override;
 
@@ -74,7 +84,17 @@ class StandardCellLegalizer : public Placer {
     double estimated_cost = 0.0;
   };
 
-  void BuildPlacementModel();
+  struct TallPlacement {
+    Component* component;
+    int x;
+    int row_index;
+  };
+
+  int MixedHeightRowHeight(const std::vector<Component*>& components) const;
+  bool ImportFixedRows(int row_height);
+  bool ReserveTallCells(std::vector<Component*>* components, int row_height,
+                        std::vector<TallPlacement>* tall_placements);
+  void BuildSegmentAssignments();
   void AddRowsFromPlacementBoundary();
   void AddBlockagesFromCircuit();
   std::vector<Component*> CollectMovableComponents();
@@ -116,6 +136,10 @@ class StandardCellLegalizer : public Placer {
   void ExportRowsToCircuit();
   ComponentOrient OrientForRow(int row_index) const;
 
+  phydb::PhyDB* mixed_height_rows_ = nullptr;
+  bool uses_mixed_height_rows_ = false;
+  int mixed_height_site_width_ = 0;
+  StandardCellPlacementModel fixed_row_model_;
   StandardCellPlacementModel placement_model_;
   std::vector<SegmentAssignment> segment_assignments_;
   std::vector<std::vector<int>> assignment_indices_by_row_;

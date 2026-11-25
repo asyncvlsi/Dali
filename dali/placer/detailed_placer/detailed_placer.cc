@@ -91,6 +91,10 @@ void DetailedPlacer::PlaceWindow(const std::vector<Component*>& order,
           static_cast<int>(order.size() - 1);
   }
 
+  if (fixed_row_site_width_ > 0) {
+    gap -= gap % fixed_row_site_width_;
+  }
+
   int left_contour = left_bound;
   for (size_t i = 0; i < order.size(); ++i) {
     Component* component = order[i];
@@ -126,6 +130,13 @@ bool DetailedPlacer::ReorderWindow(std::vector<Component*>* components,
     return false;
   }
 
+  std::vector<double> original_x;
+  if (fixed_row_site_width_ > 0) {
+    for (const auto* cell : original_order) {
+      original_x.push_back(cell->LLX());
+    }
+  }
+  bool improved = false;
   std::vector<Component*> best_order = original_order;
   double best_cost = WindowWireLengthCost(*components, start, window_size);
 
@@ -143,10 +154,17 @@ bool DetailedPlacer::ReorderWindow(std::vector<Component*>* components,
     if (candidate_cost + 1e-9 < best_cost) {
       best_cost = candidate_cost;
       best_order = candidate_order;
+      improved = true;
     }
   } while (std::next_permutation(permutation.begin(), permutation.end()));
 
-  bool changed = best_order != original_order;
+  if (fixed_row_site_width_ > 0 && !improved) {
+    for (int i = 0; i < window_size; ++i) {
+      original_order[i]->SetLLX(original_x[i]);
+    }
+    return false;
+  }
+  bool changed = fixed_row_site_width_ > 0 || best_order != original_order;
   PlaceWindow(best_order, left_bound, right_bound);
   for (int i = 0; i < window_size; ++i) {
     (*components)[start + i] = best_order[i];
@@ -227,18 +245,23 @@ DetailedPlacer::OptimalRegion DetailedPlacer::ComputeOptimalRegion(
         if (pin.ComponentPtr() == component) {
           continue;
         }
-        double pin_x = pin.ComponentPtr()->LLX() + pin.PinPtr()->OffsetX(N);
-        double pin_y = pin.ComponentPtr()->LLY() + pin.PinPtr()->OffsetY(N);
+        double pin_x = fixed_row_site_width_ > 0
+                           ? pin.AbsX()
+                           : pin.ComponentPtr()->LLX() + pin.PinPtr()->OffsetX(N);
+        double pin_y = fixed_row_site_width_ > 0
+                           ? pin.AbsY()
+                           : pin.ComponentPtr()->LLY() + pin.PinPtr()->OffsetY(N);
         min_x = std::min(min_x, pin_x);
         max_x = std::max(max_x, pin_x);
         min_y = std::min(min_y, pin_y);
         max_y = std::max(max_y, pin_y);
       }
       if (min_x != DBL_MAX) {
-        x_bounds.push_back(min_x - component_pin.PinPtr()->OffsetX(N));
-        x_bounds.push_back(max_x - component_pin.PinPtr()->OffsetX(N));
-        y_bounds.push_back(min_y - component_pin.PinPtr()->OffsetY(N));
-        y_bounds.push_back(max_y - component_pin.PinPtr()->OffsetY(N));
+        const auto orient = fixed_row_site_width_ > 0 ? component->Orient() : N;
+        x_bounds.push_back(min_x - component_pin.PinPtr()->OffsetX(orient));
+        x_bounds.push_back(max_x - component_pin.PinPtr()->OffsetX(orient));
+        y_bounds.push_back(min_y - component_pin.PinPtr()->OffsetY(orient));
+        y_bounds.push_back(max_y - component_pin.PinPtr()->OffsetY(orient));
       }
     }
   }
@@ -307,6 +330,19 @@ double DetailedPlacer::BookshelfStyleWireLength(int net_id) const {
          bookshelf_nets_[net_id].Weight();
 }
 
+double DetailedPlacer::NetWireLength(int net_id) const {
+  if (fixed_row_site_width_ == 0) {
+    return BookshelfStyleWireLength(net_id);
+  }
+  const auto hpwl = ckt_ptr_->Nets()[net_id].WeightedHPWLAxes();
+  return hpwl.x * ckt_ptr_->GridValueX() + hpwl.y * ckt_ptr_->GridValueY();
+}
+
+int DetailedPlacer::SegmentSiteWidth() const {
+  return fixed_row_site_width_ > 0 ? fixed_row_site_width_
+                                   : ckt_ptr_->MinComponentWidth();
+}
+
 double DetailedPlacer::DistanceToRegion(double x, double y,
                                         const OptimalRegion& region) const {
   double dx =
@@ -358,13 +394,13 @@ double DetailedPlacer::AffectedWireLength(
   double cost = 0.0;
   if (current_costs == nullptr) {
     for (int net_id : net_ids) {
-      cost += BookshelfStyleWireLength(net_id);
+      cost += NetWireLength(net_id);
     }
   } else {
     for (int net_id : net_ids) {
       auto& net_cost = (*current_costs)[net_id];
       if (!net_cost.has_value()) {
-        net_cost = BookshelfStyleWireLength(net_id);
+        net_cost = NetWireLength(net_id);
       }
       cost += *net_cost;
     }
@@ -389,8 +425,7 @@ bool DetailedPlacer::LegalizeSegment(GeneralRowSegment* segment,
   StandardCellRowLegalizer legalizer;
   StandardCellFreeSegment free_segment{segment->LX(),
                                        segment->LX() + segment->Width()};
-  if (!legalizer.Legalize(free_segment, ckt_ptr_->MinComponentWidth(),
-                          &cells)) {
+  if (!legalizer.Legalize(free_segment, SegmentSiteWidth(), &cells)) {
     return false;
   }
   for (const auto& cell : cells) {
@@ -837,7 +872,8 @@ int DetailedPlacer::RunOptimalRegionMoves() {
   std::vector<MoveCandidate> move_candidates;
   move_candidates.reserve(ckt_ptr_->Components().size());
   for (Component& component : ckt_ptr_->Components()) {
-    if (!component.IsMovable() || component.NetList().empty()) {
+    if (!component.IsMovable() || component.NetList().empty() ||
+        (fixed_row_site_width_ > 0 && !component_segments_[component.Id()])) {
       continue;
     }
     OptimalRegion region = ComputeOptimalRegion(&component);
@@ -912,7 +948,8 @@ int DetailedPlacer::RunOptimalRegionSwaps() {
   NetWireLengths current_costs(net_count);
   int accepted = 0;
   for (Component& component : ckt_ptr_->Components()) {
-    if (!component.IsMovable() || component.NetList().empty()) {
+    if (!component.IsMovable() || component.NetList().empty() ||
+        (fixed_row_site_width_ > 0 && !component_segments_[component.Id()])) {
       continue;
     }
     OptimalRegion region = ComputeOptimalRegion(&component);
@@ -995,8 +1032,7 @@ int DetailedPlacer::RunSingleSegmentClustering() {
       double cost_before = AffectedWireLength(net_ids);
       StandardCellRowLegalizer legalizer;
       StandardCellFreeSegment free_segment{segment.LX(), segment.UX()};
-      bool legal = legalizer.Legalize(free_segment,
-                                      ckt_ptr_->MinComponentWidth(), &cells);
+      bool legal = legalizer.Legalize(free_segment, SegmentSiteWidth(), &cells);
       DaliExpects(legal, "A legal row segment failed clustering repack");
       for (const auto& cell : cells) {
         ckt_ptr_->Components()[cell.id].SetLLX(cell.legal_lx);
@@ -1051,7 +1087,7 @@ bool DetailedPlacer::StartPlacement() {
 
   double hpwl_before = WeightedHPWL();
   double previous_hpwl = hpwl_before;
-  if (max_optimization_rounds_ > 0) {
+  if (max_optimization_rounds_ > 0 && fixed_row_site_width_ == 0) {
     BuildBookshelfPinIndex();
   }
   for (int round = 0; round < max_optimization_rounds_; ++round) {
