@@ -126,6 +126,12 @@ attention.
 
 ## Standard-cell results on ISPD 2005
 
+Measured at commit `9878f537` on a MacBook Pro with an Apple M1 Max CPU, 10
+cores (8 performance and 2 efficiency), and 32 GB unified memory, running macOS
+27.2.1 on AC power. These are single-run engineering
+measurements intended to show representative behavior, not publication-quality
+performance measurements.
+
 The runs use `density_aware` initialization and continue through global
 placement, legalization, and detailed placement:
 
@@ -138,45 +144,6 @@ placement, legalization, and detailed placement:
         -num_threads <1-or-8> \
         -disable_io_place \
         -metrics_file dali_metrics.json
-
-## Latest runtime and placement quality
-
-Measured at `9878f537` with one run per design. Standard-cell runs used
-default row repacking. Set `OMP_NUM_THREADS` to the same count as
-`-num_threads`. The gridded designs are DaliTest cases 1–3.
-
-End-to-end time includes input parsing and export. Gridded legalization
-time excludes detailed placement.
-
-| Design | Threads | Global placement (s) | Legalization (s) | Detailed placement (s) | End to end (s) | Final weighted HPWL (µm) |
-|---|---:|---:|---:|---:|---:|---:|
-| Adaptec1 | 8 | 23.93 | 2.31 | 9.42 | 46.80 | 80,933,657.50 |
-| Adaptec2 | 8 | 29.39 | 4.60 | 20.24 | 67.23 | 90,201,375.00 |
-| Adaptec3 | 8 | 58.80 | 3.90 | 16.46 | 102.22 | 210,016,950.50 |
-| Adaptec4 | 8 | 41.22 | 5.30 | 20.62 | 91.12 | 186,048,692.00 |
-| Big Blue 1 | 8 | 37.96 | 8.68 | 41.57 | 102.20 | 98,732,183.50 |
-| Big Blue 2 | 8 | 51.09 | 3.92 | 18.28 | 99.70 | 149,850,922.50 |
-| Big Blue 3 | 8 | 122.39 | 27.41 | 128.18 | 328.31 | 358,243,837.50 |
-| Big Blue 4 | 8 | 251.88 | 49.71 | 242.56 | 663.33 | 804,606,037.50 |
-| Gridded case 1 | 1 | 4.49 | 0.10 | 5.66 | 10.60 | 271,650.45 |
-| Gridded case 2 | 1 | 5.09 | 0.29 | 3.02 | 8.78 | 150,154.39 |
-| Gridded case 3 | 1 | 73.04 | 3.99 | 23.10 | 102.37 | 2,931,825.60 |
-| ISPD 2019 test3 | 1 | 1.47 | 0.02 | 0.21 | 2.16 | 95,976.78 |
-
-Big Blue 3 had 11,940 overlapping pairs in the geometry check. An older
-placement of the same design also had overlaps. The other seven ISPD 2005
-designs passed geometry checks, and all three gridded cases reported zero
-legality violations. The ISPD 2019 I/O fixture has pre-existing geometry
-violations.
-
-<details>
-<summary>Historical ISPD 2005 results at afc54ea4</summary>
-
-Measured at commit `afc54ea4` on a MacBook Pro with an Apple M1 Max CPU, 10
-cores (8 performance and 2 efficiency), and 32 GB unified memory, running macOS
-26.5.2 on AC power in Automatic power mode. These are single-run engineering
-measurements intended to show representative behavior, not publication-quality
-performance measurements.
 
 Weighted HPWL is reported in units of 1e6 um. The 1-thread and 8-thread runs
 produce identical HPWL for every benchmark.
@@ -194,28 +161,26 @@ produce identical HPWL for every benchmark.
 
 Runtime is Dali's internal wall time for each placement stage and excludes
 LEF/DEF parsing and result export. `Total` is the sum of global placement,
-legalization, and detailed placement. Legalization and detailed placement are currently serial. Their
-8-thread-run measurements are shown once.
+legalization, and detailed placement. Legalization and detailed placement are
+currently serial, so their 8-thread-run measurements are shown once.
 
 | design | global, 1T (s) | global, 8T (s) | global speedup | legalization (s) | detailed placement (s) | total, 1T (s) | total, 8T (s) | total speedup |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| adaptec1 | 64.4 | 29.5 | 2.18× | 14.3 | 38.1 | 120.0 | 81.9 | 1.47× |
-| adaptec2 | 79.1 | 37.9 | 2.09× | 28.7 | 115.4 | 222.1 | 181.9 | 1.22× |
-| adaptec3 | 154.2 | 83.1 | 1.86× | 61.5 | 46.8 | 261.1 | 191.5 | 1.36× |
-| adaptec4 | 116.0 | 59.9 | 1.94× | 92.8 | 75.0 | 291.1 | 227.7 | 1.28× |
-| bigblue1 | 102.1 | 44.3 | 2.31× | 40.3 | 279.1 | 411.7 | 363.7 | 1.13× |
-| bigblue2 | 139.7 | 77.6 | 1.80× | 85.7 | 76.0 | 302.6 | 239.3 | 1.26× |
-| bigblue3 | 320.7 | 176.2 | 1.82× | 244.6 | 844.2 | 1331.9 | 1265.0 | 1.05× |
-| bigblue4 | 730.2 | 421.7 | 1.73× | 595.6 | 1811.6 | 3102.1 | 2828.9 | 1.10× |
+| adaptec1 | 54.7 | 23.9 | 2.29× | 2.3 | 9.4 | 66.5 | 35.7 | 1.86× |
+| adaptec2 | 66.0 | 29.4 | 2.25× | 4.6 | 20.2 | 90.5 | 54.2 | 1.67× |
+| adaptec3 | 125.2 | 58.8 | 2.13× | 3.9 | 16.5 | 145.1 | 79.2 | 1.83× |
+| adaptec4 | 94.4 | 41.2 | 2.29× | 5.3 | 20.6 | 120.2 | 67.1 | 1.79× |
+| bigblue1 | 89.2 | 38.0 | 2.35× | 8.7 | 41.6 | 139.0 | 88.2 | 1.58× |
+| bigblue2 | 106.0 | 51.1 | 2.08× | 3.9 | 18.3 | 128.1 | 73.3 | 1.75× |
+| bigblue3 | 261.1 | 122.4 | 2.13× | 27.4 | 128.2 | 414.6 | 278.0 | 1.49× |
+| bigblue4 | 526.1 | 251.9 | 2.09× | 49.7 | 242.6 | 809.5 | 544.1 | 1.49× |
 
-Across the complete suite, global-placement time falls from 1706.4 seconds to
-930.2 seconds, a 1.83x aggregate speedup. Complete placement time falls from
-6042.6 seconds to 5379.8 seconds, a 1.12x speedup, because standard-cell
+Across the complete suite, global-placement time falls from 1322.8 seconds to
+616.7 seconds, a 2.15x aggregate speedup. Complete placement time falls from
+1913.4 seconds to 1219.8 seconds, a 1.57x speedup, because standard-cell
 legalization and detailed placement are currently serial. These two stages are
 the main remaining parallelization opportunity, especially on bigblue3 and
 bigblue4.
-
-</details>
 
 ## Experimental: CP-SAT legalization
 
