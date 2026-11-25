@@ -601,13 +601,19 @@ void LookAheadSpreader::UpdateClusterList() {
   update_cluster_list_time_ += elapsed_time.GetWallTime();
 }
 
+/**
+ * Select the first cluster with the highest score. Area mode already has
+ * that ordering, including the first choice among equal scores.
+ */
 std::multiset<OverfilledBinCluster, std::greater<>>::iterator
 LookAheadSpreader::SelectHotspotCluster() {
-  if (cluster_set.empty()) return cluster_set.end();
   auto selected = cluster_set.begin();
+  if (selected == cluster_set.end() ||
+      hotspot_mode_ == GlobalLalHotspotMode::kComponentArea) {
+    return selected;
+  }
   double selected_score = HotspotScore(*selected);
-  for (auto it = std::next(cluster_set.begin()); it != cluster_set.end();
-       ++it) {
+  for (auto it = std::next(selected); it != cluster_set.end(); ++it) {
     double score = HotspotScore(*it);
     if (score > selected_score) {
       selected = it;
