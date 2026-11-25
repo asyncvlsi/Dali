@@ -230,7 +230,6 @@ void RowSegment::LocalReorder(std::vector<ComponentDisplacementVariable>& vars,
   }
 }
 
-/** Alternative local-reorder pass with a different window strategy. */
 void RowSegment::LocalReorder2(
     std::vector<ComponentDisplacementVariable>& vars) {
   int sz = static_cast<int>(vars.size());

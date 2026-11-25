@@ -41,7 +41,7 @@
 #include "dali/placer/placer.h"
 #include "exact_gridded_legalization_window_analyzer.h"
 #include "exact_gridded_whole_design_model_builder.h"
-#include "gridded_capacity_estimator.h"
+#include "dali/placer/gridded_capacity_estimator.h"
 #include "gridded_detailed_placer.h"
 #include "gridded_placement_validator.h"
 #include "gridded_row.h"
@@ -411,11 +411,12 @@ class GriddedCellWellLegalizer : public Placer {
   bool StripeLegalizationTopDownCompact(Stripe& stripe);
 
   bool ComponentClustering();
+  /** Cluster stripe rows, trying vertical repair before declaring a stripe failed. */
   bool ComponentClusteringLoose();
   bool ComponentClusteringCompact();
 
-  /** Place a stripe's rows in Y without committing.
-   * @return true if the stripe fits. */
+  /** Move a stripe's rows and their components in Y, including on failure.
+   * @return true if the stripe fits after the move. */
   bool TrialClusterLegalization(Stripe& stripe);
 
   // void SingleSegmentClusteringOptimization();

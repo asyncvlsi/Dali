@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "dali/circuit/component.h"
-#include "dali/placer/well_legalizer/gridded_capacity_estimator.h"
+#include "dali/placer/gridded_capacity_estimator.h"
 
 namespace dali {
 

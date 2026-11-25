@@ -74,7 +74,7 @@ class RowSegment {
                           bool is_linear);
   void LocalReorder(std::vector<ComponentDisplacementVariable>& vars,
                     int range = 3, int omit = 0, bool is_linear = false);
-  /** Alternative local-reorder pass over the segment's cells. */
+  /** Swap neighboring X placements when a multideck cell tends toward its neighbor. */
   void LocalReorder2(std::vector<ComponentDisplacementVariable>& vars);
   /**
    * Place this segment's components to minimize displacement from where they

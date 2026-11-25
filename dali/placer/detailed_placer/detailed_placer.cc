@@ -511,10 +511,9 @@ bool DetailedPlacer::TryMove(Component* component, GeneralRow* target_row,
   return true;
 }
 
-/** Cheap pre-check that rejects swaps that cannot help. */
-bool DetailedPlacer::IsPromisingSwap(Component* first, Component* second,
-                                     GeneralRow* first_row,
-                                     GeneralRow* second_row) const {
+bool DetailedPlacer::SwapLowersHpwlBeforeLegalization(
+    Component* first, Component* second, GeneralRow* first_row,
+    GeneralRow* second_row) const {
   std::set<int> net_ids(first->NetList().begin(), first->NetList().end());
   net_ids.insert(second->NetList().begin(), second->NetList().end());
   double cost_before = AffectedWireLength(net_ids);
@@ -556,7 +555,7 @@ bool DetailedPlacer::TrySwap(Component* first, Component* second) {
       first_segment == nullptr || second_segment == nullptr) {
     return false;
   }
-  if (!IsPromisingSwap(first, second, first_row, second_row)) {
+  if (!SwapLowersHpwlBeforeLegalization(first, second, first_row, second_row)) {
     return false;
   }
 

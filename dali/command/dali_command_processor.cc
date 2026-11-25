@@ -64,8 +64,9 @@ static bool HasLineContinuation(const std::string& line,
   return true;
 }
 
-/** Return true when a successful command can change physical placement. */
-static bool ChangesPlacement(const std::vector<std::string>& arguments) {
+/** Select the commands that publish an interactive placement snapshot. */
+static bool ShouldPublishInteractiveSnapshot(
+    const std::vector<std::string>& arguments) {
   std::string command = arguments.front();
   const std::string namespace_prefix = "dali:";
   if (command.compare(0, namespace_prefix.size(), namespace_prefix) == 0) {
@@ -346,7 +347,8 @@ bool DaliCommandProcessor::DispatchCommand(
 bool DaliCommandProcessor::ExecuteCommand(
     const std::vector<std::string>& arguments) {
   const bool is_success = DispatchCommand(arguments);
-  if (is_success && !arguments.empty() && ChangesPlacement(arguments)) {
+  if (is_success && !arguments.empty() &&
+      ShouldPublishInteractiveSnapshot(arguments)) {
     dali_->WriteInteractiveCommandSnapshot(arguments.front());
   }
   return is_success;

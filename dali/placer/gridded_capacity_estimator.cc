@@ -18,7 +18,7 @@
  * before the rows are built, so global placement can be steered by a capacity
  * model rather than discovering overflow at legalization time.
  */
-#include "dali/placer/well_legalizer/gridded_capacity_estimator.h"
+#include "dali/placer/gridded_capacity_estimator.h"
 
 #include <algorithm>
 #include <cmath>

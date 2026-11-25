@@ -101,7 +101,7 @@ void DieArea::SetRawRectilinearDieArea(
   rectilinear_die_area_ = rectilinear_die_area;
   MaybeExpandTwoPointsToFour();
   CheckRectilinearLines();
-  CheckAndRemoveRedundantPoints();
+  RemoveCollinearVertices();
   CheckIntersectingLines();
   DetectMinimumBoundingBox();
   ShrinkOffGridBoundingBox();
@@ -205,22 +205,22 @@ void DieArea::CheckIntersectingLines() {
   }
 }
 
-void DieArea::CheckAndRemoveRedundantPoints() {
-  current_recursion_ = 0;
-  CheckAndRemoveRedundantPointsImp();
+void DieArea::RemoveCollinearVertices() {
+  collinear_pass_count_ = 0;
+  RemoveCollinearVerticesRecursively();
 }
 
-/****
- * Remove redundant points when more than three consecutive points are in the
- * same line.
+/**
+ * Remove the middle vertex of each collinear triple in the die outline.
+ * A removal can expose another triple on the next pass.
  */
-void DieArea::CheckAndRemoveRedundantPointsImp() {
-  current_recursion_ += 1;
-  DaliExpects(current_recursion_ < recursion_limit_,
+void DieArea::RemoveCollinearVerticesRecursively() {
+  collinear_pass_count_ += 1;
+  DaliExpects(collinear_pass_count_ < collinear_pass_limit_,
               "Too many redundant points? Something wrong in the code?");
 
   size_t num_points = rectilinear_die_area_.size();
-  std::vector redundancy(num_points, false);
+  std::vector is_redundant(num_points, false);
   for (size_t i = 0; i < num_points; ++i) {
     // Modulo makes this vector a "circle"
     size_t first_index = i;
@@ -234,29 +234,29 @@ void DieArea::CheckAndRemoveRedundantPointsImp() {
     // is redundant and can be removed
     if ((first_point.x == second_point.x) &&
         (second_point.x == third_point.x)) {
-      redundancy[second_index] = true;
+      is_redundant[second_index] = true;
     }
     if ((first_point.y == second_point.y) &&
         (second_point.y == third_point.y)) {
-      redundancy[second_index] = true;
+      is_redundant[second_index] = true;
     }
   }
 
   // remove redundant points
-  std::vector<int2d> new_rectilinear_die_area_;
+  std::vector<int2d> kept_vertices;
   for (size_t i = 0; i < num_points; ++i) {
-    if (!redundancy[i]) {
-      new_rectilinear_die_area_.emplace_back(rectilinear_die_area_[i].x,
-                                             rectilinear_die_area_[i].y);
+    if (!is_redundant[i]) {
+      kept_vertices.emplace_back(rectilinear_die_area_[i].x,
+                                 rectilinear_die_area_[i].y);
     }
   }
 
-  size_t new_num_points = new_rectilinear_die_area_.size();
-  rectilinear_die_area_.swap(new_rectilinear_die_area_);
+  size_t new_num_points = kept_vertices.size();
+  rectilinear_die_area_.swap(kept_vertices);
 
   // if there is redundancy, we may need to check again
   if (new_num_points != num_points) {
-    CheckAndRemoveRedundantPointsImp();
+    RemoveCollinearVerticesRecursively();
   }
 }
 

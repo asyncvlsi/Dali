@@ -788,7 +788,6 @@ int Stripe::LocY2RowId(double lly) {
   return static_cast<int>(std::round(height / row_height_));
 }
 
-/** Estimate a candidate clustering's cost (displacement and wirelength). */
 double Stripe::EstimateCost(int row_id, Component* component_ptr, SegI& range,
                             double density) {
   int region_cnt = component_ptr->MacroPtr()->RegionCount();

@@ -67,14 +67,14 @@ class DieArea {
   // residual
   int die_area_offset_y_residual_ = 0;  // unit is manufacturing grid
 
-  int recursion_limit_ = 1000;
-  int current_recursion_ = 0;
+  int collinear_pass_limit_ = 1000;
+  int collinear_pass_count_ = 0;
 
   void MaybeExpandTwoPointsToFour();
   void CheckRectilinearLines();
   void CheckIntersectingLines();
-  void CheckAndRemoveRedundantPoints();
-  void CheckAndRemoveRedundantPointsImp();
+  void RemoveCollinearVertices();
+  void RemoveCollinearVerticesRecursively();
   void DetectMinimumBoundingBox();
   void ShrinkOffGridBoundingBox();
   bool IsPointInDieArea(double2d point) const;

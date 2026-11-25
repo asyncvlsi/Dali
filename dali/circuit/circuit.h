@@ -266,11 +266,13 @@ class Circuit {
   // check if a component with the given name exists or not
   bool IsComponentExisting(std::string const& component_name);
 
-  // returns the internal index of a component with a given name
+  /** Return the internal index. An unknown component name is fatal. */
   int GetComponentId(std::string const& component_name);
 
-  // returns a pointer to the component with a given name. The pointer is
-  // invalidated by adding another component.
+  /**
+   * Look up a required component by name. An unknown name is fatal.
+   * Adding a component can invalidate the returned pointer.
+   */
   Component* GetComponentPtr(std::string const& component_name);
 
   // create a component instance using the name of its type

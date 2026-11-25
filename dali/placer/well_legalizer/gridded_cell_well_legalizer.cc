@@ -1010,7 +1010,7 @@ bool GriddedCellWellLegalizer::ComponentClustering() {
    * Clustering components in each stripe
    * After clustering, close pack clusters from bottom to top
    ****/
-  bool res = true;
+  bool all_stripes_fit = true;
   for (auto& col : col_list_) {
     bool is_success = true;
     for (auto& stripe : col.stripe_list_) {
@@ -1020,7 +1020,7 @@ bool GriddedCellWellLegalizer::ComponentClustering() {
           is_success = StripeLegalizationTopDown(stripe);
         }
       }
-      res = res && is_success;
+      all_stripes_fit = all_stripes_fit && is_success;
 
       // closely pack clusters from bottom to top
       stripe.contour_ = stripe.LLY();
@@ -1032,8 +1032,8 @@ bool GriddedCellWellLegalizer::ComponentClustering() {
           cluster.LegalizeCompactX();
         }
       } else {
-        int sz = static_cast<int>(stripe.gridded_rows_.size());
-        for (int i = sz - 1; i >= 0; --i) {
+        int row_count = static_cast<int>(stripe.gridded_rows_.size());
+        for (int i = row_count - 1; i >= 0; --i) {
           auto& cluster = stripe.gridded_rows_[i];
           stripe.contour_ += cluster.Height();
           cluster.SetLLY(stripe.contour_);
@@ -1043,7 +1043,7 @@ bool GriddedCellWellLegalizer::ComponentClustering() {
       }
     }
   }
-  return res;
+  return all_stripes_fit;
 }
 
 /****
@@ -1051,7 +1051,7 @@ bool GriddedCellWellLegalizer::ComponentClustering() {
  * After clustering, leave clusters as they are
  * ****/
 bool GriddedCellWellLegalizer::ComponentClusteringLoose() {
-  bool res = true;
+  bool clustering_is_feasible = true;
   int failed_stripe_count = 0;
   last_clustering_violations_.clear();
   for (int col_id = 0; col_id < static_cast<int>(col_list_.size()); ++col_id) {
@@ -1076,7 +1076,7 @@ bool GriddedCellWellLegalizer::ComponentClusteringLoose() {
           break;
         }
       }
-      res = res && is_success;
+      clustering_is_feasible = clustering_is_feasible && is_success;
       if (!is_success) {
         ++failed_stripe_count;
         RecordStripeLegalizationFailure(stripe);
@@ -1089,7 +1089,7 @@ bool GriddedCellWellLegalizer::ComponentClusteringLoose() {
       }
       stripe.MinDisplacementAdjustment();
       if (is_success && stripe.used_height_ > stripe.Height()) {
-        res = false;
+        clustering_is_feasible = false;
         ++failed_stripe_count;
         RecordStripeLegalizationFailure(stripe);
         LogStripeLegalizationFailure(col, stripe, col_id, stripe_id);
@@ -1099,8 +1099,8 @@ bool GriddedCellWellLegalizer::ComponentClusteringLoose() {
 
   const size_t overlap_count = CountComponentOverlapsInRows();
   LogComponentClusteringSummary(failed_stripe_count);
-  if (overlap_count > 0) res = false;
-  return res;
+  if (overlap_count > 0) clustering_is_feasible = false;
+  return clustering_is_feasible;
 }
 
 void GriddedCellWellLegalizer::RecordStripeLegalizationFailure(

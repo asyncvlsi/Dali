@@ -132,11 +132,12 @@ class DetailedPlacer : public Placer {
   int RunOptimalRegionMoves();
 
   /**
-   * Quickly reject a swap unless exchanging the two raw locations improves
-   * the physical HPWL of the pair's incident nets.
+   * Compare physical HPWL of the pair's incident nets before and after
+   * exchanging locations. Restore both cells before returning.
    */
-  bool IsPromisingSwap(Component* first, Component* second,
-                       GeneralRow* first_row, GeneralRow* second_row) const;
+  bool SwapLowersHpwlBeforeLegalization(
+      Component* first, Component* second, GeneralRow* first_row,
+      GeneralRow* second_row) const;
 
   /**
    * Trial-swap two components and commit only an HPWL-improving legal result.

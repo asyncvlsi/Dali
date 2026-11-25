@@ -155,6 +155,7 @@ class Stripe {
   void OptimizeDisplacementInEachRowSegment(double lambda,
                                             bool is_weighted_anchor,
                                             bool is_reorder);
+  /** Set each component X to the weighted average of its subcell X locations. */
   void ComputeAverageLoc();
   /** Log progress of the iterative cell-reordering loop. */
   void ReportIterativeStatus(int i);
@@ -174,6 +175,11 @@ class Stripe {
   void ImportStandardRowSegments(phydb::PhyDB& phydb, Circuit& ckt);
   /** Map a Y location to the index of the gridded row containing it. */
   int LocY2RowId(double lly);
+  /**
+   * Estimate the X plus Y displacement in grid coordinates for this row
+   * assignment. Write the common interval with the lowest X cost to range.
+   * Return DBL_MAX when the rows share no eligible interval.
+   */
   double EstimateCost(int row_id, Component* component_ptr, SegI& range,
                       double density);
   /** Assign a component to a specific gridded row by index. */

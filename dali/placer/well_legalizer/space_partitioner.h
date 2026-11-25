@@ -24,7 +24,7 @@
 #include <vector>
 
 #include "dali/circuit/circuit.h"
-#include "dali/placer/well_legalizer/gridded_capacity_estimator.h"
+#include "dali/placer/gridded_capacity_estimator.h"
 #include "stripe.h"
 
 namespace dali {

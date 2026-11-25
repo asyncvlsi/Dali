@@ -16,6 +16,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "dali/common/act_config.h"
@@ -79,6 +80,38 @@ TEST_F(DaliCommandProcessorTest, AppliesTypedRuntimeSettings) {
   EXPECT_FALSE(placer.ExecuteCommand({"set", "target_density", "1.1"}));
   EXPECT_FALSE(placer.ExecuteCommand({"set", "num_threads", "many"}));
   EXPECT_FALSE(placer.ExecuteCommand({"set", "unknown_option", "1"}));
+  placer.Close();
+}
+
+TEST_F(DaliCommandProcessorTest, SetsEachPlacementToggleIndependently) {
+  dali::Dali placer(nullptr, dali::severity::info);
+  using Options = dali::Dali::RuntimeOptions;
+  const std::pair<const char*, bool Options::*> toggles[] = {
+      {"disable_cell_flip", &Options::disable_cell_flip},
+      {"disable_detailed_place", &Options::disable_detailed_place},
+      {"disable_global_place", &Options::disable_global_place},
+      {"disable_io_place", &Options::disable_io_place},
+      {"disable_legalization", &Options::disable_legalization},
+      {"disable_welltap", &Options::disable_welltap},
+      {"enable_end_cap_cell", &Options::enable_end_cap_cell},
+      {"enable_filler_cell", &Options::enable_filler_cell},
+      {"is_standard_cell", &Options::is_standard_cell},
+  };
+  for (const auto& [name, member] : toggles) {
+    SCOPED_TRACE(name);
+    const Options before = placer.GetRuntimeOptions();
+    const char* changed = before.*member ? "off" : "on";
+    ASSERT_TRUE(placer.ExecuteCommand({"set", name, changed}));
+    const Options after = placer.GetRuntimeOptions();
+    for (const auto& [other_name, other] : toggles) {
+      EXPECT_EQ(after.*other, other == member ? !(before.*other) : before.*other)
+          << other_name;
+    }
+    EXPECT_FALSE(placer.ExecuteCommand({"set", name, "invalid"}));
+    EXPECT_EQ(placer.GetRuntimeOptions().*member, after.*member);
+    ASSERT_TRUE(placer.ExecuteCommand(
+        {"set", name, before.*member ? "true" : "false"}));
+  }
   placer.Close();
 }
 

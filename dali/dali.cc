@@ -48,7 +48,9 @@
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
+#include <iterator>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include "dali/circuit/hpwl_lower_bound.h"
@@ -890,7 +892,6 @@ void Dali::SetNumThreads(int num_threads) {
  * corresponding standalone command-line options.
  */
 bool Dali::SetRuntimeOption(const std::string& name, const std::string& value) {
-  bool bool_value = false;
   int int_value = 0;
   double double_value = 0;
 
@@ -976,37 +977,35 @@ bool Dali::SetRuntimeOption(const std::string& name, const std::string& value) {
       return false;
     }
     output_name_ = output_base;
-  } else if (name == "disable_global_place" || name == "disable_legalization" ||
-             name == "disable_detailed_place" || name == "disable_io_place" ||
-             name == "disable_welltap" || name == "disable_cell_flip" ||
-             name == "is_standard_cell" || name == "enable_filler_cell" ||
-             name == "enable_end_cap_cell") {
+  } else {
+    struct BooleanOption {
+      std::string_view name;
+      bool Dali::*member;
+    };
+    static constexpr BooleanOption options[] = {
+        {"disable_cell_flip", &Dali::disable_cell_flip_},
+        {"disable_detailed_place", &Dali::disable_detailed_place_},
+        {"disable_global_place", &Dali::disable_global_place_},
+        {"disable_io_place", &Dali::disable_io_place_},
+        {"disable_legalization", &Dali::disable_legalization_},
+        {"disable_welltap", &Dali::disable_welltap_},
+        {"enable_end_cap_cell", &Dali::enable_end_cap_cell_},
+        {"enable_filler_cell", &Dali::enable_filler_cell_},
+        {"is_standard_cell", &Dali::is_standard_cell_},
+    };
+    const auto binding = std::find_if(
+        std::begin(options), std::end(options),
+        [&name](const BooleanOption& option) { return option.name == name; });
+    if (binding == std::end(options)) {
+      LOG(error) << "Unknown or unsupported Dali setting: " << name << "\n";
+      return false;
+    }
+    bool bool_value = false;
     if (!ParseCommandBool(value, &bool_value)) {
       LOG(error) << name << " must be true or false\n";
       return false;
     }
-    if (name == "disable_global_place") {
-      disable_global_place_ = bool_value;
-    } else if (name == "disable_legalization") {
-      disable_legalization_ = bool_value;
-    } else if (name == "disable_detailed_place") {
-      disable_detailed_place_ = bool_value;
-    } else if (name == "disable_io_place") {
-      disable_io_place_ = bool_value;
-    } else if (name == "disable_welltap") {
-      disable_welltap_ = bool_value;
-    } else if (name == "disable_cell_flip") {
-      disable_cell_flip_ = bool_value;
-    } else if (name == "is_standard_cell") {
-      is_standard_cell_ = bool_value;
-    } else if (name == "enable_filler_cell") {
-      enable_filler_cell_ = bool_value;
-    } else {
-      enable_end_cap_cell_ = bool_value;
-    }
-  } else {
-    LOG(error) << "Unknown or unsupported Dali setting: " << name << "\n";
-    return false;
+    this->*(binding->member) = bool_value;
   }
 
   LOG(info) << "Set " << name << " = " << value << "\n";
