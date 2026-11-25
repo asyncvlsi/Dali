@@ -143,7 +143,7 @@ placement, legalization, and detailed placement:
 
 Measured at `9878f537` with one run per design. Standard-cell runs used
 default row repacking. Set `OMP_NUM_THREADS` to the same count as
-`-num_threads`. The gridded designs are DaliTest cases 1 and 3.
+`-num_threads`. The gridded designs are DaliTest cases 1–3.
 
 End-to-end time includes input parsing and export. Gridded legalization
 time excludes detailed placement.
@@ -151,14 +151,23 @@ time excludes detailed placement.
 | Design | Threads | Global placement (s) | Legalization (s) | Detailed placement (s) | End to end (s) | Final weighted HPWL (µm) |
 |---|---:|---:|---:|---:|---:|---:|
 | Adaptec1 | 8 | 23.93 | 2.31 | 9.42 | 46.80 | 80,933,657.50 |
+| Adaptec2 | 8 | 29.39 | 4.60 | 20.24 | 67.23 | 90,201,375.00 |
+| Adaptec3 | 8 | 58.80 | 3.90 | 16.46 | 102.22 | 210,016,950.50 |
+| Adaptec4 | 8 | 41.22 | 5.30 | 20.62 | 91.12 | 186,048,692.00 |
 | Big Blue 1 | 8 | 37.96 | 8.68 | 41.57 | 102.20 | 98,732,183.50 |
+| Big Blue 2 | 8 | 51.09 | 3.92 | 18.28 | 99.70 | 149,850,922.50 |
+| Big Blue 3 | 8 | 122.39 | 27.41 | 128.18 | 328.31 | 358,243,837.50 |
+| Big Blue 4 | 8 | 251.88 | 49.71 | 242.56 | 663.33 | 804,606,037.50 |
 | Gridded case 1 | 1 | 4.49 | 0.10 | 5.66 | 10.60 | 271,650.45 |
+| Gridded case 2 | 1 | 5.09 | 0.29 | 3.02 | 8.78 | 150,154.39 |
 | Gridded case 3 | 1 | 73.04 | 3.99 | 23.10 | 102.37 | 2,931,825.60 |
 | ISPD 2019 test3 | 1 | 1.47 | 0.02 | 0.21 | 2.16 | 95,976.78 |
 
-Adaptec1 and Big Blue 1 passed geometry checks. Both gridded cases reported
-zero legality violations. The ISPD 2019 I/O fixture has pre-existing
-geometry violations.
+Big Blue 3 had 11,940 overlapping pairs in the geometry check. An older
+placement of the same design also had overlaps. The other seven ISPD 2005
+designs passed geometry checks, and all three gridded cases reported zero
+legality violations. The ISPD 2019 I/O fixture has pre-existing geometry
+violations.
 
 <details>
 <summary>Historical ISPD 2005 results at afc54ea4</summary>
