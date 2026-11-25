@@ -124,64 +124,27 @@ attention.
   * `-global_max_iterations <n>` — upper limit, default 100.
   * `-global_min_iterations <n>` — floor, default 10.
 
-## Standard-cell results on ISPD 2005
+## Latest runtime and placement quality
 
-Measured at commit `afc54ea4` on a MacBook Pro with an Apple M1 Max CPU, 10
-cores (8 performance and 2 efficiency), and 32 GB unified memory, running macOS
-26.5.2 on AC power in Automatic power mode. These are single-run engineering
-measurements intended to show representative behavior, not publication-quality
-performance measurements.
+Measured at `9878f537` with one run per design. Standard-cell runs used
+default row repacking. The ISPD 2005 runs used `density_aware` initialization,
+`-target_density 1`, and `-disable_io_place`. Set `OMP_NUM_THREADS` to the same
+count as `-num_threads`. The gridded designs are DaliTest cases 1 and 3.
 
-The runs use `density_aware` initialization and continue through global
-placement, legalization, and detailed placement:
+End-to-end time includes input parsing and export. Gridded legalization
+time excludes detailed placement.
 
-    $ dali \
-        -lef design.lef \
-        -def design.def \
-        -is_standard_cell \
-        -global_initializer density_aware \
-        -target_density 1 \
-        -num_threads <1-or-8> \
-        -disable_io_place \
-        -metrics_file dali_metrics.json
+| Design | Threads | Global placement (s) | Legalization (s) | Detailed placement (s) | End to end (s) | Final weighted HPWL (µm) |
+|---|---:|---:|---:|---:|---:|---:|
+| Adaptec1 | 8 | 23.93 | 2.31 | 9.42 | 46.80 | 80,933,657.50 |
+| Big Blue 1 | 8 | 37.96 | 8.68 | 41.57 | 102.20 | 98,732,183.50 |
+| Gridded case 1 | 1 | 4.49 | 0.10 | 5.66 | 10.60 | 271,650.45 |
+| Gridded case 3 | 1 | 73.04 | 3.99 | 23.10 | 102.37 | 2,931,825.60 |
+| ISPD 2019 test3 | 1 | 1.47 | 0.02 | 0.21 | 2.16 | 95,976.78 |
 
-Weighted HPWL is reported in units of 1e6 um. The 1-thread and 8-thread runs
-produce identical HPWL for every benchmark.
-
-| design | cells | global HPWL | legal HPWL | final HPWL |
-|---|---:|---:|---:|---:|
-| adaptec1 | 211 K | 78.69 | 81.97 | 80.93 |
-| adaptec2 | 255 K | 88.60 | 91.04 | 90.20 |
-| adaptec3 | 452 K | 206.96 | 212.25 | 210.02 |
-| adaptec4 | 496 K | 182.47 | 187.41 | 186.05 |
-| bigblue1 | 278 K | 96.01 | 99.03 | 98.73 |
-| bigblue2 | 558 K | 146.57 | 152.11 | 149.85 |
-| bigblue3 | 1.10 M | 351.27 | 361.87 | 358.24 |
-| bigblue4 | 2.18 M | 789.29 | 808.29 | 804.61 |
-
-Runtime is Dali's internal wall time for each placement stage and excludes
-LEF/DEF parsing and result export. `Total` is the sum of global placement,
-legalization, and detailed placement. Global and total cells show `1 thread ->
-8 threads`, followed by the speedup. Legalization and detailed placement are
-currently serial, so their 8-thread-run measurements are shown once.
-
-| design | global, 1T -> 8T | legalization | detailed placement | total, 1T -> 8T |
-|---|---:|---:|---:|---:|
-| adaptec1 | 64.4 -> 29.5 s **(2.18x)** | 14.3 s | 38.1 s | 120.0 -> 81.9 s **(1.47x)** |
-| adaptec2 | 79.1 -> 37.9 s **(2.09x)** | 28.7 s | 115.4 s | 222.1 -> 181.9 s **(1.22x)** |
-| adaptec3 | 154.2 -> 83.1 s **(1.86x)** | 61.5 s | 46.8 s | 261.1 -> 191.5 s **(1.36x)** |
-| adaptec4 | 116.0 -> 59.9 s **(1.94x)** | 92.8 s | 75.0 s | 291.1 -> 227.7 s **(1.28x)** |
-| bigblue1 | 102.1 -> 44.3 s **(2.31x)** | 40.3 s | 279.1 s | 411.7 -> 363.7 s **(1.13x)** |
-| bigblue2 | 139.7 -> 77.6 s **(1.80x)** | 85.7 s | 76.0 s | 302.6 -> 239.3 s **(1.26x)** |
-| bigblue3 | 320.7 -> 176.2 s **(1.82x)** | 244.6 s | 844.2 s | 1331.9 -> 1265.0 s **(1.05x)** |
-| bigblue4 | 730.2 -> 421.7 s **(1.73x)** | 595.6 s | 1811.6 s | 3102.1 -> 2828.9 s **(1.10x)** |
-
-Across the complete suite, global-placement time falls from 1706.4 seconds to
-930.2 seconds, a 1.83x aggregate speedup. Complete placement time falls from
-6042.6 seconds to 5379.8 seconds, a 1.12x speedup, because standard-cell
-legalization and detailed placement are currently serial. These two stages are
-the main remaining parallelization opportunity, especially on bigblue3 and
-bigblue4.
+Adaptec1 and Big Blue 1 passed geometry checks. Both gridded cases reported
+zero legality violations. The ISPD 2019 I/O fixture has pre-existing
+geometry violations.
 
 ## Experimental: CP-SAT legalization
 
