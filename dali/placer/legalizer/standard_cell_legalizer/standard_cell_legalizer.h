@@ -57,7 +57,10 @@ class StandardCellLegalizer : public Placer {
   void SetCostMode(StandardCellLegalizerCostMode cost_mode);
 
   /** Enable fixed DEF rows when the circuit has mixed-height cells. */
-  void SetMixedHeightRows(phydb::PhyDB* phy_db) { mixed_height_rows_ = phy_db; }
+  void SetMixedHeightRows(phydb::PhyDB* phy_db, bool force = false) {
+    mixed_height_rows_ = phy_db;
+    force_mixed_height_rows_ = force;
+  }
 
   /** Return the DEF site pitch for an active mixed-height run, or zero. */
   bool UsesMixedHeightRows() const { return uses_mixed_height_rows_; }
@@ -137,6 +140,7 @@ class StandardCellLegalizer : public Placer {
   ComponentOrient OrientForRow(int row_index) const;
 
   phydb::PhyDB* mixed_height_rows_ = nullptr;
+  bool force_mixed_height_rows_ = false;
   bool uses_mixed_height_rows_ = false;
   int mixed_height_site_width_ = 0;
   StandardCellPlacementModel fixed_row_model_;

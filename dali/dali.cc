@@ -564,6 +564,8 @@ void Dali::ShowParamsList() {
       << "\n"
       << "  enable_mixed_height_standard_cells: "
       << enable_mixed_height_standard_cells_ << "\n"
+      << "  force_mixed_height_standard_cells: "
+      << force_mixed_height_standard_cells_ << "\n"
       << "  enable_standard_cell_slot_swaps: "
       << enable_standard_cell_slot_swaps_ << "\n"
       << "  output_name: " << output_name_ << "\n"
@@ -869,6 +871,8 @@ void Dali::LoadParamsFromConfig() {
               "detailed_max_move_candidates must be non-negative");
   LoadBoolConfig(ConfigName(prefix_, "enable_mixed_height_standard_cells"),
                  &enable_mixed_height_standard_cells_);
+  LoadBoolConfig(ConfigName(prefix_, "force_mixed_height_standard_cells"),
+                 &force_mixed_height_standard_cells_);
   LoadBoolConfig(ConfigName(prefix_, "enable_standard_cell_slot_swaps"),
                  &enable_standard_cell_slot_swaps_);
   LoadStringConfig(ConfigName(prefix_, "output_name"), &output_name_);
@@ -1003,6 +1007,8 @@ bool Dali::SetRuntimeOption(const std::string& name, const std::string& value) {
          &Dali::enable_mixed_height_standard_cells_},
         {"enable_standard_cell_slot_swaps",
          &Dali::enable_standard_cell_slot_swaps_},
+        {"force_mixed_height_standard_cells",
+         &Dali::force_mixed_height_standard_cells_},
         {"is_standard_cell", &Dali::is_standard_cell_},
     };
     const auto binding = std::find_if(
@@ -1127,6 +1133,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       gui_pause_,
       debug_placement_region_scale_,
       enable_mixed_height_standard_cells_,
+      force_mixed_height_standard_cells_,
   };
 }
 
@@ -1492,13 +1499,15 @@ bool Dali::RunStandardCellLegalization() {
   standard_cell_legalizer_.CopyPlacementContextFrom(&gb_placer_);
   standard_cell_legalizer_.SetDisableCellFlip(disable_cell_flip_);
   standard_cell_legalizer_.SetCostMode(standard_cell_legalizer_cost_mode_);
+  const bool use_fixed_rows = enable_mixed_height_standard_cells_ ||
+                              force_mixed_height_standard_cells_;
   standard_cell_legalizer_.SetMixedHeightRows(
-      enable_mixed_height_standard_cells_ ? phy_db_ptr_ : nullptr);
+      use_fixed_rows ? phy_db_ptr_ : nullptr,
+      force_mixed_height_standard_cells_);
   ElapsedTime legalization_timer;
   legalization_timer.RecordStartTime();
   if (!standard_cell_legalizer_.StartPlacement()) {
-    if (enable_mixed_height_standard_cells_ &&
-        standard_cell_legalizer_.UsesMixedHeightRows()) {
+    if (standard_cell_legalizer_.UsesMixedHeightRows()) {
       return false;
     }
     LOG(warning) << "Standard-cell legalizer failed; trying "

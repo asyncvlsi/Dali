@@ -22,8 +22,9 @@ origins. The flow subtracts fixed obstacles, reserves each tall cell in every
 row it spans, and packs the single-height cells into the remaining segments.
 Detailed placement keeps the tall reservations fixed and optimizes the
 single-height cells. The flow validates the full footprints after each stage
-and stops on a geometry or capacity failure. Single-height designs use the
-existing standard-cell path.
+and stops on a geometry or capacity failure. Use
+`-force_mixed_height_standard_cells` with `-is_standard_cell` to run the
+fixed-row flow on single-height designs as well.
 
 ## Gridded well placement
 

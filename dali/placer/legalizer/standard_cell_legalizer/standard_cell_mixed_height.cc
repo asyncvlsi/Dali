@@ -137,6 +137,9 @@ int StandardCellLegalizer::MixedHeightRowHeight(
       }
     }
   }
+  if (force_mixed_height_rows_) {
+    return row_height;
+  }
   return std::any_of(components.begin(), components.end(),
                      [row_height](const Component *cell) {
                        return cell->Height() != row_height;

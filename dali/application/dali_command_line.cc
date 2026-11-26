@@ -169,6 +169,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -detailed_max_rounds <n>                   detailed-placement optimization rounds, default 1\n"
       << "  -detailed_max_move_candidates <n>          optimal-region move candidates per round, default 1000\n"
       << "  -enable_mixed_height_standard_cells      legalize mixed-height cells on fixed DEF rows\n"
+      << "  -force_mixed_height_standard_cells       run the fixed DEF row flow even for single-height designs\n"
       << "  -enable_standard_cell_slot_swaps           only try swaps that fit existing slots, default off\n"
       << "  -num_threads <n>                           number of OpenMP threads to use\n"
       << "  -v                                         verbosity_level (optional, 0-5, default 1)\n"
@@ -297,6 +298,8 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.disable_detailed_place");
     } else if (arg == "-enable_mixed_height_standard_cells") {
       EnableConfigFlag("dali.enable_mixed_height_standard_cells");
+    } else if (arg == "-force_mixed_height_standard_cells") {
+      EnableConfigFlag("dali.force_mixed_height_standard_cells");
     } else if (arg == "-enable_standard_cell_slot_swaps") {
       EnableConfigFlag("dali.enable_standard_cell_slot_swaps");
     } else if (arg == "-disable_global_place") {
