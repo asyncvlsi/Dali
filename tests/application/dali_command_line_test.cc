@@ -54,6 +54,16 @@ TEST_F(DaliCommandLineTest, ParsesRequiredInputsAndKeepsDefaults) {
   EXPECT_EQ(options.verbose_level, dali::severity::info);
 }
 
+TEST_F(DaliCommandLineTest, SelectsStandardCellLegalizer) {
+  dali::DaliCommandLineOptions options;
+  EXPECT_TRUE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",
+                     "-is_standard_cell", "-legalizer", "mixed_height"},
+                    &options));
+  EXPECT_STREQ(config_get_string("dali.legalizer"), "mixed_height");
+  EXPECT_FALSE(Parse({"dali", "-script", "flow.dali", "-legalizer", "invalid"},
+                     &options));
+}
+
 TEST_F(DaliCommandLineTest, ParsesDaliCommandFileAliases) {
   dali::DaliCommandLineOptions options;
   EXPECT_TRUE(Parse({"dali", "-lef", "input.lef", "-def", "input.def",

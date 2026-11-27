@@ -151,6 +151,7 @@ class Dali {
     double debug_placement_region_scale = 1.0;
     bool enable_mixed_height_standard_cells = false;
     bool force_mixed_height_standard_cells = false;
+    std::string legalizer;
   };
 
   Dali(phydb::PhyDB* phy_db_ptr, const std::string& severity_level,
@@ -397,6 +398,7 @@ class Dali {
   bool enable_standard_cell_slot_swaps_ = false;
   bool enable_mixed_height_standard_cells_ = false;
   bool force_mixed_height_standard_cells_ = false;
+  std::string legalizer_name_;
   std::string output_name_ = "dali_out";
   std::string input_lef_file_name_;
   std::string input_def_file_name_;

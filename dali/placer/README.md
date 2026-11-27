@@ -15,16 +15,17 @@ selects the standard-cell flow, which skips well legalization entirely.
 
 ## Mixed-height standard cells
 
-Add `-enable_mixed_height_standard_cells` to `-is_standard_cell` to legalize
-mixed-height cells on the DEF rows. The rows must use a common site size and
-horizontal N/FS orientations. Row fragments may have gaps and different X
-origins. The flow subtracts fixed obstacles, reserves each tall cell in every
-row it spans, and packs the single-height cells into the remaining segments.
-Detailed placement keeps the tall reservations fixed and optimizes the
-single-height cells. The flow validates the full footprints after each stage
-and stops on a geometry or capacity failure. Use
-`-force_mixed_height_standard_cells` with `-is_standard_cell` to run the
-fixed-row flow on single-height designs as well.
+Select `-legalizer mixed_height` with `-is_standard_cell`. The legalizer
+imports horizontal N/FS DEF row fragments with a common site size and
+contiguous sites. It subtracts fixed obstacles,
+reserves each tall cell in every row it spans, and packs the single-height
+cells into the remaining segments. The detailed placer keeps tall cells at
+their legalized positions and optimizes the single-height cells using the DEF
+site pitch and oriented LEF pins. Dali validates the full footprints after
+each stage.
+
+The ISPD 2005 benchmark commands select this flow for mixed-height and
+single-height designs.
 
 ## Gridded well placement
 
@@ -139,61 +140,45 @@ attention.
 
 ## Standard-cell results on ISPD 2005
 
-Measured at commit `9878f537` on a MacBook Pro with an Apple M1 Max CPU, 10
-cores (8 performance and 2 efficiency), and 32 GB unified memory, running macOS
-27.2.1 on AC power. These are single-run engineering
-measurements intended to show representative behavior, not publication-quality
-performance measurements.
+These runs use the mixed-height legalizer and local-search detailed placement.
+Each timing is from one run.
 
-The runs use `density_aware` initialization and continue through global
-placement, legalization, and detailed placement:
+```sh
+dali -lef design.lef -def design.def \
+  -is_standard_cell -legalizer mixed_height \
+  -global_initializer density_aware -target_density 1 \
+  -disable_io_place -num_threads 8 -metrics_file dali_metrics.json
+```
 
-    $ dali \
-        -lef design.lef \
-        -def design.def \
-        -is_standard_cell \
-        -global_initializer density_aware \
-        -target_density 1 \
-        -num_threads <1-or-8> \
-        -disable_io_place \
-        -metrics_file dali_metrics.json
+Final weighted HPWL was identical at 1 and 8 threads for each design. All eight
+final placements passed independent geometry checks at both thread counts.
+HPWL is in millions of micrometres.
 
-Weighted HPWL is reported in units of 1e6 um. The 1-thread and 8-thread runs
-produce identical HPWL for every benchmark.
+| Design | Cells | Global HPWL | Legalized HPWL | Final HPWL |
+| --- | ---: | ---: | ---: | ---: |
+| adaptec1 | 211 K | 78.691 | 81.195 | 79.857 |
+| adaptec2 | 255 K | 88.599 | 90.738 | 89.362 |
+| adaptec3 | 452 K | 206.955 | 211.767 | 208.923 |
+| adaptec4 | 496 K | 182.474 | 186.955 | 184.409 |
+| bigblue1 | 278 K | 96.012 | 98.614 | 97.229 |
+| bigblue2 | 558 K | 146.569 | 151.511 | 148.336 |
+| bigblue3 | 1.10 M | 351.271 | 364.130 | 356.833 |
+| bigblue4 | 2.18 M | 789.293 | 806.467 | 796.354 |
 
-| design | cells | global HPWL | legal HPWL | final HPWL |
-|---|---:|---:|---:|---:|
-| adaptec1 | 211 K | 78.69 | 81.97 | 80.93 |
-| adaptec2 | 255 K | 88.60 | 91.04 | 90.20 |
-| adaptec3 | 452 K | 206.96 | 212.25 | 210.02 |
-| adaptec4 | 496 K | 182.47 | 187.41 | 186.05 |
-| bigblue1 | 278 K | 96.01 | 99.03 | 98.73 |
-| bigblue2 | 558 K | 146.57 | 152.11 | 149.85 |
-| bigblue3 | 1.10 M | 351.27 | 361.87 | 358.24 |
-| bigblue4 | 2.18 M | 789.29 | 808.29 | 804.61 |
+Stage wall times are in seconds. Total sums global placement, legalization,
+and detailed placement. Input parsing and export are outside these timings.
+Legalization and detailed placement run serially.
 
-Runtime is Dali's internal wall time for each placement stage and excludes
-LEF/DEF parsing and result export. `Total` is the sum of global placement,
-legalization, and detailed placement. Legalization and detailed placement are
-currently serial, so their 8-thread-run measurements are shown once.
-
-| design | global, 1T (s) | global, 8T (s) | global speedup | legalization (s) | detailed placement (s) | total, 1T (s) | total, 8T (s) | total speedup |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| adaptec1 | 54.7 | 23.9 | 2.29× | 2.3 | 9.4 | 66.5 | 35.7 | 1.86× |
-| adaptec2 | 66.0 | 29.4 | 2.25× | 4.6 | 20.2 | 90.5 | 54.2 | 1.67× |
-| adaptec3 | 125.2 | 58.8 | 2.13× | 3.9 | 16.5 | 145.1 | 79.2 | 1.83× |
-| adaptec4 | 94.4 | 41.2 | 2.29× | 5.3 | 20.6 | 120.2 | 67.1 | 1.79× |
-| bigblue1 | 89.2 | 38.0 | 2.35× | 8.7 | 41.6 | 139.0 | 88.2 | 1.58× |
-| bigblue2 | 106.0 | 51.1 | 2.08× | 3.9 | 18.3 | 128.1 | 73.3 | 1.75× |
-| bigblue3 | 261.1 | 122.4 | 2.13× | 27.4 | 128.2 | 414.6 | 278.0 | 1.49× |
-| bigblue4 | 526.1 | 251.9 | 2.09× | 49.7 | 242.6 | 809.5 | 544.1 | 1.49× |
-
-Across the complete suite, global-placement time falls from 1322.8 seconds to
-616.7 seconds, a 2.15x aggregate speedup. Complete placement time falls from
-1913.4 seconds to 1219.8 seconds, a 1.57x speedup, because standard-cell
-legalization and detailed placement are currently serial. These two stages are
-the main remaining parallelization opportunity, especially on bigblue3 and
-bigblue4.
+| Design | 1T global | 1T legal | 1T detailed | 1T total | 8T global | 8T legal | 8T detailed | 8T total |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| adaptec1 | 54.7 | 1.9 | 6.6 | 63.1 | 24.0 | 1.9 | 6.6 | 32.5 |
+| adaptec2 | 66.0 | 3.5 | 12.2 | 81.8 | 29.2 | 3.5 | 12.1 | 44.9 |
+| adaptec3 | 125.0 | 3.3 | 15.4 | 143.8 | 56.0 | 3.3 | 15.5 | 74.8 |
+| adaptec4 | 94.4 | 4.2 | 16.5 | 115.1 | 41.1 | 4.2 | 16.4 | 61.8 |
+| bigblue1 | 89.4 | 6.4 | 22.5 | 118.3 | 37.5 | 6.5 | 22.7 | 66.6 |
+| bigblue2 | 106.1 | 3.4 | 27.9 | 137.3 | 50.7 | 3.4 | 29.0 | 83.1 |
+| bigblue3 | 260.9 | 13.3 | 51.2 | 325.4 | 122.1 | 13.5 | 51.5 | 187.1 |
+| bigblue4 | 525.4 | 35.2 | 175.2 | 735.9 | 233.4 | 35.4 | 175.3 | 444.1 |
 
 ## Experimental: CP-SAT legalization
 

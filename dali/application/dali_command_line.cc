@@ -168,6 +168,7 @@ void ReportDaliUsage(std::ostream& output) {
       << "  -standard_cell_legalizer_cost <displacement/hpwl>  default displacement\n"
       << "  -detailed_max_rounds <n>                   detailed-placement optimization rounds, default 1\n"
       << "  -detailed_max_move_candidates <n>          optimal-region move candidates per round, default 1000\n"
+      << "  -legalizer <single_height/mixed_height>    select the standard-cell legalizer\n"
       << "  -enable_mixed_height_standard_cells      legalize mixed-height cells on fixed DEF rows\n"
       << "  -force_mixed_height_standard_cells       run the fixed DEF row flow even for single-height designs\n"
       << "  -enable_standard_cell_slot_swaps           only try swaps that fit existing slots, default off\n"
@@ -296,6 +297,13 @@ bool ParseDaliCommandLine(int argc, char* argv[],
       EnableConfigFlag("dali.disable_legalization");
     } else if (arg == "-disable_detailed_place") {
       EnableConfigFlag("dali.disable_detailed_place");
+    } else if (arg == "-legalizer") {
+      if (!TryGetValue(argc, argv, &i, &value) ||
+          (value != "single_height" && value != "mixed_height")) {
+        error_output << "legalizer must be single_height or mixed_height\n";
+        return false;
+      }
+      config_set_string("dali.legalizer", value.c_str());
     } else if (arg == "-enable_mixed_height_standard_cells") {
       EnableConfigFlag("dali.enable_mixed_height_standard_cells");
     } else if (arg == "-force_mixed_height_standard_cells") {

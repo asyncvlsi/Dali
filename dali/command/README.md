@@ -139,6 +139,9 @@ Recipes should configure placement settings separately and invoke
   repacking. Set it to `true` to restrict standard-cell swaps to exchanges
   that fit the existing slots. The same option is available on the command line
   as `-enable_standard_cell_slot_swaps`.
+- `legalizer` selects `single_height` or `mixed_height` for standard-cell
+  placement. An explicit selection takes precedence over the mixed-height
+  Boolean flags.
 - `well_legalization_mode` and `standard_cell_legalizer_cost`
 - `disable_global_place`, `disable_legalization`, `disable_detailed_place`,
   and `disable_io_place`

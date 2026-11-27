@@ -566,6 +566,8 @@ void Dali::ShowParamsList() {
       << enable_mixed_height_standard_cells_ << "\n"
       << "  force_mixed_height_standard_cells: "
       << force_mixed_height_standard_cells_ << "\n"
+      << "  legalizer: "
+      << (legalizer_name_.empty() ? "default" : legalizer_name_) << "\n"
       << "  enable_standard_cell_slot_swaps: "
       << enable_standard_cell_slot_swaps_ << "\n"
       << "  output_name: " << output_name_ << "\n"
@@ -875,6 +877,12 @@ void Dali::LoadParamsFromConfig() {
                  &force_mixed_height_standard_cells_);
   LoadBoolConfig(ConfigName(prefix_, "enable_standard_cell_slot_swaps"),
                  &enable_standard_cell_slot_swaps_);
+  param_name = ConfigName(prefix_, "legalizer");
+  if (ConfigExists(param_name)) {
+    DaliExpects(
+        SetRuntimeOption("legalizer", config_get_string(param_name.c_str())),
+        "Invalid standard-cell legalizer selection");
+  }
   LoadStringConfig(ConfigName(prefix_, "output_name"), &output_name_);
   output_name_ = NormalizeDefOutputBaseName(output_name_);
   DaliExpects(!output_name_.empty(), "output_name must not be empty");
@@ -974,6 +982,12 @@ bool Dali::SetRuntimeOption(const std::string& name, const std::string& value) {
       LOG(error) << "well_legalization_mode must be strict or scavenge\n";
       return false;
     }
+  } else if (name == "legalizer") {
+    if (value != "single_height" && value != "mixed_height") {
+      LOG(error) << "legalizer must be single_height or mixed_height\n";
+      return false;
+    }
+    legalizer_name_ = value;
   } else if (name == "standard_cell_legalizer_cost") {
     if (value != "displacement" && value != "hpwl") {
       LOG(error) << "standard_cell_legalizer_cost must be displacement or "
@@ -1134,6 +1148,7 @@ Dali::RuntimeOptions Dali::GetRuntimeOptions() const {
       debug_placement_region_scale_,
       enable_mixed_height_standard_cells_,
       force_mixed_height_standard_cells_,
+      legalizer_name_,
   };
 }
 
@@ -1499,11 +1514,15 @@ bool Dali::RunStandardCellLegalization() {
   standard_cell_legalizer_.CopyPlacementContextFrom(&gb_placer_);
   standard_cell_legalizer_.SetDisableCellFlip(disable_cell_flip_);
   standard_cell_legalizer_.SetCostMode(standard_cell_legalizer_cost_mode_);
-  const bool use_fixed_rows = enable_mixed_height_standard_cells_ ||
-                              force_mixed_height_standard_cells_;
+  const bool use_compatibility_flags = legalizer_name_.empty();
+  const bool force_fixed_rows =
+      legalizer_name_ == "mixed_height" ||
+      (use_compatibility_flags && force_mixed_height_standard_cells_);
+  const bool use_fixed_rows =
+      force_fixed_rows ||
+      (use_compatibility_flags && enable_mixed_height_standard_cells_);
   standard_cell_legalizer_.SetMixedHeightRows(
-      use_fixed_rows ? phy_db_ptr_ : nullptr,
-      force_mixed_height_standard_cells_);
+      use_fixed_rows ? phy_db_ptr_ : nullptr, force_fixed_rows);
   ElapsedTime legalization_timer;
   legalization_timer.RecordStartTime();
   if (!standard_cell_legalizer_.StartPlacement()) {
@@ -1708,6 +1727,10 @@ bool Dali::RunLegalizationStage() {
 }
 
 bool Dali::RunCorePlacementStages() {
+  if (!is_standard_cell_ && !legalizer_name_.empty()) {
+    LOG(error) << "legalizer requires standard-cell placement\n";
+    return false;
+  }
   return RunGlobalPlacementStage() && RunLegalizationStage();
 }
 

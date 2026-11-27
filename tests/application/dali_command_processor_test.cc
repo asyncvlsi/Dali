@@ -128,6 +128,7 @@ TEST_F(DaliCommandProcessorTest, RunsCommandFileWithContinuation) {
            << "set target_density \\\n"
            << "  0.68\n"
            << "set num_threads 3\n"
+           << "set legalizer mixed_height\n"
            << "set disable_detailed_place on\n"
            << "show settings\n";
   }
@@ -137,6 +138,7 @@ TEST_F(DaliCommandProcessorTest, RunsCommandFileWithContinuation) {
   const dali::Dali::RuntimeOptions options = placer.GetRuntimeOptions();
   EXPECT_DOUBLE_EQ(options.target_density, 0.68);
   EXPECT_EQ(options.num_threads, 3);
+  EXPECT_EQ(options.legalizer, "mixed_height");
   EXPECT_TRUE(options.disable_detailed_place);
   placer.Close();
 
